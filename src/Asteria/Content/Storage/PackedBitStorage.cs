@@ -1,8 +1,8 @@
 namespace Asteria.Content.Storage;
 
 /// <summary>
-/// Fixed-size packed integer storage using the same per-long layout as Minecraft SimpleBitStorage.
-/// Values never straddle a 64-bit word; unused high bits remain padding.
+/// Fixed-width storage matching Minecraft SimpleBitStorage's word layout.
+/// Entries never straddle 64-bit word boundaries.
 /// </summary>
 public sealed class PackedBitStorage
 {
@@ -18,8 +18,7 @@ public sealed class PackedBitStorage
     {
         if (bitsPerEntry is < 1 or > 31)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(bitsPerEntry), "Bits per entry must be between 1 and 31.");
+            throw new ArgumentOutOfRangeException(nameof(bitsPerEntry), "Bits per entry must be between 1 and 31.");
         }
 
         if (size <= 0)
@@ -36,13 +35,30 @@ public sealed class PackedBitStorage
         _data = new ulong[longCount];
     }
 
+    private PackedBitStorage(int bitsPerEntry, int size, ulong[] data)
+        : this(bitsPerEntry, size)
+    {
+        if (data.Length != _data.Length)
+        {
+            throw new ArgumentException("Raw storage has an invalid word count.", nameof(data));
+        }
+
+        Array.Copy(data, _data, data.Length);
+    }
+
     public int Get(int index)
     {
         ValidateIndex(index);
-
         int cell = index / _valuesPerLong;
         int bitOffset = (index % _valuesPerLong) * BitsPerEntry;
         return (int)((_data[cell] >> bitOffset) & _mask);
+    }
+
+    public int GetAndSet(int index, int value)
+    {
+        int previous = Get(index);
+        Set(index, value);
+        return previous;
     }
 
     public void Set(int index, int value)
@@ -51,22 +67,41 @@ public sealed class PackedBitStorage
 
         if (value < 0 || ((ulong)value & ~_mask) != 0)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(value), value, $"Value does not fit in {BitsPerEntry} bits.");
+            throw new ArgumentOutOfRangeException(nameof(value), value, $"Value does not fit in {BitsPerEntry} bits.");
         }
 
         int cell = index / _valuesPerLong;
         int bitOffset = (index % _valuesPerLong) * BitsPerEntry;
         ulong shiftedMask = _mask << bitOffset;
         ulong shiftedValue = (ulong)value << bitOffset;
-
         _data[cell] = (_data[cell] & ~shiftedMask) | shiftedValue;
+    }
+
+    public void Fill(int value)
+    {
+        if (value < 0 || ((ulong)value & ~_mask) != 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(value), value, $"Value does not fit in {BitsPerEntry} bits.");
+        }
+
+        for (int index = 0; index < Size; index++)
+        {
+            Set(index, value);
+        }
+    }
+
+    public void GetAll(Action<int> output)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        for (int index = 0; index < Size; index++)
+        {
+            output(Get(index));
+        }
     }
 
     public void CopyTo(PackedBitStorage destination)
     {
         ArgumentNullException.ThrowIfNull(destination);
-
         if (destination.Size != Size)
         {
             throw new ArgumentException("Source and destination storage must have the same size.", nameof(destination));
@@ -78,6 +113,10 @@ public sealed class PackedBitStorage
         }
     }
 
+    public PackedBitStorage Copy() => new(BitsPerEntry, Size, _data);
+
+    public ulong[] GetRawCopy() => (ulong[])_data.Clone();
+
     public static int RequiredBitsForValueCount(int valueCount)
     {
         if (valueCount <= 0)
@@ -85,12 +124,9 @@ public sealed class PackedBitStorage
             throw new ArgumentOutOfRangeException(nameof(valueCount));
         }
 
-        if (valueCount == 1)
-        {
-            return 1;
-        }
-
-        return System.Numerics.BitOperations.Log2((uint)(valueCount - 1)) + 1;
+        return valueCount == 1
+            ? 0
+            : System.Numerics.BitOperations.Log2((uint)(valueCount - 1)) + 1;
     }
 
     private void ValidateIndex(int index)

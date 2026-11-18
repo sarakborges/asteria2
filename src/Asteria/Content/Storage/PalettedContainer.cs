@@ -1,256 +1,270 @@
-using Asteria.Content.Registries;
+using System.Threading;
 
 namespace Asteria.Content.Storage;
 
 /// <summary>
-/// Compact storage for a fixed number of registry values.
-/// Uses a zero-bit single-value palette, a local indirect palette (4-8 bits by default),
-/// and a direct global-ID palette when the local palette can no longer grow.
-/// A container is designed for one writer at a time.
+/// PalettedContainer with a published Data snapshot, strategy-selected palettes, and a one-writer detector.
 /// </summary>
-public sealed class PalettedContainer<T> where T : class
+public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
 {
-    private readonly IIdMap<T> _idMap;
-    private readonly T _defaultValue;
-    private readonly int _size;
-    private readonly int _minimumLocalBits;
-    private readonly int _maximumLocalBits;
-
-    private PaletteMode _mode = PaletteMode.SingleValue;
-    private ILocalPalette<T>? _localPalette;
-    private PackedBitStorage? _storage;
-    private int _bitsPerEntry;
-
-    public int Size => _size;
-    public PaletteMode Mode => _mode;
-    public int BitsPerEntry => _bitsPerEntry;
-    public int PaletteSize => _mode switch
+    private sealed class Data
     {
-        PaletteMode.SingleValue => 1,
-        PaletteMode.Local => _localPalette!.Count,
-        PaletteMode.Global => _idMap.Count,
-        _ => throw new InvalidOperationException($"Unknown palette mode '{_mode}'.")
-    };
-    public int StorageLongCount => _storage?.LongCount ?? 0;
-    public bool IsSingleValue => _mode == PaletteMode.SingleValue;
+        public PaletteConfiguration Configuration { get; }
+        public IPalette<T> Palette { get; }
+        public PackedBitStorage? Storage { get; }
+
+        public Data(PaletteConfiguration configuration, IPalette<T> palette, PackedBitStorage? storage)
+        {
+            Configuration = configuration;
+            Palette = palette;
+            Storage = storage;
+        }
+
+        public void CopyFrom(IPalette<T> oldPalette, PackedBitStorage? oldStorage)
+        {
+            IPaletteResize<T> noResize = NoResizePaletteResize<T>.Instance;
+
+            if (oldPalette.Count == 1)
+            {
+                int paletteId = Palette.IdFor(oldPalette.ValueFor(0), noResize);
+                Storage?.Fill(paletteId);
+                return;
+            }
+
+            if (oldStorage is null || Storage is null)
+            {
+                throw new InvalidOperationException("A multi-value palette requires packed storage.");
+            }
+
+            int previousOldId = -1;
+            int newPaletteId = 0;
+            for (int index = 0; index < oldStorage.Size; index++)
+            {
+                int oldPaletteId = oldStorage.Get(index);
+                if (oldPaletteId != previousOldId)
+                {
+                    newPaletteId = Palette.IdFor(oldPalette.ValueFor(oldPaletteId), noResize);
+                    previousOldId = oldPaletteId;
+                }
+
+                Storage.Set(index, newPaletteId);
+            }
+        }
+
+        public Data Copy() =>
+            new(Configuration, Palette.Copy(), Storage?.Copy());
+    }
+
+    private readonly PalettedContainerStrategy<T> _strategy;
+    private Data _data;
+    private int _writerThreadId;
+
+    public int Size => _strategy.EntryCount;
+    public PaletteMode Mode => Volatile.Read(ref _data).Configuration.Mode;
+    public int BitsPerEntry => Volatile.Read(ref _data).Storage?.BitsPerEntry ?? 0;
+    public int PaletteSize => Volatile.Read(ref _data).Palette.Count;
+    public int StorageLongCount => Volatile.Read(ref _data).Storage?.LongCount ?? 0;
+    public bool IsSingleValue => Volatile.Read(ref _data).Configuration.Mode == PaletteMode.SingleValue;
     public string? LocalPaletteImplementation =>
-        _mode == PaletteMode.Local ? _localPalette!.GetType().Name : null;
+        Volatile.Read(ref _data).Configuration.Mode == PaletteMode.Local
+            ? Volatile.Read(ref _data).Palette.GetType().Name
+            : null;
 
-    public PalettedContainer(
-        IIdMap<T> idMap,
-        T defaultValue,
-        int size,
-        int minimumLocalBits = 4,
-        int maximumLocalBits = 8)
+    public PalettedContainer(PalettedContainerStrategy<T> strategy, T defaultValue)
     {
-        _idMap = idMap ?? throw new ArgumentNullException(nameof(idMap));
-        _defaultValue = defaultValue ?? throw new ArgumentNullException(nameof(defaultValue));
+        _strategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
+        ArgumentNullException.ThrowIfNull(defaultValue);
 
-        if (!_idMap.IsFrozen)
+        _data = CreateData(_strategy.GetConfigurationForBitCount(0));
+        _data.Palette.IdFor(defaultValue, this);
+    }
+
+    private PalettedContainer(PalettedContainerStrategy<T> strategy, Data data)
+    {
+        _strategy = strategy;
+        _data = data;
+    }
+
+    private Data CreateData(PaletteConfiguration configuration)
+    {
+        IPalette<T> palette = configuration.Mode switch
         {
-            throw new InvalidOperationException("The value ID map must be frozen before creating a paletted container.");
-        }
+            PaletteMode.SingleValue => new SingleValuePalette<T>(),
+            PaletteMode.Local when configuration.BitsPerEntry <= 4 =>
+                new LinearPalette<T>(configuration.BitsPerEntry),
+            PaletteMode.Local => new HashMapPalette<T>(configuration.BitsPerEntry),
+            PaletteMode.Global => new GlobalPalette<T>(_strategy.GlobalMap),
+            _ => throw new InvalidOperationException($"Unknown palette mode '{configuration.Mode}'.")
+        };
 
-        if (_idMap.GetId(_defaultValue) < 0)
-        {
-            throw new ArgumentException("The default value must exist in the supplied ID map.", nameof(defaultValue));
-        }
+        PackedBitStorage? storage = configuration.BitsPerEntry == 0
+            ? null
+            : new PackedBitStorage(configuration.BitsPerEntry, _strategy.EntryCount);
 
-        if (size <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(size));
-        }
-
-        if (minimumLocalBits is < 1 or > 30)
-        {
-            throw new ArgumentOutOfRangeException(nameof(minimumLocalBits));
-        }
-
-        if (maximumLocalBits < minimumLocalBits || maximumLocalBits > 30)
-        {
-            throw new ArgumentOutOfRangeException(nameof(maximumLocalBits));
-        }
-
-        _size = size;
-        _minimumLocalBits = minimumLocalBits;
-        _maximumLocalBits = maximumLocalBits;
+        return new Data(configuration, palette, storage);
     }
 
     public T Get(int index)
     {
         ValidateIndex(index);
-
-        if (_mode == PaletteMode.SingleValue)
-        {
-            return _defaultValue;
-        }
-
-        int storedValue = _storage!.Get(index);
-
-        return _mode switch
-        {
-            PaletteMode.Local => _localPalette!.GetValue(storedValue),
-            PaletteMode.Global => _idMap.GetById(storedValue),
-            _ => throw new InvalidOperationException($"Unknown palette mode '{_mode}'.")
-        };
+        Data data = Volatile.Read(ref _data);
+        int paletteId = data.Storage?.Get(index) ?? 0;
+        return data.Palette.ValueFor(paletteId);
     }
 
-    /// <summary>
-    /// Replaces one value and returns the previous value.
-    /// The incoming value must already have a stable ID in the frozen value map.
-    /// </summary>
-    public T Set(int index, T value)
+    public T Get(int x, int y, int z) =>
+        Get(_strategy.GetIndex(x, y, z));
+
+    public T Set(int index, T value) =>
+        GetAndSet(index, value);
+
+    public T GetAndSet(int index, T value)
+    {
+        Acquire();
+        try
+        {
+            return GetAndSetUnchecked(index, value);
+        }
+        finally
+        {
+            Release();
+        }
+    }
+
+    public T GetAndSetUnchecked(int index, T value)
     {
         ValidateIndex(index);
         ArgumentNullException.ThrowIfNull(value);
 
-        int globalId = _idMap.GetId(value);
-        if (globalId < 0)
+        Data data = Volatile.Read(ref _data);
+        int paletteId = data.Palette.IdFor(value, this);
+
+        // IdFor may resize and publish a new Data snapshot.
+        data = Volatile.Read(ref _data);
+        if (data.Storage is null)
         {
-            throw new ArgumentException("The value is not registered in the supplied ID map.", nameof(value));
+            return data.Palette.ValueFor(0);
         }
 
-        T previous = Get(index);
-        if (ReferenceEquals(previous, value))
-        {
-            return previous;
-        }
-
-        switch (_mode)
-        {
-            case PaletteMode.SingleValue:
-                CreateLocalPalette(value, index);
-                break;
-
-            case PaletteMode.Local:
-                SetLocal(index, value, globalId);
-                break;
-
-            case PaletteMode.Global:
-                _storage!.Set(index, globalId);
-                break;
-
-            default:
-                throw new InvalidOperationException($"Unknown palette mode '{_mode}'.");
-        }
-
-        return previous;
+        int previousId = data.Storage.GetAndSet(index, paletteId);
+        return data.Palette.ValueFor(previousId);
     }
 
-    /// <summary>
-    /// Checks the palette values rather than scanning all stored positions.
-    /// In global mode every registered value is potentially present, so this returns true.
-    /// </summary>
+    public T Set(int x, int y, int z, T value) =>
+        GetAndSet(_strategy.GetIndex(x, y, z), value);
+
+    public void Acquire()
+    {
+        int threadId = Environment.CurrentManagedThreadId;
+        int existingThreadId = Interlocked.CompareExchange(ref _writerThreadId, threadId, 0);
+        if (existingThreadId != 0)
+        {
+            throw new InvalidOperationException(
+                $"PalettedContainer already has a writer (thread {existingThreadId}); thread {threadId} cannot acquire it.");
+        }
+    }
+
+    public void Release()
+    {
+        int threadId = Environment.CurrentManagedThreadId;
+        int existingThreadId = Interlocked.CompareExchange(ref _writerThreadId, 0, threadId);
+        if (existingThreadId != threadId)
+        {
+            throw new InvalidOperationException(
+                "PalettedContainer.Release must be called by the thread that acquired it.");
+        }
+    }
+
     public bool MaybeHas(Func<T, bool> predicate)
     {
         ArgumentNullException.ThrowIfNull(predicate);
-
-        return _mode switch
-        {
-            PaletteMode.SingleValue => predicate(_defaultValue),
-            PaletteMode.Local => _localPalette!.Values.Any(predicate),
-            PaletteMode.Global => true,
-            _ => throw new InvalidOperationException($"Unknown palette mode '{_mode}'.")
-        };
+        Data data = Volatile.Read(ref _data);
+        return data.Palette.MaybeHas(predicate);
     }
 
-    private void CreateLocalPalette(T value, int targetIndex)
+    public void ForEachInPalette(Action<T> action)
     {
-        _mode = PaletteMode.Local;
-        _bitsPerEntry = _minimumLocalBits;
-        _localPalette = CreateLocalPaletteForBits(_bitsPerEntry, new[] { _defaultValue });
-        _storage = new PackedBitStorage(_bitsPerEntry, _size);
-
-        int localIndex = _localPalette.Add(value);
-        _storage.Set(targetIndex, localIndex);
+        ArgumentNullException.ThrowIfNull(action);
+        Data data = Volatile.Read(ref _data);
+        data.Palette.ForEach(action);
     }
 
-    private void SetLocal(int index, T value, int globalId)
+    public void GetAll(Action<T> action)
     {
-        if (_localPalette!.TryGetIndex(value, out int localIndex))
+        ArgumentNullException.ThrowIfNull(action);
+        Data data = Volatile.Read(ref _data);
+
+        if (data.Storage is null)
         {
-            _storage!.Set(index, localIndex);
+            action(data.Palette.ValueFor(0));
             return;
         }
 
-        int capacity = 1 << _bitsPerEntry;
-        if (_localPalette.Count >= capacity)
+        var presentIds = new HashSet<int>();
+        data.Storage.GetAll(presentIds.Add);
+        foreach (int paletteId in presentIds)
         {
-            if (_bitsPerEntry < _maximumLocalBits)
-            {
-                GrowLocalPalette(_bitsPerEntry + 1);
-            }
-            else
-            {
-                SwitchToGlobalPalette();
-                _storage!.Set(index, globalId);
-                return;
-            }
+            action(data.Palette.ValueFor(paletteId));
         }
-
-        localIndex = _localPalette!.Add(value);
-        _storage!.Set(index, localIndex);
     }
 
-    private void GrowLocalPalette(int newBitsPerEntry)
+    public void Count(Action<T, int> output)
     {
-        var newStorage = new PackedBitStorage(newBitsPerEntry, _size);
-        _storage!.CopyTo(newStorage);
+        ArgumentNullException.ThrowIfNull(output);
+        Data data = Volatile.Read(ref _data);
 
-        if (_bitsPerEntry <= 4 && newBitsPerEntry > 4 &&
-            _localPalette is LinearPalette<T>)
+        if (data.Palette.Count == 1)
         {
-            _localPalette = new HashMapPalette<T>(_localPalette.Values);
+            output(data.Palette.ValueFor(0), Size);
+            return;
         }
 
-        _storage = newStorage;
-        _bitsPerEntry = newBitsPerEntry;
+        if (data.Storage is null)
+        {
+            throw new InvalidOperationException("A multi-value palette requires packed storage.");
+        }
+
+        var counts = new Dictionary<int, int>();
+        data.Storage.GetAll(paletteId =>
+        {
+            counts.TryGetValue(paletteId, out int count);
+            counts[paletteId] = count + 1;
+        });
+
+        foreach ((int paletteId, int count) in counts)
+        {
+            output(data.Palette.ValueFor(paletteId), count);
+        }
     }
 
-    private static ILocalPalette<T> CreateLocalPaletteForBits(
-        int bitsPerEntry,
-        IEnumerable<T> initialValues)
+    public PalettedContainer<T> Copy() =>
+        new(_strategy, Volatile.Read(ref _data).Copy());
+
+    public PalettedContainer<T> Recreate()
     {
-        T firstValue = initialValues.First();
-        return bitsPerEntry <= 4
-            ? new LinearPalette<T>(firstValue)
-            : new HashMapPalette<T>(initialValues);
+        Data data = Volatile.Read(ref _data);
+        return new PalettedContainer<T>(_strategy, data.Palette.ValueFor(0));
     }
 
-    private void SwitchToGlobalPalette()
+    int IPaletteResize<T>.OnResize(int bits, T lastAddedValue) =>
+        OnResize(bits, lastAddedValue);
+
+    private int OnResize(int bits, T lastAddedValue)
     {
-        int globalBits = Math.Max(
-            _maximumLocalBits + 1,
-            PackedBitStorage.RequiredBitsForValueCount(_idMap.Count));
+        Data oldData = Volatile.Read(ref _data);
+        PaletteConfiguration configuration = _strategy.GetConfigurationForBitCount(bits);
+        Data newData = CreateData(configuration);
+        newData.CopyFrom(oldData.Palette, oldData.Storage);
 
-        if (globalBits > 31)
-        {
-            throw new InvalidOperationException("The global ID map requires more than 31 bits per entry.");
-        }
+        // Publish only after all old palette entries have been copied into the replacement.
+        Volatile.Write(ref _data, newData);
 
-        var globalStorage = new PackedBitStorage(globalBits, _size);
-        for (int index = 0; index < _size; index++)
-        {
-            T value = _localPalette!.GetValue(_storage!.Get(index));
-            int globalId = _idMap.GetId(value);
-
-            if (globalId < 0)
-            {
-                throw new InvalidOperationException("A local palette value no longer exists in the frozen ID map.");
-            }
-
-            globalStorage.Set(index, globalId);
-        }
-
-        _storage = globalStorage;
-        _localPalette = null;
-        _bitsPerEntry = globalBits;
-        _mode = PaletteMode.Global;
+        return newData.Palette.IdFor(lastAddedValue, NoResizePaletteResize<T>.Instance);
     }
 
     private void ValidateIndex(int index)
     {
-        if ((uint)index >= (uint)_size)
+        if ((uint)index >= (uint)Size)
         {
             throw new ArgumentOutOfRangeException(nameof(index), index, "Paletted container index is out of range.");
         }
