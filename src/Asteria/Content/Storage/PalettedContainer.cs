@@ -201,7 +201,7 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         }
 
         var presentIds = new HashSet<int>();
-        data.Storage.GetAll(presentIds.Add);
+        data.Storage.GetAll(id => presentIds.Add(id));
         foreach (int paletteId in presentIds)
         {
             action(data.Palette.ValueFor(paletteId));

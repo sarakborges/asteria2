@@ -27,7 +27,7 @@ public sealed class ChunkSection
         ArgumentNullException.ThrowIfNull(stateIds);
         ArgumentNullException.ThrowIfNull(airState);
 
-        if (!airState.Block.IsAir)
+        if (!airState.Block.Properties.IsAir)
         {
             throw new ArgumentException("The section default state must belong to an air block.", nameof(airState));
         }
@@ -60,11 +60,11 @@ public sealed class ChunkSection
 
         if (!ReferenceEquals(previous, state))
         {
-            if (previous.Block.IsAir && !state.Block.IsAir)
+            if (previous.Block.Properties.IsAir && !state.Block.Properties.IsAir)
             {
                 _nonAirBlockCount++;
             }
-            else if (!previous.Block.IsAir && state.Block.IsAir)
+            else if (!previous.Block.Properties.IsAir && state.Block.Properties.IsAir)
             {
                 _nonAirBlockCount--;
             }
