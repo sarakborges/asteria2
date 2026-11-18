@@ -169,7 +169,7 @@ internal static class Program
         Require(palette.BitsPerEntry == 0, "A single-value palette must use zero storage bits.");
         Require(palette.StorageLongCount == 0, "A single-value palette must allocate no packed array.");
         Require(ReferenceEquals(palette.Get(2048), defaultState), "A single-value palette must return its only value for every index.");
-        Require(!palette.MaybeHas(state => state.Block.Properties.IsAir), "Single-value maybeHas must inspect the only value.");
+        Require(!palette.MaybeHas(state => state.Block.IsAir), "Single-value maybeHas must inspect the only value.");
 
         BlockState alternate = defaultState.SetValue(Blocks.TEST_STAGE, 2);
         BlockState previous = palette.GetAndSet(10, alternate);
@@ -178,7 +178,7 @@ internal static class Program
         Require(palette.BitsPerEntry == 4, "Block-state local palettes start at four bits.");
         Require(palette.LocalPaletteImplementation?.StartsWith("LinearPalette", StringComparison.Ordinal) == true, "The four-bit palette must use linear lookup.");
         Require(ReferenceEquals(palette.Get(10), alternate), "Local palette lookup must round-trip.");
-        Require(!palette.MaybeHas(state => state.Block.Properties.IsAir), "Local palette must report absent air.");
+        Require(!palette.MaybeHas(state => state.Block.IsAir), "Local palette must report absent air.");
         Require(palette.MaybeHas(state => ReferenceEquals(state, alternate)), "Local palette must inspect its entries.");
 
         int counted = 0;
@@ -285,10 +285,10 @@ internal static class Program
         section.SetBlockState(15, 15, 15, Blocks.AIR.DefaultState);
         Require(section.NonAirBlockCount == 0, "Replacing non-air with air must decrement the count.");
         Require(section.HasOnlyAir, "The section must become empty after restoring air.");
-        Require(section.MaybeHas(state => !state.Block.Properties.IsAir), "maybeHas may conservatively return true for an unused local entry.");
+        Require(section.MaybeHas(state => !state.Block.IsAir), "maybeHas may conservatively return true for an unused local entry.");
 
         var emptySection = new ChunkSection(BuiltInRegistries.BlockStates, Blocks.AIR.DefaultState);
-        Require(!emptySection.MaybeHas(state => !state.Block.Properties.IsAir), "An untouched air-only palette must rule out non-air blocks.");
+        Require(!emptySection.MaybeHas(state => !state.Block.IsAir), "An untouched air-only palette must rule out non-air blocks.");
 
         RequireThrows<ArgumentOutOfRangeException>(() => section.GetBlockState(16, 0, 0), "X coordinates outside 0-15 must be rejected.");
         RequireThrows<ArgumentOutOfRangeException>(() => section.GetBlockState(-1, 0, 0), "Negative coordinates must be rejected.");

@@ -67,7 +67,17 @@ public partial class Main : Node3D
             throw new InvalidOperationException("Global block-state ID lookup failed.");
         }
 
-        if (changedState.TrySetValue(Blocks.TEST_STAGE, 9, out _))
+        bool rejectedInvalidValue = false;
+        try
+        {
+            changedState.TrySetValue(Blocks.TEST_STAGE, 9);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            rejectedInvalidValue = true;
+        }
+
+        if (!rejectedInvalidValue)
         {
             throw new InvalidOperationException("Invalid block-state values must be rejected.");
         }

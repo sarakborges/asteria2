@@ -53,7 +53,7 @@ public static class RegistryBootstrap
 
             try
             {
-                Asteria.Content.Blocks.Blocks.RegisterAll();
+                Blocks.RegisterAll();
 
                 // The global state ID order follows block registry order, then each block's
                 // deterministic StateDefinition.PossibleStates order.
