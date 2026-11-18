@@ -14,7 +14,7 @@ internal static class Program
         try
         {
             RunChecks();
-            Console.WriteLine("Block registry, block-state, palette, and chunk-section checks passed.");
+            Console.WriteLine("Block registry, holder, tag, block-state, palette, and chunk-section checks passed.");
             return 0;
         }
         catch (Exception exception)
@@ -28,13 +28,13 @@ internal static class Program
     {
         Require(!Blocks.AIR.DefaultState.HasGlobalId, "State IDs must be assigned during bootstrap.");
         RegistryBootstrap.Initialize();
-
         Require(RegistryBootstrap.IsInitialized, "Bootstrap must complete.");
         Require(BuiltInRegistries.AreFrozen, "Built-in registries must be frozen.");
         Require(BuiltInRegistries.Block.Count == 2, "Two Asteria blocks should be registered.");
         Require(BuiltInRegistries.BlockStates.Count == 7, "Expected one air state and six test states.");
 
         CheckDefaultedBlockRegistry();
+        CheckRegistryHoldersAndTags();
         CheckBlockStateDefinition();
         CheckBlockStateTransitions();
         CheckGlobalStateIds();
@@ -49,12 +49,82 @@ internal static class Program
     private static void CheckDefaultedBlockRegistry()
     {
         ResourceLocation airId = ResourceLocation.Parse("asteria:air");
+        ResourceLocation testId = ResourceLocation.Parse("asteria:registry_test");
         ResourceLocation missingId = ResourceLocation.Parse("asteria:not_registered");
 
         Require(ReferenceEquals(BuiltInRegistries.Block.Get(airId), Blocks.AIR), "The air block must be registered.");
         Require(ReferenceEquals(BuiltInRegistries.Block.Get(missingId), Blocks.AIR), "Unknown block keys must resolve to air.");
         Require(!BuiltInRegistries.Block.TryGetEntry(missingId, out _), "Exact lookups must not hide missing keys.");
         Require(BuiltInRegistries.Block.GetId(new Block(BlockProperties.Default)) == 0, "Unknown objects must resolve to the default block ID.");
+
+        RegistryEntry<Block> registered = BuiltInRegistries.Block.GetEntry(testId);
+        Require(ReferenceEquals(registered.Holder, Blocks.TEST_BLOCK.BuiltInRegistryHolder), "Registration must bind the pre-created intrusive holder.");
+        Require(registered.Holder.IsBound, "The built-in holder must be fully bound after freeze.");
+        Require(ReferenceEquals(registered.Holder.Value, Blocks.TEST_BLOCK), "The holder must resolve to its registered block.");
+        Require(registered.Holder.CanSerializeIn(BuiltInRegistries.Block), "A reference holder must serialize in its owning registry.");
+        Require(ReferenceEquals(BuiltInRegistries.Block.WrapAsHolder(Blocks.TEST_BLOCK), registered.Holder), "wrapAsHolder must reuse registered references.");
+
+        Holder<Block> direct = BuiltInRegistries.Block.WrapAsHolder(new Block(BlockProperties.Default));
+        Require(direct.Kind == HolderKind.Direct, "Unregistered values must be wrapped as direct holders.");
+        Require(!direct.CanSerializeIn(BuiltInRegistries.Block), "A direct holder cannot serialize as a registry reference.");
+    }
+
+    private static void CheckRegistryHoldersAndTags()
+    {
+        ResourceLocation registryId = ResourceLocation.Parse("asteria:test_registry");
+        ResourceLocation entryId = ResourceLocation.Parse("asteria:test_entry");
+        ResourceLocation placeholderId = ResourceLocation.Parse("asteria:missing_placeholder");
+        ResourceLocation tagId = ResourceLocation.Parse("asteria:test_tag");
+
+        var registry = new Registry<Block>(registryId);
+        var entryKey = new RegistryKey<Block>(registryId, entryId);
+        var placeholderKey = new RegistryKey<Block>(registryId, placeholderId);
+        var tagKey = new TagKey<Block>(registryId, tagId);
+        HolderGetter<Block> lookup = registry.CreateRegistrationLookup();
+
+        Holder<Block>.Reference placeholder = lookup.GetOrThrow(placeholderKey);
+        Require(!placeholder.IsBound, "A registration lookup creates an unbound standalone holder.");
+        RequireThrows<InvalidOperationException>(() => _ = placeholder.Value, "An unbound holder value must not be readable.");
+
+        Block value = new(BlockProperties.Default);
+        Holder<Block>.Reference registered = lookup.GetOrThrow(entryKey);
+        RegistryEntry<Block> entry = registry.Register(entryId, value);
+        Require(ReferenceEquals(entry.Holder, registered), "Registration must reuse the standalone holder.");
+        Require(!registered.IsBound, "Standalone holder values are bound during registry freeze.");
+
+        HolderSet<Block>.Named tag = lookup.GetOrThrow(tagKey);
+        Require(!tag.IsBound, "A registration-time tag starts unbound.");
+        registry.BindTags(new[]
+        {
+            new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(tagKey, new Holder<Block>[] { registered })
+        });
+        Require(tag.IsBound, "Binding tags must bind the named holder set.");
+        RequireThrows<InvalidOperationException>(() => registry.GetTag(tagKey), "Tag access must fail before registry freeze.");
+
+        registry.Freeze();
+        Require(registered.IsBound, "Freeze must bind registered standalone values.");
+        Require(ReferenceEquals(registered.Value, value), "The frozen holder must resolve to the registered value.");
+        Require(registered.Is(tagKey), "Freeze must associate tags with their holders.");
+        Require(ReferenceEquals(registry.GetTag(tagKey), tag), "The frozen registry must expose its registered tag set.");
+        Require(registry.GetTagOrEmpty(new TagKey<Block>(registryId, ResourceLocation.Parse("asteria:empty"))).Count == 0, "Missing tags must resolve to an empty holder set.");
+
+        RequireThrows<InvalidOperationException>(
+            () => registry.BindTags(Array.Empty<KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>>()),
+            "Direct tag binding must be rejected after freeze.");
+
+        registry.PrepareTagReload(Array.Empty<KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>>()).Apply();
+        Require(!registered.Is(tagKey), "A tag reload must replace holder tag membership.");
+        Require(registry.GetTag(tagKey) is null, "Tags omitted from a reload must no longer be present.");
+
+        var invalidRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:invalid_registry"));
+        invalidRegistry.CreateRegistrationLookup().GetOrThrow(
+            new RegistryKey<Block>(invalidRegistry.Location, ResourceLocation.Parse("asteria:never_registered")));
+        RequireThrows<InvalidOperationException>(invalidRegistry.Freeze, "Freeze must reject unbound key placeholders.");
+
+        var intrusiveRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:intrusive_registry"), allowIntrusiveHolders: true);
+        RequireThrows<InvalidOperationException>(
+            () => intrusiveRegistry.Register(entryId, new Block(BlockProperties.Default)),
+            "Intrusive registries must reject values without a pre-created intrusive holder.");
     }
 
     private static void CheckBlockStateDefinition()
@@ -75,15 +145,10 @@ internal static class Program
     private static void CheckBlockStateTransitions()
     {
         BlockState defaultState = Blocks.TEST_BLOCK.DefaultState;
-        BlockState changedState = defaultState
-            .SetValue(Blocks.TEST_STAGE, 2)
-            .SetValue(Blocks.TEST_POWERED, true);
-
+        BlockState changedState = defaultState.SetValue(Blocks.TEST_STAGE, 2).SetValue(Blocks.TEST_POWERED, true);
         Require(changedState.GetValue(Blocks.TEST_POWERED), "powered must transition to true.");
         Require(changedState.GetValue(Blocks.TEST_STAGE) == 2, "stage must transition to two.");
-        Require(
-            ReferenceEquals(changedState, defaultState.SetValue(Blocks.TEST_POWERED, true).SetValue(Blocks.TEST_STAGE, 2)),
-            "The same property combination must resolve to the same state object.");
+        Require(ReferenceEquals(changedState, defaultState.SetValue(Blocks.TEST_POWERED, true).SetValue(Blocks.TEST_STAGE, 2)), "The same property combination must resolve to the same state object.");
         Require(ReferenceEquals(changedState, changedState.SetValue(Blocks.TEST_STAGE, 2)), "Setting an existing value must preserve identity.");
         Require(changedState.Cycle(Blocks.TEST_STAGE).GetValue(Blocks.TEST_STAGE) == 0, "Integer cycling must wrap.");
         Require(defaultState.Cycle(Blocks.TEST_POWERED).GetValue(Blocks.TEST_POWERED), "Boolean cycling must toggle false to true.");
@@ -91,17 +156,11 @@ internal static class Program
         BooleanProperty foreignPowered = BooleanProperty.Create("powered");
         Require(ReferenceEquals(changedState, changedState.TrySetValue(foreignPowered, false)), "trySetValue with a foreign property instance must preserve the current state.");
         Require(!changedState.TryGetValue(foreignPowered, out _), "A separate property instance must not be accepted by name alone.");
-        RequireThrows<ArgumentException>(
-            () => changedState.SetValue(foreignPowered, false),
-            "SetValue must reject a property not owned by the block definition.");
-        RequireThrows<ArgumentOutOfRangeException>(
-            () => changedState.TrySetValue(Blocks.TEST_STAGE, 9),
-            "trySetValue must reject values outside the property's allowed set.");
+        RequireThrows<ArgumentException>(() => changedState.SetValue(foreignPowered, false), "SetValue must reject a property not owned by the block definition.");
+        RequireThrows<ArgumentOutOfRangeException>(() => changedState.TrySetValue(Blocks.TEST_STAGE, 9), "trySetValue must reject values outside the property's allowed set.");
 
         IntegerProperty singletonProperty = IntegerProperty.Create("only", 0, 0);
-        RequireThrows<ArgumentException>(
-            () => new Block(BlockProperties.Default, builder => builder.Add(singletonProperty)),
-            "StateDefinition must reject properties with one or fewer possible values.");
+        RequireThrows<ArgumentException>(() => new Block(BlockProperties.Default, builder => builder.Add(singletonProperty)), "StateDefinition must reject properties with one or fewer possible values.");
     }
 
     private static void CheckGlobalStateIds()
@@ -114,7 +173,6 @@ internal static class Program
             Require(ReferenceEquals(ids.ById(state.GlobalId), state), "State ID reverse lookup must round-trip.");
             Require(ids.GetId(state) == id, "State-to-ID lookup must round-trip.");
         }
-
         Require(ids.GetId(Blocks.AIR.DefaultState) == 0, "The first block's singleton state must receive ID zero.");
         Require(!ids.TryGetById(-1, out _), "Invalid global state IDs must be reported as missing.");
         RequireThrows<ArgumentOutOfRangeException>(() => ids.ById(-1), "Strict state ID lookup must reject invalid IDs.");
@@ -132,11 +190,7 @@ internal static class Program
         Require(age.TryParse("3", out int parsedAge) && parsedAge == 3, "Integer parsing must accept in-range values.");
         Require(!age.TryParse("5", out _), "Integer parsing must reject out-of-range values.");
 
-        EnumProperty<TestAxis> axis = EnumProperty<TestAxis>.Create(
-            "axis",
-            new[] { TestAxis.Z, TestAxis.X },
-            value => value.ToString().ToLowerInvariant());
-
+        EnumProperty<TestAxis> axis = EnumProperty<TestAxis>.Create("axis", new[] { TestAxis.Z, TestAxis.X }, value => value.ToString().ToLowerInvariant());
         Require(axis.PossibleValues.SequenceEqual(new[] { TestAxis.X, TestAxis.Z }), "Enum values must be ordered by underlying value.");
         Require(axis.TryParse("z", out TestAxis parsedAxis) && parsedAxis == TestAxis.Z, "Enum parsing must use the configured name.");
     }
@@ -149,7 +203,6 @@ internal static class Program
         storage.Set(12, 17);
         storage.Set(13, 9);
         storage.Set(4095, 23);
-
         Require(storage.Get(11) == 31, "Storage must preserve the last entry before a word boundary.");
         Require(storage.Get(12) == 17, "Storage must preserve the first entry after a word boundary.");
         Require(storage.Get(13) == 9, "Storage must preserve entries after a word boundary.");
@@ -163,7 +216,6 @@ internal static class Program
         BlockState defaultState = Blocks.TEST_BLOCK.DefaultState;
         var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(BuiltInRegistries.BlockStates);
         var palette = new PalettedContainer<BlockState>(strategy, defaultState);
-
         Require(palette.Size == ChunkSection.BlockCount, "Block-state strategy must create 4096 entries.");
         Require(palette.Mode == PaletteMode.SingleValue, "A uniform section must use a single-value palette.");
         Require(palette.BitsPerEntry == 0, "A single-value palette must use zero storage bits.");
@@ -184,12 +236,10 @@ internal static class Program
         int counted = 0;
         palette.Count((_, count) => counted += count);
         Require(counted == ChunkSection.BlockCount, "Palette count must account for every position.");
-
         PalettedContainer<BlockState> copy = palette.Copy();
         Require(ReferenceEquals(copy.Get(10), alternate), "Copy must preserve stored values.");
         copy.Set(10, defaultState);
         Require(ReferenceEquals(palette.Get(10), alternate), "Mutating a copy must not mutate the original.");
-
         PalettedContainer<BlockState> recreated = palette.Recreate();
         Require(recreated.IsSingleValue, "Recreate must return a uniform container.");
         Require(ReferenceEquals(recreated.Get(0), defaultState), "Recreate must use palette entry zero.");
@@ -200,62 +250,41 @@ internal static class Program
             RequireThrows<InvalidOperationException>(() => palette.Acquire(), "The writer detector must reject a second acquire.");
             palette.GetAndSetUnchecked(11, alternate);
         }
-        finally
-        {
-            palette.Release();
-        }
+        finally { palette.Release(); }
     }
 
     private static void CheckPalettedContainerGrowthAndGlobalMode()
     {
         IntegerProperty variant = IntegerProperty.Create("variant", 0, 256);
-        var manyStateBlock = new Block(
-            BlockProperties.Default,
-            builder =>
-            {
-                builder.Add(variant);
-                builder.SetDefault(variant, 0);
-            });
+        var manyStateBlock = new Block(BlockProperties.Default, builder =>
+        {
+            builder.Add(variant);
+            builder.SetDefault(variant, 0);
+        });
 
         var ids = new BlockStateIdMap();
-        foreach (BlockState state in manyStateBlock.StateDefinition.PossibleStates)
-        {
-            ids.Register(state);
-        }
+        foreach (BlockState state in manyStateBlock.StateDefinition.PossibleStates) ids.Register(state);
         ids.Freeze();
 
         var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(ids);
         var container = new PalettedContainer<BlockState>(strategy, manyStateBlock.DefaultState);
         IReadOnlyList<BlockState> states = manyStateBlock.StateDefinition.PossibleStates;
 
-        for (int value = 1; value <= 16; value++)
-        {
-            container.Set(value - 1, states[value]);
-        }
-
+        for (int value = 1; value <= 16; value++) container.Set(value - 1, states[value]);
         Require(container.Mode == PaletteMode.Local, "A palette of 17 states must remain indirect.");
         Require(container.BitsPerEntry == 5, "A seventeenth value must grow a four-bit palette to five bits.");
         Require(container.LocalPaletteImplementation?.StartsWith("HashMapPalette", StringComparison.Ordinal) == true, "A widened palette must use hash-map lookup.");
 
-        for (int value = 17; value <= 256; value++)
-        {
-            container.Set(value - 1, states[value]);
-        }
-
+        for (int value = 17; value <= 256; value++) container.Set(value - 1, states[value]);
         Require(container.Mode == PaletteMode.Global, "The 257th distinct state must promote the palette to global IDs.");
         Require(container.BitsPerEntry == 9, "A 257-entry global state map requires nine bits.");
         Require(container.PaletteSize == 257, "The global palette must expose the full state map.");
         Require(container.MaybeHas(state => ReferenceEquals(state, manyStateBlock.DefaultState)), "Global maybeHas must be conservative.");
 
         for (int value = 1; value <= 256; value++)
-        {
             Require(ReferenceEquals(container.Get(value - 1), states[value]), "Palette promotion must preserve every stored value.");
-        }
-
         Require(ReferenceEquals(container.Get(256), manyStateBlock.DefaultState), "Palette promotion must preserve untouched defaults.");
-        RequireThrows<ArgumentException>(
-            () => container.Set(300, Blocks.AIR.DefaultState),
-            "Paletted containers must reject values absent from their ID map.");
+        RequireThrows<ArgumentException>(() => container.Set(300, Blocks.AIR.DefaultState), "Paletted containers must reject values absent from their ID map.");
     }
 
     private static void CheckChunkSection()
@@ -264,7 +293,6 @@ internal static class Program
         Require(section.HasOnlyAir, "A new section must be empty.");
         Require(section.NonAirBlockCount == 0, "A new section must contain zero non-air blocks.");
         Require(section.PaletteMode == PaletteMode.SingleValue, "An empty section must start in single-value mode.");
-
         Require(ChunkSection.GetIndex(15, 15, 15) == 4095, "The last coordinate must map to 4095.");
         Require(
             ChunkSection.GetIndex(1, 0, 0) == 1 &&
@@ -281,7 +309,6 @@ internal static class Program
 
         section.SetBlockState(15, 15, 15, placedState.SetValue(Blocks.TEST_STAGE, 2));
         Require(section.NonAirBlockCount == 1, "Replacing one non-air state with another must not change the count.");
-
         section.SetBlockState(15, 15, 15, Blocks.AIR.DefaultState);
         Require(section.NonAirBlockCount == 0, "Replacing non-air with air must decrement the count.");
         Require(section.HasOnlyAir, "The section must become empty after restoring air.");
@@ -289,7 +316,6 @@ internal static class Program
 
         var emptySection = new ChunkSection(BuiltInRegistries.BlockStates, Blocks.AIR.DefaultState);
         Require(!emptySection.MaybeHas(state => !state.Block.Properties.IsAir), "An untouched air-only palette must rule out non-air blocks.");
-
         RequireThrows<ArgumentOutOfRangeException>(() => section.GetBlockState(16, 0, 0), "X coordinates outside 0-15 must be rejected.");
         RequireThrows<ArgumentOutOfRangeException>(() => section.GetBlockState(-1, 0, 0), "Negative coordinates must be rejected.");
     }
@@ -297,32 +323,19 @@ internal static class Program
     private static void CheckFrozenRegistry()
     {
         RequireThrows<InvalidOperationException>(
-            () => BuiltInRegistries.Block.Register(
-                ResourceLocation.Parse("asteria:late_block"),
-                new Block(BlockProperties.Default)),
+            () => BuiltInRegistries.Block.Register(ResourceLocation.Parse("asteria:late_block"), new Block(BlockProperties.Default)),
             "A frozen block registry must reject new entries.");
     }
 
     private static void Require(bool condition, string message)
     {
-        if (!condition)
-        {
-            throw new InvalidOperationException(message);
-        }
+        if (!condition) throw new InvalidOperationException(message);
     }
 
-    private static void RequireThrows<TException>(Action action, string message)
-        where TException : Exception
+    private static void RequireThrows<TException>(Action action, string message) where TException : Exception
     {
-        try
-        {
-            action();
-        }
-        catch (TException)
-        {
-            return;
-        }
-
+        try { action(); }
+        catch (TException) { return; }
         throw new InvalidOperationException(message);
     }
 }

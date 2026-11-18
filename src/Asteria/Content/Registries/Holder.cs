@@ -3,15 +3,9 @@ using Asteria.Content.Identifiers;
 
 namespace Asteria.Content.Registries;
 
-public enum HolderKind
-{
-    Direct,
-    Reference
-}
+public enum HolderKind { Direct, Reference }
 
-/// <summary>
-/// Holder equivalent. A value is either a direct, unregistered value or a registry-owned reference.
-/// </summary>
+/// <summary>Registry value reference with direct/reference variants.</summary>
 public abstract class Holder<T> where T : class
 {
     public abstract T Value { get; }
@@ -51,29 +45,21 @@ public abstract class Holder<T> where T : class
     private sealed class DirectHolder : Holder<T>
     {
         private readonly T _value;
-
-        public DirectHolder(T value)
-        {
-            _value = value ?? throw new ArgumentNullException(nameof(value));
-        }
-
+        public DirectHolder(T value) => _value = value ?? throw new ArgumentNullException(nameof(value));
         public override T Value => _value;
         public override HolderKind Kind => HolderKind.Direct;
         public override bool IsBound => true;
         public override RegistryKey<T>? KeyOrNull => null;
-        public override IEnumerable<TagKey<T>> Tags => Enumerable.Empty<TagKey<T>>();
+        public override IEnumerable<TagKey<T>> Tags => Array.Empty<TagKey<T>>();
     }
 
-    /// <summary>
-    /// Registry-bound holder, created either with a key or with an intrusive value awaiting registration.
-    /// </summary>
     public sealed class Reference : Holder<T>
     {
         private readonly HolderOwner<T> _owner;
         private readonly bool _intrusive;
         private RegistryKey<T>? _key;
         private T? _value;
-        private HashSet<TagKey<T>>? _tags;
+        private IReadOnlyList<TagKey<T>>? _tags;
 
         internal Reference(HolderOwner<T> owner, RegistryKey<T>? key, T? value, bool intrusive)
         {
@@ -84,16 +70,13 @@ public abstract class Holder<T> where T : class
         }
 
         public override T Value =>
-            _value ?? throw new InvalidOperationException("The holder value has not been bound.");
-
+            _value ?? throw new InvalidOperationException("Trying to access an unbound value from its registry.");
         public override HolderKind Kind => HolderKind.Reference;
         public override bool IsBound => _key.HasValue && _value is not null;
         public override RegistryKey<T>? KeyOrNull => _key;
-        public RegistryKey<T> Key =>
-            _key ?? throw new InvalidOperationException("The holder key has not been bound.");
+        public RegistryKey<T> Key => _key ?? throw new InvalidOperationException("The holder key has not been bound.");
         public bool IsIntrusive => _intrusive;
-        public override IEnumerable<TagKey<T>> Tags =>
-            _tags is null ? Enumerable.Empty<TagKey<T>>() : _tags;
+        public override IEnumerable<TagKey<T>> Tags => _tags ?? throw new InvalidOperationException("Tags not bound.");
 
         public override bool CanSerializeIn(HolderOwner<T> owner)
         {
@@ -103,49 +86,34 @@ public abstract class Holder<T> where T : class
 
         internal static Reference CreateStandAlone(HolderOwner<T> owner, RegistryKey<T> key) =>
             new(owner, key, null, false);
-
         internal static Reference CreateIntrusive(HolderOwner<T> owner, T value) =>
             new(owner, null, value, true);
 
         internal void BindKey(RegistryKey<T> key)
         {
-            if (_key.HasValue)
-            {
-                throw new InvalidOperationException("A reference holder key can only be bound once.");
-            }
-
+            if (_key.HasValue && !_key.Value.Equals(key))
+                throw new InvalidOperationException($"Can't change holder key: existing={_key.Value}, new={key}");
             _key = key;
         }
 
         internal void BindValue(T value)
         {
             ArgumentNullException.ThrowIfNull(value);
-            if (_value is not null)
-            {
-                throw new InvalidOperationException("A reference holder value can only be bound once.");
-            }
-
+            if (_value is not null && !ReferenceEquals(_value, value))
+                throw new InvalidOperationException("Can't change holder value.");
             _value = value;
         }
 
         internal void BindTags(IEnumerable<TagKey<T>> tags)
         {
             ArgumentNullException.ThrowIfNull(tags);
-            _tags = new HashSet<TagKey<T>>(tags);
+            _tags = Array.AsReadOnly(tags.Distinct().ToArray());
         }
 
         public override bool Equals(object? obj)
         {
-            if (ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-
-            if (obj is not Reference other || !_key.HasValue || !other._key.HasValue)
-            {
-                return false;
-            }
-
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj is not Reference other || !_key.HasValue || !other._key.HasValue) return false;
             return _key.Value.Equals(other._key.Value);
         }
 
