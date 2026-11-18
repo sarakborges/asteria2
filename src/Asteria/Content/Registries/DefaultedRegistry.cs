@@ -3,8 +3,8 @@ using Asteria.Content.Identifiers;
 namespace Asteria.Content.Registries;
 
 /// <summary>
-/// A registry that resolves missing keys and invalid numeric IDs to a configured default entry.
-/// Exact/optional lookups remain exact and do not silently return the default.
+/// Defaulted MappedRegistry lookup semantics: unresolved IDs and values map to the configured fallback.
+/// Optional/exact holder lookups remain exact.
 /// </summary>
 public sealed class DefaultedRegistry<T> : Registry<T> where T : class
 {
@@ -12,8 +12,11 @@ public sealed class DefaultedRegistry<T> : Registry<T> where T : class
 
     public ResourceLocation DefaultKey { get; }
 
-    public DefaultedRegistry(ResourceLocation location, ResourceLocation defaultKey)
-        : base(location)
+    public DefaultedRegistry(
+        ResourceLocation location,
+        ResourceLocation defaultKey,
+        bool allowIntrusiveHolders = false)
+        : base(location, allowIntrusiveHolders)
     {
         if (!defaultKey.IsValid)
         {

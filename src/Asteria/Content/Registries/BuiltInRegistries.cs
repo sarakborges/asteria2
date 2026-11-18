@@ -10,12 +10,9 @@ public static class BuiltInRegistries
 {
     public static DefaultedRegistry<Block> Block { get; } = new(
         ResourceLocation.FromNamespaceAndPath("asteria", "block"),
-        ResourceLocation.FromNamespaceAndPath("asteria", "air"));
+        ResourceLocation.FromNamespaceAndPath("asteria", "air"),
+        allowIntrusiveHolders: true);
 
-    /// <summary>
-    /// A global numeric ID map for all precomputed block states.
-    /// This is an ID map, not a named content registry.
-    /// </summary>
     public static BlockStateIdMap BlockStates { get; } = new();
 
     public static void FreezeAll()

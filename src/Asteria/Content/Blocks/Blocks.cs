@@ -16,10 +16,12 @@ public static class Blocks
     public static IntegerProperty TEST_STAGE { get; } =
         IntegerProperty.Create("stage", 0, 2);
 
-    public static Block AIR { get; } = new(new BlockProperties(
-        destroyTime: 0.0f,
-        explosionResistance: 0.0f,
-        isAir: true));
+    public static Block AIR { get; } = new(
+        new BlockProperties(
+            destroyTime: 0.0f,
+            explosionResistance: 0.0f,
+            isAir: true),
+        createIntrusiveRegistryHolder: true);
 
     public static Block TEST_BLOCK { get; } = new(
         new BlockProperties(
@@ -31,11 +33,11 @@ public static class Blocks
             builder.Add(TEST_STAGE);
             builder.SetDefault(TEST_POWERED, false);
             builder.SetDefault(TEST_STAGE, 1);
-        });
+        },
+        createIntrusiveRegistryHolder: true);
 
     internal static void RegisterAll()
     {
-        // Keep the default entry first, matching the registry's declared fallback.
         BuiltInRegistries.Block.Register(
             ResourceLocation.FromNamespaceAndPath("asteria", "air"),
             AIR);
