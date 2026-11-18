@@ -40,7 +40,7 @@ public abstract class Holder<T> where T : class
         return Equals(holder);
     }
 
-    public bool CanSerializeIn(HolderOwner<T> owner)
+    public virtual bool CanSerializeIn(HolderOwner<T> owner)
     {
         ArgumentNullException.ThrowIfNull(owner);
         return false;
@@ -93,7 +93,7 @@ public abstract class Holder<T> where T : class
             _key ?? throw new InvalidOperationException("The holder key has not been bound.");
         public bool IsIntrusive => _intrusive;
         public override IEnumerable<TagKey<T>> Tags =>
-            _tags ?? Enumerable.Empty<TagKey<T>>();
+            _tags is null ? Enumerable.Empty<TagKey<T>>() : _tags;
 
         public override bool CanSerializeIn(HolderOwner<T> owner)
         {

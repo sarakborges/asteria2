@@ -132,8 +132,16 @@ public class Registry<T> :
     public bool TryGetEntry(ResourceLocation location, out RegistryEntry<T>? entry) =>
         _entriesByLocation.TryGetValue(location, out entry);
 
-    public bool TryGetEntry(RegistryKey<T> key, out RegistryEntry<T>? entry) =>
-        key.RegistryLocation == Location && _entriesByKey.TryGetValue(key, out entry);
+    public bool TryGetEntry(RegistryKey<T> key, out RegistryEntry<T>? entry)
+    {
+        if (key.RegistryLocation == Location && _entriesByKey.TryGetValue(key, out entry))
+        {
+            return true;
+        }
+
+        entry = null;
+        return false;
+    }
 
     public bool TryGetValue(ResourceLocation location, out T? value)
     {
