@@ -6,4 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Asteria</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+  </ItemGroup>
 </Project>

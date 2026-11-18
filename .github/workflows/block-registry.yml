@@ -1,0 +1,31 @@
+name: Block registry
+
+on:
+  push:
+    branches:
+      - main
+      - foundation
+      - "feature/**"
+  pull_request:
+    branches:
+      - main
+      - foundation
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Run block registry checks
+        run: dotnet run --configuration Release --project tests/BlockRegistryChecks/BlockRegistryChecks.csproj
+
+      - name: Build Godot project
+        run: dotnet build --configuration Release Asteria2.csproj
