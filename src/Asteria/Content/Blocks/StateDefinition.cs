@@ -137,7 +137,7 @@ public sealed class StateDefinition
 
         foreach (BlockState state in _states)
         {
-            var neighbors = new BlockState[_properties.Length];
+            var neighbors = new BlockState[_properties.Length][];
 
             for (int propertyIndex = 0; propertyIndex < _properties.Length; propertyIndex++)
             {
