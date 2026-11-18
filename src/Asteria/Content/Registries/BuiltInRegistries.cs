@@ -4,8 +4,7 @@ using Asteria.Content.Identifiers;
 namespace Asteria.Content.Registries;
 
 /// <summary>
-/// The statically defined registries available to the game.
-/// Additional registry types can be introduced without changing the registry implementation.
+/// The statically defined registries and ID maps available to the game.
 /// </summary>
 public static class BuiltInRegistries
 {
@@ -13,10 +12,17 @@ public static class BuiltInRegistries
         ResourceLocation.FromNamespaceAndPath("asteria", "block"),
         ResourceLocation.FromNamespaceAndPath("asteria", "air"));
 
+    /// <summary>
+    /// A global numeric ID map for all precomputed block states.
+    /// This is an ID map, not a named content registry.
+    /// </summary>
+    public static BlockStateIdMap BlockStates { get; } = new();
+
     public static void FreezeAll()
     {
         Block.Freeze();
+        BlockStates.Freeze();
     }
 
-    public static bool AreFrozen => Block.IsFrozen;
+    public static bool AreFrozen => Block.IsFrozen && BlockStates.IsFrozen;
 }

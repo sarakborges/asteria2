@@ -3,7 +3,7 @@ using Asteria.Content.Blocks;
 namespace Asteria.Content.Registries;
 
 /// <summary>
-/// Runs built-in registration once, then freezes all built-in registries.
+/// Registers built-in content, assigns every block-state runtime ID, then freezes the registries.
 /// </summary>
 public static class RegistryBootstrap
 {
@@ -54,6 +54,17 @@ public static class RegistryBootstrap
             try
             {
                 Blocks.RegisterAll();
+
+                // The global state ID order follows block registry order, then each block's
+                // deterministic StateDefinition.PossibleStates order.
+                foreach (RegistryEntry<Block> blockEntry in BuiltInRegistries.Block)
+                {
+                    foreach (BlockState state in blockEntry.Value.StateDefinition.PossibleStates)
+                    {
+                        BuiltInRegistries.BlockStates.Register(state);
+                    }
+                }
+
                 BuiltInRegistries.FreezeAll();
                 _state = BootstrapState.Complete;
             }
