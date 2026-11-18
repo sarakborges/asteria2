@@ -62,6 +62,8 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
     public int Size => _strategy.EntryCount;
     public PaletteMode Mode => Volatile.Read(ref _data).Configuration.Mode;
     public int BitsPerEntry => Volatile.Read(ref _data).Storage?.BitsPerEntry ?? 0;
+    public int BitsInStorage => Volatile.Read(ref _data).Configuration.BitsInStorage;
+    public bool AlwaysRepack => Volatile.Read(ref _data).Configuration.AlwaysRepack;
     public int PaletteSize => Volatile.Read(ref _data).Palette.Count;
     public int StorageLongCount => Volatile.Read(ref _data).Storage?.LongCount ?? 0;
     public bool IsSingleValue => Volatile.Read(ref _data).Configuration.Mode == PaletteMode.SingleValue;
@@ -90,16 +92,16 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         IPalette<T> palette = configuration.Mode switch
         {
             PaletteMode.SingleValue => new SingleValuePalette<T>(),
-            PaletteMode.Local when configuration.BitsPerEntry <= 4 =>
-                new LinearPalette<T>(configuration.BitsPerEntry),
-            PaletteMode.Local => new HashMapPalette<T>(configuration.BitsPerEntry),
+            PaletteMode.Local when configuration.BitsInMemory <= 4 =>
+                new LinearPalette<T>(configuration.BitsInMemory),
+            PaletteMode.Local => new HashMapPalette<T>(configuration.BitsInMemory),
             PaletteMode.Global => new GlobalPalette<T>(_strategy.GlobalMap),
             _ => throw new InvalidOperationException($"Unknown palette mode '{configuration.Mode}'.")
         };
 
-        PackedBitStorage? storage = configuration.BitsPerEntry == 0
+        PackedBitStorage? storage = configuration.BitsInMemory == 0
             ? null
-            : new PackedBitStorage(configuration.BitsPerEntry, _strategy.EntryCount);
+            : new PackedBitStorage(configuration.BitsInMemory, _strategy.EntryCount);
 
         return new Data(configuration, palette, storage);
     }

@@ -287,14 +287,40 @@ internal static class Program
 
         for (int value = 17; value <= 256; value++) container.Set(value - 1, states[value]);
         Require(container.Mode == PaletteMode.Global, "The 257th distinct state must promote the palette to global IDs.");
-        Require(container.BitsPerEntry == 9, "A 257-entry global state map requires nine bits.");
+        Require(container.BitsPerEntry == 9, "A 257-entry global map uses nine bits in memory.");
+        Require(container.BitsInStorage == 9, "The requested global storage width is retained separately.");
+        Require(container.AlwaysRepack, "Global configurations must always repack.");
         Require(container.PaletteSize == 257, "The global palette must expose the full state map.");
+
+        CheckGlobalPaletteMemoryAndStorageWidths();
         Require(container.MaybeHas(state => ReferenceEquals(state, manyStateBlock.DefaultState)), "Global maybeHas must be conservative.");
 
         for (int value = 1; value <= 256; value++)
             Require(ReferenceEquals(container.Get(value - 1), states[value]), "Palette promotion must preserve every stored value.");
         Require(ReferenceEquals(container.Get(256), manyStateBlock.DefaultState), "Palette promotion must preserve untouched defaults.");
         RequireThrows<ArgumentException>(() => container.Set(300, Blocks.AIR.DefaultState), "Paletted containers must reject values absent from their ID map.");
+    }
+
+    private static void CheckGlobalPaletteMemoryAndStorageWidths()
+    {
+        IntegerProperty variant = IntegerProperty.Create("variant", 0, 1023);
+        var block = new Block(BlockProperties.Default, builder => builder.Add(variant));
+        var ids = new BlockStateIdMap();
+        foreach (BlockState state in block.StateDefinition.PossibleStates)
+            ids.Register(state);
+        ids.Freeze();
+
+        var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(ids);
+        var container = new PalettedContainer<BlockState>(strategy, block.DefaultState);
+        IReadOnlyList<BlockState> states = block.StateDefinition.PossibleStates;
+        for (int value = 1; value <= 256; value++)
+            container.Set(value - 1, states[value]);
+
+        Require(container.Mode == PaletteMode.Global, "The 257th distinct value must select the global palette.");
+        Require(container.BitsPerEntry == 10, "The full 1024-state ID map needs ten resident memory bits.");
+        Require(container.BitsInStorage == 9, "The ninth-bit resize request is retained for packed storage.");
+        Require(container.AlwaysRepack, "Global palette configurations must always repack.");
+        Require(container.Get(255) == states[256], "Global storage must preserve the final inserted state.");
     }
 
     private static void CheckChunkSection()

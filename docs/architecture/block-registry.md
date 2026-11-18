@@ -27,6 +27,7 @@ The port does not yet include RegistrationInfo/Lifecycle, data-component lookup,
 ## Paletted storage
 
 - PalettedContainerStrategy<T> selects cubic size, coordinate layout, and palette configuration. Block states use 16³ entries and 4–8 bit local palettes; biomes use 4³ entries and 1–3 bit local palettes.
+- Global palette configurations keep distinct resident-memory and packed-storage bit widths, and request repacking, as Minecraft Configuration.Global does.
 - PalettedContainer<T>.Data groups the active palette, storage, and configuration. Resize builds a new data snapshot and publishes it atomically.
 - Acquire/Release enforce one writer at a time; unchecked writes are for callers already holding the permit.
 - Palette implementations are single-value, linear, hash-map, and global/direct.
