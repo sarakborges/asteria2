@@ -7,7 +7,7 @@ namespace Asteria.Content.Registries;
 /// Maps namespaced keys and runtime numeric IDs to registered objects.
 /// Registration is allowed during bootstrap only; frozen registries are read-only.
 /// </summary>
-public class Registry<T> : IReadOnlyCollection<RegistryEntry<T>> where T : class
+public class Registry<T> : IReadOnlyCollection<RegistryEntry<T>>, IIdMap<T> where T : class
 {
     private readonly Dictionary<ResourceLocation, RegistryEntry<T>> _entriesByLocation = new();
     private readonly Dictionary<T, RegistryEntry<T>> _entriesByValue =
@@ -31,10 +31,6 @@ public class Registry<T> : IReadOnlyCollection<RegistryEntry<T>> where T : class
         _readOnlyEntries = _entriesById.AsReadOnly();
     }
 
-    /// <summary>
-    /// Registers a value and assigns the next runtime ID.
-    /// Duplicate keys and registering the same object more than once are errors.
-    /// </summary>
     public RegistryEntry<T> Register(ResourceLocation location, T value)
     {
         EnsureWritable();
@@ -80,9 +76,6 @@ public class Registry<T> : IReadOnlyCollection<RegistryEntry<T>> where T : class
             $"Registry '{Location}' does not contain an entry named '{location}'.");
     }
 
-    /// <summary>
-    /// Performs an exact lookup. Unlike DefaultedRegistry.Get, this never returns a fallback.
-    /// </summary>
     public bool TryGetEntry(ResourceLocation location, out RegistryEntry<T>? entry) =>
         _entriesByLocation.TryGetValue(location, out entry);
 
@@ -104,6 +97,8 @@ public class Registry<T> : IReadOnlyCollection<RegistryEntry<T>> where T : class
         return _entriesByValue.TryGetValue(value, out RegistryEntry<T>? entry) ? entry.Id : -1;
     }
 
+    public T GetById(int id) => ById(id).Value;
+
     public virtual ResourceLocation? GetKey(T value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -122,9 +117,6 @@ public class Registry<T> : IReadOnlyCollection<RegistryEntry<T>> where T : class
         return _entriesById[id];
     }
 
-    /// <summary>
-    /// Ends registration. Calling Freeze more than once is harmless.
-    /// </summary>
     public virtual void Freeze() => IsFrozen = true;
 
     public IEnumerator<RegistryEntry<T>> GetEnumerator() => _entriesById.GetEnumerator();

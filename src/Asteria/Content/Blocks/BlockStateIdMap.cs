@@ -1,10 +1,12 @@
+using Asteria.Content.Registries;
+
 namespace Asteria.Content.Blocks;
 
 /// <summary>
 /// Global insertion-ordered ID map for every precomputed block state.
 /// IDs are runtime values and must not be serialized as persistent block identifiers.
 /// </summary>
-public sealed class BlockStateIdMap : IReadOnlyCollection<BlockState>
+public sealed class BlockStateIdMap : IReadOnlyCollection<BlockState>, IIdMap<BlockState>
 {
     private readonly List<BlockState> _states = new();
     private readonly Dictionary<BlockState, int> _ids =
@@ -47,6 +49,8 @@ public sealed class BlockStateIdMap : IReadOnlyCollection<BlockState>
 
         return _states[id];
     }
+
+    public BlockState GetById(int id) => ById(id);
 
     public bool TryGetById(int id, out BlockState? state)
     {
