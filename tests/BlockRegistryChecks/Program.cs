@@ -92,6 +92,10 @@ internal static class Program
         Require(ReferenceEquals(entry.Holder, registered), "Registration must reuse the standalone holder.");
         Require(!registered.IsBound, "Standalone holder values are bound during registry freeze.");
 
+        Block placeholderValue = new(BlockProperties.Default);
+        RegistryEntry<Block> placeholderEntry = registry.Register(placeholderId, placeholderValue);
+        Require(ReferenceEquals(placeholderEntry.Holder, placeholder), "Registering a placeholder key must bind the existing holder.");
+
         HolderSet<Block>.Named tag = lookup.GetOrThrow(tagKey);
         Require(!tag.IsBound, "A registration-time tag starts unbound.");
         registry.BindTags(new[]
