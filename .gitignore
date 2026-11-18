@@ -1,0 +1,19 @@
+# Godot generated data
+.godot/
+.mono/
+
+# .NET build artifacts
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Local exports
+/build/
+/export/
+
+# IDE and operating system
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,24 @@
+; Godot project configuration.
+; Open this file with Godot 4.7.2 .NET.
+
+config_version=5
+
+[application]
+
+config/name="Asteria 2"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7", "C#", "Forward Plus")
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
+[dotnet]
+
+project/assembly_name="Asteria2"
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+environment/defaults/default_clear_color=Color(0.055, 0.065, 0.085, 1)
