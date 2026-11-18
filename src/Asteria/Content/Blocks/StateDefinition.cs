@@ -3,18 +3,18 @@ using Asteria.Content.Blocks.StateProperties;
 namespace Asteria.Content.Blocks;
 
 /// <summary>
-/// Contains every valid immutable state for one block and provides fast transitions between them.
-/// Properties are ordered by name, and each property's declared value order is preserved.
+/// StateDefinition equivalent: sorted properties, Cartesian-product states, and cached neighbor tables.
 /// </summary>
 public sealed class StateDefinition
 {
+    private static readonly object Wildcard = new();
+
     private readonly StateProperty[] _properties;
     private readonly IReadOnlyList<StateProperty> _readOnlyProperties;
     private readonly BlockState[] _states;
     private readonly IReadOnlyList<BlockState> _readOnlyStates;
     private readonly Dictionary<StateProperty, int> _propertyIndices =
         new(ReferenceEqualityComparer.Instance);
-    private readonly int[] _strides;
 
     public Block Owner { get; }
     public IReadOnlyList<StateProperty> Properties => _readOnlyProperties;
@@ -30,36 +30,25 @@ public sealed class StateDefinition
         ArgumentNullException.ThrowIfNull(properties);
         ArgumentNullException.ThrowIfNull(defaultValues);
 
-        _properties = properties
-            .OrderBy(property => property.Name, StringComparer.Ordinal)
-            .ToArray();
+        _properties = properties.OrderBy(property => property.Name, StringComparer.Ordinal).ToArray();
         _readOnlyProperties = Array.AsReadOnly(_properties);
-        _strides = new int[_properties.Length];
 
-        long stateCount = 1L;
+        long stateCount = 1;
         for (int index = _properties.Length - 1; index >= 0; index--)
         {
             StateProperty property = _properties[index];
-            if (property.ValueCount <= 0)
+            if (property.ValueCount <= 1)
             {
                 throw new InvalidOperationException(
-                    $"State property '{property.Name}' must have at least one possible value.");
+                    $"State property '{property.Name}' must have more than one possible value.");
             }
 
-            if (stateCount > int.MaxValue)
-            {
-                throw new InvalidOperationException(
-                    $"Block '{owner}' has too many possible states to index.");
-            }
-
-            _strides[index] = (int)stateCount;
             stateCount = checked(stateCount * property.ValueCount);
-        }
-
-        if (stateCount > Array.MaxLength)
-        {
-            throw new InvalidOperationException(
-                $"Block '{owner}' has {stateCount} possible states, exceeding the supported array size.");
+            if (stateCount > Array.MaxLength)
+            {
+                throw new InvalidOperationException(
+                    $"Block '{owner}' has too many possible states to materialize.");
+            }
         }
 
         for (int index = 0; index < _properties.Length; index++)
@@ -68,22 +57,31 @@ public sealed class StateDefinition
         }
 
         _states = new BlockState[(int)stateCount];
+        var statesByValues = new Dictionary<object[], BlockState>(ObjectArrayComparer.Instance);
+
         for (int stateIndex = 0; stateIndex < _states.Length; stateIndex++)
         {
             var values = new object[_properties.Length];
+            int divisor = 1;
 
-            for (int propertyIndex = 0; propertyIndex < _properties.Length; propertyIndex++)
+            for (int propertyIndex = _properties.Length - 1; propertyIndex >= 0; propertyIndex--)
             {
                 StateProperty property = _properties[propertyIndex];
-                int valueIndex = (stateIndex / _strides[propertyIndex]) % property.ValueCount;
+                int valueIndex = (stateIndex / divisor) % property.ValueCount;
                 values[propertyIndex] = property.GetValueObject(valueIndex);
+                divisor = checked(divisor * property.ValueCount);
             }
 
-            _states[stateIndex] = new BlockState(this, stateIndex, values);
+            var state = new BlockState(this, values);
+            _states[stateIndex] = state;
+            statesByValues.Add(values, state);
         }
 
+        InitializeNeighbors(statesByValues);
+
         int defaultStateIndex = 0;
-        for (int propertyIndex = 0; propertyIndex < _properties.Length; propertyIndex++)
+        int defaultStride = 1;
+        for (int propertyIndex = _properties.Length - 1; propertyIndex >= 0; propertyIndex--)
         {
             StateProperty property = _properties[propertyIndex];
             if (defaultValues.TryGetValue(property, out object? defaultValue))
@@ -95,8 +93,10 @@ public sealed class StateDefinition
                         $"Default value '{defaultValue}' is invalid for state property '{property.Name}'.");
                 }
 
-                defaultStateIndex += valueIndex * _strides[propertyIndex];
+                defaultStateIndex = checked(defaultStateIndex + valueIndex * defaultStride);
             }
+
+            defaultStride = checked(defaultStride * property.ValueCount);
         }
 
         DefaultState = _states[defaultStateIndex];
@@ -118,7 +118,6 @@ public sealed class StateDefinition
     internal int GetPropertyIndex(StateProperty property)
     {
         ArgumentNullException.ThrowIfNull(property);
-
         if (_propertyIndices.TryGetValue(property, out int index))
         {
             return index;
@@ -132,70 +131,83 @@ public sealed class StateDefinition
     internal bool TryGetPropertyIndex(StateProperty property, out int index) =>
         _propertyIndices.TryGetValue(property, out index);
 
-    internal BlockState WithValue<T>(
-        BlockState state,
-        StateProperty<T> property,
-        T value) where T : notnull
+    private void InitializeNeighbors(Dictionary<object[], BlockState> statesByValues)
     {
-        int propertyIndex = GetPropertyIndex(property);
-        int valueIndex = property.IndexOf(value);
+        var neighborsByPivot = new Dictionary<object[], BlockState[]>(ObjectArrayComparer.Instance);
 
-        if (valueIndex < 0)
+        foreach (BlockState state in _states)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(value), value, $"Value is not valid for state property '{property.Name}'.");
+            var neighbors = new BlockState[_properties.Length];
+
+            for (int propertyIndex = 0; propertyIndex < _properties.Length; propertyIndex++)
+            {
+                StateProperty property = _properties[propertyIndex];
+                object[] pivotKey = state.CopyValues();
+                pivotKey[propertyIndex] = Wildcard;
+
+                if (!neighborsByPivot.TryGetValue(pivotKey, out BlockState[]? propertyNeighbors))
+                {
+                    propertyNeighbors = new BlockState[property.ValueCount];
+                    object[] lookupValues = state.CopyValues();
+
+                    for (int valueIndex = 0; valueIndex < property.ValueCount; valueIndex++)
+                    {
+                        lookupValues[propertyIndex] = property.GetValueObject(valueIndex);
+                        if (!statesByValues.TryGetValue(lookupValues, out BlockState? neighbor))
+                        {
+                            throw new InvalidOperationException(
+                                $"Could not resolve neighboring state for property '{property.Name}'.");
+                        }
+
+                        propertyNeighbors[valueIndex] = neighbor;
+                    }
+
+                    neighborsByPivot.Add(pivotKey, propertyNeighbors);
+                }
+
+                neighbors[propertyIndex] = propertyNeighbors;
+            }
+
+            state.InitializeNeighbors(neighbors);
         }
-
-        int stride = _strides[propertyIndex];
-        int currentValueIndex =
-            (state.StateIndex / stride) % property.ValueCount;
-        int targetStateIndex =
-            state.StateIndex + ((valueIndex - currentValueIndex) * stride);
-
-        return _states[targetStateIndex];
     }
 
-    internal bool TryWithValue<T>(
-        BlockState state,
-        StateProperty<T> property,
-        T value,
-        out BlockState? result) where T : notnull
+    private sealed class ObjectArrayComparer : IEqualityComparer<object[]>
     {
-        if (!TryGetPropertyIndex(property, out int propertyIndex))
+        public static ObjectArrayComparer Instance { get; } = new();
+
+        public bool Equals(object[]? left, object[]? right)
         {
-            result = null;
-            return false;
+            if (ReferenceEquals(left, right))
+            {
+                return true;
+            }
+
+            if (left is null || right is null || left.Length != right.Length)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < left.Length; index++)
+            {
+                if (!object.Equals(left[index], right[index]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
-        int valueIndex = property.IndexOf(value);
-        if (valueIndex < 0)
+        public int GetHashCode(object[] values)
         {
-            result = null;
-            return false;
+            var hash = new HashCode();
+            foreach (object value in values)
+            {
+                hash.Add(value);
+            }
+
+            return hash.ToHashCode();
         }
-
-        int stride = _strides[propertyIndex];
-        int currentValueIndex =
-            (state.StateIndex / stride) % property.ValueCount;
-        int targetStateIndex =
-            state.StateIndex + ((valueIndex - currentValueIndex) * stride);
-
-        result = _states[targetStateIndex];
-        return true;
-    }
-
-    internal BlockState CycleValue<T>(
-        BlockState state,
-        StateProperty<T> property) where T : notnull
-    {
-        int propertyIndex = GetPropertyIndex(property);
-        int stride = _strides[propertyIndex];
-        int currentValueIndex =
-            (state.StateIndex / stride) % property.ValueCount;
-        int nextValueIndex = (currentValueIndex + 1) % property.ValueCount;
-        int targetStateIndex =
-            state.StateIndex + ((nextValueIndex - currentValueIndex) * stride);
-
-        return _states[targetStateIndex];
     }
 }

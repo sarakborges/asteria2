@@ -3,7 +3,7 @@ using Asteria.Content.Blocks.StateProperties;
 namespace Asteria.Content.Blocks;
 
 /// <summary>
-/// Collects a block's state properties and default values before state combinations are materialized.
+/// Collects block properties and defaults before all possible states are materialized.
 /// </summary>
 public sealed class StateDefinitionBuilder
 {
@@ -17,11 +17,22 @@ public sealed class StateDefinitionBuilder
         EnsureMutable();
         ArgumentNullException.ThrowIfNull(property);
 
-        if (property.ValueCount == 0)
+        if (property.ValueCount <= 1)
         {
             throw new ArgumentException(
-                $"State property '{property.Name}' has no possible values.",
+                $"State property '{property.Name}' must have more than one possible value.",
                 nameof(property));
+        }
+
+        for (int index = 0; index < property.ValueCount; index++)
+        {
+            string serializedValue = property.GetSerializedValue(property.GetValueObject(index));
+            if (!StateProperty.IsValidName(serializedValue))
+            {
+                throw new ArgumentException(
+                    $"State property '{property.Name}' has an invalid serialized value '{serializedValue}'.",
+                    nameof(property));
+            }
         }
 
         if (_properties.Any(existing =>
@@ -36,9 +47,7 @@ public sealed class StateDefinitionBuilder
         return this;
     }
 
-    public StateDefinitionBuilder SetDefault<T>(
-        StateProperty<T> property,
-        T value) where T : notnull
+    public StateDefinitionBuilder SetDefault<T>(StateProperty<T> property, T value) where T : notnull
     {
         EnsureMutable();
         ArgumentNullException.ThrowIfNull(property);

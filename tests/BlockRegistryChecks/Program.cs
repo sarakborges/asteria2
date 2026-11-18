@@ -60,7 +60,6 @@ internal static class Program
     private static void CheckBlockStateDefinition()
     {
         StateDefinition definition = Blocks.TEST_BLOCK.StateDefinition;
-
         Require(definition.PossibleStates.Count == 6, "powered(2) x stage(3) must create six states.");
         Require(
             definition.Properties.Select(property => property.Name).SequenceEqual(new[] { "powered", "stage" }),
@@ -89,21 +88,25 @@ internal static class Program
         Require(changedState.Cycle(Blocks.TEST_STAGE).GetValue(Blocks.TEST_STAGE) == 0, "Integer cycling must wrap.");
         Require(defaultState.Cycle(Blocks.TEST_POWERED).GetValue(Blocks.TEST_POWERED), "Boolean cycling must toggle false to true.");
 
-        Require(
-            !changedState.TrySetValue(Blocks.TEST_STAGE, 9, out BlockState? invalidValueResult) && invalidValueResult is null,
-            "TrySetValue must reject values outside the allowed set.");
-
         BooleanProperty foreignPowered = BooleanProperty.Create("powered");
+        Require(ReferenceEquals(changedState, changedState.TrySetValue(foreignPowered, false)), "trySetValue with a foreign property instance must preserve the current state.");
         Require(!changedState.TryGetValue(foreignPowered, out _), "A separate property instance must not be accepted by name alone.");
         RequireThrows<ArgumentException>(
             () => changedState.SetValue(foreignPowered, false),
             "SetValue must reject a property not owned by the block definition.");
+        RequireThrows<ArgumentOutOfRangeException>(
+            () => changedState.TrySetValue(Blocks.TEST_STAGE, 9),
+            "trySetValue must reject values outside the property's allowed set.");
+
+        IntegerProperty singletonProperty = IntegerProperty.Create("only", 0, 0);
+        RequireThrows<ArgumentException>(
+            () => new Block(BlockProperties.Default, builder => builder.Add(singletonProperty)),
+            "StateDefinition must reject properties with one or fewer possible values.");
     }
 
     private static void CheckGlobalStateIds()
     {
         BlockStateIdMap ids = BuiltInRegistries.BlockStates;
-
         for (int id = 0; id < ids.Count; id++)
         {
             BlockState state = ids.ById(id);
@@ -142,7 +145,6 @@ internal static class Program
     {
         var storage = new PackedBitStorage(5, ChunkSection.BlockCount);
         Require(storage.LongCount == 342, "Five-bit storage must use 342 words for 4096 entries.");
-
         storage.Set(11, 31);
         storage.Set(12, 17);
         storage.Set(13, 9);
@@ -152,17 +154,17 @@ internal static class Program
         Require(storage.Get(12) == 17, "Storage must preserve the first entry after a word boundary.");
         Require(storage.Get(13) == 9, "Storage must preserve entries after a word boundary.");
         Require(storage.Get(4095) == 23, "Storage must preserve the final entry.");
+        Require(storage.GetAndSet(11, 3) == 31, "getAndSet must return the previous value.");
         RequireThrows<ArgumentOutOfRangeException>(() => storage.Set(0, 32), "Storage must reject values that do not fit.");
     }
 
     private static void CheckPalettedContainer()
     {
         BlockState defaultState = Blocks.TEST_BLOCK.DefaultState;
-        var palette = new PalettedContainer<BlockState>(
-            BuiltInRegistries.BlockStates,
-            defaultState,
-            ChunkSection.BlockCount);
+        var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(BuiltInRegistries.BlockStates);
+        var palette = new PalettedContainer<BlockState>(strategy, defaultState);
 
+        Require(palette.Size == ChunkSection.BlockCount, "Block-state strategy must create 4096 entries.");
         Require(palette.Mode == PaletteMode.SingleValue, "A uniform section must use a single-value palette.");
         Require(palette.BitsPerEntry == 0, "A single-value palette must use zero storage bits.");
         Require(palette.StorageLongCount == 0, "A single-value palette must allocate no packed array.");
@@ -170,13 +172,38 @@ internal static class Program
         Require(!palette.MaybeHas(state => state.Block.IsAir), "Single-value maybeHas must inspect the only value.");
 
         BlockState alternate = defaultState.SetValue(Blocks.TEST_STAGE, 2);
-        palette.Set(10, alternate);
+        BlockState previous = palette.GetAndSet(10, alternate);
+        Require(ReferenceEquals(previous, defaultState), "getAndSet must return the previous state.");
         Require(palette.Mode == PaletteMode.Local, "The second distinct value must create a local palette.");
         Require(palette.BitsPerEntry == 4, "Block-state local palettes start at four bits.");
-        Require(palette.LocalPaletteImplementation == "LinearPalette`1", "The four-bit palette must use linear lookup.");
+        Require(palette.LocalPaletteImplementation?.StartsWith("LinearPalette", StringComparison.Ordinal) == true, "The four-bit palette must use linear lookup.");
         Require(ReferenceEquals(palette.Get(10), alternate), "Local palette lookup must round-trip.");
         Require(!palette.MaybeHas(state => state.Block.IsAir), "Local palette must report absent air.");
         Require(palette.MaybeHas(state => ReferenceEquals(state, alternate)), "Local palette must inspect its entries.");
+
+        int counted = 0;
+        palette.Count((_, count) => counted += count);
+        Require(counted == ChunkSection.BlockCount, "Palette count must account for every position.");
+
+        PalettedContainer<BlockState> copy = palette.Copy();
+        Require(ReferenceEquals(copy.Get(10), alternate), "Copy must preserve stored values.");
+        copy.Set(10, defaultState);
+        Require(ReferenceEquals(palette.Get(10), alternate), "Mutating a copy must not mutate the original.");
+
+        PalettedContainer<BlockState> recreated = palette.Recreate();
+        Require(recreated.IsSingleValue, "Recreate must return a uniform container.");
+        Require(ReferenceEquals(recreated.Get(0), defaultState), "Recreate must use palette entry zero.");
+
+        palette.Acquire();
+        try
+        {
+            RequireThrows<InvalidOperationException>(() => palette.Acquire(), "The writer detector must reject a second acquire.");
+            palette.GetAndSetUnchecked(11, alternate);
+        }
+        finally
+        {
+            palette.Release();
+        }
     }
 
     private static void CheckPalettedContainerGrowthAndGlobalMode()
@@ -197,10 +224,8 @@ internal static class Program
         }
         ids.Freeze();
 
-        var container = new PalettedContainer<BlockState>(
-            ids,
-            manyStateBlock.DefaultState,
-            ChunkSection.BlockCount);
+        var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(ids);
+        var container = new PalettedContainer<BlockState>(strategy, manyStateBlock.DefaultState);
         IReadOnlyList<BlockState> states = manyStateBlock.StateDefinition.PossibleStates;
 
         for (int value = 1; value <= 16; value++)
@@ -210,7 +235,7 @@ internal static class Program
 
         Require(container.Mode == PaletteMode.Local, "A palette of 17 states must remain indirect.");
         Require(container.BitsPerEntry == 5, "A seventeenth value must grow a four-bit palette to five bits.");
-        Require(container.LocalPaletteImplementation == "HashMapPalette`1", "The widened palette must use hash-map lookup.");
+        Require(container.LocalPaletteImplementation?.StartsWith("HashMapPalette", StringComparison.Ordinal) == true, "A widened palette must use hash-map lookup.");
 
         for (int value = 17; value <= 256; value++)
         {
@@ -236,7 +261,6 @@ internal static class Program
     private static void CheckChunkSection()
     {
         var section = new ChunkSection(BuiltInRegistries.BlockStates, Blocks.AIR.DefaultState);
-
         Require(section.HasOnlyAir, "A new section must be empty.");
         Require(section.NonAirBlockCount == 0, "A new section must contain zero non-air blocks.");
         Require(section.PaletteMode == PaletteMode.SingleValue, "An empty section must start in single-value mode.");
@@ -261,9 +285,7 @@ internal static class Program
         section.SetBlockState(15, 15, 15, Blocks.AIR.DefaultState);
         Require(section.NonAirBlockCount == 0, "Replacing non-air with air must decrement the count.");
         Require(section.HasOnlyAir, "The section must become empty after restoring air.");
-        Require(
-            section.MaybeHas(state => !state.Block.IsAir),
-            "Palette-only maybeHas may conservatively return true for an unused palette entry.");
+        Require(section.MaybeHas(state => !state.Block.IsAir), "maybeHas may conservatively return true for an unused local entry.");
 
         var emptySection = new ChunkSection(BuiltInRegistries.BlockStates, Blocks.AIR.DefaultState);
         Require(!emptySection.MaybeHas(state => !state.Block.IsAir), "An untouched air-only palette must rule out non-air blocks.");

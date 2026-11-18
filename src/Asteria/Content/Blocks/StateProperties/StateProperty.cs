@@ -1,19 +1,16 @@
 namespace Asteria.Content.Blocks.StateProperties;
 
 /// <summary>
-/// Non-generic base for block-state properties, allowing definitions to store mixed property types.
-/// Property instances are identity-bearing and must be shared between a block definition and its states.
+/// Non-generic base for block-state properties.
 /// </summary>
 public abstract class StateProperty
 {
     public string Name { get; }
-
     public abstract int ValueCount { get; }
 
     protected StateProperty(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-
         if (!IsValidName(name))
         {
             throw new ArgumentException(
@@ -28,7 +25,7 @@ public abstract class StateProperty
     internal abstract int GetValueIndex(object value);
     internal abstract string GetSerializedValue(object value);
 
-    protected static bool IsValidName(string value)
+    internal static bool IsValidName(string value)
     {
         foreach (char character in value)
         {
@@ -55,7 +52,7 @@ public abstract class StateProperty
 }
 
 /// <summary>
-/// A typed property with a finite, ordered set of possible values.
+/// A typed property with a finite, ordered set of allowed values.
 /// </summary>
 public abstract class StateProperty<T> : StateProperty where T : notnull
 {
@@ -66,7 +63,6 @@ public abstract class StateProperty<T> : StateProperty where T : notnull
     }
 
     public abstract string GetName(T value);
-
     public abstract bool TryParse(string serializedValue, out T value);
 
     public int IndexOf(T value)

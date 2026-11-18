@@ -3,24 +3,22 @@ using Asteria.Content.Blocks.StateProperties;
 namespace Asteria.Content.Blocks;
 
 /// <summary>
-/// One precomputed immutable combination of a block's state properties.
-/// Changing a property returns another precomputed state instance from the same definition.
+/// StateHolder equivalent. Property transitions resolve through precomputed neighboring states.
 /// </summary>
 public sealed class BlockState
 {
     private readonly object[] _values;
+    private BlockState[][]? _neighbors;
     private int _globalId = -1;
 
     public Block Block => Definition.Owner;
     public StateDefinition Definition { get; }
     public int GlobalId => _globalId;
     public bool HasGlobalId => _globalId >= 0;
-    internal int StateIndex { get; }
 
-    internal BlockState(StateDefinition definition, int stateIndex, object[] values)
+    internal BlockState(StateDefinition definition, object[] values)
     {
         Definition = definition ?? throw new ArgumentNullException(nameof(definition));
-        StateIndex = stateIndex;
         _values = values ?? throw new ArgumentNullException(nameof(values));
     }
 
@@ -42,19 +40,64 @@ public sealed class BlockState
         return false;
     }
 
+    public T GetValueOrElse<T>(StateProperty<T> property, T defaultValue) where T : notnull =>
+        TryGetValue(property, out T value) ? value : defaultValue;
+
     public bool HasProperty(StateProperty property) => Definition.HasProperty(property);
 
-    public BlockState SetValue<T>(StateProperty<T> property, T value) where T : notnull =>
-        Definition.WithValue(this, property, value);
+    public BlockState SetValue<T>(StateProperty<T> property, T value) where T : notnull
+    {
+        int propertyIndex = Definition.GetPropertyIndex(property);
+        int valueIndex = property.IndexOf(value);
+        if (valueIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(value), value, $"Value is not valid for state property '{property.Name}'.");
+        }
 
-    public bool TrySetValue<T>(
-        StateProperty<T> property,
-        T value,
-        out BlockState? result) where T : notnull =>
-        Definition.TryWithValue(this, property, value, out result);
+        return GetNeighbors()[propertyIndex][valueIndex];
+    }
 
-    public BlockState Cycle<T>(StateProperty<T> property) where T : notnull =>
-        Definition.CycleValue(this, property);
+    public BlockState TrySetValue<T>(StateProperty<T> property, T value) where T : notnull
+    {
+        if (!Definition.TryGetPropertyIndex(property, out int propertyIndex))
+        {
+            return this;
+        }
+
+        int valueIndex = property.IndexOf(value);
+        if (valueIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(value), value, $"Value is not valid for state property '{property.Name}'.");
+        }
+
+        return GetNeighbors()[propertyIndex][valueIndex];
+    }
+
+    public BlockState Cycle<T>(StateProperty<T> property) where T : notnull
+    {
+        int propertyIndex = Definition.GetPropertyIndex(property);
+        int currentValueIndex = property.IndexOf((T)_values[propertyIndex]);
+        int nextValueIndex = (currentValueIndex + 1) % property.ValueCount;
+        return GetNeighbors()[propertyIndex][nextValueIndex];
+    }
+
+    internal object[] CopyValues() => (object[])_values.Clone();
+
+    internal void InitializeNeighbors(BlockState[][] neighbors)
+    {
+        ArgumentNullException.ThrowIfNull(neighbors);
+        if (_neighbors is not null)
+        {
+            throw new InvalidOperationException("Block-state neighbors can only be initialized once.");
+        }
+
+        _neighbors = neighbors;
+    }
+
+    private BlockState[][] GetNeighbors() =>
+        _neighbors ?? throw new InvalidOperationException("Block-state neighbors have not been initialized.");
 
     internal void AssignGlobalId(int globalId)
     {

@@ -4,8 +4,7 @@ using Asteria.Content.Storage;
 namespace Asteria.Content.Chunks;
 
 /// <summary>
-/// A 16x16x16 block-state section, stored using a Minecraft-style paletted container.
-/// The Y axis is the most significant coordinate in the linear index.
+/// A 16x16x16 section whose block states use the vanilla block-state palette strategy.
 /// </summary>
 public sealed class ChunkSection
 {
@@ -33,10 +32,13 @@ public sealed class ChunkSection
             throw new ArgumentException("The section default state must belong to an air block.", nameof(airState));
         }
 
-        _states = new PalettedContainer<BlockState>(
-            stateIds,
-            airState,
-            BlockCount);
+        var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(stateIds);
+        if (strategy.EntryCount != BlockCount)
+        {
+            throw new InvalidOperationException("A block-state strategy must create exactly 4096 entries per section.");
+        }
+
+        _states = new PalettedContainer<BlockState>(strategy, airState);
     }
 
     public BlockState GetBlockState(int x, int y, int z) =>
@@ -44,32 +46,36 @@ public sealed class ChunkSection
 
     public BlockState GetBlockState(int index) => _states.Get(index);
 
-    /// <summary>
-    /// Replaces a block state and returns the previous state.
-    /// </summary>
-    public BlockState SetBlockState(int x, int y, int z, BlockState state)
+    public BlockState SetBlockState(int x, int y, int z, BlockState state) =>
+        SetBlockState(x, y, z, state, true);
+
+    public BlockState SetBlockState(int x, int y, int z, BlockState state, bool checkThreading)
     {
         ArgumentNullException.ThrowIfNull(state);
-
         int index = GetIndex(x, y, z);
-        BlockState previous = _states.Set(index, state);
 
-        if (ReferenceEquals(previous, state))
-        {
-            return previous;
-        }
+        BlockState previous = checkThreading
+            ? _states.GetAndSet(index, state)
+            : _states.GetAndSetUnchecked(index, state);
 
-        if (previous.Block.IsAir && !state.Block.IsAir)
+        if (!ReferenceEquals(previous, state))
         {
-            _nonAirBlockCount++;
-        }
-        else if (!previous.Block.IsAir && state.Block.IsAir)
-        {
-            _nonAirBlockCount--;
+            if (previous.Block.IsAir && !state.Block.IsAir)
+            {
+                _nonAirBlockCount++;
+            }
+            else if (!previous.Block.IsAir && state.Block.IsAir)
+            {
+                _nonAirBlockCount--;
+            }
         }
 
         return previous;
     }
+
+    public void Acquire() => _states.Acquire();
+
+    public void Release() => _states.Release();
 
     public bool MaybeHas(Func<BlockState, bool> predicate) =>
         _states.MaybeHas(predicate);
@@ -91,6 +97,6 @@ public sealed class ChunkSection
             throw new ArgumentOutOfRangeException(nameof(z), z, "Section Z coordinate must be between 0 and 15.");
         }
 
-        return x | (z << 4) | (y << 8);
+        return (y << 8) | (z << 4) | x;
     }
 }
