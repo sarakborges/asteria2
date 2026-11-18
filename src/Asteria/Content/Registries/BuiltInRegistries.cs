@@ -9,8 +9,9 @@ namespace Asteria.Content.Registries;
 /// </summary>
 public static class BuiltInRegistries
 {
-    public static Registry<Block> Block { get; } =
-        new(ResourceLocation.FromNamespaceAndPath("asteria", "block"));
+    public static DefaultedRegistry<Block> Block { get; } = new(
+        ResourceLocation.FromNamespaceAndPath("asteria", "block"),
+        ResourceLocation.FromNamespaceAndPath("asteria", "air"));
 
     public static void FreezeAll()
     {

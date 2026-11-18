@@ -7,7 +7,7 @@ namespace Asteria.Content.Registries;
 /// Maps namespaced keys and runtime numeric IDs to registered objects.
 /// Registration is allowed during bootstrap only; frozen registries are read-only.
 /// </summary>
-public sealed class Registry<T> : IReadOnlyCollection<RegistryEntry<T>> where T : class
+public class Registry<T> : IReadOnlyCollection<RegistryEntry<T>> where T : class
 {
     private readonly Dictionary<ResourceLocation, RegistryEntry<T>> _entriesByLocation = new();
     private readonly Dictionary<T, RegistryEntry<T>> _entriesByValue =
@@ -17,7 +17,7 @@ public sealed class Registry<T> : IReadOnlyCollection<RegistryEntry<T>> where T 
 
     public ResourceLocation Location { get; }
     public int Count => _entriesById.Count;
-    public bool IsFrozen { get; private set; }
+    public bool IsFrozen { get; protected set; }
     public IReadOnlyList<RegistryEntry<T>> Entries => _readOnlyEntries;
 
     public Registry(ResourceLocation location)
@@ -67,9 +67,9 @@ public sealed class Registry<T> : IReadOnlyCollection<RegistryEntry<T>> where T 
         return entry;
     }
 
-    public T Get(ResourceLocation location) => GetEntry(location).Value;
+    public virtual T Get(ResourceLocation location) => GetEntry(location).Value;
 
-    public RegistryEntry<T> GetEntry(ResourceLocation location)
+    public virtual RegistryEntry<T> GetEntry(ResourceLocation location)
     {
         if (_entriesByLocation.TryGetValue(location, out RegistryEntry<T>? entry))
         {
@@ -80,6 +80,9 @@ public sealed class Registry<T> : IReadOnlyCollection<RegistryEntry<T>> where T 
             $"Registry '{Location}' does not contain an entry named '{location}'.");
     }
 
+    /// <summary>
+    /// Performs an exact lookup. Unlike DefaultedRegistry.Get, this never returns a fallback.
+    /// </summary>
     public bool TryGetEntry(ResourceLocation location, out RegistryEntry<T>? entry) =>
         _entriesByLocation.TryGetValue(location, out entry);
 
@@ -95,13 +98,13 @@ public sealed class Registry<T> : IReadOnlyCollection<RegistryEntry<T>> where T 
         return false;
     }
 
-    public int GetId(T value)
+    public virtual int GetId(T value)
     {
         ArgumentNullException.ThrowIfNull(value);
         return _entriesByValue.TryGetValue(value, out RegistryEntry<T>? entry) ? entry.Id : -1;
     }
 
-    public ResourceLocation? GetKey(T value)
+    public virtual ResourceLocation? GetKey(T value)
     {
         ArgumentNullException.ThrowIfNull(value);
         return _entriesByValue.TryGetValue(value, out RegistryEntry<T>? entry)
@@ -109,7 +112,7 @@ public sealed class Registry<T> : IReadOnlyCollection<RegistryEntry<T>> where T 
             : null;
     }
 
-    public RegistryEntry<T> ById(int id)
+    public virtual RegistryEntry<T> ById(int id)
     {
         if ((uint)id >= (uint)_entriesById.Count)
         {
@@ -122,7 +125,7 @@ public sealed class Registry<T> : IReadOnlyCollection<RegistryEntry<T>> where T 
     /// <summary>
     /// Ends registration. Calling Freeze more than once is harmless.
     /// </summary>
-    public void Freeze() => IsFrozen = true;
+    public virtual void Freeze() => IsFrozen = true;
 
     public IEnumerator<RegistryEntry<T>> GetEnumerator() => _entriesById.GetEnumerator();
 
