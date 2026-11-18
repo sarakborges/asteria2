@@ -1,20 +1,20 @@
 namespace Asteria.Content.Registries;
 
 /// <summary>
-/// Registry index metadata paired with the registry's stable Holder.Reference.
-/// The holder, not this wrapper, is the identity-bearing content reference.
+/// A stable reference to a registered value.
+/// Numeric IDs are runtime indices and must not be persisted as content identifiers.
 /// </summary>
 public sealed class RegistryEntry<T> where T : class
 {
-    public Holder<T>.Reference Holder { get; }
-    public RegistryKey<T> Key => Holder.Key;
+    public RegistryKey<T> Key { get; }
     public int Id { get; }
-    public T Value => Holder.Value;
+    public T Value { get; }
 
-    internal RegistryEntry(Holder<T>.Reference holder, int id)
+    internal RegistryEntry(RegistryKey<T> key, int id, T value)
     {
-        Holder = holder ?? throw new ArgumentNullException(nameof(holder));
+        Key = key;
         Id = id;
+        Value = value;
     }
 
     public override string ToString() => $"{Key} (runtime id: {Id})";

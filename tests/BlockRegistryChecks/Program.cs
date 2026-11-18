@@ -54,15 +54,16 @@ internal static class Program
 
         Require(ReferenceEquals(BuiltInRegistries.Block.Get(airId), Blocks.AIR), "The air block must be registered.");
         Require(ReferenceEquals(BuiltInRegistries.Block.Get(missingId), Blocks.AIR), "Unknown block keys must resolve to air.");
-        Require(!BuiltInRegistries.Block.TryGetEntry(missingId, out _), "Exact lookups must not hide missing keys.");
+        Require(BuiltInRegistries.Block.GetHolder(missingId) is null, "Exact holder lookups must not hide missing keys.");
         Require(BuiltInRegistries.Block.GetId(new Block(BlockProperties.Default)) == 0, "Unknown objects must resolve to the default block ID.");
 
-        RegistryEntry<Block> registered = BuiltInRegistries.Block.GetEntry(testId);
-        Require(ReferenceEquals(registered.Holder, Blocks.TEST_BLOCK.BuiltInRegistryHolder), "Registration must bind the pre-created intrusive holder.");
-        Require(registered.Holder.IsBound, "The built-in holder must be fully bound after freeze.");
-        Require(ReferenceEquals(registered.Holder.Value, Blocks.TEST_BLOCK), "The holder must resolve to its registered block.");
-        Require(registered.Holder.CanSerializeIn(BuiltInRegistries.Block), "A reference holder must serialize in its owning registry.");
-        Require(ReferenceEquals(BuiltInRegistries.Block.WrapAsHolder(Blocks.TEST_BLOCK), registered.Holder), "wrapAsHolder must reuse registered references.");
+        Holder<Block>.Reference registered = BuiltInRegistries.Block.GetHolderOrThrow(
+            new RegistryKey<Block>(BuiltInRegistries.Block.Location, testId));
+        Require(ReferenceEquals(registered, Blocks.TEST_BLOCK.BuiltInRegistryHolder), "Registration must bind the pre-created intrusive holder.");
+        Require(registered.IsBound, "The built-in holder must be fully bound after freeze.");
+        Require(ReferenceEquals(registered.Value, Blocks.TEST_BLOCK), "The holder must resolve to its registered block.");
+        Require(registered.CanSerializeIn(BuiltInRegistries.Block), "A reference holder must serialize in its owning registry.");
+        Require(ReferenceEquals(BuiltInRegistries.Block.WrapAsHolder(Blocks.TEST_BLOCK), registered), "wrapAsHolder must reuse registered references.");
 
         Holder<Block> direct = BuiltInRegistries.Block.WrapAsHolder(new Block(BlockProperties.Default));
         Require(direct.Kind == HolderKind.Direct, "Unregistered values must be wrapped as direct holders.");
@@ -88,13 +89,13 @@ internal static class Program
 
         Block value = new(BlockProperties.Default);
         Holder<Block>.Reference registered = lookup.GetOrThrow(entryKey);
-        RegistryEntry<Block> entry = registry.Register(entryId, value);
-        Require(ReferenceEquals(entry.Holder, registered), "Registration must reuse the standalone holder.");
+        Holder<Block>.Reference entry = registry.Register(entryId, value);
+        Require(ReferenceEquals(entry, registered), "Registration must reuse the standalone holder.");
         Require(!registered.IsBound, "Standalone holder values are bound during registry freeze.");
 
         Block placeholderValue = new(BlockProperties.Default);
-        RegistryEntry<Block> placeholderEntry = registry.Register(placeholderId, placeholderValue);
-        Require(ReferenceEquals(placeholderEntry.Holder, placeholder), "Registering a placeholder key must bind the existing holder.");
+        Holder<Block>.Reference placeholderEntry = registry.Register(placeholderId, placeholderValue);
+        Require(ReferenceEquals(placeholderEntry, placeholder), "Registering a placeholder key must bind the existing holder.");
 
         HolderSet<Block>.Named tag = lookup.GetOrThrow(tagKey);
         Require(!tag.IsBound, "A registration-time tag starts unbound.");

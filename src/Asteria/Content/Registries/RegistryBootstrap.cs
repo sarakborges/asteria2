@@ -2,18 +2,10 @@ using Asteria.Content.Blocks;
 
 namespace Asteria.Content.Registries;
 
-/// <summary>
-/// Registers built-in content, assigns every block-state runtime ID, then freezes the registries.
-/// </summary>
+/// <summary>Registers built-in content, assigns runtime state IDs, then freezes registries.</summary>
 public static class RegistryBootstrap
 {
-    private enum BootstrapState
-    {
-        NotStarted,
-        Running,
-        Complete,
-        Failed
-    }
+    private enum BootstrapState { NotStarted, Running, Complete, Failed }
 
     private static readonly object Sync = new();
     private static BootstrapState _state;
@@ -23,9 +15,7 @@ public static class RegistryBootstrap
         get
         {
             lock (Sync)
-            {
                 return _state == BootstrapState.Complete;
-            }
         }
     }
 
@@ -34,35 +24,21 @@ public static class RegistryBootstrap
         lock (Sync)
         {
             if (_state == BootstrapState.Complete)
-            {
                 return;
-            }
-
             if (_state == BootstrapState.Running)
-            {
                 throw new InvalidOperationException("Registry bootstrap cannot be entered recursively.");
-            }
-
             if (_state == BootstrapState.Failed)
-            {
-                throw new InvalidOperationException(
-                    "Registry bootstrap previously failed; the process cannot safely retry it.");
-            }
+                throw new InvalidOperationException("Registry bootstrap previously failed; the process cannot safely retry it.");
 
             _state = BootstrapState.Running;
-
             try
             {
                 global::Asteria.Content.Blocks.Blocks.RegisterAll();
 
-                // The global state ID order follows block registry order, then each block's
-                // deterministic StateDefinition.PossibleStates order.
-                foreach (RegistryEntry<Block> blockEntry in BuiltInRegistries.Block)
+                foreach (Holder<Block>.Reference blockHolder in BuiltInRegistries.Block.ListElements())
                 {
-                    foreach (BlockState state in blockEntry.Value.StateDefinition.PossibleStates)
-                    {
+                    foreach (BlockState state in blockHolder.Value.StateDefinition.PossibleStates)
                         BuiltInRegistries.BlockStates.Register(state);
-                    }
                 }
 
                 BuiltInRegistries.FreezeAll();

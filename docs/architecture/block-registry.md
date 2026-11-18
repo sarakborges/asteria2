@@ -6,8 +6,8 @@ Minecraft Java Edition 26.3 source is the reference for the port. Asteria conten
 
 ## Registry and holder model
 
-- Registry<T> mirrors the MappedRegistry lookup model: key, location, value-identity, and numeric-ID maps point to stable Holder.Reference<T> objects.
-- RegistryEntry<T> is a thin Asteria inspection view around a holder and runtime ID; it is not the identity-bearing content reference.
+- Registry<T> mirrors the MappedRegistry lookup model: key, location, value-identity, and numeric-ID maps point directly to stable Holder.Reference<T> objects.
+- Registry iteration exposes values; ListElements exposes the stable registered references.
 - Holder<T> distinguishes direct values from registry references. Direct holders cannot be serialized as registry references.
 - Standalone references may be requested before registration through HolderGetter<T>. Their values bind during registry freeze.
 - Intrusive registries require values to have an intrusive holder created before registration. Registration binds the key to that same holder; missing intrusive holders are rejected.
