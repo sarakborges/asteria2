@@ -56,6 +56,11 @@ internal static class Program
         Require(ReferenceEquals(BuiltInRegistries.Block.Get(missingId), Blocks.AIR), "Unknown block keys must resolve to air.");
         Require(BuiltInRegistries.Block.GetHolder(missingId) is null, "Exact holder lookups must not hide missing keys.");
         Require(BuiltInRegistries.Block.GetId(new Block(BlockProperties.Default)) == 0, "Unknown objects must resolve to the default block ID.");
+        Require(
+            ReferenceEquals(
+                BuiltInRegistries.Block.GetHolderById(999),
+                Blocks.AIR.BuiltInRegistryHolder),
+            "Unknown numeric IDs must resolve to the default holder.");
 
         Holder<Block>.Reference registered = BuiltInRegistries.Block.GetHolderOrThrow(
             new RegistryKey<Block>(BuiltInRegistries.Block.Location, testId));

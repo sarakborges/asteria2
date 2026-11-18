@@ -120,7 +120,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
         GetHolder(key) ?? throw new KeyNotFoundException(
             $"Registry '{Location}' does not contain key '{key}'.");
 
-    public Holder<T>.Reference? GetHolderById(int id) =>
+    public virtual Holder<T>.Reference? GetHolderById(int id) =>
         (uint)id < (uint)_byId.Count ? _byId[id] : null;
 
     public IEnumerable<Holder<T>.Reference> ListElements() => _byId;
