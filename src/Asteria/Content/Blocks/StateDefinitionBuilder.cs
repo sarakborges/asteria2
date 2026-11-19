@@ -54,7 +54,7 @@ public sealed class StateDefinitionBuilder
         return this;
     }
 
-    public StateDefinitionBuilder SetDefault<T>(StateProperty<T> property, T value) where T : notnull
+    public StateDefinitionBuilder SetDefault<T>(StateProperty<T> property, T value) where T : notnull, IComparable
     {
         EnsureMutable();
         ArgumentNullException.ThrowIfNull(property);
