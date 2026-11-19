@@ -1,14 +1,15 @@
 namespace Asteria.Content.Storage;
 
 /// <summary>
-/// Small local palette with linear identity lookup.
+/// Small local palette backed by the fixed-size array used by Minecraft LinearPalette.
 /// </summary>
 internal sealed class LinearPalette<T> : ILocalPalette<T> where T : class
 {
-    private readonly List<T> _values = new();
+    private readonly T?[] _values;
     private readonly int _bitsPerEntry;
+    private int _size;
 
-    public int Count => _values.Count;
+    public int Count => _size;
 
     public LinearPalette(int bitsPerEntry)
     {
@@ -18,6 +19,14 @@ internal sealed class LinearPalette<T> : ILocalPalette<T> where T : class
         }
 
         _bitsPerEntry = bitsPerEntry;
+        _values = new T[1 << bitsPerEntry];
+    }
+
+    private LinearPalette(T?[] values, int bitsPerEntry, int size)
+    {
+        _values = values;
+        _bitsPerEntry = bitsPerEntry;
+        _size = size;
     }
 
     public int IdFor(T value, IPaletteResize<T> resize)
@@ -25,7 +34,7 @@ internal sealed class LinearPalette<T> : ILocalPalette<T> where T : class
         ArgumentNullException.ThrowIfNull(value);
         ArgumentNullException.ThrowIfNull(resize);
 
-        for (int index = 0; index < _values.Count; index++)
+        for (int index = 0; index < _size; index++)
         {
             if (ReferenceEquals(_values[index], value))
             {
@@ -33,11 +42,11 @@ internal sealed class LinearPalette<T> : ILocalPalette<T> where T : class
             }
         }
 
-        if (_values.Count < (1 << _bitsPerEntry))
+        int newIndex = _size++;
+        if (newIndex < _values.Length)
         {
-            int index = _values.Count;
-            _values.Add(value);
-            return index;
+            _values[newIndex] = value;
+            return newIndex;
         }
 
         return resize.OnResize(_bitsPerEntry + 1, value);
@@ -45,33 +54,39 @@ internal sealed class LinearPalette<T> : ILocalPalette<T> where T : class
 
     public T ValueFor(int id)
     {
-        if ((uint)id >= (uint)_values.Count)
+        if ((uint)id < (uint)_size && _values[id] is T value)
         {
-            throw new MissingPaletteEntryException(id);
+            return value;
         }
 
-        return _values[id];
+        throw new MissingPaletteEntryException(id);
     }
 
     public bool MaybeHas(Func<T, bool> predicate)
     {
         ArgumentNullException.ThrowIfNull(predicate);
-        return _values.Any(predicate);
+
+        for (int index = 0; index < _size; index++)
+        {
+            if (predicate(_values[index]!))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void ForEach(Action<T> action)
     {
         ArgumentNullException.ThrowIfNull(action);
-        foreach (T value in _values)
+
+        for (int index = 0; index < _size; index++)
         {
-            action(value);
+            action(_values[index]!);
         }
     }
 
-    public IPalette<T> Copy()
-    {
-        var copy = new LinearPalette<T>(_bitsPerEntry);
-        copy._values.AddRange(_values);
-        return copy;
-    }
+    public IPalette<T> Copy() =>
+        new LinearPalette<T>((T?[])_values.Clone(), _bitsPerEntry, _size);
 }
