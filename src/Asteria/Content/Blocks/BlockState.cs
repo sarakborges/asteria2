@@ -22,13 +22,13 @@ public sealed class BlockState
         _values = values ?? throw new ArgumentNullException(nameof(values));
     }
 
-    public T GetValue<T>(StateProperty<T> property) where T : notnull
+    public T GetValue<T>(StateProperty<T> property) where T : notnull, IComparable
     {
         int propertyIndex = Definition.GetPropertyIndex(property);
         return (T)_values[propertyIndex];
     }
 
-    public bool TryGetValue<T>(StateProperty<T> property, out T value) where T : notnull
+    public bool TryGetValue<T>(StateProperty<T> property, out T value) where T : notnull, IComparable
     {
         if (Definition.TryGetPropertyIndex(property, out int propertyIndex))
         {
@@ -40,12 +40,12 @@ public sealed class BlockState
         return false;
     }
 
-    public T GetValueOrElse<T>(StateProperty<T> property, T defaultValue) where T : notnull =>
+    public T GetValueOrElse<T>(StateProperty<T> property, T defaultValue) where T : notnull, IComparable =>
         TryGetValue(property, out T value) ? value : defaultValue;
 
     public bool HasProperty(StateProperty property) => Definition.HasProperty(property);
 
-    public BlockState SetValue<T>(StateProperty<T> property, T value) where T : notnull
+    public BlockState SetValue<T>(StateProperty<T> property, T value) where T : notnull, IComparable
     {
         int propertyIndex = Definition.GetPropertyIndex(property);
         int valueIndex = property.IndexOf(value);
@@ -58,7 +58,7 @@ public sealed class BlockState
         return GetNeighbors()[propertyIndex][valueIndex];
     }
 
-    public BlockState TrySetValue<T>(StateProperty<T> property, T value) where T : notnull
+    public BlockState TrySetValue<T>(StateProperty<T> property, T value) where T : notnull, IComparable
     {
         if (!Definition.TryGetPropertyIndex(property, out int propertyIndex))
         {
@@ -75,7 +75,7 @@ public sealed class BlockState
         return GetNeighbors()[propertyIndex][valueIndex];
     }
 
-    public BlockState Cycle<T>(StateProperty<T> property) where T : notnull
+    public BlockState Cycle<T>(StateProperty<T> property) where T : notnull, IComparable
     {
         int propertyIndex = Definition.GetPropertyIndex(property);
         int currentValueIndex = property.IndexOf((T)_values[propertyIndex]);
