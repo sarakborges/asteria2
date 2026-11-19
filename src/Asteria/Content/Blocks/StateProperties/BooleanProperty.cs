@@ -1,12 +1,12 @@
 namespace Asteria.Content.Blocks.StateProperties;
 
 /// <summary>
-/// A two-valued property whose possible values are always ordered false, true.
+/// A two-valued property whose possible values follow Minecraft's true, false order.
 /// </summary>
 public sealed class BooleanProperty : StateProperty<bool>
 {
     private static readonly IReadOnlyList<bool> Values =
-        Array.AsReadOnly(new[] { false, true });
+        Array.AsReadOnly(new[] { true, false });
 
     public override IReadOnlyList<bool> PossibleValues => Values;
     public override int ValueCount => Values.Count;
