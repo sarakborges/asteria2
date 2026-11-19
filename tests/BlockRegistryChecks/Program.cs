@@ -145,6 +145,9 @@ internal static class Program
             definition.Properties.Select(property => property.Name).SequenceEqual(new[] { "powered", "stage" }),
             "State properties must be sorted by name.");
         Require(ReferenceEquals(definition.GetProperty("powered"), Blocks.TEST_POWERED), "Property lookup must return the declared property.");
+        Require(
+            definition.Any().GetValue(Blocks.TEST_POWERED),
+            "The first state must follow Minecraft's BooleanProperty order: true before false.");
 
         BlockState defaultState = definition.DefaultState;
         Require(!defaultState.GetValue(Blocks.TEST_POWERED), "powered default must be false.");
@@ -191,7 +194,7 @@ internal static class Program
     private static void CheckPropertyImplementations()
     {
         BooleanProperty lit = BooleanProperty.Create("lit");
-        Require(lit.PossibleValues.SequenceEqual(new[] { false, true }), "Boolean values must be false then true.");
+        Require(lit.PossibleValues.SequenceEqual(new[] { true, false }), "Boolean values must be true then false, matching Minecraft.");
         Require(lit.TryParse("true", out bool parsedTrue) && parsedTrue, "Boolean parsing must accept true.");
         Require(!lit.TryParse("TRUE", out _), "Boolean parsing must be case-sensitive.");
 
