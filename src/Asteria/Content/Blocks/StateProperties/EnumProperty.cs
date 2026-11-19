@@ -1,9 +1,11 @@
+using System.Reflection;
+
 namespace Asteria.Content.Blocks.StateProperties;
 
 /// <summary>
 /// A property backed by a selected set of enum values.
-/// Values are ordered by the enum's underlying numeric value. Serialized values default
-/// to the lowercase enum member name; a selector can override them.
+/// Values retain their supplied order. Serialized values default to the lowercase enum
+/// member name; a selector can override them.
 /// </summary>
 public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
     where TEnum : struct, Enum
@@ -27,7 +29,7 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
         _namesByValue = new Dictionary<TEnum, string>();
         _valuesByName = new Dictionary<string, TEnum>(StringComparer.Ordinal);
 
-        foreach (TEnum value in values.OrderBy(value => value, Comparer<TEnum>.Default))
+        foreach (TEnum value in values)
         {
             if (_namesByValue.ContainsKey(value))
             {
@@ -61,7 +63,11 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
 
     public static EnumProperty<TEnum> Create(string name)
     {
-        TEnum[] values = Enum.GetValues<TEnum>();
+        TEnum[] values = typeof(TEnum)
+            .GetFields(BindingFlags.Public | BindingFlags.Static)
+            .OrderBy(field => field.MetadataToken)
+            .Select(field => (TEnum)field.GetValue(null)!)
+            .ToArray();
         return new EnumProperty<TEnum>(
             name,
             values,
