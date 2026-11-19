@@ -166,7 +166,9 @@ internal static class Program
             parallelRegistry.Register(entryId, new Block(BlockProperties.Default));
         parallelRegistry.Freeze();
         Require(!registered.Equals(parallelReference), "Reference holders from separate registry instances must retain object identity.");
-        Require(!registered.Is(parallelReference), "A reference holder must not match a different registry instance with the same logical key.");
+        Require(registered.Is(parallelReference), "Reference holder matching must follow the resource key, not holder instance identity.");
+        Require(parallelReference.Is(registered), "Reference holder key matching must work in both directions.");
+        Require(!registered.Is(Holder<Block>.Direct(value)), "Reference holder matching must reject direct holders.");
 
         RequireThrows<InvalidOperationException>(
             () => registry.BindTags(Array.Empty<KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>>()),

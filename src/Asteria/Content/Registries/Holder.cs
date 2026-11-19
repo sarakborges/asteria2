@@ -99,7 +99,7 @@ public abstract class Holder<T> where T : class
         public override bool Is(Holder<T> holder)
         {
             ArgumentNullException.ThrowIfNull(holder);
-            return ReferenceEquals(this, holder);
+            return holder.Is(Key);
         }
 
         public override bool CanSerializeIn(HolderOwner<T> owner)
