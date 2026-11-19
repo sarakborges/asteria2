@@ -36,6 +36,7 @@ internal static class Program
         Require(BuiltInRegistries.Block.Count == 2, "Two Asteria blocks should be registered.");
         Require(BuiltInRegistries.BlockStates.Count == 7, "Expected one air state and six test states.");
 
+        CheckResourceLocations();
         CheckDefaultedBlockRegistry();
         CheckBlockProperties();
         CheckRegistryHoldersAndTags();
@@ -49,6 +50,23 @@ internal static class Program
         CheckPalettedContainerGrowthAndGlobalMode();
         CheckChunkSection();
         CheckFrozenRegistry();
+    }
+
+    private static void CheckResourceLocations()
+    {
+        Require(
+            ResourceLocation.Parse("stone") == ResourceLocation.Parse("minecraft:stone"),
+            "Identifier.parse must apply the minecraft default namespace when none is supplied.");
+        Require(
+            ResourceLocation.Parse(":stone") == ResourceLocation.Parse("minecraft:stone"),
+            "Identifier.parse must apply the default namespace when the separator is first.");
+        Require(
+            ResourceLocation.TryParse("stone", out ResourceLocation parsed) &&
+            parsed == ResourceLocation.Parse("minecraft:stone"),
+            "Identifier.tryParse must accept valid identifiers without an explicit namespace.");
+        Require(
+            !ResourceLocation.TryParse("..:stone", out _),
+            "Identifier namespaces must reject the reserved '..' namespace.");
     }
 
     private static void CheckDefaultedBlockRegistry()

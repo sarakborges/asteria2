@@ -39,13 +39,14 @@ public readonly record struct ResourceLocation
         ArgumentNullException.ThrowIfNull(value);
 
         int separator = value.IndexOf(':');
-        if (separator <= 0 || separator != value.LastIndexOf(':') || separator == value.Length - 1)
+        if (separator < 0)
         {
-            throw new FormatException(
-                $"Resource location '{value}' must use the format 'namespace:path'.");
+            return new ResourceLocation("minecraft", value);
         }
 
-        return new ResourceLocation(value[..separator], value[(separator + 1)..]);
+        string path = value[(separator + 1)..];
+        string @namespace = separator == 0 ? "minecraft" : value[..separator];
+        return new ResourceLocation(@namespace, path);
     }
 
     public static bool TryParse(string? value, out ResourceLocation location)
@@ -79,6 +80,11 @@ public readonly record struct ResourceLocation
 
     private static bool IsValidNamespace(string value)
     {
+        if (value == "..")
+        {
+            return false;
+        }
+
         foreach (char character in value)
         {
             bool valid =
