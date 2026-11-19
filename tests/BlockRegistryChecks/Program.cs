@@ -318,6 +318,9 @@ internal static class Program
         Require(
             registry.GetResourceKey(new Block(BlockProperties.Default)) is null,
             "Registry.getResourceKey must return no key for an unregistered value.");
+
+        registry.Freeze();
+
         Require(
             ReferenceEquals(registry.GetOptional(entryId), registeredValue),
             "Registry.getOptional(identifier) must return a registered value.");
