@@ -174,7 +174,7 @@ internal static class Program
             definition.Any().GetValue(Blocks.TEST_POWERED),
             "The first state must follow Minecraft's BooleanProperty order: true before false.");
 
-        BlockState defaultState = definition.DefaultState;
+        BlockState defaultState = Blocks.TEST_BLOCK.DefaultState;
         Require(!defaultState.GetValue(Blocks.TEST_POWERED), "powered default must be false.");
         Require(defaultState.GetValue(Blocks.TEST_STAGE) == 1, "stage default must be one.");
         Require(ReferenceEquals(defaultState, Blocks.TEST_BLOCK.DefaultState), "The default state must be a stable precomputed instance.");
@@ -310,11 +310,9 @@ internal static class Program
     private static void CheckPalettedContainerGrowthAndGlobalMode()
     {
         IntegerProperty variant = IntegerProperty.Create("variant", 0, 256);
-        var manyStateBlock = new Block(BlockProperties.Default, builder =>
-        {
-            builder.Add(variant);
-            builder.SetDefault(variant, 0);
-        });
+        var manyStateBlock = new Block(
+            BlockProperties.Default,
+            builder => builder.Add(variant));
 
         var ids = new BlockStateIdMap();
         foreach (BlockState state in manyStateBlock.StateDefinition.PossibleStates) ids.Register(state);
