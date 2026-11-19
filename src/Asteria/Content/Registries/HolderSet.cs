@@ -62,16 +62,11 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
         return _contentsSet.Contains(holder);
     }
 
-    public virtual Holder<T> GetRandomElement(Random random)
+    public virtual Holder<T>? GetRandomElement(Random random)
     {
         ArgumentNullException.ThrowIfNull(random);
         IReadOnlyList<Holder<T>> contents = Contents;
-        if (contents.Count == 0)
-        {
-            throw new InvalidOperationException("Cannot select a random element from an empty holder set.");
-        }
-
-        return contents[random.Next(contents.Count)];
+        return contents.Count == 0 ? null : contents[random.Next(contents.Count)];
     }
 
     public virtual HolderSetUnwrap<T> Unwrap() =>

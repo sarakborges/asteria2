@@ -249,9 +249,9 @@ internal static class Program
         Require(directSet.UnwrapKey() is null, "Direct HolderSet.unwrapKey must be empty.");
         Require(ReferenceEquals(directSet.Get(0), registered), "HolderSet.get must return an indexed holder.");
         Require(ReferenceEquals(directSet.GetRandomElement(new Random(0)), registered), "Direct HolderSet.getRandomElement must select an existing holder.");
-        RequireThrows<InvalidOperationException>(
-            () => HolderSet<Block>.Empty.GetRandomElement(new Random(0)),
-            "HolderSet.getRandomElement must fail when its contents are empty.");
+        Require(
+            HolderSet<Block>.Empty.GetRandomElement(new Random(0)) is null,
+            "HolderSet.getRandomElement must return an empty result when its contents are empty.");
 
         var parallelRegistry = new Registry<Block>(registryId);
         Holder<Block>.Reference parallelReference =
