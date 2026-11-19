@@ -23,7 +23,7 @@ public sealed class DefaultedRegistry<T> : Registry<T> where T : class
     public override T Get(ResourceLocation location) =>
         GetValue(location) ?? GetDefaultHolder().Value;
 
-    public override int GetId(T value)
+    public override int GetId(T? value)
     {
         int id = base.GetId(value);
         return id >= 0 ? id : GetDefaultHolderId();
@@ -35,7 +35,7 @@ public sealed class DefaultedRegistry<T> : Registry<T> where T : class
     public override Holder<T>.Reference? GetHolderById(int id) =>
         base.GetHolderById(id) ?? GetDefaultHolder();
 
-    public override ResourceLocation? GetKey(T value) =>
+    public override ResourceLocation? GetKey(T? value) =>
         base.GetKey(value) ?? GetDefaultHolder().Key.Location;
 
     public override void Freeze()

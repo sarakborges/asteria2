@@ -183,24 +183,18 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
         return holders;
     }
 
-    public virtual int GetId(T value)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-        return _toId.TryGetValue(value, out int id) ? id : -1;
-    }
+    public virtual int GetId(T? value) =>
+        value is not null && _toId.TryGetValue(value, out int id) ? id : -1;
 
     public virtual T GetById(int id) =>
         (uint)id < (uint)_byId.Count
             ? _byId[id].Value
             : throw new ArgumentOutOfRangeException(nameof(id), id, "The runtime registry ID does not exist.");
 
-    public virtual ResourceLocation? GetKey(T value)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-        return _byValue.TryGetValue(value, out Holder<T>.Reference? holder)
+    public virtual ResourceLocation? GetKey(T? value) =>
+        value is not null && _byValue.TryGetValue(value, out Holder<T>.Reference? holder)
             ? holder.Key.Location
             : null;
-    }
 
     public void BindTags(IEnumerable<KeyValuePair<TagKey<T>, IEnumerable<Holder<T>>>> tagDefinitions)
     {

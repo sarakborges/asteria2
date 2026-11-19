@@ -32,11 +32,8 @@ public sealed class BlockStateIdMap : IReadOnlyCollection<BlockState>, IIdMap<Bl
         return id;
     }
 
-    public int GetId(BlockState state)
-    {
-        ArgumentNullException.ThrowIfNull(state);
-        return _ids.TryGetValue(state, out int id) ? id : -1;
-    }
+    public int GetId(BlockState? state) =>
+        state is not null && _ids.TryGetValue(state, out int id) ? id : -1;
 
     public BlockState ById(int id)
     {

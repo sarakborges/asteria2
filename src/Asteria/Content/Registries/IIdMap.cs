@@ -8,6 +8,6 @@ public interface IIdMap<T> where T : class
 {
     int Count { get; }
     bool IsFrozen { get; }
-    int GetId(T value);
+    int GetId(T? value);
     T GetById(int id);
 }

@@ -59,6 +59,8 @@ internal static class Program
         Require(ReferenceEquals(BuiltInRegistries.Block.Get(missingId), Blocks.AIR), "Unknown block keys must resolve to air.");
         Require(BuiltInRegistries.Block.GetHolder(missingId) is null, "Exact holder lookups must not hide missing keys.");
         Require(BuiltInRegistries.Block.GetId(new Block(BlockProperties.Default)) == 0, "Unknown objects must resolve to the default block ID.");
+        Require(BuiltInRegistries.Block.GetId(null!) == 0, "Null reverse lookups in a defaulted registry must resolve to the default ID.");
+        Require(BuiltInRegistries.Block.GetKey(null!) == airId, "Null key lookups in a defaulted registry must resolve to the default key.");
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Block.GetHolderById(999),
@@ -91,6 +93,8 @@ internal static class Program
         ResourceLocation tagId = ResourceLocation.Parse("asteria:test_tag");
 
         var registry = new Registry<Block>(registryId);
+        Require(registry.GetId(null!) == -1, "A non-defaulted registry must return -1 for a null reverse lookup.");
+        Require(registry.GetKey(null!) is null, "A non-defaulted registry must return null for a null key lookup.");
         var entryKey = new RegistryKey<Block>(registryId, entryId);
         var placeholderKey = new RegistryKey<Block>(registryId, placeholderId);
         var tagKey = new TagKey<Block>(registryId, tagId);
@@ -217,6 +221,7 @@ internal static class Program
     private static void CheckGlobalStateIds()
     {
         BlockStateIdMap ids = BuiltInRegistries.BlockStates;
+        Require(ids.GetId(null!) == -1, "The block-state ID map must return -1 for a null reverse lookup.");
         for (int id = 0; id < ids.Count; id++)
         {
             BlockState state = ids.ById(id);
