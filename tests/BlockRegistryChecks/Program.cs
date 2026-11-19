@@ -464,10 +464,10 @@ internal static class Program
 
         var emptySection = new ChunkSection(BuiltInRegistries.BlockStates, Blocks.AIR.DefaultState);
         Require(!emptySection.MaybeHas(state => !state.Block.Properties.IsAir), "An untouched air-only palette must rule out non-air blocks.");
-        Require(ChunkSection.GetIndex(16, 0, 0) == 1, "Section indices must use vanilla bit shifts without per-axis bounds checks.");
+        Require(ChunkSection.GetIndex(16, 0, 0) == 16, "Section indices must use vanilla bit shifts without per-axis bounds checks.");
         Require(
-            ReferenceEquals(section.GetBlockState(16, 0, 0), section.GetBlockState(1, 0, 0)),
-            "Coordinates are flattened by the vanilla section strategy before the final storage index is validated.");
+            ReferenceEquals(section.GetBlockState(16, 0, 0), section.GetBlockState(0, 0, 1)),
+            "Coordinates are flattened in vanilla X/Z/Y order before the final storage index is validated.");
         RequireThrows<ArgumentOutOfRangeException>(() => section.GetBlockState(-1, 0, 0), "A negative flattened index must be rejected by packed storage.");
     }
 
