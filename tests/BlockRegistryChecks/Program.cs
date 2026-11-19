@@ -350,6 +350,19 @@ internal static class Program
         Require(section.HasOnlyAir, "The section must become empty after restoring air.");
         Require(section.MaybeHas(state => !state.Block.Properties.IsAir), "maybeHas may conservatively return true for an unused local entry.");
 
+        // LevelChunkSection exposes its state container and can rebuild its cached counters.
+        section.GetStates().Set(0, placedState);
+        Require(section.NonAirBlockCount == 0, "Direct container writes do not implicitly update section counters.");
+        section.RecalculateBlockCounts();
+        Require(section.NonAirBlockCount == 1, "RecalculateBlockCounts must rebuild the non-air count from palette contents.");
+
+        ChunkSection sectionCopy = section.Copy();
+        Require(sectionCopy.NonAirBlockCount == 1, "A copied section must preserve its cached counters.");
+        Require(ReferenceEquals(sectionCopy.GetBlockState(0), placedState), "A copied section must preserve block states.");
+        sectionCopy.SetBlockState(0, 0, 0, Blocks.AIR.DefaultState);
+        Require(sectionCopy.NonAirBlockCount == 0, "Mutating a copied section must update its own counters.");
+        Require(section.NonAirBlockCount == 1, "Mutating a copied section must not affect the original.");
+
         var emptySection = new ChunkSection(BuiltInRegistries.BlockStates, Blocks.AIR.DefaultState);
         Require(!emptySection.MaybeHas(state => !state.Block.Properties.IsAir), "An untouched air-only palette must rule out non-air blocks.");
         RequireThrows<ArgumentOutOfRangeException>(() => section.GetBlockState(16, 0, 0), "X coordinates outside 0-15 must be rejected.");

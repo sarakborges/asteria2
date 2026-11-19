@@ -41,6 +41,12 @@ public sealed class ChunkSection
         _states = new PalettedContainer<BlockState>(strategy, airState);
     }
 
+    private ChunkSection(PalettedContainer<BlockState> states, ushort nonAirBlockCount)
+    {
+        _states = states;
+        _nonAirBlockCount = nonAirBlockCount;
+    }
+
     public BlockState GetBlockState(int x, int y, int z) =>
         _states.Get(GetIndex(x, y, z));
 
@@ -79,6 +85,27 @@ public sealed class ChunkSection
 
     public bool MaybeHas(Func<BlockState, bool> predicate) =>
         _states.MaybeHas(predicate);
+
+    /// <summary>Returns the mutable block-state container, matching LevelChunkSection.getStates().</summary>
+    public PalettedContainer<BlockState> GetStates() => _states;
+
+    /// <summary>Rebuilds cached section counts from the block-state palette.</summary>
+    public void RecalculateBlockCounts()
+    {
+        int nonAirBlockCount = 0;
+        _states.Count((state, count) =>
+        {
+            if (!state.Block.Properties.IsAir)
+            {
+                nonAirBlockCount += count;
+            }
+        });
+
+        _nonAirBlockCount = checked((ushort)nonAirBlockCount);
+    }
+
+    public ChunkSection Copy() =>
+        new(_states.Copy(), _nonAirBlockCount);
 
     public static int GetIndex(int x, int y, int z)
     {

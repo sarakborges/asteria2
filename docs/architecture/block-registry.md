@@ -38,8 +38,8 @@ The port does not yet include RegistrationInfo/Lifecycle, data-component lookup,
 
 - ChunkSection is a 16×16×16 block-state container.
 - Linear index is (y << 8) | (z << 4) | x.
-- The current section tracks the non-air block count and exposes the palette threading permit.
-- Other LevelChunkSection counters, fluid-state container, biome holder palette, copy, and serialization operations still need their matching domain types and codecs.
+- The section tracks the non-air block count, exposes its mutable state container, can recalculate cached counts from palette contents, and copies both its palette storage and cached count, matching the corresponding LevelChunkSection operations.
+- Fluid-derived and random-tick counters, fluid states, the biome holder palette, biome resolver operations, and serialization still require their matching Minecraft domain types and codecs.
 
 ## Remaining parity work
 
