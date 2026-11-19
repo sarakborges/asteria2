@@ -16,10 +16,16 @@ public sealed class IntegerProperty : StateProperty<int>
 
     private IntegerProperty(string name, int minimum, int maximum) : base(name)
     {
-        if (maximum < minimum)
+        if (minimum < 0)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(maximum), "Maximum must be greater than or equal to minimum.");
+                nameof(minimum), "Minimum must be zero or greater.");
+        }
+
+        if (maximum <= minimum)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(maximum), "Maximum must be greater than minimum.");
         }
 
         long count = (long)maximum - minimum + 1L;
@@ -44,21 +50,14 @@ public sealed class IntegerProperty : StateProperty<int>
     public static IntegerProperty Create(string name, int minimum, int maximum) =>
         new(name, minimum, maximum);
 
-    public override string GetName(int value)
-    {
-        if (IndexOf(value) < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(value), value, $"Value is not valid for '{Name}'.");
-        }
-
-        return value.ToString(CultureInfo.InvariantCulture);
-    }
+    public override string GetName(int value) =>
+        value.ToString(CultureInfo.InvariantCulture);
 
     public override bool TryParse(string serializedValue, out int value)
     {
         if (int.TryParse(
                 serializedValue,
-                NumberStyles.Integer,
+                NumberStyles.AllowLeadingSign,
                 CultureInfo.InvariantCulture,
                 out value) &&
             IndexOf(value) >= 0)
