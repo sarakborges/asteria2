@@ -84,18 +84,35 @@ public sealed class PackedBitStorage
             throw new ArgumentOutOfRangeException(nameof(value), value, $"Value does not fit in {BitsPerEntry} bits.");
         }
 
-        for (int index = 0; index < Size; index++)
+        ulong cellValue = (ulong)value & _mask;
+        int offset = BitsPerEntry;
+        do
         {
-            Set(index, value);
+            cellValue |= cellValue << offset;
         }
+        while ((offset <<= 1) < 64);
+
+        Array.Fill(_data, cellValue);
     }
 
     public void GetAll(Action<int> output)
     {
         ArgumentNullException.ThrowIfNull(output);
-        for (int index = 0; index < Size; index++)
+
+        int count = 0;
+        foreach (ulong storedValue in _data)
         {
-            output(Get(index));
+            ulong cellValue = storedValue;
+            for (int valueIndex = 0; valueIndex < _valuesPerLong; valueIndex++)
+            {
+                output((int)(cellValue & _mask));
+                if (++count >= Size)
+                {
+                    return;
+                }
+
+                cellValue >>= BitsPerEntry;
+            }
         }
     }
 

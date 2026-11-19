@@ -263,6 +263,21 @@ internal static class Program
         Require(storage.Get(4095) == 23, "Storage must preserve the final entry.");
         Require(storage.GetAndSet(11, 3) == 31, "getAndSet must return the previous value.");
         RequireThrows<ArgumentOutOfRangeException>(() => storage.Set(0, 32), "Storage must reject values that do not fit.");
+
+        var partialWordStorage = new PackedBitStorage(5, 17);
+        partialWordStorage.Fill(19);
+        Require(
+            Enumerable.Range(0, partialWordStorage.Size).All(index => partialWordStorage.Get(index) == 19),
+            "Fill must repeat the value through every complete and partial storage word.");
+
+        partialWordStorage.Set(8, 7);
+        var traversedValues = new List<int>();
+        partialWordStorage.GetAll(traversedValues.Add);
+        Require(
+            traversedValues.Count == 17 &&
+            traversedValues[8] == 7 &&
+            traversedValues.Where((_, index) => index != 8).All(value => value == 19),
+            "GetAll must visit entries in index order and stop at the logical size, not padded word capacity.");
     }
 
     private static void CheckPalettedContainer()
