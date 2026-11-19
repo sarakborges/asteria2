@@ -226,6 +226,14 @@ internal static class Program
         Require(ReferenceEquals(registered.Value, value), "The frozen holder must resolve to the registered value.");
         Require(registered.Is(tagKey), "Freeze must associate tags with their holders.");
         Require(tag.Contains(registered), "Named holder membership must work after registry freeze binds holder tags.");
+        HolderSetUnwrap<Block> namedUnwrap = tag.Unwrap();
+        Require(
+            namedUnwrap.IsTag &&
+            namedUnwrap.Tag == tagKey &&
+            namedUnwrap.Values is null,
+            "Named HolderSet.unwrap must return its tag key.");
+        Require(tag.UnwrapKey() == tagKey, "Named HolderSet.unwrapKey must return its tag key.");
+        Require(tag.Stream().Count() == 2, "HolderSet.stream must enumerate its bound entries.");
         Require(ReferenceEquals(registry.GetTag(tagKey), tag), "The frozen registry must expose its registered tag set.");
         Require(registry.GetTagOrEmpty(new TagKey<Block>(registryId, ResourceLocation.Parse("asteria:empty"))).Count == 0, "Missing tags must resolve to an empty holder set.");
 
@@ -233,6 +241,17 @@ internal static class Program
         Require(directSet.Count == 2, "Direct holder sets must preserve order and duplicate entries.");
         Require(directSet.CanSerializeIn(registry), "Direct holder sets are serializable regardless of the contained holder owner.");
         Require(directSet.Contains(registered), "Direct holder set membership must use holder equality.");
+        HolderSetUnwrap<Block> directUnwrap = directSet.Unwrap();
+        Require(
+            !directUnwrap.IsTag &&
+            directUnwrap.Values?.SequenceEqual(new Holder<Block>[] { registered, registered }) == true,
+            "Direct HolderSet.unwrap must return its holder list.");
+        Require(directSet.UnwrapKey() is null, "Direct HolderSet.unwrapKey must be empty.");
+        Require(ReferenceEquals(directSet.Get(0), registered), "HolderSet.get must return an indexed holder.");
+        Require(ReferenceEquals(directSet.GetRandomElement(new Random(0)), registered), "Direct HolderSet.getRandomElement must select an existing holder.");
+        RequireThrows<InvalidOperationException>(
+            () => HolderSet<Block>.Empty.GetRandomElement(new Random(0)),
+            "HolderSet.getRandomElement must fail when its contents are empty.");
 
         var parallelRegistry = new Registry<Block>(registryId);
         Holder<Block>.Reference parallelReference =

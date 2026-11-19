@@ -1,9 +1,34 @@
 namespace Asteria.Content.Registries;
 
+/// <summary>
+/// Represents the two vanilla HolderSet.unwrap() alternatives:
+/// a tag key or a direct list of holders.
+/// </summary>
+public readonly struct HolderSetUnwrap<T> where T : class
+{
+    public bool IsTag { get; }
+    public TagKey<T>? Tag { get; }
+    public IReadOnlyList<Holder<T>>? Values { get; }
+
+    private HolderSetUnwrap(TagKey<T>? tag, IReadOnlyList<Holder<T>>? values)
+    {
+        IsTag = tag.HasValue;
+        Tag = tag;
+        Values = values;
+    }
+
+    public static HolderSetUnwrap<T> FromTag(TagKey<T> tag) =>
+        new(tag, null);
+
+    public static HolderSetUnwrap<T> FromValues(IReadOnlyList<Holder<T>> values) =>
+        new(null, values ?? throw new ArgumentNullException(nameof(values)));
+}
+
 /// <summary>A direct or registry-named set of holders.</summary>
 public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
 {
     private readonly IReadOnlyList<Holder<T>>? _contents;
+    private HashSet<Holder<T>>? _contentsSet;
 
     public static HolderSet<T> Empty { get; } = new(Array.Empty<Holder<T>>());
     public virtual bool IsBound => _contents is not null;
@@ -15,18 +40,46 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
     public HolderSet(IEnumerable<Holder<T>> holders)
     {
         ArgumentNullException.ThrowIfNull(holders);
-        _contents = Array.AsReadOnly(holders.ToArray());
+        Holder<T>[] values = holders.ToArray();
+        if (values.Any(holder => holder is null))
+        {
+            throw new ArgumentException("Holder sets cannot contain null values.", nameof(holders));
+        }
+
+        _contents = Array.AsReadOnly(values);
     }
 
     protected HolderSet()
     {
     }
 
+    public virtual Holder<T> Get(int index) => Contents[index];
+
     public virtual bool Contains(Holder<T> holder)
     {
         ArgumentNullException.ThrowIfNull(holder);
-        return Contents.Contains(holder);
+        _contentsSet ??= new HashSet<Holder<T>>(Contents);
+        return _contentsSet.Contains(holder);
     }
+
+    public virtual Holder<T> GetRandomElement(Random random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+        IReadOnlyList<Holder<T>> contents = Contents;
+        if (contents.Count == 0)
+        {
+            throw new InvalidOperationException("Cannot select a random element from an empty holder set.");
+        }
+
+        return contents[random.Next(contents.Count)];
+    }
+
+    public virtual HolderSetUnwrap<T> Unwrap() =>
+        HolderSetUnwrap<T>.FromValues(Contents);
+
+    public virtual TagKey<T>? UnwrapKey() => null;
+
+    public virtual IEnumerable<Holder<T>> Stream() => Contents;
 
     public virtual bool CanSerializeIn(HolderOwner<T> owner)
     {
@@ -85,14 +138,29 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
         internal void Bind(IEnumerable<Holder<T>> holders)
         {
             ArgumentNullException.ThrowIfNull(holders);
-            _boundContents = Array.AsReadOnly(holders.ToArray());
+            Holder<T>[] values = holders.ToArray();
+            if (values.Any(holder => holder is null))
+            {
+                throw new ArgumentException("Holder sets cannot contain null values.", nameof(holders));
+            }
+
+            _boundContents = Array.AsReadOnly(values);
         }
+
+        public override Holder<T> Get(int index) => Contents[index];
 
         public override bool Contains(Holder<T> holder)
         {
             ArgumentNullException.ThrowIfNull(holder);
             return holder.Is(Key);
         }
+
+        public override HolderSetUnwrap<T> Unwrap() =>
+            HolderSetUnwrap<T>.FromTag(Key);
+
+        public override TagKey<T>? UnwrapKey() => Key;
+
+        public override IEnumerable<Holder<T>> Stream() => Contents;
 
         public override bool CanSerializeIn(HolderOwner<T> owner)
         {
