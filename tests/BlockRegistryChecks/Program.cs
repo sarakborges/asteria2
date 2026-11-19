@@ -8,6 +8,7 @@ using Asteria.Content.Storage;
 internal static class Program
 {
     private enum TestAxis { X = 0, Y = 1, Z = 2 }
+    private enum TestDeclaredOrder { Z = 2, X = 0, Y = 1 }
 
     private static int Main()
     {
@@ -172,8 +173,18 @@ internal static class Program
         RequireThrows<ArgumentException>(() => changedState.SetValue(foreignPowered, false), "SetValue must reject a property not owned by the block definition.");
         RequireThrows<ArgumentOutOfRangeException>(() => changedState.TrySetValue(Blocks.TEST_STAGE, 9), "trySetValue must reject values outside the property's allowed set.");
 
-        IntegerProperty singletonProperty = IntegerProperty.Create("only", 0, 0);
-        RequireThrows<ArgumentException>(() => new Block(BlockProperties.Default, builder => builder.Add(singletonProperty)), "StateDefinition must reject properties with one or fewer possible values.");
+        RequireThrows<ArgumentOutOfRangeException>(
+            () => IntegerProperty.Create("only", 0, 0),
+            "Minecraft integer properties require at least two possible values.");
+
+        RequireThrows<ArgumentOutOfRangeException>(
+            () => IntegerProperty.Create("negative", -1, 1),
+            "Minecraft integer properties must not include negative values.");
+
+        BooleanProperty invalidName = BooleanProperty.Create("Invalid Name");
+        RequireThrows<ArgumentException>(
+            () => new Block(BlockProperties.Default, builder => builder.Add(invalidName)),
+            "Property names must be validated when the state definition is built.");
     }
 
     private static void CheckGlobalStateIds()
@@ -202,10 +213,17 @@ internal static class Program
         Require(age.PossibleValues.SequenceEqual(new[] { 2, 3, 4 }), "Integer values must be inclusive and ascending.");
         Require(age.TryParse("3", out int parsedAge) && parsedAge == 3, "Integer parsing must accept in-range values.");
         Require(!age.TryParse("5", out _), "Integer parsing must reject out-of-range values.");
+        Require(!age.TryParse(" 3", out _), "Integer parsing must reject surrounding whitespace.");
+        Require(age.GetName(5) == "5", "Integer serialization must return the numeric name without range validation.");
 
         EnumProperty<TestAxis> axis = EnumProperty<TestAxis>.Create("axis", new[] { TestAxis.Z, TestAxis.X }, value => value.ToString().ToLowerInvariant());
-        Require(axis.PossibleValues.SequenceEqual(new[] { TestAxis.X, TestAxis.Z }), "Enum values must be ordered by underlying value.");
+        Require(axis.PossibleValues.SequenceEqual(new[] { TestAxis.Z, TestAxis.X }), "Enum properties must preserve the supplied value order.");
         Require(axis.TryParse("z", out TestAxis parsedAxis) && parsedAxis == TestAxis.Z, "Enum parsing must use the configured name.");
+
+        EnumProperty<TestDeclaredOrder> declared = EnumProperty<TestDeclaredOrder>.Create("declared");
+        Require(
+            declared.PossibleValues.SequenceEqual(new[] { TestDeclaredOrder.Z, TestDeclaredOrder.X, TestDeclaredOrder.Y }),
+            "Default enum properties must preserve enum declaration order rather than numeric sorting.");
     }
 
     private static void CheckPackedBitStorage()
