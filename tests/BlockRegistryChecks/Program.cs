@@ -494,6 +494,7 @@ internal static class Program
         Require(storage.Get(12) == 17, "Storage must preserve the first entry after a word boundary.");
         Require(storage.Get(13) == 9, "Storage must preserve entries after a word boundary.");
         Require(storage.Get(4095) == 23, "Storage must preserve the final entry.");
+        Require(storage.GetAndSet(11, 3) == 31, "getAndSet must return the previous value.");
         Require(
             ReferenceEquals(storage.GetRaw(), storage.GetRaw()),
             "SimpleBitStorage.getRaw must expose its backing array.");
@@ -509,7 +510,6 @@ internal static class Program
         Require(
             Enumerable.Range(0, 4).Select(fromValues.Get).SequenceEqual(new[] { 1, 2, 3, 4 }),
             "SimpleBitStorage must pack an initial integer array in logical index order.");
-        Require(storage.GetAndSet(11, 3) == 31, "getAndSet must return the previous value.");
         RequireThrows<ArgumentOutOfRangeException>(() => storage.Set(0, 32), "Storage must reject values that do not fit.");
 
         var thirtyTwoBitStorage = new PackedBitStorage(32, 3);
