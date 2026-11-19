@@ -6,6 +6,7 @@ namespace Asteria.Content.Blocks.StateProperties;
 public abstract class StateProperty
 {
     public string Name { get; }
+    protected abstract Type ValueType { get; }
     public abstract int ValueCount { get; }
 
     protected StateProperty(string name)
@@ -17,6 +18,14 @@ public abstract class StateProperty
     internal abstract object GetValueObject(int index);
     internal abstract int GetValueIndex(object value);
     internal abstract string GetSerializedValue(object value);
+
+    public override bool Equals(object? obj) =>
+        obj is StateProperty other &&
+        ValueType == other.ValueType &&
+        string.Equals(Name, other.Name, StringComparison.Ordinal);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(ValueType, Name);
 
     internal static bool IsValidName(string value)
     {
@@ -49,6 +58,8 @@ public abstract class StateProperty
 /// </summary>
 public abstract class StateProperty<T> : StateProperty where T : notnull, IComparable
 {
+    protected override Type ValueType => typeof(T);
+
     public abstract IReadOnlyList<T> PossibleValues { get; }
 
     protected StateProperty(string name) : base(name)
@@ -69,6 +80,17 @@ public abstract class StateProperty<T> : StateProperty where T : notnull, ICompa
         }
 
         return -1;
+    }
+
+    protected int GetPossibleValuesHashCode()
+    {
+        int hash = 1;
+        foreach (T value in PossibleValues)
+        {
+            hash = unchecked(hash * 31 + EqualityComparer<T>.Default.GetHashCode(value));
+        }
+
+        return hash;
     }
 
     internal override object GetValueObject(int index) => PossibleValues[index];

@@ -61,6 +61,33 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
         _values = orderedValues.AsReadOnly();
     }
 
+    public override bool Equals(object? obj)
+    {
+        if (obj is not EnumProperty<TEnum> other ||
+            !base.Equals(other) ||
+            !_values.SequenceEqual(other._values))
+        {
+            return false;
+        }
+
+        return _values.All(value =>
+            string.Equals(
+                _namesByValue[value],
+                other._namesByValue[value],
+                StringComparison.Ordinal));
+    }
+
+    public override int GetHashCode()
+    {
+        int hash = unchecked(base.GetHashCode() * 31 + GetPossibleValuesHashCode());
+        foreach (TEnum value in _values)
+        {
+            hash = unchecked(hash * 31 + StringComparer.Ordinal.GetHashCode(_namesByValue[value]));
+        }
+
+        return hash;
+    }
+
     public static EnumProperty<TEnum> Create(string name)
     {
         TEnum[] values = typeof(TEnum)

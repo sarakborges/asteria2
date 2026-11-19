@@ -454,6 +454,8 @@ internal static class Program
         Require(defaultState.Cycle(Blocks.TEST_POWERED).GetValue(Blocks.TEST_POWERED), "Boolean cycling must toggle false to true.");
 
         BooleanProperty foreignPowered = BooleanProperty.Create("powered");
+        Require(Blocks.TEST_POWERED.Equals(foreignPowered), "Boolean properties with the same value type and name must compare equal.");
+        Require(Blocks.TEST_POWERED.GetHashCode() == foreignPowered.GetHashCode(), "Equal Boolean properties must have equal hash codes.");
         Require(ReferenceEquals(changedState, changedState.TrySetValue(foreignPowered, false)), "trySetValue with a foreign property instance must preserve the current state.");
         Require(!changedState.TryGetValue(foreignPowered, out _), "A separate property instance must not be accepted by name alone.");
         RequireThrows<ArgumentException>(() => changedState.SetValue(foreignPowered, false), "SetValue must reject a property not owned by the block definition.");
@@ -498,6 +500,9 @@ internal static class Program
         Require(!lit.TryParse("TRUE", out _), "Boolean parsing must be case-sensitive.");
 
         IntegerProperty age = IntegerProperty.Create("age", 2, 4);
+        Require(age.Equals(IntegerProperty.Create("age", 2, 4)), "Integer properties must compare by name and possible values.");
+        Require(!age.Equals(IntegerProperty.Create("age", 1, 4)), "Integer properties with different ranges must not compare equal.");
+        Require(age.GetHashCode() == IntegerProperty.Create("age", 2, 4).GetHashCode(), "Equal integer properties must have equal hash codes.");
         Require(age.PossibleValues.SequenceEqual(new[] { 2, 3, 4 }), "Integer values must be inclusive and ascending.");
         Require(age.TryParse("3", out int parsedAge) && parsedAge == 3, "Integer parsing must accept in-range values.");
         Require(!age.TryParse("5", out _), "Integer parsing must reject out-of-range values.");
@@ -509,6 +514,12 @@ internal static class Program
         Require(axis.TryParse("z", out TestAxis parsedAxis) && parsedAxis == TestAxis.Z, "Enum parsing must use the configured name.");
 
         EnumProperty<TestDeclaredOrder> declared = EnumProperty<TestDeclaredOrder>.Create("declared");
+        Require(
+            declared.Equals(EnumProperty<TestDeclaredOrder>.Create("declared")),
+            "Enum properties with the same name, ordered values, and serialized names must compare equal.");
+        Require(
+            declared.GetHashCode() == EnumProperty<TestDeclaredOrder>.Create("declared").GetHashCode(),
+            "Equal enum properties must have equal hash codes.");
         Require(
             declared.PossibleValues.SequenceEqual(new[] { TestDeclaredOrder.Z, TestDeclaredOrder.X, TestDeclaredOrder.Y }),
             "Default enum properties must preserve enum declaration order rather than numeric sorting.");

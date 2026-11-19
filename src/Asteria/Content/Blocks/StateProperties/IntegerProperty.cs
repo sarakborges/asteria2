@@ -47,6 +47,14 @@ public sealed class IntegerProperty : StateProperty<int>
         _values = Array.AsReadOnly(values);
     }
 
+    public override bool Equals(object? obj) =>
+        obj is IntegerProperty other &&
+        base.Equals(other) &&
+        _values.SequenceEqual(other._values);
+
+    public override int GetHashCode() =>
+        unchecked(base.GetHashCode() * 31 + GetPossibleValuesHashCode());
+
     public static IntegerProperty Create(string name, int minimum, int maximum) =>
         new(name, minimum, maximum);
 
