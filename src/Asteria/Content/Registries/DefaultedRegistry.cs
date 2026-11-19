@@ -58,17 +58,6 @@ public sealed class DefaultedRegistry<T> : Registry<T> where T : class
     public override ResourceLocation? GetKey(T? value) =>
         base.GetKey(value) ?? GetDefaultHolder().Key.Location;
 
-    public override void Freeze()
-    {
-        Holder<T>.Reference? defaultHolder = base.GetHolder(DefaultKey);
-        if (defaultHolder is null)
-            throw new InvalidOperationException(
-                $"Cannot freeze registry '{Location}': default entry '{DefaultKey}' was not registered.");
-
-        _defaultHolder = defaultHolder;
-        base.Freeze();
-    }
-
     private Holder<T>.Reference GetDefaultHolder()
     {
         if (_defaultHolder is not null)

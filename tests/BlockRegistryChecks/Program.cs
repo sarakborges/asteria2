@@ -353,6 +353,14 @@ internal static class Program
             () => registry.GetValueOrThrow(new RegistryKey<Block>(registryId, missingId)),
             "getValueOrThrow must reject a missing resource key.");
 
+        var missingDefault = new DefaultedRegistry<Block>(
+            ResourceLocation.Parse("asteria:missing_default_registry"),
+            ResourceLocation.Parse("asteria:not_registered"));
+        missingDefault.Freeze();
+        RequireThrows<InvalidOperationException>(
+            () => missingDefault.GetValue(missingId),
+            "A defaulted registry without a default entry must still freeze and fail only when fallback lookup is required.");
+
         var defaulted = new DefaultedRegistry<Block>(
             ResourceLocation.Parse("asteria:defaulted_value_lookup"),
             ResourceLocation.Parse("asteria:air"));
