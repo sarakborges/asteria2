@@ -59,6 +59,7 @@ internal static class Program
         CheckGlobalStateIds();
         CheckPropertyImplementations();
         CheckPackedBitStorage();
+        CheckZeroBitStorage();
         CheckIdentityIdMap();
         CheckPaletteExceptions();
         CheckPalettedContainer();
@@ -521,6 +522,28 @@ internal static class Program
             traversedValues[8] == 7 &&
             traversedValues.Where((_, index) => index != 8).All(value => value == 19),
             "GetAll must visit entries in index order and stop at the logical size, not padded word capacity.");
+    }
+
+    private static void CheckZeroBitStorage()
+    {
+        var storage = new ZeroBitStorage(4);
+        Require(storage.BitsPerEntry == 0, "ZeroBitStorage must use zero bits per entry.");
+        Require(storage.Size == 4 && storage.LongCount == 0, "ZeroBitStorage must retain its logical size without allocating words.");
+        Require(storage.Get(0) == 0 && storage.Get(3) == 0, "Every valid zero-bit entry must be zero.");
+        Require(storage.GetAndSet(2, 0) == 0, "ZeroBitStorage getAndSet must return zero.");
+        storage.Set(1, 0);
+        storage.Fill(0);
+
+        var values = new List<int>();
+        storage.GetAll(values.Add);
+        Require(values.SequenceEqual(new[] { 0, 0, 0, 0 }), "ZeroBitStorage getAll must emit one zero per logical entry.");
+
+        int[] unpacked = { 9, 9, 9, 9, 9, 9 };
+        storage.Unpack(unpacked);
+        Require(unpacked.SequenceEqual(new[] { 0, 0, 0, 0, 9, 9 }), "ZeroBitStorage unpack must zero only its logical range.");
+        Require(ReferenceEquals(storage, storage.Copy()), "ZeroBitStorage copy must return the same immutable storage instance.");
+        RequireThrows<ArgumentOutOfRangeException>(() => storage.Set(0, 1), "ZeroBitStorage must reject non-zero values.");
+        RequireThrows<ArgumentOutOfRangeException>(() => storage.Get(4), "ZeroBitStorage must validate indexes.");
     }
 
     private static void CheckIdentityIdMap()

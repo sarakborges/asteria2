@@ -11,29 +11,24 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
     {
         public PaletteConfiguration Configuration { get; }
         public IPalette<T> Palette { get; }
-        public PackedBitStorage? Storage { get; }
+        public IBitStorage Storage { get; }
 
-        public Data(PaletteConfiguration configuration, IPalette<T> palette, PackedBitStorage? storage)
+        public Data(PaletteConfiguration configuration, IPalette<T> palette, IBitStorage storage)
         {
             Configuration = configuration;
             Palette = palette;
             Storage = storage;
         }
 
-        public void CopyFrom(IPalette<T> oldPalette, PackedBitStorage? oldStorage)
+        public void CopyFrom(IPalette<T> oldPalette, IBitStorage oldStorage)
         {
             IPaletteResize<T> noResize = NoResizePaletteResize<T>.Instance;
 
             if (oldPalette.Count == 1)
             {
                 int paletteId = Palette.IdFor(oldPalette.ValueFor(0), noResize);
-                Storage?.Fill(paletteId);
+                Storage.Fill(paletteId);
                 return;
-            }
-
-            if (oldStorage is null || Storage is null)
-            {
-                throw new InvalidOperationException("A multi-value palette requires packed storage.");
             }
 
             int previousOldId = -1;
@@ -52,7 +47,7 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         }
 
         public Data Copy() =>
-            new(Configuration, Palette.Copy(), Storage?.Copy());
+            new(Configuration, Palette.Copy(), Storage.Copy());
     }
 
     private readonly PalettedContainerStrategy<T> _strategy;
@@ -61,11 +56,11 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
 
     public int Size => _strategy.EntryCount;
     public PaletteMode Mode => Volatile.Read(ref _data).Configuration.Mode;
-    public int BitsPerEntry => Volatile.Read(ref _data).Storage?.BitsPerEntry ?? 0;
+    public int BitsPerEntry => Volatile.Read(ref _data).Storage.BitsPerEntry;
     public int BitsInStorage => Volatile.Read(ref _data).Configuration.BitsInStorage;
     public bool AlwaysRepack => Volatile.Read(ref _data).Configuration.AlwaysRepack;
     public int PaletteSize => Volatile.Read(ref _data).Palette.Count;
-    public int StorageLongCount => Volatile.Read(ref _data).Storage?.LongCount ?? 0;
+    public int StorageLongCount => Volatile.Read(ref _data).Storage.LongCount;
     public bool IsSingleValue => Volatile.Read(ref _data).Configuration.Mode == PaletteMode.SingleValue;
     public string? LocalPaletteImplementation =>
         Volatile.Read(ref _data).Configuration.Mode == PaletteMode.Local
@@ -99,8 +94,8 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
             _ => throw new InvalidOperationException($"Unknown palette mode '{configuration.Mode}'.")
         };
 
-        PackedBitStorage? storage = configuration.BitsInMemory == 0
-            ? null
+        IBitStorage storage = configuration.BitsInMemory == 0
+            ? new ZeroBitStorage(_strategy.EntryCount)
             : new PackedBitStorage(configuration.BitsInMemory, _strategy.EntryCount);
 
         return new Data(configuration, palette, storage);
@@ -110,7 +105,7 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
     {
         ValidateIndex(index);
         Data data = Volatile.Read(ref _data);
-        int paletteId = data.Storage?.Get(index) ?? 0;
+        int paletteId = data.Storage.Get(index);
         return data.Palette.ValueFor(paletteId);
     }
 
@@ -156,11 +151,6 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
 
         // IdFor may resize and publish a new Data snapshot.
         data = Volatile.Read(ref _data);
-        if (data.Storage is null)
-        {
-            return data.Palette.ValueFor(0);
-        }
-
         int previousId = data.Storage.GetAndSet(index, paletteId);
         return data.Palette.ValueFor(previousId);
     }
@@ -181,7 +171,7 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
 
         // IdFor may resize and publish a new Data snapshot.
         data = Volatile.Read(ref _data);
-        data.Storage?.Set(index, paletteId);
+        data.Storage.Set(index, paletteId);
     }
 
     public void Acquire()
@@ -225,12 +215,6 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         ArgumentNullException.ThrowIfNull(action);
         Data data = Volatile.Read(ref _data);
 
-        if (data.Storage is null)
-        {
-            action(data.Palette.ValueFor(0));
-            return;
-        }
-
         var seenIds = new HashSet<int>();
         var presentIds = new List<int>();
         data.Storage.GetAll(id =>
@@ -255,11 +239,6 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         {
             output(data.Palette.ValueFor(0), Size);
             return;
-        }
-
-        if (data.Storage is null)
-        {
-            throw new InvalidOperationException("A multi-value palette requires packed storage.");
         }
 
         var counts = new Dictionary<int, int>();

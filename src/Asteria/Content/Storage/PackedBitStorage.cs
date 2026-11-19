@@ -4,7 +4,7 @@ namespace Asteria.Content.Storage;
 /// Fixed-width storage matching Minecraft SimpleBitStorage's word layout.
 /// Entries never straddle 64-bit word boundaries.
 /// </summary>
-public sealed class PackedBitStorage
+public sealed class PackedBitStorage : IBitStorage
 {
     private readonly ulong[] _data;
     private readonly ulong _mask;
@@ -116,6 +116,35 @@ public sealed class PackedBitStorage
         }
     }
 
+    public void Unpack(int[] output)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+
+        int outputOffset = 0;
+        for (int wordIndex = 0; wordIndex < _data.Length - 1; wordIndex++)
+        {
+            ulong cellValue = _data[wordIndex];
+            for (int valueIndex = 0; valueIndex < _valuesPerLong; valueIndex++)
+            {
+                output[outputOffset + valueIndex] = (int)(cellValue & _mask);
+                cellValue >>= BitsPerEntry;
+            }
+
+            outputOffset += _valuesPerLong;
+        }
+
+        int remainder = Size - outputOffset;
+        if (remainder > 0)
+        {
+            ulong cellValue = _data[^1];
+            for (int valueIndex = 0; valueIndex < remainder; valueIndex++)
+            {
+                output[outputOffset + valueIndex] = (int)(cellValue & _mask);
+                cellValue >>= BitsPerEntry;
+            }
+        }
+    }
+
     public void CopyTo(PackedBitStorage destination)
     {
         ArgumentNullException.ThrowIfNull(destination);
@@ -131,6 +160,8 @@ public sealed class PackedBitStorage
     }
 
     public PackedBitStorage Copy() => new(BitsPerEntry, Size, _data);
+
+    IBitStorage IBitStorage.Copy() => Copy();
 
     public ulong[] GetRawCopy() => (ulong[])_data.Clone();
 
