@@ -374,7 +374,10 @@ internal static class Program
         for (int value = 1; value <= 256; value++)
             Require(ReferenceEquals(container.Get(value - 1), states[value]), "Palette promotion must preserve every stored value.");
         Require(ReferenceEquals(container.Get(256), manyStateBlock.DefaultState), "Palette promotion must preserve untouched defaults.");
-        RequireThrows<ArgumentException>(() => container.Set(300, Blocks.AIR.DefaultState), "Paletted containers must reject values absent from their ID map.");
+        container.Set(300, Blocks.AIR.DefaultState);
+        Require(
+            ReferenceEquals(container.Get(300), states[0]),
+            "The vanilla global palette must map values without a global ID to ID zero.");
     }
 
     private static void CheckGlobalPaletteMemoryAndStorageWidths()

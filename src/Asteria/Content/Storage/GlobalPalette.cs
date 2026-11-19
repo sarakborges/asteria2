@@ -22,14 +22,8 @@ internal sealed class GlobalPalette<T> : IPalette<T> where T : class
 
     public int IdFor(T value, IPaletteResize<T> resize)
     {
-        ArgumentNullException.ThrowIfNull(value);
         int id = _idMap.GetId(value);
-        if (id < 0)
-        {
-            throw new ArgumentException("The value is not registered in the global ID map.", nameof(value));
-        }
-
-        return id;
+        return id == -1 ? 0 : id;
     }
 
     public T ValueFor(int id) => _idMap.GetById(id);
