@@ -45,7 +45,9 @@ public partial class Main : Node3D
             throw new InvalidOperationException("The test block should have exactly six possible states.");
         if (BuiltInRegistries.BlockStates.Count != 7)
             throw new InvalidOperationException("The global block-state map should contain seven states.");
-        if (!ReferenceEquals(BuiltInRegistries.BlockStates.ById(changedState.GlobalId), changedState))
+        int changedStateId = BuiltInRegistries.BlockStates.GetId(changedState);
+        if (changedStateId < 0 ||
+            !ReferenceEquals(BuiltInRegistries.BlockStates.ById(changedStateId), changedState))
             throw new InvalidOperationException("Global block-state ID lookup failed.");
 
         bool rejectedInvalidValue = false;
