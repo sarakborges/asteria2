@@ -41,6 +41,7 @@ internal static class Program
         CheckBlockProperties();
         CheckRegistryHoldersAndTags();
         CheckRegistryLifecycleAndRegistrationInfo();
+        CheckRegistryValueLookups();
         CheckBlockStateDefinition();
         CheckBlockStateTransitions();
         CheckGlobalStateIds();
@@ -299,6 +300,55 @@ internal static class Program
         Require(
             ReferenceEquals(defaultedRegistry.GetAny()?.Value, defaultBlock),
             "The default holder value must become accessible after registry freeze.");
+    }
+
+    private static void CheckRegistryValueLookups()
+    {
+        ResourceLocation registryId = ResourceLocation.Parse("asteria:value_lookup_registry");
+        ResourceLocation entryId = ResourceLocation.Parse("asteria:registered");
+        ResourceLocation missingId = ResourceLocation.Parse("asteria:missing");
+        var registry = new Registry<Block>(registryId);
+        Block registeredValue = new(BlockProperties.Default);
+        var registeredKey = new RegistryKey<Block>(registryId, entryId);
+        registry.Register(registeredKey, registeredValue, RegistrationInfo.BuiltIn);
+
+        Require(
+            registry.GetResourceKey(registeredValue) == registeredKey,
+            "Registry.getResourceKey must recover the resource key for a registered value.");
+        Require(
+            registry.GetResourceKey(new Block(BlockProperties.Default)) is null,
+            "Registry.getResourceKey must return no key for an unregistered value.");
+        Require(
+            ReferenceEquals(registry.GetOptional(entryId), registeredValue),
+            "Registry.getOptional(identifier) must return a registered value.");
+        Require(
+            ReferenceEquals(registry.GetOptional(registeredKey), registeredValue),
+            "Registry.getOptional(resource key) must return a registered value.");
+        Require(
+            registry.GetOptional(missingId) is null &&
+            registry.GetOptional(new RegistryKey<Block>(registryId, missingId)) is null,
+            "Optional lookups must preserve missing-entry semantics.");
+        Require(
+            ReferenceEquals(registry.GetValueOrThrow(registeredKey), registeredValue),
+            "getValueOrThrow must return the value registered for a resource key.");
+        RequireThrows<InvalidOperationException>(
+            () => registry.GetValueOrThrow(new RegistryKey<Block>(registryId, missingId)),
+            "getValueOrThrow must reject a missing resource key.");
+
+        var defaulted = new DefaultedRegistry<Block>(
+            ResourceLocation.Parse("asteria:defaulted_value_lookup"),
+            ResourceLocation.Parse("asteria:air"));
+        Block air = new(BlockProperties.Default);
+        defaulted.Register(ResourceLocation.Parse("asteria:air"), air);
+        Require(
+            ReferenceEquals(defaulted.GetValue(missingId), air),
+            "DefaultedMappedRegistry.getValue(identifier) must return the default value.");
+        Require(
+            defaulted.GetOptional(missingId) is null,
+            "DefaultedMappedRegistry.getOptional(identifier) must remain exact and must not apply the default.");
+        Require(
+            defaulted.GetOptional(new RegistryKey<Block>(defaulted.Location, missingId)) is null,
+            "DefaultedMappedRegistry optional resource-key lookup must remain exact.");
     }
 
     private static void CheckBlockStateDefinition()

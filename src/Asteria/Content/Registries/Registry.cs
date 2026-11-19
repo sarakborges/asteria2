@@ -127,6 +127,25 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
             ? holder.Value
             : null;
 
+    public T GetValueOrThrow(RegistryKey<T> key) =>
+        GetValue(key) ?? throw new InvalidOperationException(
+            $"Missing key in registry '{Location}': '{key}'.");
+
+    public T? GetOptional(ResourceLocation location) =>
+        _byLocation.TryGetValue(location, out Holder<T>.Reference? holder)
+            ? holder.Value
+            : null;
+
+    public T? GetOptional(RegistryKey<T> key) =>
+        _byKey.TryGetValue(key, out Holder<T>.Reference? holder)
+            ? holder.Value
+            : null;
+
+    public RegistryKey<T>? GetResourceKey(T? value) =>
+        value is not null && _byValue.TryGetValue(value, out Holder<T>.Reference? holder)
+            ? holder.Key
+            : null;
+
     public bool ContainsKey(ResourceLocation location) => _byLocation.ContainsKey(location);
 
     public bool ContainsKey(RegistryKey<T> key) => _byKey.ContainsKey(key);
