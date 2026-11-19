@@ -10,6 +10,18 @@ internal static class Program
     private enum TestAxis { X = 0, Y = 1, Z = 2 }
     private enum TestDeclaredOrder { Z = 2, X = 0, Y = 1 }
 
+    private sealed class IdentityTestValue
+    {
+        public int Value { get; }
+
+        public IdentityTestValue(int value) => Value = value;
+
+        public override bool Equals(object? obj) =>
+            obj is IdentityTestValue other && Value == other.Value;
+
+        public override int GetHashCode() => Value;
+    }
+
     private static int Main()
     {
         try
@@ -47,6 +59,7 @@ internal static class Program
         CheckGlobalStateIds();
         CheckPropertyImplementations();
         CheckPackedBitStorage();
+        CheckIdentityIdMap();
         CheckPaletteExceptions();
         CheckPalettedContainer();
         CheckPalettedContainerGrowthAndGlobalMode();
@@ -508,6 +521,39 @@ internal static class Program
             traversedValues[8] == 7 &&
             traversedValues.Where((_, index) => index != 8).All(value => value == 19),
             "GetAll must visit entries in index order and stop at the logical size, not padded word capacity.");
+    }
+
+    private static void CheckIdentityIdMap()
+    {
+        var map = CrudeIncrementalIntIdentityHashBiMap<IdentityTestValue>.Create(2);
+        IdentityTestValue[] values = Enumerable.Range(0, 12)
+            .Select(index => new IdentityTestValue(index < 2 ? 1 : index))
+            .ToArray();
+
+        int[] ids = values.Select(map.Add).ToArray();
+        Require(
+            ids.SequenceEqual(Enumerable.Range(0, values.Length)),
+            "The incremental identity map must assign the next available numeric ID.");
+        Require(
+            map.GetId(values[0]) == 0 && map.GetId(values[1]) == 1,
+            "The incremental map must use object identity rather than value equality.");
+        Require(
+            ReferenceEquals(map.ById(0), values[0]) &&
+            ReferenceEquals(map.ById(1), values[1]),
+            "The incremental map must preserve identity in reverse ID lookup.");
+        Require(map.Count == values.Length, "The incremental map must maintain its entry count across growth.");
+        Require(
+            map.GetEntries().SequenceEqual(values),
+            "The incremental map must enumerate values in numeric ID order.");
+
+        CrudeIncrementalIntIdentityHashBiMap<IdentityTestValue> copy = map.Copy();
+        map.Clear();
+        Require(map.Count == 0 && map.GetId(values[0]) == -1, "Clear must empty the identity map.");
+        Require(
+            copy.Count == values.Length &&
+            ReferenceEquals(copy.ById(11), values[11]) &&
+            copy.GetId(values[11]) == 11,
+            "Copy must preserve hash entries, ID mapping, and insertion cursor.");
     }
 
     private static void CheckPaletteExceptions()

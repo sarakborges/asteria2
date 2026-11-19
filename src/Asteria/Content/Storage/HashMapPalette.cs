@@ -1,13 +1,11 @@
 namespace Asteria.Content.Storage;
 
 /// <summary>
-/// Larger local palette with identity hash-map lookup.
+/// Larger local palette backed by Minecraft's incremental identity ID map.
 /// </summary>
 internal sealed class HashMapPalette<T> : ILocalPalette<T> where T : class
 {
-    private readonly List<T> _values = new();
-    private readonly Dictionary<T, int> _indices =
-        new(ReferenceEqualityComparer.Instance);
+    private readonly CrudeIncrementalIntIdentityHashBiMap<T> _values;
     private readonly int _bitsPerEntry;
 
     public int Count => _values.Count;
@@ -20,6 +18,15 @@ internal sealed class HashMapPalette<T> : ILocalPalette<T> where T : class
         }
 
         _bitsPerEntry = bitsPerEntry;
+        _values = CrudeIncrementalIntIdentityHashBiMap<T>.Create(1 << bitsPerEntry);
+    }
+
+    private HashMapPalette(
+        int bitsPerEntry,
+        CrudeIncrementalIntIdentityHashBiMap<T> values)
+    {
+        _bitsPerEntry = bitsPerEntry;
+        _values = values;
     }
 
     public int IdFor(T value, IPaletteResize<T> resize)
@@ -27,57 +34,45 @@ internal sealed class HashMapPalette<T> : ILocalPalette<T> where T : class
         ArgumentNullException.ThrowIfNull(value);
         ArgumentNullException.ThrowIfNull(resize);
 
-        if (_indices.TryGetValue(value, out int existingIndex))
+        int id = _values.GetId(value);
+        if (id == -1 && (id = _values.Add(value)) >= (1 << _bitsPerEntry))
         {
-            return existingIndex;
+            id = resize.OnResize(_bitsPerEntry + 1, value);
         }
 
-        if (_values.Count < (1 << _bitsPerEntry))
-        {
-            int index = _values.Count;
-            _values.Add(value);
-            _indices.Add(value, index);
-            return index;
-        }
-
-        return resize.OnResize(_bitsPerEntry + 1, value);
+        return id;
     }
 
-    public T ValueFor(int id)
-    {
-        if ((uint)id >= (uint)_values.Count)
-        {
-            throw new MissingPaletteEntryException(id);
-        }
-
-        return _values[id];
-    }
+    public T ValueFor(int id) =>
+        _values.ById(id) ?? throw new MissingPaletteEntryException(id);
 
     public bool MaybeHas(Func<T, bool> predicate)
     {
         ArgumentNullException.ThrowIfNull(predicate);
-        return _values.Any(predicate);
+
+        for (int id = 0; id < _values.Count; id++)
+        {
+            if (predicate(_values.ById(id)!))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void ForEach(Action<T> action)
     {
         ArgumentNullException.ThrowIfNull(action);
-        foreach (T value in _values)
+
+        for (int id = 0; id < _values.Count; id++)
         {
-            action(value);
+            action(_values.ById(id)!);
         }
     }
 
-    public IPalette<T> Copy()
-    {
-        var copy = new HashMapPalette<T>(_bitsPerEntry);
-        foreach (T value in _values)
-        {
-            int index = copy._values.Count;
-            copy._values.Add(value);
-            copy._indices.Add(value, index);
-        }
+    public List<T> GetEntries() => _values.GetEntries();
 
-        return copy;
-    }
+    public IPalette<T> Copy() =>
+        new HashMapPalette<T>(_bitsPerEntry, _values.Copy());
 }
