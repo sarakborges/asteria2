@@ -23,18 +23,28 @@ public static class Blocks
             isAir: true),
         createIntrusiveRegistryHolder: true);
 
-    public static Block TEST_BLOCK { get; } = new(
-        new BlockProperties(
-            destroyTime: 1.5f,
-            explosionResistance: 6.0f),
-        static builder =>
-        {
-            builder.Add(TEST_POWERED);
-            builder.Add(TEST_STAGE);
-            builder.SetDefault(TEST_POWERED, false);
-            builder.SetDefault(TEST_STAGE, 1);
-        },
-        createIntrusiveRegistryHolder: true);
+    public static Block TEST_BLOCK { get; } = CreateTestBlock();
+
+    private static Block CreateTestBlock()
+    {
+        var block = new Block(
+            new BlockProperties(
+                destroyTime: 1.5f,
+                explosionResistance: 6.0f),
+            static builder =>
+            {
+                builder.Add(TEST_POWERED);
+                builder.Add(TEST_STAGE);
+            },
+            createIntrusiveRegistryHolder: true);
+
+        block.RegisterDefaultState(
+            block.DefaultState
+                .SetValue(TEST_POWERED, false)
+                .SetValue(TEST_STAGE, 1));
+
+        return block;
+    }
 
     internal static void RegisterAll()
     {
