@@ -178,7 +178,12 @@ internal static class Program
         });
         Require(tag.IsBound, "Binding tags must bind the named holder set.");
         Require(tag.Count == 2, "Named holder sets must preserve the supplied contents, including duplicates.");
-        Require(tag.Contains(registered), "A named holder set must recognize a holder through its tag membership.");
+        RequireThrows<InvalidOperationException>(
+            () => registered.Is(tagKey),
+            "Binding a named set must not bind holder tags before registry freeze.");
+        RequireThrows<InvalidOperationException>(
+            () => tag.Contains(registered),
+            "Named holder membership must follow holder tag bindings and remain unavailable before freeze.");
         Require(!tag.Contains(Holder<Block>.Direct(value)), "A named holder set must not match direct holders.");
         RequireThrows<InvalidOperationException>(() => registry.GetTag(tagKey), "Tag access must fail before registry freeze.");
 
@@ -190,6 +195,7 @@ internal static class Program
         Require(registered.IsBound, "Freeze must bind registered standalone values.");
         Require(ReferenceEquals(registered.Value, value), "The frozen holder must resolve to the registered value.");
         Require(registered.Is(tagKey), "Freeze must associate tags with their holders.");
+        Require(tag.Contains(registered), "Named holder membership must work after registry freeze binds holder tags.");
         Require(ReferenceEquals(registry.GetTag(tagKey), tag), "The frozen registry must expose its registered tag set.");
         Require(registry.GetTagOrEmpty(new TagKey<Block>(registryId, ResourceLocation.Parse("asteria:empty"))).Count == 0, "Missing tags must resolve to an empty holder set.");
 
