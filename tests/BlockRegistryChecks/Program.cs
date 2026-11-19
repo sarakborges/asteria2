@@ -137,6 +137,12 @@ internal static class Program
 
         HolderSet<Block>.Named tag = lookup.GetOrThrow(tagKey);
         Require(!tag.IsBound, "A registration-time tag starts unbound.");
+        RequireThrows<InvalidOperationException>(
+            () => registered.Is(tagKey),
+            "Holder.Reference tag membership must reject tag queries before tags are bound.");
+        RequireThrows<InvalidOperationException>(
+            () => registered.Tags.ToArray(),
+            "Holder.Reference tag enumeration must reject access before tags are bound.");
         registry.BindTags(new[]
         {
             new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(

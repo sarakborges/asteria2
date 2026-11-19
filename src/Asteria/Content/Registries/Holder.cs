@@ -77,7 +77,7 @@ public abstract class Holder<T> where T : class
         private readonly bool _intrusive;
         private RegistryKey<T>? _key;
         private T? _value;
-        private IReadOnlyList<TagKey<T>> _tags = Array.Empty<TagKey<T>>();
+        private IReadOnlyList<TagKey<T>>? _tags;
 
         internal Reference(HolderOwner<T> owner, RegistryKey<T>? key, T? value, bool intrusive)
         {
@@ -94,7 +94,8 @@ public abstract class Holder<T> where T : class
         public override RegistryKey<T>? KeyOrNull => _key;
         public RegistryKey<T> Key => _key ?? throw new InvalidOperationException("The holder key has not been bound.");
         public bool IsIntrusive => _intrusive;
-        public override IEnumerable<TagKey<T>> Tags => _tags;
+        public override IEnumerable<TagKey<T>> Tags =>
+            _tags ?? throw new InvalidOperationException("Tags not bound.");
 
         public override bool Is(Holder<T> holder)
         {
