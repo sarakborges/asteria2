@@ -10,14 +10,7 @@ public abstract class StateProperty
 
     protected StateProperty(string name)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        if (!IsValidName(name))
-        {
-            throw new ArgumentException(
-                $"Invalid state property name '{name}'. Names must use lowercase ASCII letters, digits, or underscores.",
-                nameof(name));
-        }
-
+        ArgumentNullException.ThrowIfNull(name);
         Name = name;
     }
 
@@ -54,7 +47,7 @@ public abstract class StateProperty
 /// <summary>
 /// A typed property with a finite, ordered set of allowed values.
 /// </summary>
-public abstract class StateProperty<T> : StateProperty where T : notnull
+public abstract class StateProperty<T> : StateProperty where T : notnull, IComparable
 {
     public abstract IReadOnlyList<T> PossibleValues { get; }
 
