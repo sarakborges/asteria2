@@ -82,8 +82,13 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         _data = data;
     }
 
-    private Data CreateData(PaletteConfiguration configuration)
+    private Data CreateData(PaletteConfiguration configuration, Data? oldData = null)
     {
+        if (oldData is not null && configuration == oldData.Configuration)
+        {
+            return oldData;
+        }
+
         IPalette<T> palette = configuration.Mode switch
         {
             PaletteMode.SingleValue => new SingleValuePalette<T>(),
@@ -252,7 +257,7 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
     {
         Data oldData = Volatile.Read(ref _data);
         PaletteConfiguration configuration = _strategy.GetConfigurationForBitCount(bits);
-        Data newData = CreateData(configuration);
+        Data newData = CreateData(configuration, oldData);
         newData.CopyFrom(oldData.Palette, oldData.Storage);
 
         // Publish only after all old palette entries have been copied into the replacement.
