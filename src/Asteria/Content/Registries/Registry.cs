@@ -22,7 +22,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
     private IReadOnlyDictionary<TagKey<T>, HolderSet<T>.Named>? _boundTags;
 
     public ResourceLocation Location { get; }
-    public int Count => _byId.Count;
+    public int Count => _byKey.Count;
     public bool IsFrozen { get; protected set; }
     public IReadOnlyList<Holder<T>.Reference> Entries => _readOnlyEntries;
 

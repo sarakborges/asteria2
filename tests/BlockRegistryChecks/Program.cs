@@ -97,13 +97,16 @@ internal static class Program
         HolderGetter<Block> lookup = registry.CreateRegistrationLookup();
 
         Holder<Block>.Reference placeholder = lookup.GetOrThrow(placeholderKey);
+        Require(registry.Count == 1, "Registry size must include standalone key placeholders, matching MappedRegistry.size().");
         Require(!placeholder.IsBound, "A registration lookup creates an unbound standalone holder.");
         RequireThrows<InvalidOperationException>(() => _ = placeholder.Value, "An unbound holder value must not be readable.");
 
         Block value = new(BlockProperties.Default);
         Holder<Block>.Reference registered = lookup.GetOrThrow(entryKey);
+        Require(registry.Count == 2, "Each distinct standalone key must contribute to registry size before registration.");
         Holder<Block>.Reference entry = registry.Register(entryId, value);
         Require(ReferenceEquals(entry, registered), "Registration must reuse the standalone holder.");
+        Require(registry.Count == 2, "Registering a reserved key must not change registry size.");
         Require(!registered.IsBound, "Standalone holder values are bound during registry freeze.");
 
         Block placeholderValue = new(BlockProperties.Default);
