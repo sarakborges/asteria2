@@ -71,9 +71,14 @@ internal static class Program
         Require(registered.CanSerializeIn(BuiltInRegistries.Block), "A reference holder must serialize in its owning registry.");
         Require(ReferenceEquals(BuiltInRegistries.Block.WrapAsHolder(Blocks.TEST_BLOCK), registered), "wrapAsHolder must reuse registered references.");
 
-        Holder<Block> direct = BuiltInRegistries.Block.WrapAsHolder(new Block(BlockProperties.Default));
+        Block directValue = new(BlockProperties.Default);
+        Holder<Block> direct = BuiltInRegistries.Block.WrapAsHolder(directValue);
         Require(direct.Kind == HolderKind.Direct, "Unregistered values must be wrapped as direct holders.");
-        Require(!direct.CanSerializeIn(BuiltInRegistries.Block), "A direct holder cannot serialize as a registry reference.");
+        Require(direct.CanSerializeIn(BuiltInRegistries.Block), "Direct holders are serializable in any registry context.");
+        Require(direct.Is(Holder<Block>.Direct(directValue)), "Direct holders compare by their wrapped value.");
+        Require(direct.Equals(Holder<Block>.Direct(directValue)), "Direct holder record equality compares wrapped values.");
+        Require(!registered.Is(direct), "A reference holder must not match a direct holder by value.");
+        Require(direct.Is(registered) == false || ReferenceEquals(registered.Value, directValue), "Direct holder matching follows wrapped-value equality.");
     }
 
     private static void CheckRegistryHoldersAndTags()
@@ -107,9 +112,14 @@ internal static class Program
         Require(!tag.IsBound, "A registration-time tag starts unbound.");
         registry.BindTags(new[]
         {
-            new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(tagKey, new Holder<Block>[] { registered })
+            new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
+                tagKey,
+                new Holder<Block>[] { registered, registered })
         });
         Require(tag.IsBound, "Binding tags must bind the named holder set.");
+        Require(tag.Count == 2, "Named holder sets must preserve the supplied contents, including duplicates.");
+        Require(tag.Contains(registered), "A named holder set must recognize a holder through its tag membership.");
+        Require(!tag.Contains(Holder<Block>.Direct(value)), "A named holder set must not match direct holders.");
         RequireThrows<InvalidOperationException>(() => registry.GetTag(tagKey), "Tag access must fail before registry freeze.");
 
         registry.Freeze();
@@ -118,6 +128,18 @@ internal static class Program
         Require(registered.Is(tagKey), "Freeze must associate tags with their holders.");
         Require(ReferenceEquals(registry.GetTag(tagKey), tag), "The frozen registry must expose its registered tag set.");
         Require(registry.GetTagOrEmpty(new TagKey<Block>(registryId, ResourceLocation.Parse("asteria:empty"))).Count == 0, "Missing tags must resolve to an empty holder set.");
+
+        HolderSet<Block> directSet = new(new Holder<Block>[] { registered, registered });
+        Require(directSet.Count == 2, "Direct holder sets must preserve order and duplicate entries.");
+        Require(directSet.CanSerializeIn(registry), "Direct holder sets are serializable regardless of the contained holder owner.");
+        Require(directSet.Contains(registered), "Direct holder set membership must use holder equality.");
+
+        var parallelRegistry = new Registry<Block>(registryId);
+        Holder<Block>.Reference parallelReference =
+            parallelRegistry.Register(entryId, new Block(BlockProperties.Default));
+        parallelRegistry.Freeze();
+        Require(!registered.Equals(parallelReference), "Reference holders from separate registry instances must retain object identity.");
+        Require(!registered.Is(parallelReference), "A reference holder must not match a different registry instance with the same logical key.");
 
         RequireThrows<InvalidOperationException>(
             () => registry.BindTags(Array.Empty<KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>>()),
