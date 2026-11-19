@@ -59,6 +59,7 @@ internal static class Program
         Require(ReferenceEquals(BuiltInRegistries.Block.Get(airId), Blocks.AIR), "The air block must be registered.");
         Require(ReferenceEquals(BuiltInRegistries.Block.Get(missingId), Blocks.AIR), "Unknown block keys must resolve to air.");
         Require(ReferenceEquals(BuiltInRegistries.Block.GetValue(missingId), Blocks.AIR), "Defaulted GetValue lookups must resolve unknown identifiers to air.");
+        Require(ReferenceEquals(BuiltInRegistries.Block.GetAny(), Blocks.AIR.BuiltInRegistryHolder), "DefaultedMappedRegistry.getAny must return its default holder.");
         Require(BuiltInRegistries.Block.GetHolder(missingId) is null, "Exact holder lookups must not hide missing keys.");
         Require(BuiltInRegistries.Block.GetId(new Block(BlockProperties.Default)) == 0, "Unknown objects must resolve to the default block ID.");
         Require(BuiltInRegistries.Block.GetId(null!) == 0, "Null reverse lookups in a defaulted registry must resolve to the default ID.");
@@ -110,6 +111,9 @@ internal static class Program
         ResourceLocation tagId = ResourceLocation.Parse("asteria:test_tag");
 
         var registry = new Registry<Block>(registryId);
+        Require(registry.IsEmpty(), "A registry with no keys must be empty.");
+        Require(registry.GetAny() is null, "MappedRegistry.getAny must be empty before its first registered value.");
+        Require(registry.KeySet().Count == 0 && registry.RegistryKeySet().Count == 0 && !registry.EntrySet().Any(), "Empty registry key and entry sets must be empty.");
         Require(registry.GetId(null!) == -1, "A non-defaulted registry must return -1 for a null reverse lookup.");
         Require(registry.GetKey(null!) is null, "A non-defaulted registry must return null for a null key lookup.");
         Require(registry.ById(-1) is null, "MappedRegistry.byId must return null for an invalid numeric ID.");
@@ -119,6 +123,10 @@ internal static class Program
         HolderGetter<Block> lookup = registry.CreateRegistrationLookup();
 
         Holder<Block>.Reference placeholder = lookup.GetOrThrow(placeholderKey);
+        Require(!registry.IsEmpty(), "A standalone key placeholder makes the registry non-empty.");
+        Require(registry.GetAny() is null, "Standalone key placeholders do not create registered numeric IDs.");
+        Require(registry.RegistryKeySet().Contains(placeholderKey), "registryKeySet must include standalone key placeholders.");
+        Require(registry.KeySet().Count == 0, "keySet must contain only registered identifier lookups.");
         Require(registry.Count == 1, "Registry size must include standalone key placeholders, matching MappedRegistry.size().");
         Require(!placeholder.IsBound, "A registration lookup creates an unbound standalone holder.");
         RequireThrows<InvalidOperationException>(() => _ = placeholder.Value, "An unbound holder value must not be readable.");
@@ -156,6 +164,10 @@ internal static class Program
         RequireThrows<InvalidOperationException>(() => registry.GetTag(tagKey), "Tag access must fail before registry freeze.");
 
         registry.Freeze();
+        Require(ReferenceEquals(registry.GetAny(), registered), "MappedRegistry.getAny must return the first registered holder.");
+        Require(registry.KeySet().Count == 2, "keySet must contain registered entry identifiers.");
+        Require(registry.RegistryKeySet().Count == 2, "registryKeySet must contain registered and reserved keys.");
+        Require(registry.EntrySet().Count() == 2, "entrySet must expose registered keys and their values.");
         Require(registered.IsBound, "Freeze must bind registered standalone values.");
         Require(ReferenceEquals(registered.Value, value), "The frozen holder must resolve to the registered value.");
         Require(registered.Is(tagKey), "Freeze must associate tags with their holders.");

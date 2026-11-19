@@ -38,7 +38,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
         _readOnlyEntries = _byId.AsReadOnly();
     }
 
-    public Holder<T>.Reference Register(ResourceLocation location, T value)
+    public virtual Holder<T>.Reference Register(ResourceLocation location, T value)
     {
         EnsureWritable();
         ArgumentNullException.ThrowIfNull(value);
@@ -122,6 +122,23 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
 
     public virtual Holder<T>.Reference? GetHolderById(int id) =>
         (uint)id < (uint)_byId.Count ? _byId[id] : null;
+
+    public virtual Holder<T>.Reference? GetAny() =>
+        _byId.Count == 0 ? null : _byId[0];
+
+    public bool IsEmpty() => _byKey.Count == 0;
+
+    public IReadOnlyCollection<ResourceLocation> KeySet() => _byLocation.Keys;
+
+    public IReadOnlyCollection<RegistryKey<T>> RegistryKeySet() => _byKey.Keys;
+
+    public IEnumerable<KeyValuePair<RegistryKey<T>, T>> EntrySet()
+    {
+        foreach (KeyValuePair<RegistryKey<T>, Holder<T>.Reference> pair in _byKey)
+        {
+            yield return new KeyValuePair<RegistryKey<T>, T>(pair.Key, pair.Value.Value);
+        }
+    }
 
     public IEnumerable<Holder<T>.Reference> ListElements() => _byId;
 

@@ -9,6 +9,19 @@ public sealed class DefaultedRegistry<T> : Registry<T> where T : class
 
     public ResourceLocation DefaultKey { get; }
 
+    public override Holder<T>.Reference Register(ResourceLocation location, T value)
+    {
+        Holder<T>.Reference holder = base.Register(location, value);
+        if (location.Equals(DefaultKey))
+        {
+            _defaultHolder = holder;
+        }
+
+        return holder;
+    }
+
+    public override Holder<T>.Reference? GetAny() => _defaultHolder;
+
     public DefaultedRegistry(
         ResourceLocation location,
         ResourceLocation defaultKey,
