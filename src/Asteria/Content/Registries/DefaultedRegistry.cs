@@ -32,8 +32,11 @@ public sealed class DefaultedRegistry<T> : Registry<T> where T : class
         return id >= 0 ? id : GetDefaultHolderId();
     }
 
+    public override T ById(int id) =>
+        base.ById(id) ?? GetDefaultHolder().Value;
+
     public override T GetById(int id) =>
-        GetHolderById(id)?.Value ?? GetDefaultHolder().Value;
+        ById(id);
 
     public override Holder<T>.Reference? GetHolderById(int id) =>
         base.GetHolderById(id) ?? GetDefaultHolder();

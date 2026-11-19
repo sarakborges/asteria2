@@ -1,13 +1,27 @@
 namespace Asteria.Content.Registries;
 
 /// <summary>
-/// Read-only mapping between runtime numeric IDs and registered values.
-/// Implementations must be immutable after they are supplied to a paletted container.
+/// Runtime ID mapping equivalent to Minecraft IdMap. The nullable lookup and throwing
+/// helpers intentionally remain separate, as they are in the reference API.
 /// </summary>
-public interface IIdMap<T> where T : class
+public interface IIdMap<T> : IEnumerable<T> where T : class
 {
     int Count { get; }
     bool IsFrozen { get; }
     int GetId(T? value);
-    T GetById(int id);
+    T? ById(int id);
+
+    T ByIdOrThrow(int id) =>
+        ById(id) ?? throw new ArgumentException($"No value with id {id}.");
+
+    int GetIdOrThrow(T? value)
+    {
+        int id = GetId(value);
+        if (id == -1)
+        {
+            throw new ArgumentException($"Can't find an ID for '{value}' in this map.");
+        }
+
+        return id;
+    }
 }

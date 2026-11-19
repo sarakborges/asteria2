@@ -26,7 +26,7 @@ internal sealed class GlobalPalette<T> : IPalette<T> where T : class
         return id == -1 ? 0 : id;
     }
 
-    public T ValueFor(int id) => _idMap.GetById(id);
+    public T ValueFor(int id) => _idMap.ByIdOrThrow(id);
 
     public bool MaybeHas(Func<T, bool> predicate)
     {
@@ -39,7 +39,7 @@ internal sealed class GlobalPalette<T> : IPalette<T> where T : class
         ArgumentNullException.ThrowIfNull(action);
         for (int id = 0; id < _idMap.Count; id++)
         {
-            action(_idMap.GetById(id));
+            action(_idMap.ByIdOrThrow(id));
         }
     }
 

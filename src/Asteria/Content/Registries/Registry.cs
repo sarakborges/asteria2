@@ -186,10 +186,11 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
     public virtual int GetId(T? value) =>
         value is not null && _toId.TryGetValue(value, out int id) ? id : -1;
 
+    public virtual T? ById(int id) =>
+        (uint)id < (uint)_byId.Count ? _byId[id].Value : null;
+
     public virtual T GetById(int id) =>
-        (uint)id < (uint)_byId.Count
-            ? _byId[id].Value
-            : throw new ArgumentOutOfRangeException(nameof(id), id, "The runtime registry ID does not exist.");
+        ById(id) ?? throw new ArgumentOutOfRangeException(nameof(id), id, "The runtime registry ID does not exist.");
 
     public virtual ResourceLocation? GetKey(T? value) =>
         value is not null && _byValue.TryGetValue(value, out Holder<T>.Reference? holder)

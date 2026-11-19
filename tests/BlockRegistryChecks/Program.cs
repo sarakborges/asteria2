@@ -67,6 +67,7 @@ internal static class Program
                 BuiltInRegistries.Block.GetHolderById(999),
                 Blocks.AIR.BuiltInRegistryHolder),
             "Unknown numeric IDs must resolve to the default holder.");
+        Require(ReferenceEquals(BuiltInRegistries.Block.ById(999), Blocks.AIR), "DefaultedMappedRegistry.byId must resolve unknown IDs to its default value.");
 
         Holder<Block>.Reference registered = BuiltInRegistries.Block.GetHolderOrThrow(
             new RegistryKey<Block>(BuiltInRegistries.Block.Location, testId));
@@ -96,6 +97,7 @@ internal static class Program
         var registry = new Registry<Block>(registryId);
         Require(registry.GetId(null!) == -1, "A non-defaulted registry must return -1 for a null reverse lookup.");
         Require(registry.GetKey(null!) is null, "A non-defaulted registry must return null for a null key lookup.");
+        Require(registry.ById(-1) is null, "MappedRegistry.byId must return null for an invalid numeric ID.");
         var entryKey = new RegistryKey<Block>(registryId, entryId);
         var placeholderKey = new RegistryKey<Block>(registryId, placeholderId);
         var tagKey = new TagKey<Block>(registryId, tagId);
@@ -225,13 +227,15 @@ internal static class Program
         Require(ids.GetId(null!) == -1, "The block-state ID map must return -1 for a null reverse lookup.");
         for (int id = 0; id < ids.Count; id++)
         {
-            BlockState state = ids.ById(id);
+            BlockState state = ids.ById(id)!;
             Require(ReferenceEquals(ids.ById(id), state), "State ID reverse lookup must round-trip.");
             Require(ids.GetId(state) == id, "State-to-ID lookup must round-trip.");
         }
         Require(ids.GetId(Blocks.AIR.DefaultState) == 0, "The first block's singleton state must receive ID zero.");
-        Require(!ids.TryGetById(-1, out _), "Invalid global state IDs must be reported as missing.");
-        RequireThrows<ArgumentOutOfRangeException>(() => ids.ById(-1), "Strict state ID lookup must reject invalid IDs.");
+        Require(ids.ById(-1) is null, "Nullable ID lookup must return null for invalid global state IDs.");
+        Require(!ids.TryGetById(-1, out _), "TryGetById must report invalid global state IDs as missing.");
+        RequireThrows<ArgumentOutOfRangeException>(() => ids.GetById(-1), "Strict state ID lookup must reject invalid IDs.");
+        RequireThrows<ArgumentException>(() => ((IIdMap<BlockState>)ids).ByIdOrThrow(-1), "IdMap.byIdOrThrow must reject invalid global state IDs.");
     }
 
     private static void CheckPropertyImplementations()
