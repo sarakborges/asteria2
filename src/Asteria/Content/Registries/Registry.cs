@@ -96,7 +96,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
         GetValue(location) ?? throw new KeyNotFoundException(
             $"Registry '{Location}' does not contain an entry named '{location}'.");
 
-    public T? GetValue(ResourceLocation location) =>
+    public virtual T? GetValue(ResourceLocation location) =>
         _byLocation.TryGetValue(location, out Holder<T>.Reference? holder)
             ? holder.Value
             : null;
