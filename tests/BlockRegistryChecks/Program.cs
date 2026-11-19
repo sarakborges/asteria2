@@ -86,10 +86,8 @@ internal static class Program
         Require(BuiltInRegistries.Block.GetId(null!) == 0, "Null reverse lookups in a defaulted registry must resolve to the default ID.");
         Require(BuiltInRegistries.Block.GetKey(null!) == airId, "Null key lookups in a defaulted registry must resolve to the default key.");
         Require(
-            ReferenceEquals(
-                BuiltInRegistries.Block.GetHolderById(999),
-                Blocks.AIR.BuiltInRegistryHolder),
-            "Unknown numeric IDs must resolve to the default holder.");
+            BuiltInRegistries.Block.GetHolderById(999) is null,
+            "DefaultedMappedRegistry.get(id) must remain an exact holder lookup for unknown numeric IDs.");
         Require(ReferenceEquals(BuiltInRegistries.Block.ById(999), Blocks.AIR), "DefaultedMappedRegistry.byId must resolve unknown IDs to its default value.");
 
         Holder<Block>.Reference registered = BuiltInRegistries.Block.GetHolderOrThrow(

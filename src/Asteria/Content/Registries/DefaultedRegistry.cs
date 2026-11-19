@@ -55,9 +55,6 @@ public sealed class DefaultedRegistry<T> : Registry<T> where T : class
     public override T GetById(int id) =>
         ById(id);
 
-    public override Holder<T>.Reference? GetHolderById(int id) =>
-        base.GetHolderById(id) ?? GetDefaultHolder();
-
     public override ResourceLocation? GetKey(T? value) =>
         base.GetKey(value) ?? GetDefaultHolder().Key.Location;
 
