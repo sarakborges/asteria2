@@ -60,6 +60,7 @@ internal static class Program
         CheckPropertyImplementations();
         CheckPackedBitStorage();
         CheckZeroBitStorage();
+        CheckThreadingDetector();
         CheckIdentityIdMap();
         CheckPaletteExceptions();
         CheckPalettedContainer();
@@ -561,6 +562,50 @@ internal static class Program
         RequireThrows<ArgumentOutOfRangeException>(() => storage.Get(4), "ZeroBitStorage must validate indexes.");
     }
 
+    private static void CheckThreadingDetector()
+    {
+        var detector = new ThreadingDetector("BlockRegistryChecks");
+        detector.CheckAndLock();
+
+        using var contenderStarted = new ManualResetEventSlim();
+        Exception? contenderException = null;
+        var contender = new Thread(() =>
+        {
+            contenderStarted.Set();
+            try
+            {
+                detector.CheckAndLock();
+            }
+            catch (Exception exception)
+            {
+                contenderException = exception;
+            }
+        })
+        {
+            Name = "BlockRegistryChecks contender"
+        };
+
+        contender.Start();
+        Require(contenderStarted.Wait(TimeSpan.FromSeconds(2)), "The competing thread must start.");
+        Thread.Sleep(50);
+
+        Exception? ownerException = null;
+        try
+        {
+            detector.CheckAndUnlock();
+        }
+        catch (Exception exception)
+        {
+            ownerException = exception;
+        }
+
+        Require(contender.Join(TimeSpan.FromSeconds(2)), "The contending thread must be released by the owner.");
+        Require(
+            ownerException is InvalidOperationException &&
+            ReferenceEquals(ownerException, contenderException),
+            "ThreadingDetector must report concurrent access to both participating threads.");
+    }
+
     private static void CheckIdentityIdMap()
     {
         var map = CrudeIncrementalIntIdentityHashBiMap<IdentityTestValue>.Create(2);
@@ -654,7 +699,6 @@ internal static class Program
         palette.Acquire();
         try
         {
-            RequireThrows<InvalidOperationException>(() => palette.Acquire(), "The writer detector must reject a second acquire.");
             palette.GetAndSetUnchecked(11, alternate);
         }
         finally { palette.Release(); }

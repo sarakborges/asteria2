@@ -1,4 +1,4 @@
-using System.Threading;
+
 
 namespace Asteria.Content.Storage;
 
@@ -52,7 +52,7 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
 
     private readonly PalettedContainerStrategy<T> _strategy;
     private Data _data;
-    private int _writerThreadId;
+    private readonly ThreadingDetector _threadingDetector = new("PalettedContainer");
 
     public int Size => _strategy.EntryCount;
     public PaletteMode Mode => Volatile.Read(ref _data).Configuration.Mode;
@@ -174,27 +174,9 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         data.Storage.Set(index, paletteId);
     }
 
-    public void Acquire()
-    {
-        int threadId = Environment.CurrentManagedThreadId;
-        int existingThreadId = Interlocked.CompareExchange(ref _writerThreadId, threadId, 0);
-        if (existingThreadId != 0)
-        {
-            throw new InvalidOperationException(
-                $"PalettedContainer already has a writer (thread {existingThreadId}); thread {threadId} cannot acquire it.");
-        }
-    }
+    public void Acquire() => _threadingDetector.CheckAndLock();
 
-    public void Release()
-    {
-        int threadId = Environment.CurrentManagedThreadId;
-        int existingThreadId = Interlocked.CompareExchange(ref _writerThreadId, 0, threadId);
-        if (existingThreadId != threadId)
-        {
-            throw new InvalidOperationException(
-                "PalettedContainer.Release must be called by the thread that acquired it.");
-        }
-    }
+    public void Release() => _threadingDetector.CheckAndUnlock();
 
     public bool MaybeHas(Func<T, bool> predicate)
     {
