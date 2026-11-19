@@ -40,6 +40,7 @@ internal static class Program
         CheckDefaultedBlockRegistry();
         CheckBlockProperties();
         CheckRegistryHoldersAndTags();
+        CheckRegistryLifecycleAndRegistrationInfo();
         CheckBlockStateDefinition();
         CheckBlockStateTransitions();
         CheckGlobalStateIds();
@@ -233,6 +234,65 @@ internal static class Program
         RequireThrows<InvalidOperationException>(
             () => intrusiveRegistry.Register(entryId, new Block(BlockProperties.Default)),
             "Intrusive registries must reject values without a pre-created intrusive holder.");
+    }
+
+    private static void CheckRegistryLifecycleAndRegistrationInfo()
+    {
+        ResourceLocation registryId = ResourceLocation.Parse("asteria:lifecycle_registry");
+        ResourceLocation firstId = ResourceLocation.Parse("asteria:first");
+        ResourceLocation secondId = ResourceLocation.Parse("asteria:second");
+        ResourceLocation thirdId = ResourceLocation.Parse("asteria:third");
+        ResourceLocation fourthId = ResourceLocation.Parse("asteria:fourth");
+
+        var registry = new Registry<Block>(registryId);
+        Require(ReferenceEquals(registry.RegistryLifecycle, Lifecycle.Stable()), "A mapped registry must start with its supplied stable lifecycle.");
+        Require(registry.GetRegistrationInfo(new RegistryKey<Block>(registryId, firstId)) is null, "Unknown registry keys must not have registration metadata.");
+
+        var firstKey = new RegistryKey<Block>(registryId, firstId);
+        var secondKey = new RegistryKey<Block>(registryId, secondId);
+        var thirdKey = new RegistryKey<Block>(registryId, thirdId);
+        var fourthKey = new RegistryKey<Block>(registryId, fourthId);
+
+        RegistrationInfo firstInfo = new(Lifecycle.Deprecated(10));
+        registry.Register(firstKey, new Block(BlockProperties.Default), firstInfo);
+        Require(ReferenceEquals(registry.GetRegistrationInfo(firstKey), firstInfo), "Registration metadata must be retained per registered key.");
+        Require(registry.RegistryLifecycle is Lifecycle.DeprecatedLifecycle firstLifecycle && firstLifecycle.Since == 10, "A deprecated registration must make the registry lifecycle deprecated.");
+
+        RegistrationInfo earlierDeprecatedInfo = new(Lifecycle.Deprecated(5));
+        registry.Register(secondKey, new Block(BlockProperties.Default), earlierDeprecatedInfo);
+        Require(
+            registry.RegistryLifecycle is Lifecycle.DeprecatedLifecycle secondLifecycle && secondLifecycle.Since == 5,
+            "Aggregated deprecated lifecycles must retain the earliest deprecation version.");
+
+        RegistrationInfo stableInfo = RegistrationInfo.BuiltIn;
+        registry.Register(thirdKey, new Block(BlockProperties.Default), stableInfo);
+        Require(
+            registry.RegistryLifecycle is Lifecycle.DeprecatedLifecycle thirdLifecycle && thirdLifecycle.Since == 5,
+            "A stable registration must not erase an existing deprecated lifecycle.");
+
+        RegistrationInfo experimentalInfo = new(Lifecycle.Experimental());
+        registry.Register(fourthKey, new Block(BlockProperties.Default), experimentalInfo);
+        Require(ReferenceEquals(registry.RegistryLifecycle, Lifecycle.Experimental()), "An experimental registration must make the aggregate lifecycle experimental.");
+
+        var builtInRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:built_in_registration"));
+        var builtInKey = new RegistryKey<Block>(
+            builtInRegistry.Location,
+            ResourceLocation.Parse("asteria:built_in"));
+        builtInRegistry.Register(builtInKey.Location, new Block(BlockProperties.Default));
+        Require(
+            Equals(builtInRegistry.GetRegistrationInfo(builtInKey), RegistrationInfo.BuiltIn),
+            "The ordinary register overload must attach RegistrationInfo.BUILT_IN.");
+        Require(ReferenceEquals(builtInRegistry.RegistryLifecycle, Lifecycle.Stable()), "Built-in registration must preserve stable lifecycle.");
+
+        var defaultedRegistry = new DefaultedRegistry<Block>(
+            ResourceLocation.Parse("asteria:defaulted_lifecycle"),
+            ResourceLocation.Parse("asteria:default"));
+        Block defaultBlock = new(BlockProperties.Default);
+        defaultedRegistry.Register(
+            new RegistryKey<Block>(defaultedRegistry.Location, ResourceLocation.Parse("asteria:default")),
+            defaultBlock,
+            RegistrationInfo.BuiltIn);
+        Require(ReferenceEquals(defaultedRegistry.GetAny()?.Value, defaultBlock), "Registering through the key/metadata overload must bind DefaultedRegistry's default holder.");
     }
 
     private static void CheckBlockStateDefinition()

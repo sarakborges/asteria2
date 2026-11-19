@@ -15,6 +15,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
         new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<T, int> _toId =
         new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<RegistryKey<T>, RegistrationInfo> _registrationInfos = new();
     private readonly List<Holder<T>.Reference> _byId = new();
     private readonly IReadOnlyList<Holder<T>.Reference> _readOnlyEntries;
     private readonly Dictionary<T, Holder<T>.Reference>? _unregisteredIntrusiveHolders;
@@ -24,35 +25,50 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
     public ResourceLocation Location { get; }
     public int Count => _byKey.Count;
     public bool IsFrozen { get; protected set; }
+    public Lifecycle RegistryLifecycle { get; private set; }
     public IReadOnlyList<Holder<T>.Reference> Entries => _readOnlyEntries;
 
-    public Registry(ResourceLocation location, bool allowIntrusiveHolders = false)
+    public Registry(
+        ResourceLocation location,
+        bool allowIntrusiveHolders = false,
+        Lifecycle? initialLifecycle = null)
     {
         if (!location.IsValid)
             throw new ArgumentException("A valid registry location is required.", nameof(location));
 
         Location = location;
+        RegistryLifecycle = initialLifecycle ?? Lifecycle.Stable();
         _unregisteredIntrusiveHolders = allowIntrusiveHolders
             ? new Dictionary<T, Holder<T>.Reference>(ReferenceEqualityComparer.Instance)
             : null;
         _readOnlyEntries = _byId.AsReadOnly();
     }
 
-    public virtual Holder<T>.Reference Register(ResourceLocation location, T value)
+    public virtual Holder<T>.Reference Register(ResourceLocation location, T value) =>
+        Register(
+            new RegistryKey<T>(Location, location),
+            value,
+            RegistrationInfo.BuiltIn);
+
+    public virtual Holder<T>.Reference Register(
+        RegistryKey<T> key,
+        T value,
+        RegistrationInfo registrationInfo)
     {
         EnsureWritable();
         ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(registrationInfo);
 
-        if (!location.IsValid)
-            throw new ArgumentException("A valid entry location is required.", nameof(location));
-        if (_byLocation.ContainsKey(location))
-            throw new InvalidOperationException($"Adding duplicate key '{location}' to registry '{Location}'.");
+        if (key.RegistryLocation != Location)
+            throw new ArgumentException($"Key '{key}' belongs to another registry.", nameof(key));
+        if (!key.Location.IsValid)
+            throw new ArgumentException("A valid entry location is required.", nameof(key));
+        if (_byLocation.ContainsKey(key.Location))
+            throw new InvalidOperationException($"Adding duplicate key '{key}' to registry '{Location}'.");
         if (_byValue.ContainsKey(value))
             throw new InvalidOperationException($"Adding duplicate value '{value}' to registry '{Location}'.");
 
-        var key = new RegistryKey<T>(Location, location);
         Holder<T>.Reference holder;
-
         if (_unregisteredIntrusiveHolders is not null)
         {
             if (!_unregisteredIntrusiveHolders.Remove(value, out Holder<T>.Reference? intrusiveHolder))
@@ -68,12 +84,17 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
 
         int id = _byId.Count;
         _byKey[key] = holder;
-        _byLocation.Add(location, holder);
+        _byLocation.Add(key.Location, holder);
         _byValue.Add(value, holder);
         _toId.Add(value, id);
         _byId.Add(holder);
+        _registrationInfos.Add(key, registrationInfo);
+        RegistryLifecycle = RegistryLifecycle.Add(registrationInfo.Lifecycle);
         return holder;
     }
+
+    public RegistrationInfo? GetRegistrationInfo(RegistryKey<T> key) =>
+        _registrationInfos.TryGetValue(key, out RegistrationInfo? info) ? info : null;
 
     public Holder<T>.Reference CreateIntrusiveHolder(T value)
     {

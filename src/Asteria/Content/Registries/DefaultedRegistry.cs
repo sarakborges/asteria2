@@ -9,10 +9,13 @@ public sealed class DefaultedRegistry<T> : Registry<T> where T : class
 
     public ResourceLocation DefaultKey { get; }
 
-    public override Holder<T>.Reference Register(ResourceLocation location, T value)
+    public override Holder<T>.Reference Register(
+        RegistryKey<T> key,
+        T value,
+        RegistrationInfo registrationInfo)
     {
-        Holder<T>.Reference holder = base.Register(location, value);
-        if (location.Equals(DefaultKey))
+        Holder<T>.Reference holder = base.Register(key, value, registrationInfo);
+        if (key.Location.Equals(DefaultKey))
         {
             _defaultHolder = holder;
         }
@@ -25,8 +28,9 @@ public sealed class DefaultedRegistry<T> : Registry<T> where T : class
     public DefaultedRegistry(
         ResourceLocation location,
         ResourceLocation defaultKey,
-        bool allowIntrusiveHolders = false)
-        : base(location, allowIntrusiveHolders)
+        bool allowIntrusiveHolders = false,
+        Lifecycle? initialLifecycle = null)
+        : base(location, allowIntrusiveHolders, initialLifecycle)
     {
         if (!defaultKey.IsValid)
             throw new ArgumentException("A valid default key is required.", nameof(defaultKey));
