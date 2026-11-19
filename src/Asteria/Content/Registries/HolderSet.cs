@@ -85,15 +85,7 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
         internal void Bind(IEnumerable<Holder<T>> holders)
         {
             ArgumentNullException.ThrowIfNull(holders);
-            Holder<T>[] values = holders.ToArray();
-            foreach (Holder<T> holder in values)
-            {
-                if (!holder.CanSerializeIn(_owner))
-                    throw new InvalidOperationException($"Can't create named set {Key} containing value {holder} from outside its registry.");
-                if (holder.Kind != HolderKind.Reference)
-                    throw new InvalidOperationException($"Found direct holder value in tag {Key}.");
-            }
-            _boundContents = Array.AsReadOnly(values);
+            _boundContents = Array.AsReadOnly(holders.ToArray());
         }
 
         public override bool Contains(Holder<T> holder)

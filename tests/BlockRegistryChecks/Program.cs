@@ -231,6 +231,23 @@ internal static class Program
             new RegistryKey<Block>(invalidRegistry.Location, ResourceLocation.Parse("asteria:never_registered")));
         RequireThrows<InvalidOperationException>(invalidRegistry.Freeze, "Freeze must reject unbound key placeholders.");
 
+        var invalidTagRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:invalid_tag_registry"));
+        TagKey<Block> invalidTagKey = new(
+            invalidTagRegistry.Location,
+            ResourceLocation.Parse("asteria:invalid"));
+        HolderSet<Block>.Named invalidNamedTag =
+            invalidTagRegistry.CreateRegistrationLookup().GetOrThrow(invalidTagKey);
+        invalidTagRegistry.BindTags(new[]
+        {
+            new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
+                invalidTagKey,
+                new Holder<Block>[] { Holder<Block>.Direct(value) })
+        });
+        Require(invalidNamedTag.IsBound, "MappedRegistry.bindTags binds contents without validating tag holders immediately.");
+        RequireThrows<InvalidOperationException>(
+            invalidTagRegistry.Freeze,
+            "MappedRegistry validates direct and foreign holders while refreshing tag membership during freeze.");
+
         var intrusiveRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:intrusive_registry"), allowIntrusiveHolders: true);
         RequireThrows<InvalidOperationException>(
             () => intrusiveRegistry.Register(entryId, new Block(BlockProperties.Default)),
