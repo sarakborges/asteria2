@@ -7,7 +7,7 @@ internal sealed class SingleValuePalette<T> : IPalette<T> where T : class
 {
     private T? _value;
 
-    public int Count => _value is null ? 0 : 1;
+    public int Count => 1;
 
     public int IdFor(T value, IPaletteResize<T> resize)
     {
@@ -25,9 +25,9 @@ internal sealed class SingleValuePalette<T> : IPalette<T> where T : class
 
     public T ValueFor(int id)
     {
-        if (id != 0 || _value is null)
+        if (_value is null || id != 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(id), id, "The single-value palette only contains ID zero.");
+            throw new InvalidOperationException($"Missing Palette entry for id {id}.");
         }
 
         return _value;
@@ -36,22 +36,27 @@ internal sealed class SingleValuePalette<T> : IPalette<T> where T : class
     public bool MaybeHas(Func<T, bool> predicate)
     {
         ArgumentNullException.ThrowIfNull(predicate);
-        return _value is not null && predicate(_value);
+        if (_value is null)
+        {
+            throw new InvalidOperationException("Use of an uninitialized palette");
+        }
+
+        return predicate(_value);
     }
 
     public void ForEach(Action<T> action)
     {
         ArgumentNullException.ThrowIfNull(action);
-        if (_value is not null)
-        {
-            action(_value);
-        }
+        action(ValueFor(0));
     }
 
     public IPalette<T> Copy()
     {
-        var copy = new SingleValuePalette<T>();
-        copy._value = _value;
-        return copy;
+        if (_value is null)
+        {
+            throw new InvalidOperationException("Use of an uninitialized palette");
+        }
+
+        return this;
     }
 }

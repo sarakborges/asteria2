@@ -47,7 +47,7 @@ internal sealed class HashMapPalette<T> : ILocalPalette<T> where T : class
     {
         if ((uint)id >= (uint)_values.Count)
         {
-            throw new ArgumentOutOfRangeException(nameof(id), id, "The local palette ID does not exist.");
+            throw new MissingPaletteEntryException(id);
         }
 
         return _values[id];

@@ -26,7 +26,8 @@ internal sealed class GlobalPalette<T> : IPalette<T> where T : class
         return id == -1 ? 0 : id;
     }
 
-    public T ValueFor(int id) => _idMap.ByIdOrThrow(id);
+    public T ValueFor(int id) =>
+        _idMap.ById(id) ?? throw new MissingPaletteEntryException(id);
 
     public bool MaybeHas(Func<T, bool> predicate)
     {

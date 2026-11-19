@@ -44,6 +44,7 @@ internal static class Program
         CheckGlobalStateIds();
         CheckPropertyImplementations();
         CheckPackedBitStorage();
+        CheckPaletteExceptions();
         CheckPalettedContainer();
         CheckPalettedContainerGrowthAndGlobalMode();
         CheckChunkSection();
@@ -337,6 +338,13 @@ internal static class Program
             traversedValues[8] == 7 &&
             traversedValues.Where((_, index) => index != 8).All(value => value == 19),
             "GetAll must visit entries in index order and stop at the logical size, not padded word capacity.");
+    }
+
+    private static void CheckPaletteExceptions()
+    {
+        MissingPaletteEntryException exception = new(37);
+        Require(exception.Message == "Missing Palette entry for index 37.", "Missing palette entries must use the vanilla exception type and message.");
+        Require(exception.Index == 37, "Missing palette entry exceptions must preserve the missing index.");
     }
 
     private static void CheckPalettedContainer()
