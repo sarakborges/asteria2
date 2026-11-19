@@ -387,6 +387,23 @@ internal static class Program
         Require(!palette.MaybeHas(state => state.Block.Properties.IsAir), "Local palette must report absent air.");
         Require(palette.MaybeHas(state => ReferenceEquals(state, alternate)), "Local palette must inspect its entries.");
 
+        var presentValues = new List<BlockState>();
+        palette.GetAll(presentValues.Add);
+        Require(
+            presentValues.Count == 2 &&
+            ReferenceEquals(presentValues[0], defaultState) &&
+            ReferenceEquals(presentValues[1], alternate),
+            "GetAll must preserve the first-occurrence order of palette IDs.");
+
+        var coordinateContainer = new PalettedContainer<BlockState>(strategy, defaultState);
+        coordinateContainer.Set(2, 3, 4, alternate);
+        Require(
+            ReferenceEquals(coordinateContainer.Get(2, 3, 4), alternate),
+            "Coordinate Set must write directly through the vanilla palette path.");
+        Require(
+            ReferenceEquals(coordinateContainer.GetAndSet(2, 3, 4, defaultState), alternate),
+            "Coordinate GetAndSet must return the previous state.");
+
         int counted = 0;
         palette.Count((_, count) => counted += count);
         Require(counted == ChunkSection.BlockCount, "Palette count must account for every position.");

@@ -117,8 +117,21 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
     public T Get(int x, int y, int z) =>
         Get(_strategy.GetIndex(x, y, z));
 
-    public T Set(int index, T value) =>
-        GetAndSet(index, value);
+    public void Set(int index, T value)
+    {
+        Acquire();
+        try
+        {
+            SetUnchecked(index, value);
+        }
+        finally
+        {
+            Release();
+        }
+    }
+
+    public T GetAndSet(int x, int y, int z, T value) =>
+        GetAndSet(_strategy.GetIndex(x, y, z), value);
 
     public T GetAndSet(int index, T value)
     {
@@ -152,8 +165,24 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         return data.Palette.ValueFor(previousId);
     }
 
-    public T Set(int x, int y, int z, T value) =>
-        GetAndSet(_strategy.GetIndex(x, y, z), value);
+    public T GetAndSetUnchecked(int x, int y, int z, T value) =>
+        GetAndSetUnchecked(_strategy.GetIndex(x, y, z), value);
+
+    public void Set(int x, int y, int z, T value) =>
+        Set(_strategy.GetIndex(x, y, z), value);
+
+    private void SetUnchecked(int index, T value)
+    {
+        ValidateIndex(index);
+        ArgumentNullException.ThrowIfNull(value);
+
+        Data data = Volatile.Read(ref _data);
+        int paletteId = data.Palette.IdFor(value, this);
+
+        // IdFor may resize and publish a new Data snapshot.
+        data = Volatile.Read(ref _data);
+        data.Storage?.Set(index, paletteId);
+    }
 
     public void Acquire()
     {
@@ -202,8 +231,15 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
             return;
         }
 
-        var presentIds = new HashSet<int>();
-        data.Storage.GetAll(id => presentIds.Add(id));
+        var seenIds = new HashSet<int>();
+        var presentIds = new List<int>();
+        data.Storage.GetAll(id =>
+        {
+            if (seenIds.Add(id))
+            {
+                presentIds.Add(id);
+            }
+        });
         foreach (int paletteId in presentIds)
         {
             action(data.Palette.ValueFor(paletteId));
