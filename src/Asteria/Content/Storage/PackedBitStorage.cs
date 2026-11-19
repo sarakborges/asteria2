@@ -16,9 +16,9 @@ public sealed class PackedBitStorage
 
     public PackedBitStorage(int bitsPerEntry, int size)
     {
-        if (bitsPerEntry is < 1 or > 31)
+        if (bitsPerEntry is < 1 or > 32)
         {
-            throw new ArgumentOutOfRangeException(nameof(bitsPerEntry), "Bits per entry must be between 1 and 31.");
+            throw new ArgumentOutOfRangeException(nameof(bitsPerEntry), "Bits per entry must be between 1 and 32.");
         }
 
         if (size <= 0)

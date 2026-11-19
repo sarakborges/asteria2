@@ -267,6 +267,17 @@ internal static class Program
         Require(storage.GetAndSet(11, 3) == 31, "getAndSet must return the previous value.");
         RequireThrows<ArgumentOutOfRangeException>(() => storage.Set(0, 32), "Storage must reject values that do not fit.");
 
+        var thirtyTwoBitStorage = new PackedBitStorage(32, 3);
+        Require(thirtyTwoBitStorage.LongCount == 2, "Thirty-two-bit storage must pack two entries per 64-bit word.");
+        thirtyTwoBitStorage.Set(0, int.MaxValue);
+        thirtyTwoBitStorage.Set(1, 1);
+        thirtyTwoBitStorage.Set(2, 7);
+        Require(
+            thirtyTwoBitStorage.Get(0) == int.MaxValue &&
+            thirtyTwoBitStorage.Get(1) == 1 &&
+            thirtyTwoBitStorage.Get(2) == 7,
+            "Thirty-two-bit storage must preserve values across word and partial-word boundaries.");
+
         var partialWordStorage = new PackedBitStorage(5, 17);
         partialWordStorage.Fill(19);
         Require(
