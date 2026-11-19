@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Asteria.Content.Identifiers;
 
 namespace Asteria.Content.Registries;
@@ -28,7 +27,7 @@ public abstract class Holder<T> where T : class
         return KeyOrNull is RegistryKey<T> key && predicate(key);
     }
 
-    public bool Is(Holder<T> holder)
+    public virtual bool Is(Holder<T> holder)
     {
         ArgumentNullException.ThrowIfNull(holder);
         return Equals(holder);
@@ -51,6 +50,25 @@ public abstract class Holder<T> where T : class
         public override bool IsBound => true;
         public override RegistryKey<T>? KeyOrNull => null;
         public override IEnumerable<TagKey<T>> Tags => Array.Empty<TagKey<T>>();
+
+        public override bool Is(Holder<T> holder)
+        {
+            ArgumentNullException.ThrowIfNull(holder);
+            return EqualityComparer<T>.Default.Equals(_value, holder.Value);
+        }
+
+        public override bool CanSerializeIn(HolderOwner<T> owner)
+        {
+            ArgumentNullException.ThrowIfNull(owner);
+            return true;
+        }
+
+        public override bool Equals(object? obj) =>
+            obj is DirectHolder other && EqualityComparer<T>.Default.Equals(_value, other._value);
+
+        public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode(_value);
+
+        public override string ToString() => $"Direct{{{_value}}}";
     }
 
     public sealed class Reference : Holder<T>
@@ -77,6 +95,12 @@ public abstract class Holder<T> where T : class
         public RegistryKey<T> Key => _key ?? throw new InvalidOperationException("The holder key has not been bound.");
         public bool IsIntrusive => _intrusive;
         public override IEnumerable<TagKey<T>> Tags => _tags ?? throw new InvalidOperationException("Tags not bound.");
+
+        public override bool Is(Holder<T> holder)
+        {
+            ArgumentNullException.ThrowIfNull(holder);
+            return ReferenceEquals(this, holder);
+        }
 
         public override bool CanSerializeIn(HolderOwner<T> owner)
         {
@@ -109,16 +133,6 @@ public abstract class Holder<T> where T : class
             ArgumentNullException.ThrowIfNull(tags);
             _tags = Array.AsReadOnly(tags.Distinct().ToArray());
         }
-
-        public override bool Equals(object? obj)
-        {
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj is not Reference other || !_key.HasValue || !other._key.HasValue) return false;
-            return _key.Value.Equals(other._key.Value);
-        }
-
-        public override int GetHashCode() =>
-            _key.HasValue ? _key.Value.GetHashCode() : RuntimeHelpers.GetHashCode(this);
 
         public override string ToString() =>
             _key is RegistryKey<T> key
