@@ -74,6 +74,6 @@ public partial class Main : Node3D
             $"Block registry ready: {BuiltInRegistries.Block.Count} blocks, " +
             $"{BuiltInRegistries.BlockStates.Count} block states. " +
             $"'{testBlockHolder.Key.Location}' state '{changedState}' has global id " +
-            $"{changedState.GlobalId}; registries frozen.");
+            $"{changedStateId}; registries frozen.");
     }
 }
