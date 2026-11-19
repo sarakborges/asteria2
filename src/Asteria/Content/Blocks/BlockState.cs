@@ -9,12 +9,9 @@ public sealed class BlockState
 {
     private readonly object[] _values;
     private BlockState[][]? _neighbors;
-    private int _globalId = -1;
 
     public Block Block => Definition.Owner;
     public StateDefinition Definition { get; }
-    public int GlobalId => _globalId;
-    public bool HasGlobalId => _globalId >= 0;
 
     internal BlockState(StateDefinition definition, object[] values)
     {
@@ -98,21 +95,6 @@ public sealed class BlockState
 
     private BlockState[][] GetNeighbors() =>
         _neighbors ?? throw new InvalidOperationException("Block-state neighbors have not been initialized.");
-
-    internal void AssignGlobalId(int globalId)
-    {
-        if (globalId < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(globalId));
-        }
-
-        if (_globalId >= 0)
-        {
-            throw new InvalidOperationException("A block state can only receive one global runtime ID.");
-        }
-
-        _globalId = globalId;
-    }
 
     public override string ToString()
     {
