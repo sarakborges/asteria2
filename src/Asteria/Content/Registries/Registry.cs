@@ -140,7 +140,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
         }
     }
 
-    public IEnumerable<Holder<T>.Reference> ListElements() => _byId;
+    public IEnumerable<Holder<T>.Reference> ListElements() => _readOnlyEntries;
 
     public IEnumerable<HolderSet<T>.Named> ListTags() =>
         (_boundTags ?? throw new InvalidOperationException("Tags not bound.")).Values;

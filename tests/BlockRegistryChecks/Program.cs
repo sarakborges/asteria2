@@ -192,6 +192,9 @@ internal static class Program
         Require(registry.KeySet().Count == 2, "keySet must contain registered entry identifiers.");
         Require(registry.RegistryKeySet().Count == 2, "registryKeySet must contain registered and reserved keys.");
         Require(registry.EntrySet().Count() == 2, "entrySet must expose registered keys and their values.");
+        Require(
+            registry.ListElements() is not List<Holder<Block>.Reference>,
+            "listElements must not expose the registry's mutable backing list.");
         Require(registered.IsBound, "Freeze must bind registered standalone values.");
         Require(ReferenceEquals(registered.Value, value), "The frozen holder must resolve to the registered value.");
         Require(registered.Is(tagKey), "Freeze must associate tags with their holders.");
