@@ -209,6 +209,8 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
 
         foreach (KeyValuePair<TagKey<T>, IEnumerable<Holder<T>>> definition in tagDefinitions)
             GetOrCreateTagForRegistration(definition.Key).Bind(definition.Value);
+
+        RefreshTagsInHolders(GetBoundRegistrationTags());
     }
 
     public void BindAllTagsToEmpty()
@@ -216,6 +218,8 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
         EnsureWritable();
         foreach (HolderSet<T>.Named tag in _registrationTags.Values)
             tag.Bind(Array.Empty<Holder<T>>());
+
+        RefreshTagsInHolders(GetBoundRegistrationTags());
     }
 
     public PendingTagReload<T> PrepareTagReload(
@@ -281,6 +285,11 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
         _boundTags = frozenTags;
         RefreshTagsInHolders(frozenTags);
     }
+
+    private IReadOnlyDictionary<TagKey<T>, HolderSet<T>.Named> GetBoundRegistrationTags() =>
+        _registrationTags
+            .Where(pair => pair.Value.IsBound)
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
 
     private void RefreshTagsInHolders(IReadOnlyDictionary<TagKey<T>, HolderSet<T>.Named> tags)
     {
