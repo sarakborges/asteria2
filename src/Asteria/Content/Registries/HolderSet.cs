@@ -15,7 +15,7 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
     public HolderSet(IEnumerable<Holder<T>> holders)
     {
         ArgumentNullException.ThrowIfNull(holders);
-        _contents = Array.AsReadOnly(holders.Distinct().ToArray());
+        _contents = Array.AsReadOnly(holders.ToArray());
     }
 
     protected HolderSet()
@@ -31,7 +31,34 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
     public virtual bool CanSerializeIn(HolderOwner<T> owner)
     {
         ArgumentNullException.ThrowIfNull(owner);
-        return Contents.All(holder => holder.CanSerializeIn(owner));
+        return true;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (this is Named || obj is Named)
+        {
+            return ReferenceEquals(this, obj);
+        }
+
+        return ReferenceEquals(this, obj) ||
+            obj is HolderSet<T> other && Contents.SequenceEqual(other.Contents);
+    }
+
+    public override int GetHashCode()
+    {
+        if (this is Named)
+        {
+            return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);
+        }
+
+        var hash = new HashCode();
+        foreach (Holder<T> holder in Contents)
+        {
+            hash.Add(holder);
+        }
+
+        return hash.ToHashCode();
     }
 
     public virtual IEnumerator<Holder<T>> GetEnumerator() => Contents.GetEnumerator();
@@ -66,7 +93,13 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
                 if (holder.Kind != HolderKind.Reference)
                     throw new InvalidOperationException($"Found direct holder value in tag {Key}.");
             }
-            _boundContents = Array.AsReadOnly(values.Distinct().ToArray());
+            _boundContents = Array.AsReadOnly(values);
+        }
+
+        public override bool Contains(Holder<T> holder)
+        {
+            ArgumentNullException.ThrowIfNull(holder);
+            return holder.Is(Key);
         }
 
         public override bool CanSerializeIn(HolderOwner<T> owner)
@@ -75,6 +108,6 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
             return _owner.CanSerializeIn(owner);
         }
 
-        public override string ToString() => $"NamedSet({Key}, size={Contents.Count})";
+        public override string ToString() => $"NamedSet({Key})[{_boundContents}]";
     }
 }
