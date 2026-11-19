@@ -19,17 +19,13 @@ public sealed class StateDefinition
     public Block Owner { get; }
     public IReadOnlyList<StateProperty> Properties => _readOnlyProperties;
     public IReadOnlyList<BlockState> PossibleStates => _readOnlyStates;
-    public BlockState DefaultState { get; }
 
     internal StateDefinition(
         Block owner,
-        IReadOnlyList<StateProperty> properties,
-        IReadOnlyDictionary<StateProperty, object> defaultValues)
+        IReadOnlyList<StateProperty> properties)
     {
         Owner = owner ?? throw new ArgumentNullException(nameof(owner));
         ArgumentNullException.ThrowIfNull(properties);
-        ArgumentNullException.ThrowIfNull(defaultValues);
-
         _properties = properties.OrderBy(property => property.Name, StringComparer.Ordinal).ToArray();
         _readOnlyProperties = Array.AsReadOnly(_properties);
 
@@ -78,28 +74,6 @@ public sealed class StateDefinition
         }
 
         InitializeNeighbors(statesByValues);
-
-        int defaultStateIndex = 0;
-        int defaultStride = 1;
-        for (int propertyIndex = _properties.Length - 1; propertyIndex >= 0; propertyIndex--)
-        {
-            StateProperty property = _properties[propertyIndex];
-            if (defaultValues.TryGetValue(property, out object? defaultValue))
-            {
-                int valueIndex = property.GetValueIndex(defaultValue);
-                if (valueIndex < 0)
-                {
-                    throw new InvalidOperationException(
-                        $"Default value '{defaultValue}' is invalid for state property '{property.Name}'.");
-                }
-
-                defaultStateIndex = checked(defaultStateIndex + valueIndex * defaultStride);
-            }
-
-            defaultStride = checked(defaultStride * property.ValueCount);
-        }
-
-        DefaultState = _states[defaultStateIndex];
         _readOnlyStates = Array.AsReadOnly(_states);
     }
 
