@@ -343,6 +343,7 @@ internal static class Program
             ResourceLocation.Parse("asteria:air"));
         Block air = new(BlockProperties.Default);
         defaulted.Register(ResourceLocation.Parse("asteria:air"), air);
+        defaulted.Freeze();
         Require(
             ReferenceEquals(defaulted.GetValue(missingId), air),
             "DefaultedMappedRegistry.getValue(identifier) must return the default value.");
