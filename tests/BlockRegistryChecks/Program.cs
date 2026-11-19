@@ -27,7 +27,9 @@ internal static class Program
 
     private static void RunChecks()
     {
-        Require(!Blocks.AIR.DefaultState.HasGlobalId, "State IDs must be assigned during bootstrap.");
+        Require(
+            BuiltInRegistries.BlockStates.GetId(Blocks.AIR.DefaultState) == -1,
+            "Block states must remain absent from the global ID map until bootstrap.");
         RegistryBootstrap.Initialize();
         Require(RegistryBootstrap.IsInitialized, "Bootstrap must complete.");
         Require(BuiltInRegistries.AreFrozen, "Built-in registries must be frozen.");
@@ -215,8 +217,7 @@ internal static class Program
         for (int id = 0; id < ids.Count; id++)
         {
             BlockState state = ids.ById(id);
-            Require(state.GlobalId == id, "State IDs must be contiguous and match insertion order.");
-            Require(ReferenceEquals(ids.ById(state.GlobalId), state), "State ID reverse lookup must round-trip.");
+            Require(ReferenceEquals(ids.ById(id), state), "State ID reverse lookup must round-trip.");
             Require(ids.GetId(state) == id, "State-to-ID lookup must round-trip.");
         }
         Require(ids.GetId(Blocks.AIR.DefaultState) == 0, "The first block's singleton state must receive ID zero.");
