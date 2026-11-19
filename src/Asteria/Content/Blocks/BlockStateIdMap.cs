@@ -27,7 +27,6 @@ public sealed class BlockStateIdMap : IReadOnlyCollection<BlockState>, IIdMap<Bl
         }
 
         int id = _states.Count;
-        state.AssignGlobalId(id);
         _states.Add(state);
         _ids.Add(state, id);
         return id;
