@@ -96,6 +96,12 @@ internal static class Program
         Require(ReferenceEquals(BuiltInRegistries.Block.Get(missingId), Blocks.AIR), "Unknown block keys must resolve to air.");
         Require(ReferenceEquals(BuiltInRegistries.Block.GetValue(missingId), Blocks.AIR), "Defaulted GetValue lookups must resolve unknown identifiers to air.");
         Require(ReferenceEquals(BuiltInRegistries.Block.GetAny(), Blocks.AIR.BuiltInRegistryHolder), "DefaultedMappedRegistry.getAny must return its default holder.");
+        Holder<Block>.Reference? randomDefaultedHolder = BuiltInRegistries.Block.GetRandom(new Random(0));
+        Require(
+            randomDefaultedHolder is not null &&
+            (ReferenceEquals(randomDefaultedHolder, Blocks.AIR.BuiltInRegistryHolder) ||
+             ReferenceEquals(randomDefaultedHolder, Blocks.TEST_BLOCK.BuiltInRegistryHolder)),
+            "DefaultedMappedRegistry.getRandom must use the registry values and retain the default holder fallback.");
         Require(BuiltInRegistries.Block.GetHolder(missingId) is null, "Exact holder lookups must not hide missing keys.");
         Require(BuiltInRegistries.Block.GetId(new Block(BlockProperties.Default)) == 0, "Unknown objects must resolve to the default block ID.");
         Require(BuiltInRegistries.Block.GetId(null!) == 0, "Null reverse lookups in a defaulted registry must resolve to the default ID.");
@@ -147,6 +153,7 @@ internal static class Program
         var registry = new Registry<Block>(registryId);
         Require(registry.IsEmpty(), "A registry with no keys must be empty.");
         Require(registry.GetAny() is null, "MappedRegistry.getAny must be empty before its first registered value.");
+        Require(registry.GetRandom(new Random(0)) is null, "MappedRegistry.getRandom must be empty when no values are registered.");
         Require(registry.KeySet().Count == 0 && registry.RegistryKeySet().Count == 0 && !registry.EntrySet().Any(), "Empty registry key and entry sets must be empty.");
         Require(registry.GetId(null!) == -1, "A non-defaulted registry must return -1 for a null reverse lookup.");
         Require(registry.GetKey(null!) is null, "A non-defaulted registry must return null for a null key lookup.");
@@ -204,6 +211,11 @@ internal static class Program
 
         registry.Freeze();
         Require(ReferenceEquals(registry.GetAny(), registered), "MappedRegistry.getAny must return the first registered holder.");
+        Holder<Block>.Reference? randomHolder = registry.GetRandom(new Random(0));
+        Require(
+            randomHolder is not null &&
+            (ReferenceEquals(randomHolder, registered) || ReferenceEquals(randomHolder, placeholderEntry)),
+            "MappedRegistry.getRandom must return one of the registered holders.");
         Require(registry.KeySet().Count == 2, "keySet must contain registered entry identifiers.");
         Require(registry.RegistryKeySet().Count == 2, "registryKeySet must contain registered and reserved keys.");
         Require(registry.EntrySet().Count() == 2, "entrySet must expose registered keys and their values.");

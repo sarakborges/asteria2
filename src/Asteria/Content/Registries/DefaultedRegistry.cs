@@ -25,6 +25,9 @@ public sealed class DefaultedRegistry<T> : Registry<T> where T : class
 
     public override Holder<T>.Reference? GetAny() => _defaultHolder;
 
+    public override Holder<T>.Reference? GetRandom(Random random) =>
+        base.GetRandom(random) ?? GetDefaultHolder();
+
     public DefaultedRegistry(
         ResourceLocation location,
         ResourceLocation defaultKey,

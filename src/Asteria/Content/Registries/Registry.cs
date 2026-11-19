@@ -166,6 +166,12 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
     public virtual Holder<T>.Reference? GetAny() =>
         _byId.Count == 0 ? null : _byId[0];
 
+    public virtual Holder<T>.Reference? GetRandom(Random random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+        return _byId.Count == 0 ? null : _byId[random.Next(_byId.Count)];
+    }
+
     public bool IsEmpty() => _byKey.Count == 0;
 
     public IReadOnlyCollection<ResourceLocation> KeySet() => _byLocation.Keys;
