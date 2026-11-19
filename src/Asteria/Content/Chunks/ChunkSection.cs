@@ -107,23 +107,6 @@ public sealed class ChunkSection
     public ChunkSection Copy() =>
         new(_states.Copy(), _nonAirBlockCount);
 
-    public static int GetIndex(int x, int y, int z)
-    {
-        if ((uint)x >= (uint)Width)
-        {
-            throw new ArgumentOutOfRangeException(nameof(x), x, "Section X coordinate must be between 0 and 15.");
-        }
-
-        if ((uint)y >= (uint)Height)
-        {
-            throw new ArgumentOutOfRangeException(nameof(y), y, "Section Y coordinate must be between 0 and 15.");
-        }
-
-        if ((uint)z >= (uint)Depth)
-        {
-            throw new ArgumentOutOfRangeException(nameof(z), z, "Section Z coordinate must be between 0 and 15.");
-        }
-
-        return (y << 8) | (z << 4) | x;
-    }
+    public static int GetIndex(int x, int y, int z) =>
+        (y << 8) | (z << 4) | x;
 }
