@@ -3,13 +3,11 @@ using Asteria.Content.Blocks.StateProperties;
 namespace Asteria.Content.Blocks;
 
 /// <summary>
-/// Collects block properties and defaults before all possible states are materialized.
+/// Collects block properties before all possible states are materialized.
 /// </summary>
 public sealed class StateDefinitionBuilder
 {
     private readonly List<StateProperty> _properties = new();
-    private readonly Dictionary<StateProperty, object> _defaultValues =
-        new(ReferenceEqualityComparer.Instance);
     private bool _built;
 
     public StateDefinitionBuilder Add<T>(StateProperty<T> property) where T : notnull, IComparable
@@ -54,34 +52,13 @@ public sealed class StateDefinitionBuilder
         return this;
     }
 
-    public StateDefinitionBuilder SetDefault<T>(StateProperty<T> property, T value) where T : notnull, IComparable
-    {
-        EnsureMutable();
-        ArgumentNullException.ThrowIfNull(property);
-
-        if (!_properties.Any(existing => ReferenceEquals(existing, property)))
-        {
-            throw new InvalidOperationException(
-                $"State property '{property.Name}' must be added before setting its default value.");
-        }
-
-        if (property.IndexOf(value) < 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(value), value, $"Value is not valid for state property '{property.Name}'.");
-        }
-
-        _defaultValues[property] = value;
-        return this;
-    }
-
     internal StateDefinition Build(Block owner)
     {
         EnsureMutable();
         ArgumentNullException.ThrowIfNull(owner);
 
         _built = true;
-        return new StateDefinition(owner, _properties, _defaultValues);
+        return new StateDefinition(owner, _properties);
     }
 
     private void EnsureMutable()
