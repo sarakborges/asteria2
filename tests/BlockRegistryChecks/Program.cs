@@ -288,11 +288,17 @@ internal static class Program
             ResourceLocation.Parse("asteria:defaulted_lifecycle"),
             ResourceLocation.Parse("asteria:default"));
         Block defaultBlock = new(BlockProperties.Default);
-        defaultedRegistry.Register(
-            new RegistryKey<Block>(defaultedRegistry.Location, ResourceLocation.Parse("asteria:default")),
-            defaultBlock,
-            RegistrationInfo.BuiltIn);
-        Require(ReferenceEquals(defaultedRegistry.GetAny()?.Value, defaultBlock), "Registering through the key/metadata overload must bind DefaultedRegistry's default holder.");
+        RegistryKey<Block> defaultKey = new(
+            defaultedRegistry.Location,
+            ResourceLocation.Parse("asteria:default"));
+        defaultedRegistry.Register(defaultKey, defaultBlock, RegistrationInfo.BuiltIn);
+        Require(
+            ReferenceEquals(defaultedRegistry.GetAny(), defaultedRegistry.GetHolder(defaultKey)),
+            "Registering through the key/metadata overload must bind DefaultedRegistry's default holder.");
+        defaultedRegistry.Freeze();
+        Require(
+            ReferenceEquals(defaultedRegistry.GetAny()?.Value, defaultBlock),
+            "The default holder value must become accessible after registry freeze.");
     }
 
     private static void CheckBlockStateDefinition()
