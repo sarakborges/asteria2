@@ -8,6 +8,7 @@ public interface IBitStorage
     int BitsPerEntry { get; }
     int Size { get; }
     int LongCount { get; }
+    ulong[] GetRaw();
 
     int Get(int index);
     int GetAndSet(int index, int value);

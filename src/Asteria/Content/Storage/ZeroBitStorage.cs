@@ -12,6 +12,8 @@ public sealed class ZeroBitStorage : IBitStorage
     public int Size { get; }
     public int LongCount => 0;
 
+    public ulong[] GetRaw() => Array.Empty<ulong>();
+
     public ZeroBitStorage(int size)
     {
         Size = size;
