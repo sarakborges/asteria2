@@ -37,6 +37,7 @@ internal static class Program
         Require(BuiltInRegistries.BlockStates.Count == 7, "Expected one air state and six test states.");
 
         CheckDefaultedBlockRegistry();
+        CheckBlockProperties();
         CheckRegistryHoldersAndTags();
         CheckBlockStateDefinition();
         CheckBlockStateTransitions();
@@ -85,6 +86,20 @@ internal static class Program
         Require(direct.Equals(Holder<Block>.Direct(directValue)), "Direct holder record equality compares wrapped values.");
         Require(!registered.Is(direct), "A reference holder must not match a direct holder by value.");
         Require(direct.Is(registered) == false || ReferenceEquals(registered.Value, directValue), "Direct holder matching follows wrapped-value equality.");
+    }
+
+    private static void CheckBlockProperties()
+    {
+        BlockProperties defaults = BlockProperties.Default;
+        Require(defaults.DestroyTime == 0.0f, "Vanilla block properties default destroy time to zero.");
+        Require(defaults.ExplosionResistance == 0.0f, "Vanilla block properties default explosion resistance to zero.");
+        Require(defaults.Friction == 0.6f, "Vanilla block properties default friction to 0.6.");
+        Require(!defaults.RequiresCorrectToolForDrops && !defaults.IsAir, "Vanilla block properties default tool and air flags to false.");
+
+        var custom = new BlockProperties(destroyTime: -2.0f, explosionResistance: -3.0f, friction: -0.25f);
+        Require(custom.DestroyTime == -2.0f, "Vanilla destroyTime stores the supplied value without clamping.");
+        Require(custom.ExplosionResistance == 0.0f, "Vanilla explosionResistance clamps negative values to zero.");
+        Require(custom.Friction == -0.25f, "Vanilla friction stores the supplied value without clamping.");
     }
 
     private static void CheckRegistryHoldersAndTags()

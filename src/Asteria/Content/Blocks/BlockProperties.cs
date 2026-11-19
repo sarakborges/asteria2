@@ -13,32 +13,14 @@ public sealed class BlockProperties
     public bool IsAir { get; }
 
     public BlockProperties(
-        float destroyTime = 1.5f,
-        float explosionResistance = 6.0f,
+        float destroyTime = 0.0f,
+        float explosionResistance = 0.0f,
         bool requiresCorrectToolForDrops = false,
         float friction = 0.6f,
         bool isAir = false)
     {
-        if (!float.IsFinite(destroyTime) || (destroyTime < 0.0f && destroyTime != -1.0f))
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(destroyTime), "Destroy time must be -1 or a finite non-negative value.");
-        }
-
-        if (!float.IsFinite(explosionResistance) || explosionResistance < 0.0f)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(explosionResistance), "Explosion resistance must be finite and non-negative.");
-        }
-
-        if (!float.IsFinite(friction) || friction < 0.0f)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(friction), "Friction must be finite and non-negative.");
-        }
-
         DestroyTime = destroyTime;
-        ExplosionResistance = explosionResistance;
+        ExplosionResistance = MathF.Max(0.0f, explosionResistance);
         RequiresCorrectToolForDrops = requiresCorrectToolForDrops;
         Friction = friction;
         IsAir = isAir;
