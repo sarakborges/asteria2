@@ -12,10 +12,17 @@ public sealed class StateDefinitionBuilder
         new(ReferenceEqualityComparer.Instance);
     private bool _built;
 
-    public StateDefinitionBuilder Add<T>(StateProperty<T> property) where T : notnull
+    public StateDefinitionBuilder Add<T>(StateProperty<T> property) where T : notnull, IComparable
     {
         EnsureMutable();
         ArgumentNullException.ThrowIfNull(property);
+
+        if (!StateProperty.IsValidName(property.Name))
+        {
+            throw new ArgumentException(
+                $"Invalid state property name '{property.Name}'. Names must use lowercase ASCII letters, digits, or underscores.",
+                nameof(property));
+        }
 
         if (property.ValueCount <= 1)
         {
@@ -36,11 +43,11 @@ public sealed class StateDefinitionBuilder
         }
 
         if (_properties.Any(existing =>
-                ReferenceEquals(existing, property) ||
                 string.Equals(existing.Name, property.Name, StringComparison.Ordinal)))
         {
-            throw new InvalidOperationException(
-                $"State property '{property.Name}' has already been added to this block.");
+            throw new ArgumentException(
+                $"State property '{property.Name}' has already been added to this block.",
+                nameof(property));
         }
 
         _properties.Add(property);
