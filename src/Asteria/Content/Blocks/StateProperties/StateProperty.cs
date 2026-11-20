@@ -69,7 +69,7 @@ public abstract class StateProperty<T> : StateProperty where T : notnull, ICompa
     public abstract string GetName(T value);
     public abstract bool TryParse(string serializedValue, out T value);
 
-    public int IndexOf(T value)
+    public virtual int IndexOf(T value)
     {
         for (int index = 0; index < PossibleValues.Count; index++)
         {

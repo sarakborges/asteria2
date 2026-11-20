@@ -13,6 +13,7 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
     private readonly IReadOnlyList<TEnum> _values;
     private readonly Dictionary<TEnum, string> _namesByValue;
     private readonly Dictionary<string, TEnum> _valuesByName;
+    private readonly Dictionary<TEnum, int> _indicesByValue;
     private readonly Func<TEnum, string> _nameSelector;
 
     public override IReadOnlyList<TEnum> PossibleValues => _values;
@@ -29,6 +30,7 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
         var orderedValues = new List<TEnum>();
         _namesByValue = new Dictionary<TEnum, string>();
         _valuesByName = new Dictionary<string, TEnum>(StringComparer.Ordinal);
+        _indicesByValue = new Dictionary<TEnum, int>();
 
         foreach (TEnum value in values)
         {
@@ -48,6 +50,7 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
                     nameof(nameSelector));
             }
 
+            _indicesByValue.Add(value, orderedValues.Count);
             orderedValues.Add(value);
             _namesByValue.Add(value, serializedName);
             _valuesByName.Add(serializedName, value);
@@ -111,6 +114,9 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
             possibleValues,
             nameSelector ?? (static value => value.ToString().ToLowerInvariant()));
     }
+
+    public override int IndexOf(TEnum value) =>
+        _indicesByValue.TryGetValue(value, out int index) ? index : -1;
 
     public override string GetName(TEnum value) =>
         _nameSelector(value);

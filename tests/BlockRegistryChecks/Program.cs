@@ -609,6 +609,7 @@ internal static class Program
     {
         BooleanProperty lit = BooleanProperty.Create("lit");
         Require(lit.PossibleValues.SequenceEqual(new[] { true, false }), "Boolean values must be true then false, matching Minecraft.");
+        Require(lit.IndexOf(true) == 0 && lit.IndexOf(false) == 1, "BooleanProperty.getInternalIndex must use its fixed true/false indices.");
         Require(lit.TryParse("true", out bool parsedTrue) && parsedTrue, "Boolean parsing must accept true.");
         Require(!lit.TryParse("TRUE", out _), "Boolean parsing must be case-sensitive.");
 
@@ -617,6 +618,8 @@ internal static class Program
         Require(!age.Equals(IntegerProperty.Create("age", 1, 4)), "Integer properties with different ranges must not compare equal.");
         Require(age.GetHashCode() == IntegerProperty.Create("age", 2, 4).GetHashCode(), "Equal integer properties must have equal hash codes.");
         Require(age.PossibleValues.SequenceEqual(new[] { 2, 3, 4 }), "Integer values must be inclusive and ascending.");
+        Require(age.IndexOf(2) == 0 && age.IndexOf(4) == 2, "IntegerProperty.getInternalIndex must use min-offset indexing.");
+        Require(age.IndexOf(1) == -1 && age.IndexOf(5) == -1, "IntegerProperty.getInternalIndex must reject values outside the range.");
         Require(age.TryParse("3", out int parsedAge) && parsedAge == 3, "Integer parsing must accept in-range values.");
         Require(!age.TryParse("5", out _), "Integer parsing must reject out-of-range values.");
         Require(!age.TryParse(" 3", out _), "Integer parsing must reject surrounding whitespace.");
@@ -624,6 +627,8 @@ internal static class Program
 
         EnumProperty<TestAxis> axis = EnumProperty<TestAxis>.Create("axis", new[] { TestAxis.Z, TestAxis.X }, value => value.ToString().ToLowerInvariant());
         Require(axis.PossibleValues.SequenceEqual(new[] { TestAxis.Z, TestAxis.X }), "Enum properties must preserve the supplied value order.");
+        Require(axis.IndexOf(TestAxis.Z) == 0 && axis.IndexOf(TestAxis.X) == 1, "EnumProperty.getInternalIndex must use its precomputed value-to-index mapping.");
+        Require(axis.IndexOf(TestAxis.Y) == -1, "EnumProperty.getInternalIndex must reject values excluded from its possible-value list.");
         Require(axis.TryParse("z", out TestAxis parsedAxis) && parsedAxis == TestAxis.Z, "Enum parsing must use the configured name.");
         Require(axis.GetName(TestAxis.Y) == "y", "EnumProperty.getName must serialize enum constants outside the filtered possible-value set.");
         Require(!axis.TryParse("y", out _), "EnumProperty parsing must still reject values outside its possible-value set.");

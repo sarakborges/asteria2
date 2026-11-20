@@ -17,6 +17,8 @@ public sealed class BooleanProperty : StateProperty<bool>
 
     public static BooleanProperty Create(string name) => new(name);
 
+    public override int IndexOf(bool value) => value ? 0 : 1;
+
     public override string GetName(bool value) => value ? "true" : "false";
 
     public override bool TryParse(string serializedValue, out bool value)
