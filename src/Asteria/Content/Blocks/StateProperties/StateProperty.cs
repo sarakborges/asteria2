@@ -20,6 +20,7 @@ public abstract class StateProperty
     internal abstract object GetValueObject(int index);
     internal abstract int GetValueIndex(object value);
     internal abstract string GetSerializedValue(object value);
+    internal abstract IStatePropertyValue CreateValue(object value);
 
     public override bool Equals(object? obj) =>
         obj is StateProperty other &&
@@ -111,6 +112,25 @@ public abstract class StateProperty<T> : StateProperty where T : notnull, ICompa
 
         return GetName(typedValue);
     }
+
+    internal override IStatePropertyValue CreateValue(object value) =>
+        new StatePropertyValue<T>(
+            this,
+            value is T typedValue
+                ? typedValue
+                : throw new ArgumentException($"Value {value} does not belong to property {this}"));
+
+    public StatePropertyValue<T> Value(T value) =>
+        new(this, value);
+
+    public StatePropertyValue<T> Value(BlockState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        return Value(state.GetValue(this));
+    }
+
+    public IEnumerable<StatePropertyValue<T>> GetAllValues() =>
+        PossibleValues.Select(Value);
 
     public override string ToString()
     {
