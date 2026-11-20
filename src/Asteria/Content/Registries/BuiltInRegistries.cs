@@ -58,10 +58,10 @@ public static class BuiltInRegistries
         foreach (var loader in Loaders)
             loader.Bootstrap();
 
-        FreezeAll();
+        Freeze();
     }
 
-    public static void FreezeAll()
+    private static void Freeze()
     {
         Root.Freeze();
 
