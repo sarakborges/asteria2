@@ -1175,7 +1175,7 @@ internal static class Program
             booleanValues.Select(value => value.ToString()).SequenceEqual(new[] { "lit=true", "lit=false" }),
             "Property.getAllValues must expose values in the property's declared order and format them as name=value.");
         Require(
-            lit.Value(Blocks.TEST_BLOCK.DefaultState).Value == false,
+            Blocks.TEST_POWERED.Value(Blocks.TEST_BLOCK.DefaultState).Value == false,
             "Property.value(StateHolder) must wrap the value currently stored in the state.");
         Require(
             lit.Value(true) == booleanValues[0] &&
