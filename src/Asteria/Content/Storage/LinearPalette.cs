@@ -42,10 +42,11 @@ internal sealed class LinearPalette<T> : ILocalPalette<T> where T : class
             }
         }
 
-        int newIndex = _size++;
+        int newIndex = _size;
         if (newIndex < _values.Length)
         {
             _values[newIndex] = value;
+            _size++;
             return newIndex;
         }
 
