@@ -88,13 +88,15 @@ internal static class Program
     private static void RunChecks()
     {
         Require(
-            BuiltInRegistries.BlockStates.GetId(Blocks.AIR.DefaultState) == -1,
-            "Block states must remain absent from the global ID map until bootstrap.");
+            Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&
+            Block.BlockStateRegistry.Count == 7 &&
+            !BuiltInRegistries.AreFrozen,
+            "Block states must receive IDs during block construction, before registry bootstrap.");
         RegistryBootstrap.Initialize();
         Require(RegistryBootstrap.IsInitialized, "Bootstrap must complete.");
         Require(BuiltInRegistries.AreFrozen, "Built-in registries must be frozen.");
         Require(BuiltInRegistries.Block.Count == 2, "Two Asteria blocks should be registered.");
-        Require(BuiltInRegistries.BlockStates.Count == 7, "Expected one air state and six test states.");
+        Require(Block.BlockStateRegistry.Count == 7, "Expected one air state and six test states.");
 
         CheckResourceLocations();
         CheckDefaultedBlockRegistry();
@@ -107,6 +109,7 @@ internal static class Program
         CheckBlockStateDefinition();
         CheckBlockStateTransitions();
         CheckGlobalStateIds();
+        CheckStateIdsAreAssignedAtConstruction();
         CheckPropertyImplementations();
         CheckPackedBitStorage();
         CheckPackedBitStorageWidths();
@@ -197,6 +200,11 @@ internal static class Program
         ResourceLocation airId = ResourceLocation.Parse("asteria:air");
         ResourceLocation testId = ResourceLocation.Parse("asteria:registry_test");
         ResourceLocation missingId = ResourceLocation.Parse("asteria:not_registered");
+
+        Require(
+            BuiltInRegistries.Block.Location == ResourceLocation.Parse("minecraft:block") &&
+            BuiltInRegistries.Block.Key.RegistryLocation == ResourceLocation.Parse("root"),
+            "The built-in block registry must use the vanilla minecraft:block registry key.");
 
         Require(ReferenceEquals(BuiltInRegistries.Block.GetValue(airId), Blocks.AIR), "The air block must be registered.");
         Require(
@@ -1206,7 +1214,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
     private static void CheckGlobalStateIds()
     {
-        BlockStateIdMap ids = BuiltInRegistries.BlockStates;
+        BlockStateIdMap ids = Block.BlockStateRegistry;
         Require(ids.GetId(null!) == -1, "The block-state ID map must return -1 for a null reverse lookup.");
         for (int id = 0; id < ids.Count; id++)
         {
@@ -1228,6 +1236,25 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             missingId.Message == $"Can't find id for '' in map {ids}",
             "IdMap.getIdOrThrow must use the vanilla missing-value error message.");
+    }
+
+    private static void CheckStateIdsAreAssignedAtConstruction()
+    {
+        int firstId = Block.BlockStateRegistry.Count;
+        BooleanProperty property = BooleanProperty.Create("construction_id");
+        var block = new TestBlockDefinition(BlockProperties.Of(), builder => builder.Add(property));
+        IReadOnlyList<BlockState> states = block.StateDefinition.PossibleStates;
+
+        Require(
+            Block.BlockStateRegistry.Count == firstId + states.Count,
+            "Every constructed block state must immediately enter the global BlockState registry, even before its block is registered.");
+
+        for (int index = 0; index < states.Count; index++)
+        {
+            Require(
+                Block.BlockStateRegistry.GetId(states[index]) == firstId + index,
+                "Block states must receive global IDs in StateDefinition possible-state construction order.");
+        }
     }
 
     private static void CheckPropertyImplementations()
@@ -1783,7 +1810,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
     private static PalettedContainer<BlockState> CreateBlockStateContainer(BlockState defaultState)
     {
         PalettedContainerStrategy<BlockState> strategy =
-            PalettedContainerStrategy<BlockState>.CreateForBlockStates(BuiltInRegistries.BlockStates);
+            PalettedContainerStrategy<BlockState>.CreateForBlockStates(Block.BlockStateRegistry);
         return new PalettedContainer<BlockState>(defaultState, strategy);
     }
 
@@ -1822,7 +1849,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
     private static void CheckPalettedContainer()
     {
         BlockState defaultState = Blocks.TEST_BLOCK.DefaultState;
-        var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(BuiltInRegistries.BlockStates);
+        var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(Block.BlockStateRegistry);
         var palette = new PalettedContainer<BlockState>(defaultState, strategy);
         Require(palette.Size == ChunkSection.BlockCount, "Block-state strategy must create 4096 entries.");
         Require(palette.Mode == PaletteMode.SingleValue, "A uniform section must use a single-value palette.");
@@ -1880,9 +1907,9 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
     private static void CheckPalettedContainerStrategyConfiguration()
     {
         var blockStrategy =
-            PalettedContainerStrategy<BlockState>.CreateForBlockStates(BuiltInRegistries.BlockStates);
+            PalettedContainerStrategy<BlockState>.CreateForBlockStates(Block.BlockStateRegistry);
         var biomeStrategy =
-            PalettedContainerStrategy<BlockState>.CreateForBiomes(BuiltInRegistries.BlockStates);
+            PalettedContainerStrategy<BlockState>.CreateForBiomes(Block.BlockStateRegistry);
 
         Require(
             blockStrategy.BitsPerAxis == 4 && blockStrategy.EntryCount == 4096,
@@ -1951,7 +1978,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             builder => builder.Add(variant));
 
         var ids = new BlockStateIdMap();
-        foreach (BlockState state in manyStateBlock.StateDefinition.PossibleStates) ids.Register(state);
+        foreach (BlockState state in manyStateBlock.StateDefinition.PossibleStates) ids.Add(state);
 
         var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(ids);
         var container = new PalettedContainer<BlockState>(manyStateBlock.DefaultState, strategy);
@@ -1987,7 +2014,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         var block = new TestBlockDefinition(BlockProperties.Of(), builder => builder.Add(variant));
         var ids = new BlockStateIdMap();
         foreach (BlockState state in block.StateDefinition.PossibleStates)
-            ids.Register(state);
+            ids.Add(state);
 
         var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(ids);
         var container = new PalettedContainer<BlockState>(block.DefaultState, strategy);
@@ -2005,7 +2032,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
     private static void CheckChunkSection()
     {
         var smallContainerStrategy =
-            PalettedContainerStrategy<BlockState>.CreateForBiomes(BuiltInRegistries.BlockStates);
+            PalettedContainerStrategy<BlockState>.CreateForBiomes(Block.BlockStateRegistry);
         var sectionWithSuppliedStrategy = new ChunkSection(
             new PalettedContainer<BlockState>(Blocks.AIR.DefaultState, smallContainerStrategy));
         Require(
