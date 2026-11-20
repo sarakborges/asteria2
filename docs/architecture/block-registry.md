@@ -19,7 +19,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 - Registry freezing binds values, rejects unbound standalone references and unregistered intrusive holders, verifies tag binding, and publishes the bound tag set.
 - Intrusive registries require an intrusive holder before registration. A block creates its intrusive holder before its state definition, as vanilla `Block` does.
 - `Holder<T>` supports direct and reference variants, key/predicate/tag membership, ownership checks, unwrap/unwrap-key, registered names, and bound/unbound tag behavior.
-- `HolderSet<T>` supports direct and named sets, the vanilla direct-set factories, ordered contents, membership, random selection, unwrap/unwrap-key, and serialization ownership.
+- `HolderSet<T>` supports direct and named sets, the vanilla direct-set factories, ordered contents, membership, random selection, unwrap/unwrap-key, and serialization ownership. Direct and named holder sets retain object-identity equality; direct-set membership uses holder equality.
 - `HolderGetter<T>` exposes optional and throwing key/tag lookup plus random element selection. Registration lookups create stable standalone placeholders.
 - `HolderLookup<T>` and `RegistryLookup` expose element/tag enumeration, registry key and lifecycle metadata, and vanilla-style element filtering.
 - `DefaultedRegistry<T>` applies fallback semantics only to the vanilla defaulted lookup paths; exact holder and optional lookups remain exact.
