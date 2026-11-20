@@ -65,16 +65,6 @@ public sealed class BlockStateIdMap : IReadOnlyCollection<BlockState>, IIdMap<Bl
     public BlockState? ById(int id) =>
         (uint)id < (uint)_states.Count ? _states[id] : null;
 
-    public BlockState GetById(int id) =>
-        ById(id) ?? throw new ArgumentOutOfRangeException(
-            nameof(id), id, "The block state runtime ID does not exist.");
-
-    public bool TryGetById(int id, out BlockState? state)
-    {
-        state = ById(id);
-        return state is not null;
-    }
-
     public bool Contains(int id) => ById(id) is not null;
 
     public IEnumerator<BlockState> GetEnumerator() =>
