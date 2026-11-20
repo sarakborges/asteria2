@@ -33,10 +33,10 @@ public sealed class StateDefinition
         for (int index = _properties.Length - 1; index >= 0; index--)
         {
             StateProperty property = _properties[index];
-            if (property.ValueCount <= 1)
+            if (property.ValueCount == 0)
             {
                 throw new InvalidOperationException(
-                    $"State property '{property.Name}' must have more than one possible value.");
+                    $"State property '{property.Name}' must have at least one possible value.");
             }
 
             stateCount = checked(stateCount * property.ValueCount);

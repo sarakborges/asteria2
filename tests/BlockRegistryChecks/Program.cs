@@ -638,6 +638,25 @@ internal static class Program
             "StateDefinition.Builder must validate serialized enum value names when the property is added.");
 
         EnumProperty<TestDeclaredOrder> declared = EnumProperty<TestDeclaredOrder>.Create("declared");
+        EnumProperty<TestDeclaredOrder> singleton = EnumProperty<TestDeclaredOrder>.Create(
+            "singleton",
+            new[] { TestDeclaredOrder.Y });
+        var singletonBlock = new TestBlockDefinition(
+            BlockProperties.Of(),
+            builder => builder.Add(singleton));
+        BlockState singletonState = singletonBlock.DefaultState;
+        Require(
+            singletonBlock.StateDefinition.PossibleStates.Count == 1,
+            "StateDefinition must allow an enum property with exactly one possible value.");
+        Require(
+            ReferenceEquals(singletonState, singletonState.Cycle(singleton)),
+            "Cycling a singleton property must return the same state.");
+        Require(
+            ReferenceEquals(singletonState, singletonState.SetValue(singleton, TestDeclaredOrder.Y)),
+            "Setting the only valid singleton property value must return the same state.");
+        Require(
+            ReferenceEquals(singletonState, singletonState.TrySetValue(singleton, TestDeclaredOrder.Y)),
+            "trySetValue must support singleton enum properties.");
         Require(
             declared.Equals(EnumProperty<TestDeclaredOrder>.Create("declared")),
             "Enum properties with the same name, ordered values, and serialized names must compare equal.");
