@@ -109,7 +109,7 @@ public sealed class BlockState
         ArgumentNullException.ThrowIfNull(neighbors);
         if (_neighbors is not null)
         {
-            throw new InvalidOperationException("Block-state neighbors can only be initialized once.");
+            throw new InvalidOperationException();
         }
 
         _neighbors = neighbors;
