@@ -130,7 +130,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
 
     public T GetValueOrThrow(RegistryKey<T> key) =>
         GetValue(key) ?? throw new InvalidOperationException(
-            $"Missing key in registry '{Location}': '{key}'.");
+            $"Missing key in {Key}: {key}");
 
     public T? GetOptional(ResourceLocation location) =>
         _byLocation.TryGetValue(location, out Holder<T>.Reference? holder)

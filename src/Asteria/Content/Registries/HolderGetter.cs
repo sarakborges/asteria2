@@ -10,10 +10,10 @@ public interface HolderGetter<T> : HolderOwner<T> where T : class
     HolderSet<T>.Named? Get(TagKey<T> tag);
 
     Holder<T>.Reference GetOrThrow(RegistryKey<T> key) =>
-        Get(key) ?? throw new InvalidOperationException($"Missing element {key}.");
+        Get(key) ?? throw new InvalidOperationException($"Missing element {key}");
 
     HolderSet<T>.Named GetOrThrow(TagKey<T> tag) =>
-        Get(tag) ?? throw new InvalidOperationException($"Missing tag {tag}.");
+        Get(tag) ?? throw new InvalidOperationException($"Missing tag {tag}");
 
     Holder<T>? GetRandomElementOf(TagKey<T> tag, Random random)
     {

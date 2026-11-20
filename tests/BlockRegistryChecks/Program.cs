@@ -813,9 +813,28 @@ internal static class Program
         Require(
             ReferenceEquals(registry.GetValueOrThrow(registeredKey), registeredValue),
             "getValueOrThrow must return the value registered for a resource key.");
-        RequireThrows<InvalidOperationException>(
-            () => registry.GetValueOrThrow(new RegistryKey<Block>(registryId, missingId)),
+        RegistryKey<Block> missingKey = new(registryId, missingId);
+        InvalidOperationException missingValueException = Capture<InvalidOperationException>(
+            () => registry.GetValueOrThrow(missingKey),
             "getValueOrThrow must reject a missing resource key.");
+        Require(
+            missingValueException.Message == $"Missing key in {registry.Key}: {missingKey}",
+            "Registry.getValueOrThrow must use the vanilla missing-key error message.");
+
+        HolderLookup<Block>.RegistryLookup filteredLookup = registry.FilterElements(_ => false);
+        InvalidOperationException missingElementException = Capture<InvalidOperationException>(
+            () => filteredLookup.GetOrThrow(missingKey),
+            "HolderGetter.getOrThrow must reject a missing filtered entry.");
+        Require(
+            missingElementException.Message == $"Missing element {missingKey}",
+            "HolderGetter.getOrThrow(element) must use the vanilla missing-element error message.");
+        TagKey<Block> missingTagKey = new(registryId, missingId);
+        InvalidOperationException missingTagException = Capture<InvalidOperationException>(
+            () => filteredLookup.GetOrThrow(missingTagKey),
+            "HolderGetter.getOrThrow must reject a missing tag.");
+        Require(
+            missingTagException.Message == $"Missing tag {missingTagKey}",
+            "HolderGetter.getOrThrow(tag) must use the vanilla missing-tag error message.");
 
         var missingDefault = new DefaultedRegistry<Block>(
             ResourceLocation.Parse("asteria:missing_default_registry"),
