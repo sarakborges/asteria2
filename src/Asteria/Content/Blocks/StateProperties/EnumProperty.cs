@@ -11,7 +11,6 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
     where TEnum : struct, Enum
 {
     private readonly IReadOnlyList<TEnum> _values;
-    private readonly Dictionary<TEnum, string> _namesByValue;
     private readonly Dictionary<string, TEnum> _valuesByName;
     private readonly Dictionary<TEnum, int> _indicesByValue;
     private readonly Func<TEnum, string> _nameSelector;
@@ -28,13 +27,12 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
         _nameSelector = nameSelector ?? throw new ArgumentNullException(nameof(nameSelector));
 
         var orderedValues = new List<TEnum>();
-        _namesByValue = new Dictionary<TEnum, string>();
         _valuesByName = new Dictionary<string, TEnum>(StringComparer.Ordinal);
         _indicesByValue = new Dictionary<TEnum, int>();
 
         foreach (TEnum value in values)
         {
-            if (_namesByValue.ContainsKey(value))
+            if (_indicesByValue.ContainsKey(value))
             {
                 throw new ArgumentException(
                     $"Enum value '{value}' was provided more than once for property '{name}'.",
@@ -52,44 +50,24 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
 
             _indicesByValue.Add(value, orderedValues.Count);
             orderedValues.Add(value);
-            _namesByValue.Add(value, serializedName);
             _valuesByName.Add(serializedName, value);
         }
 
         if (orderedValues.Count == 0)
         {
-            throw new ArgumentException("An enum property must contain at least one value.", nameof(values));
+            throw new ArgumentException($"Trying to make empty EnumProperty '{name}'");
         }
 
         _values = orderedValues.AsReadOnly();
     }
 
-    public override bool Equals(object? obj)
-    {
-        if (obj is not EnumProperty<TEnum> other ||
-            !base.Equals(other) ||
-            !_values.SequenceEqual(other._values))
-        {
-            return false;
-        }
+    public override bool Equals(object? obj) =>
+        obj is EnumProperty<TEnum> other &&
+        base.Equals(other) &&
+        _values.SequenceEqual(other._values);
 
-        return _values.All(value =>
-            string.Equals(
-                _namesByValue[value],
-                other._namesByValue[value],
-                StringComparison.Ordinal));
-    }
-
-    public override int GetHashCode()
-    {
-        int hash = unchecked(base.GetHashCode() * 31 + GetPossibleValuesHashCode());
-        foreach (TEnum value in _values)
-        {
-            hash = unchecked(hash * 31 + StringComparer.Ordinal.GetHashCode(_namesByValue[value]));
-        }
-
-        return hash;
-    }
+    public override int GetHashCode() =>
+        unchecked(base.GetHashCode() * 31 + GetPossibleValuesHashCode());
 
     public static EnumProperty<TEnum> Create(string name)
     {
