@@ -32,13 +32,14 @@ This stage covers only systems already introduced in Asteria: registries and hol
 
 ## Blocks and block states
 
-- `BlockProperties` is a mutable fluent builder for the properties represented so far. Defaults and setter behavior follow `BlockBehaviour.Properties`.
-- `Block` creates its intrusive holder before building states and calls the virtual `CreateBlockStateDefinition` extension point.
-- `StateProperty<T>` exposes a name, value type, ordered possible values, parsing, serialization, typed `Property.Value` wrappers, and `GetAllValues`. Equality follows vanilla property type/name contracts.
-- `BlockState.GetValues` enumerates typed property/value pairs in the sorted state-definition order, matching `StateHolder.getValues`.
-- `StateDefinition` sorts property names, materializes the Cartesian product in vanilla order, and links each state to precomputed neighbor states.
-- `BlockState.SetValue`, `TrySetValue`, and `Cycle` resolve through the precomputed neighbor tables.
-- Each `BlockState` caches the currently modeled `BlockStateBase` values (`IsAir`, destroy speed, and correct-tool requirement) at construction. Mutating the retained properties builder does not retroactively change existing states.
+- `BlockProperties` is a mutable fluent builder for the modeled `BlockBehaviour.Properties` values: destroy time, explosion resistance, friction, speed/jump factors, bounce restitution, fall-distance reduction, collision/occlusion, random ticking, dynamic shape, air/tool flags, lava ignition, liquid, replaceability, and terrain particles. Defaults and setter behavior follow the reference contract.
+- `Block` snapshots block-level values at construction: explosion resistance, friction, speed/jump factors, bounce restitution, fall-distance reduction, collision, random ticking, and dynamic-shape flags. It creates its intrusive holder before building states and calls the virtual `CreateBlockStateDefinition` extension point.
+- `StateProperty<T>` exposes a name, value type, ordered possible values, parsing, serialization, typed `Property.Value` wrappers, and `GetAllValues`. Equality follows the reference property type/name contracts.
+- `BlockState.GetProperties` exposes the immutable, sorted property collection. `BlockState.GetValues` enumerates typed property/value pairs in the same state-definition order.
+- `StateDefinition` sorts property names, materializes the Cartesian product in reference order, and links each state to precomputed neighbor states.
+- `BlockState.SetValue`, `TrySetValue`, and `Cycle` resolve through the precomputed neighbor tables; `TryGetValue` provides the optional-value lookup path.
+- Each `BlockState` snapshots the currently modeled state-level `BlockStateBase` values at construction: air, destroy speed, correct-tool requirement, occlusion, random ticking, lava ignition, liquid, replaceability, and terrain-particle behavior. Mutating the retained properties builder does not retroactively change existing states.
+- Block map colors, sound/instrument data, light emission/dampening, push reaction, shape/predicate behavior, loot metadata, feature flags, and the complete state cache remain pending their corresponding domain systems.
 - `Block.BLOCK_STATE_REGISTRY` is the global `IdMapper<BlockState>` equivalent. Each state receives its insertion-order ID in its constructor, as soon as `StateDefinition` materializes it; this map is independent of the built-in block registry and is not frozen with it.
 
 ## Paletted storage
