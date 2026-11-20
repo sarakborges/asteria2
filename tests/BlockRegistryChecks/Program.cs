@@ -515,6 +515,17 @@ internal static class Program
         EnumProperty<TestAxis> axis = EnumProperty<TestAxis>.Create("axis", new[] { TestAxis.Z, TestAxis.X }, value => value.ToString().ToLowerInvariant());
         Require(axis.PossibleValues.SequenceEqual(new[] { TestAxis.Z, TestAxis.X }), "Enum properties must preserve the supplied value order.");
         Require(axis.TryParse("z", out TestAxis parsedAxis) && parsedAxis == TestAxis.Z, "Enum parsing must use the configured name.");
+        Require(axis.GetName(TestAxis.Y) == "y", "EnumProperty.getName must serialize enum constants outside the filtered possible-value set.");
+        Require(!axis.TryParse("y", out _), "EnumProperty parsing must still reject values outside its possible-value set.");
+
+        EnumProperty<TestAxis> invalidSerialized = EnumProperty<TestAxis>.Create(
+            "invalid_serialized",
+            new[] { TestAxis.Z },
+            _ => "Invalid Name");
+        Require(invalidSerialized.GetName(TestAxis.Z) == "Invalid Name", "EnumProperty construction must retain enum serialized names before state-definition validation.");
+        RequireThrows<ArgumentException>(
+            () => new Block(BlockProperties.Default, builder => builder.Add(invalidSerialized)),
+            "StateDefinition.Builder must validate serialized enum value names when the property is added.");
 
         EnumProperty<TestDeclaredOrder> declared = EnumProperty<TestDeclaredOrder>.Create("declared");
         Require(

@@ -13,6 +13,7 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
     private readonly IReadOnlyList<TEnum> _values;
     private readonly Dictionary<TEnum, string> _namesByValue;
     private readonly Dictionary<string, TEnum> _valuesByName;
+    private readonly Func<TEnum, string> _nameSelector;
 
     public override IReadOnlyList<TEnum> PossibleValues => _values;
     public override int ValueCount => _values.Count;
@@ -23,7 +24,7 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
         Func<TEnum, string> nameSelector) : base(name)
     {
         ArgumentNullException.ThrowIfNull(values);
-        ArgumentNullException.ThrowIfNull(nameSelector);
+        _nameSelector = nameSelector ?? throw new ArgumentNullException(nameof(nameSelector));
 
         var orderedValues = new List<TEnum>();
         _namesByValue = new Dictionary<TEnum, string>();
@@ -38,8 +39,7 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
                     nameof(values));
             }
 
-            string serializedName = nameSelector(value);
-            ValidateSerializedName(serializedName, nameof(nameSelector));
+            string serializedName = _nameSelector(value);
 
             if (_valuesByName.ContainsKey(serializedName))
             {
@@ -112,16 +112,8 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
             nameSelector ?? (static value => value.ToString().ToLowerInvariant()));
     }
 
-    public override string GetName(TEnum value)
-    {
-        if (_namesByValue.TryGetValue(value, out string? name))
-        {
-            return name;
-        }
-
-        throw new ArgumentOutOfRangeException(
-            nameof(value), value, $"Value is not valid for '{Name}'.");
-    }
+    public override string GetName(TEnum value) =>
+        _nameSelector(value);
 
     public override bool TryParse(string serializedValue, out TEnum value) =>
         _valuesByName.TryGetValue(serializedValue, out value);
