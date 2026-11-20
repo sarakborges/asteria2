@@ -171,7 +171,7 @@ internal static class Program
             ResourceLocation.Parse(":stone") == ResourceLocation.Parse("minecraft:stone"),
             "Identifier.parse must apply the default namespace when the separator is first.");
         Require(
-            ResourceLocation.TryParse("stone", out ResourceLocation parsed) &&
+            ResourceLocation.TryParse("stone") is ResourceLocation parsed &&
             parsed == ResourceLocation.Parse("minecraft:stone"),
             "Identifier.tryParse must accept valid identifiers without an explicit namespace.");
         Require(
@@ -199,7 +199,7 @@ internal static class Program
             ResourceLocation.TryParse(null) is null,
             "Identifier.tryParse must return no value for a null input.");
         Require(
-            !ResourceLocation.TryParse("..:stone", out _),
+            ResourceLocation.TryParse("..:stone") is null,
             "Identifier namespaces must reject the reserved '..' namespace.");
         ArgumentException invalidNamespace = Capture<ArgumentException>(
             () => ResourceLocation.Parse("Bad:stone"),
@@ -224,7 +224,7 @@ internal static class Program
             ResourceLocation.Parse(":").Namespace == "minecraft",
             "Identifier.parse must accept empty paths with explicit and default namespaces.");
         Require(
-            ResourceLocation.TryParse("", out ResourceLocation emptyIdentifier) &&
+            ResourceLocation.TryParse("") is ResourceLocation emptyIdentifier &&
             emptyIdentifier == ResourceLocation.Parse(""),
             "Identifier.tryParse must accept the empty identifier because an empty path is valid in vanilla.");
         Require(
