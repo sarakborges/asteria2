@@ -1069,6 +1069,44 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "Registry.registerForHolder must return the registered reference holder.");
         Require(ReferenceEquals(builtInRegistry.RegistryLifecycle, Lifecycle.Stable()), "Built-in registration must preserve stable lifecycle.");
 
+        var stringRegistrationRegistry =
+            new Registry<Block>(ResourceLocation.Parse("asteria:string_registration_registry"));
+        Block stringRegistrationValue = Blocks.AIR;
+        Block stringRegistrationResult =
+            Registry.Register(stringRegistrationRegistry, "asteria:string_registration", stringRegistrationValue);
+        Require(
+            ReferenceEquals(stringRegistrationResult, stringRegistrationValue),
+            "Registry.register must expose its string-name overload.");
+
+        var keyRegistrationRegistry =
+            new Registry<Block>(ResourceLocation.Parse("asteria:key_registration_registry"));
+        RegistryKey<Block> keyRegistrationKey = RegistryKey<Block>.CreateRegistryKey(
+            ResourceLocation.Parse("asteria:key_registration_registry"));
+        keyRegistrationKey = RegistryKey<Block>.Create(
+            keyRegistrationKey.GetRegistryKey(),
+            ResourceLocation.Parse("asteria:key_registration"));
+        Block keyRegistrationValue = Blocks.TEST_BLOCK;
+        Block keyRegistrationResult =
+            Registry.Register(keyRegistrationRegistry, keyRegistrationKey, keyRegistrationValue);
+        Require(
+            ReferenceEquals(keyRegistrationResult, keyRegistrationValue),
+            "Registry.register must expose its resource-key overload.");
+
+        var holderKeyRegistrationRegistry =
+            new Registry<Block>(ResourceLocation.Parse("asteria:holder_key_registration_registry"));
+        RegistryKey<Block> holderKeyRegistrationKey = RegistryKey<Block>.Create(
+            holderKeyRegistrationRegistry.Key,
+            ResourceLocation.Parse("asteria:holder_key_registration"));
+        Holder<Block>.Reference holderFromKeyHelper =
+            Registry.RegisterForHolder(holderKeyRegistrationRegistry, holderKeyRegistrationKey, Blocks.AIR);
+        holderKeyRegistrationRegistry.Freeze();
+        Require(
+            ReferenceEquals(
+                holderFromKeyHelper,
+                holderKeyRegistrationRegistry.GetHolder(holderKeyRegistrationKey)) &&
+            ReferenceEquals(holderFromKeyHelper.Value, Blocks.AIR),
+            "Registry.registerForHolder must expose its resource-key overload.");
+
         var defaultedRegistry = new DefaultedRegistry<Block>(
             ResourceLocation.Parse("asteria:defaulted_lifecycle"),
             ResourceLocation.Parse("asteria:default"));
