@@ -109,7 +109,6 @@ internal static class Program
         CheckBlockStateDefinition();
         CheckBlockStateTransitions();
         CheckGlobalStateIds();
-        CheckStateIdsAreAssignedAtConstruction();
         CheckPropertyImplementations();
         CheckPackedBitStorage();
         CheckPackedBitStorageWidths();
@@ -126,6 +125,7 @@ internal static class Program
         CheckPalettedContainerStrategyConfiguration();
         CheckPalettedContainerGrowthAndGlobalMode();
         CheckChunkSection();
+        CheckStateIdsAreAssignedAtConstruction();
         CheckFrozenRegistry();
     }
 
