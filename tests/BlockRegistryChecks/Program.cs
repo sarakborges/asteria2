@@ -483,6 +483,16 @@ internal static class Program
         var entryKey = RegistryKey<Block>.Create(rootRegistryKey, entryId);
         var placeholderKey = RegistryKey<Block>.Create(rootRegistryKey, placeholderId);
         var tagKey = TagKey<Block>.Create(rootRegistryKey, tagId);
+        System.Reflection.ConstructorInfo tagKeyConstructor =
+            typeof(TagKey<Block>).GetConstructor(new[]
+            {
+                typeof(RegistryKey<Registry<Block>>),
+                typeof(ResourceLocation)
+            }) ?? throw new InvalidOperationException("TagKey canonical constructor is missing.");
+        Require(
+            tagKeyConstructor.IsPublic &&
+            tagKeyConstructor.GetCustomAttributes(typeof(ObsoleteAttribute), inherit: false).Length > 0,
+            "TagKey must retain its public deprecated canonical record constructor.");
         Require(entryKey.IsFor(rootRegistryKey), "ResourceKey.isFor must compare its registry identifier.");
         Require(entryKey.GetRegistryKey() == rootRegistryKey, "ResourceKey.registryKey must return the root registry key.");
         RegistryKey<string>? castEntryKey = entryKey.Cast(
