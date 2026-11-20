@@ -51,13 +51,38 @@ public sealed class ThreadingDetector
         }
     }
 
-    private InvalidOperationException CreateThreadingException(Thread failedThread)
+    private InvalidOperationException CreateThreadingException(Thread failedThread) =>
+        MakeThreadingException(_name, failedThread);
+
+    public static InvalidOperationException MakeThreadingException(
+        string name,
+        Thread? threadThatFailedToAcquire)
     {
-        string failedThreadName = failedThread.Name ?? $"Thread {failedThread.ManagedThreadId}";
-        string currentThreadName = Thread.CurrentThread.Name ?? $"Thread {Thread.CurrentThread.ManagedThreadId}";
+        ArgumentNullException.ThrowIfNull(name);
+
+        var threads = new List<Thread> { Thread.CurrentThread };
+        if (threadThatFailedToAcquire is not null)
+        {
+            threads.Add(threadThatFailedToAcquire);
+        }
+
+        string threadDumps = string.Join(
+            Environment.NewLine,
+            threads.Select(thread =>
+            {
+                string threadName = thread.Name ?? $"Thread {thread.ManagedThreadId}";
+                string stackTrace = ReferenceEquals(thread, Thread.CurrentThread)
+                    ? Environment.StackTrace
+                    : thread.StackTrace ?? string.Empty;
+                return $"{threadName}:{Environment.NewLine}" +
+                    (string.IsNullOrEmpty(stackTrace)
+                        ? "\t<stack trace unavailable>"
+                        : stackTrace);
+            }));
+
+        string error = $"Accessing {name} from multiple threads";
         return new InvalidOperationException(
-            $"Accessing {_name} from multiple threads. Current thread: {currentThreadName}; " +
-            $"thread that failed to acquire: {failedThreadName}.{Environment.NewLine}" +
-            $"Current stack:{Environment.NewLine}{Environment.StackTrace}");
+            $"{error}{Environment.NewLine}Thread dumps:{Environment.NewLine}{threadDumps}",
+            new InvalidOperationException(error));
     }
 }

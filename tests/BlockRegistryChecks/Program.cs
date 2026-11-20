@@ -705,6 +705,13 @@ internal static class Program
             ownerException is InvalidOperationException &&
             ReferenceEquals(ownerException, contenderException),
             "ThreadingDetector must report concurrent access to both participating threads.");
+        Require(
+            ownerException.Message.Contains("Thread dumps:", StringComparison.Ordinal) &&
+            ownerException.Message.Contains("BlockRegistryChecks contender", StringComparison.Ordinal),
+            "The threading exception must include stack dumps for the current and failed-to-acquire threads.");
+        Require(
+            ownerException.InnerException?.Message == "Accessing BlockRegistryChecks from multiple threads",
+            "The threading exception must retain the vanilla report's underlying concurrency error.");
     }
 
     private static void CheckIdentityIdMap()
