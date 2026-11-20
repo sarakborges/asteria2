@@ -153,7 +153,7 @@ public abstract class Holder<T> where T : class
         public override bool CanSerializeIn(HolderOwner<T> owner)
         {
             ArgumentNullException.ThrowIfNull(owner);
-            return _owner.CanSerializeIn(owner);
+            return owner.CanSerializeIn(_owner);
         }
 
         internal static Reference CreateStandAlone(HolderOwner<T> owner, RegistryKey<T> key) =>

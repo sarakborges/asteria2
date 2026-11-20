@@ -160,7 +160,7 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
         public override bool CanSerializeIn(HolderOwner<T> owner)
         {
             ArgumentNullException.ThrowIfNull(owner);
-            return _owner.CanSerializeIn(owner);
+            return owner.CanSerializeIn(_owner);
         }
 
         public override string ToString() => $"NamedSet({Key})[{_boundContents}]";

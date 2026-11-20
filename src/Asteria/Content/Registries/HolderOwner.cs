@@ -1,7 +1,7 @@
 namespace Asteria.Content.Registries;
 
 /// <summary>
-/// Ownership context used by reference holders to determine whether a value can be serialized by a registry.
+/// Serialization context that decides whether it can serialize values belonging to another owner.
 /// </summary>
 public interface HolderOwner<T> where T : class
 {

@@ -9,6 +9,15 @@ internal static class Program
 {
     private enum TestAxis { X = 0, Y = 1, Z = 2 }
 
+    private sealed class SelectiveHolderOwner<T> : HolderOwner<T> where T : class
+    {
+        private readonly HolderOwner<T> _acceptedOwner;
+
+        public SelectiveHolderOwner(HolderOwner<T> acceptedOwner) => _acceptedOwner = acceptedOwner;
+
+        public bool CanSerializeIn(HolderOwner<T> owner) => ReferenceEquals(owner, _acceptedOwner);
+    }
+
     private sealed class TestBlockDefinition : Block
     {
         public TestBlockDefinition(
@@ -293,6 +302,13 @@ internal static class Program
         RequireThrows<InvalidOperationException>(() => registry.GetTag(tagKey), "Tag access must fail before registry freeze.");
 
         registry.Freeze();
+        var selectiveSerializationContext = new SelectiveHolderOwner<Block>(registry);
+        Require(
+            registered.CanSerializeIn(selectiveSerializationContext),
+            "Holder.Reference.canSerializeIn must ask the target context to serialize its original owner.");
+        Require(
+            tag.CanSerializeIn(selectiveSerializationContext),
+            "HolderSet.Named.canSerializeIn must ask the target context to serialize its original owner.");
         Require(ReferenceEquals(registry.GetAny(), registered), "MappedRegistry.getAny must return the first registered holder.");
         Holder<Block>.Reference? randomHolder = registry.GetRandom(new Random(0));
         Require(
