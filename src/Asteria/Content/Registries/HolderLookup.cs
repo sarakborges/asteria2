@@ -30,14 +30,14 @@ public interface HolderLookup<T> : HolderGetter<T> where T : class
         {
             RegistryLookup Parent { get; }
 
-            new RegistryKey<Registry<T>> Key => Parent.Key;
-            new Lifecycle RegistryLifecycle => Parent.RegistryLifecycle;
-            new RegistryKey<IRegistry> RegistryKey => ((IRegistryLookup)Parent).RegistryKey;
-            new Holder<T>.Reference? Get(RegistryKey<T> key) => Parent.Get(key);
-            new HolderSet<T>.Named? Get(TagKey<T> tag) => Parent.Get(tag);
-            new IEnumerable<Holder<T>.Reference> ListElements() => Parent.ListElements();
-            new IEnumerable<HolderSet<T>.Named> ListTags() => Parent.ListTags();
-            new bool CanSerializeIn(HolderOwner<T> owner) => Parent.CanSerializeIn(owner);
+            RegistryKey<Registry<T>> RegistryLookup.Key => Parent.Key;
+            Lifecycle IRegistryLookup.RegistryLifecycle => Parent.RegistryLifecycle;
+            RegistryKey<IRegistry> IRegistryLookup.RegistryKey => ((IRegistryLookup)Parent).RegistryKey;
+            Holder<T>.Reference? HolderGetter<T>.Get(RegistryKey<T> key) => Parent.Get(key);
+            HolderSet<T>.Named? HolderGetter<T>.Get(TagKey<T> tag) => Parent.Get(tag);
+            IEnumerable<Holder<T>.Reference> HolderLookup<T>.ListElements() => Parent.ListElements();
+            IEnumerable<HolderSet<T>.Named> HolderLookup<T>.ListTags() => Parent.ListTags();
+            bool HolderOwner<T>.CanSerializeIn(HolderOwner<T> owner) => Parent.CanSerializeIn(owner);
         }
     }
 }
