@@ -144,7 +144,7 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
     protected static string FormatContents(IEnumerable<Holder<T>> holders) =>
         $"[{string.Join(", ", holders)}]";
 
-    public sealed class Named : HolderSet<T>
+    public class Named : HolderSet<T>
     {
         private readonly HolderOwner<T> _owner;
         private IReadOnlyList<Holder<T>>? _boundContents;

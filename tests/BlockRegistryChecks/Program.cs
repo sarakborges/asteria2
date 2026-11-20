@@ -40,6 +40,14 @@ internal static class Program
         }
     }
 
+    private sealed class ExtensibleNamedBlockHolderSet : HolderSet<Block>.Named
+    {
+        public ExtensibleNamedBlockHolderSet(HolderOwner<Block> owner, TagKey<Block> key)
+            : base(owner, key)
+        {
+        }
+    }
+
     private sealed class ExtensibleBlockReference : Holder<Block>.Reference
     {
         public ExtensibleBlockReference(HolderOwner<Block> owner, RegistryKey<Block> key)
@@ -942,6 +950,13 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             !orderedDirect.Equals(reversedDirect),
             "HolderSet.Direct equality must preserve element order.");
+        ExtensibleNamedBlockHolderSet namedSubclass = new(registry, tagKey);
+        ExtensibleNamedBlockHolderSet anotherNamedSubclass = new(registry, tagKey);
+        Require(
+            !typeof(HolderSet<Block>.Named).IsSealed &&
+            !namedSubclass.Equals(anotherNamedSubclass) &&
+            namedSubclass.Equals(namedSubclass),
+            "HolderSet.Named must remain extensible and retain identity equality through subclasses.");
         var customSet = new CustomHolderSet<Block>(new Holder<Block>[] { registered, registered });
         var anotherCustomSet = new CustomHolderSet<Block>(new Holder<Block>[] { registered, registered });
         Require(
