@@ -195,6 +195,18 @@ internal static class Program
         Require(
             ReferenceEquals(BuiltInRegistries.Block.GetValue(missingId), Blocks.AIR),
             "Defaulted GetValue(identifier) lookups must resolve unknown identifiers to air.");
+        Require(
+            ReferenceEquals(BuiltInRegistries.Block.GetValue((ResourceLocation?)null), Blocks.AIR),
+            "Defaulted GetValue(null identifier) must resolve to the default value.");
+        Require(
+            BuiltInRegistries.Block.GetOptional((ResourceLocation?)null) is null,
+            "Defaulted getOptional(null identifier) must remain empty instead of using the default value.");
+
+        RegistryKey<Block>? nullKey = null;
+        Require(
+            BuiltInRegistries.Block.GetValue(nullKey) is null &&
+            BuiltInRegistries.Block.GetOptional(nullKey) is null,
+            "A null resource key must remain an exact empty lookup even in a defaulted registry.");
 
         RegistryKey<Block> missingKey = new(BuiltInRegistries.Block.Location, missingId);
         RegistryKey<Block> testKey = new(BuiltInRegistries.Block.Location, testId);
