@@ -16,8 +16,6 @@ public sealed class PalettedContainerStrategy<T> where T : class
     private PalettedContainerStrategy(IIdMap<T> globalMap, int bitsPerAxis, StrategyKind kind)
     {
         GlobalMap = globalMap ?? throw new ArgumentNullException(nameof(globalMap));
-        if (GlobalMap.Count <= 0)
-            throw new ArgumentException("The global ID map must contain at least one value.", nameof(globalMap));
         if (bitsPerAxis is < 1 or > 10)
             throw new ArgumentOutOfRangeException(nameof(bitsPerAxis));
 
@@ -38,11 +36,7 @@ public sealed class PalettedContainerStrategy<T> where T : class
 
     public PaletteConfiguration GetConfigurationForPaletteSize(int paletteSize)
     {
-        if (paletteSize <= 0)
-            throw new ArgumentOutOfRangeException(nameof(paletteSize));
-        int bits = paletteSize == 1
-            ? 0
-            : System.Numerics.BitOperations.Log2((uint)(paletteSize - 1)) + 1;
+        int bits = PackedBitStorage.RequiredBitsForValueCount(paletteSize);
         return GetConfigurationForBitCount(bits);
     }
 

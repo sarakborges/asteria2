@@ -231,14 +231,12 @@ public sealed class PackedBitStorage : IBitStorage
 
     public static int RequiredBitsForValueCount(int valueCount)
     {
-        if (valueCount <= 0)
+        if (valueCount <= 1)
         {
-            throw new ArgumentOutOfRangeException(nameof(valueCount));
+            return 0;
         }
 
-        return valueCount == 1
-            ? 0
-            : System.Numerics.BitOperations.Log2((uint)(valueCount - 1)) + 1;
+        return System.Numerics.BitOperations.Log2((uint)(valueCount - 1)) + 1;
     }
 
     private int CellIndex(int index)

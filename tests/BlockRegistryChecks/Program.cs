@@ -2294,6 +2294,15 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             biomeStrategy.GetConfigurationForPaletteSize(9) ==
                 new PaletteConfiguration(PaletteMode.Global, 3, 4, true),
             "Biome palette-size configuration must transition after eight values.");
+
+        var emptyIds = new BlockStateIdMap();
+        var emptyStrategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(emptyIds);
+        Require(
+            emptyStrategy.GlobalPaletteBitsInMemory == 0 &&
+            emptyStrategy.GetConfigurationForPaletteSize(0) ==
+                new PaletteConfiguration(PaletteMode.SingleValue, 0, 0, false) &&
+            PackedBitStorage.RequiredBitsForValueCount(0) == 0,
+            "Strategy construction and ceiling-log configuration must preserve the zero-entry reference behavior.");
     }
 
     private static void CheckPalettedContainerGrowthAndGlobalMode()
