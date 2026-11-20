@@ -473,15 +473,16 @@ internal static class Program
         Require(ReferenceEquals(changedState, changedState.TrySetValue(foreignPowered, false)), "trySetValue with a foreign property instance must preserve the current state.");
         Require(!changedState.TryGetValue(foreignPowered, out _), "A separate property instance must not be accepted by name alone.");
         RequireThrows<ArgumentException>(() => changedState.SetValue(foreignPowered, false), "SetValue must reject a property not owned by the block definition.");
-        RequireThrows<ArgumentOutOfRangeException>(() => changedState.TrySetValue(Blocks.TEST_STAGE, 9), "trySetValue must reject values outside the property's allowed set.");
+        RequireThrowsExact<ArgumentException>(() => changedState.SetValue(Blocks.TEST_STAGE, 9), "setValue must throw IllegalArgumentException for values outside the property's allowed set.");
+        RequireThrowsExact<ArgumentException>(() => changedState.TrySetValue(Blocks.TEST_STAGE, 9), "trySetValue must throw IllegalArgumentException for values outside the property's allowed set.");
 
-        RequireThrows<ArgumentOutOfRangeException>(
+        RequireThrowsExact<ArgumentException>(
             () => IntegerProperty.Create("only", 0, 0),
-            "Minecraft integer properties require at least two possible values.");
+            "IntegerProperty must throw IllegalArgumentException when max is not greater than min.");
 
-        RequireThrows<ArgumentOutOfRangeException>(
+        RequireThrowsExact<ArgumentException>(
             () => IntegerProperty.Create("negative", -1, 1),
-            "Minecraft integer properties must not include negative values.");
+            "IntegerProperty must throw IllegalArgumentException when min is negative.");
 
         BooleanProperty invalidName = BooleanProperty.Create("Invalid Name");
         RequireThrows<ArgumentException>(
@@ -940,6 +941,24 @@ internal static class Program
     private static void Require(bool condition, string message)
     {
         if (!condition) throw new InvalidOperationException(message);
+    }
+
+    private static void RequireThrowsExact<TException>(Action action, string message) where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception exception) when (exception.GetType() == typeof(TException))
+        {
+            return;
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException(message, exception);
+        }
+
+        throw new InvalidOperationException(message);
     }
 
     private static void RequireThrows<TException>(Action action, string message) where TException : Exception
