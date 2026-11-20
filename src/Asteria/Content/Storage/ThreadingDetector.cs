@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Threading;
 
 namespace Asteria.Content.Storage;
@@ -13,6 +12,7 @@ public sealed class ThreadingDetector
     private readonly SemaphoreSlim _lock = new(1, 1);
     private readonly object _stackTraceLock = new();
     private Thread? _threadThatFailedToAcquire;
+    private string? _stackTraceOfThreadThatFailedToAcquire;
     private InvalidOperationException? _fullException;
 
     public ThreadingDetector(string name)
@@ -30,6 +30,7 @@ public sealed class ThreadingDetector
             }
 
             _threadThatFailedToAcquire = Thread.CurrentThread;
+            _stackTraceOfThreadThatFailedToAcquire = Environment.StackTrace;
         }
 
         _lock.Wait();
@@ -43,7 +44,9 @@ public sealed class ThreadingDetector
             Thread? failedThread = _threadThatFailedToAcquire;
             if (failedThread is not null)
             {
-                _fullException = CreateThreadingException(failedThread);
+                _fullException = CreateThreadingException(
+                    failedThread,
+                    _stackTraceOfThreadThatFailedToAcquire ?? string.Empty);
                 _lock.Release();
                 throw _fullException;
             }
@@ -52,36 +55,20 @@ public sealed class ThreadingDetector
         }
     }
 
-    private InvalidOperationException CreateThreadingException(Thread failedThread) =>
-        MakeThreadingException(_name, failedThread);
-
-    public static InvalidOperationException MakeThreadingException(
-        string name,
-        Thread? threadThatFailedToAcquire)
+    private InvalidOperationException CreateThreadingException(
+        Thread failedThread,
+        string failedThreadStackTrace)
     {
-        ArgumentNullException.ThrowIfNull(name);
+        string currentThreadName =
+            Thread.CurrentThread.Name ?? $"Thread {Thread.CurrentThread.ManagedThreadId}";
+        string failedThreadName =
+            failedThread.Name ?? $"Thread {failedThread.ManagedThreadId}";
 
-        var threads = new List<Thread> { Thread.CurrentThread };
-        if (threadThatFailedToAcquire is not null)
-        {
-            threads.Add(threadThatFailedToAcquire);
-        }
+        string threadDumps =
+            $"{currentThreadName}:{Environment.NewLine}{Environment.StackTrace}" +
+            $"{Environment.NewLine}{failedThreadName}:{Environment.NewLine}{failedThreadStackTrace}";
 
-        string threadDumps = string.Join(
-            Environment.NewLine,
-            threads.Select(thread =>
-            {
-                string threadName = thread.Name ?? $"Thread {thread.ManagedThreadId}";
-                string stackTrace = ReferenceEquals(thread, Thread.CurrentThread)
-                    ? Environment.StackTrace
-                    : new StackTrace(thread, true).ToString();
-                return $"{threadName}:{Environment.NewLine}" +
-                    (string.IsNullOrEmpty(stackTrace)
-                        ? "\t<stack trace unavailable>"
-                        : stackTrace);
-            }));
-
-        string error = $"Accessing {name} from multiple threads";
+        string error = $"Accessing {_name} from multiple threads";
         return new InvalidOperationException(
             $"{error}{Environment.NewLine}Thread dumps:{Environment.NewLine}{threadDumps}",
             new InvalidOperationException(error));
