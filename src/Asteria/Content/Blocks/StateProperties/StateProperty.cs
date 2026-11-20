@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Asteria.Content.Blocks.StateProperties;
 
@@ -7,6 +9,8 @@ namespace Asteria.Content.Blocks.StateProperties;
 /// </summary>
 public abstract class StateProperty
 {
+    private int? _cachedHashCode;
+
     public string Name { get; }
     public abstract Type ValueType { get; }
     public abstract int ValueCount { get; }
@@ -28,10 +32,26 @@ public abstract class StateProperty
         string.Equals(Name, other.Name, StringComparison.Ordinal);
 
     public virtual int GenerateHashCode() =>
-        HashCode.Combine(ValueType, Name);
+        unchecked(31 * RuntimeHelpers.GetHashCode(ValueType) + GetJavaStringHashCode(Name));
 
-    public override int GetHashCode() =>
-        GenerateHashCode();
+    public sealed override int GetHashCode()
+    {
+        if (_cachedHashCode is int cachedHashCode)
+            return cachedHashCode;
+
+        int hashCode = GenerateHashCode();
+        _cachedHashCode = hashCode;
+        return hashCode;
+    }
+
+    private static int GetJavaStringHashCode(string value)
+    {
+        int hashCode = 0;
+        foreach (char character in value)
+            hashCode = unchecked(31 * hashCode + character);
+
+        return hashCode;
+    }
 
     internal static bool IsValidName(string value)
     {
@@ -93,7 +113,10 @@ public abstract class StateProperty<T> : StateProperty where T : notnull, ICompa
         int hash = 1;
         foreach (T value in PossibleValues)
         {
-            hash = unchecked(hash * 31 + EqualityComparer<T>.Default.GetHashCode(value));
+            int valueHashCode = typeof(T).IsEnum
+                ? EnumValueIdentityHashCode<T>.GetHashCode(value)
+                : EqualityComparer<T>.Default.GetHashCode(value);
+            hash = unchecked(hash * 31 + valueHashCode);
         }
 
         return hash;
@@ -162,4 +185,31 @@ public abstract class StateProperty<T> : StateProperty where T : notnull, ICompa
                 formattable.ToString(null, CultureInfo.InvariantCulture) ?? string.Empty,
             _ => value.ToString() ?? string.Empty
         };
+}
+
+
+internal static class EnumValueIdentityHashCode<T> where T : notnull
+{
+    private static readonly IReadOnlyDictionary<T, object> BoxedValues = CreateBoxedValues();
+
+    public static int GetHashCode(T value) =>
+        RuntimeHelpers.GetHashCode(BoxedValues[value]);
+
+    private static IReadOnlyDictionary<T, object> CreateBoxedValues()
+    {
+        if (!typeof(T).IsEnum)
+            throw new InvalidOperationException($"Type '{typeof(T)}' is not an enum.");
+
+        var boxedValues = new Dictionary<T, object>();
+        foreach (FieldInfo field in typeof(T)
+                     .GetFields(BindingFlags.Public | BindingFlags.Static)
+                     .OrderBy(field => field.MetadataToken))
+        {
+            object boxedValue = field.GetValue(null)!;
+            T value = (T)boxedValue;
+            boxedValues.TryAdd(value, boxedValue);
+        }
+
+        return boxedValues;
+    }
 }
