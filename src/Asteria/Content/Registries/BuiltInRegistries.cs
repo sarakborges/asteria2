@@ -9,7 +9,7 @@ namespace Asteria.Content.Registries;
 public static class BuiltInRegistries
 {
     public static DefaultedRegistry<Block> Block { get; } = new(
-        ResourceLocation.FromNamespaceAndPath("minecraft", "block"),
+        ResourceLocation.FromNamespaceAndPath("asteria", "block"),
         ResourceLocation.FromNamespaceAndPath("asteria", "air"),
         allowIntrusiveHolders: true);
 
