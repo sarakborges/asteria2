@@ -111,6 +111,7 @@ public sealed class BlockProperties
         return this;
     }
 
+    [Obsolete("Legacy compatibility flag.")]
     public BlockProperties Liquid()
     {
         IsLiquidValue = true;

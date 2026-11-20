@@ -440,6 +440,11 @@ internal static class Program
             semantic.RequiresCorrectToolForDropsValue && semantic.IsAir,
             "Vanilla property flags must be set through the fluent builder.");
 
+        Require(
+            typeof(BlockProperties).GetMethod(nameof(BlockProperties.Liquid))!
+                .GetCustomAttributes(typeof(ObsoleteAttribute), inherit: false).Length > 0,
+            "The legacy liquid property must remain marked deprecated.");
+
         var stateBehaviorProperties = BlockProperties.Of()
             .NoCollision()
             .NoOcclusion()

@@ -32,7 +32,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 
 ## Blocks and block states
 
-- `BlockProperties` is a mutable fluent builder for the modeled `BlockBehaviour.Properties` values: destroy time, explosion resistance, friction, speed/jump factors, bounce restitution, fall-distance reduction, collision/occlusion, random ticking, dynamic shape, air/tool flags, lava ignition, liquid, replaceability, and terrain particles. Defaults and setter behavior follow the reference contract.
+- `BlockProperties` is a mutable fluent builder for the modeled `BlockBehaviour.Properties` values: destroy time, explosion resistance, friction, speed/jump factors, bounce restitution, fall-distance reduction, collision/occlusion, random ticking, dynamic shape, air/tool flags, lava ignition, the deprecated liquid compatibility flag, replaceability, and terrain particles. Defaults and setter behavior follow the reference contract.
 - `Block` snapshots block-level values at construction: explosion resistance, friction, speed/jump factors, bounce restitution, fall-distance reduction, collision, random ticking, and dynamic-shape flags. It creates its intrusive holder before building states and calls the virtual `CreateBlockStateDefinition` extension point.
 - `StateProperty<T>` exposes a name, value type, ordered possible values, parsing, serialization, typed `Property.Value` wrappers, and `GetAllValues`. Equality follows the reference property type/name contracts.
 - `BlockState.GetProperties` exposes the immutable, sorted property collection. `BlockState.GetValues` enumerates typed property/value pairs in the same state-definition order.
