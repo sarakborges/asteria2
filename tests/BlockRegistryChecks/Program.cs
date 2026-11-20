@@ -94,6 +94,7 @@ internal static class Program
         CheckBlockProperties();
         CheckRegistryHoldersAndTags();
         CheckHolderReferenceValueBinding();
+        CheckIntrusiveRegistrationFailureDiagnostics();
         CheckRegistryLifecycleAndRegistrationInfo();
         CheckRegistryValueLookups();
         CheckBlockStateDefinition();
@@ -827,6 +828,35 @@ internal static class Program
         Require(
             ReferenceEquals(intrusive.Value, intrusiveValue),
             "A failed intrusive holder rebind must preserve its original value.");
+    }
+
+    private static void CheckIntrusiveRegistrationFailureDiagnostics()
+    {
+        var registry = new Registry<Block>(
+            ResourceLocation.Parse("asteria:missing_intrusive_registration"),
+            allowIntrusiveHolders: true);
+        Block unregisteredValue = new TestBlockDefinition(BlockProperties.Of());
+        RegistryKey<Block> unregisteredKey = new(
+            registry.Location,
+            ResourceLocation.Parse("asteria:missing_holder_entry"));
+
+        InvalidOperationException missingHolderException = Capture<InvalidOperationException>(
+            () => registry.Register(unregisteredKey, unregisteredValue, RegistrationInfo.BuiltIn),
+            "Intrusive registration must reject values without a pre-created holder.");
+        Require(
+            missingHolderException.Message ==
+                $"Missing intrusive holder for {unregisteredKey}:{unregisteredValue}",
+            "Missing intrusive holder failures must preserve the vanilla diagnostic.");
+
+        RegistryKey<Block> placeholderKey = new(
+            registry.Location,
+            ResourceLocation.Parse("asteria:intrusive_placeholder"));
+        InvalidOperationException placeholderException = Capture<InvalidOperationException>(
+            () => registry.CreateRegistrationLookup().GetOrThrow(placeholderKey),
+            "Intrusive registries must reject standalone holder placeholders.");
+        Require(
+            placeholderException.Message == "This registry can't create new holders without value",
+            "Intrusive placeholder lookup must preserve the vanilla no-value diagnostic.");
     }
 
     private static void CheckRegistryLifecycleAndRegistrationInfo()
