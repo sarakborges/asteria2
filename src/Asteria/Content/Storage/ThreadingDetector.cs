@@ -34,7 +34,7 @@ public sealed class ThreadingDetector
         }
 
         _lock.Wait();
-        throw _fullException ?? CreateThreadingException(Thread.CurrentThread);
+        throw _fullException ?? CreateThreadingException(Thread.CurrentThread, Environment.StackTrace);
     }
 
     public void CheckAndUnlock()
