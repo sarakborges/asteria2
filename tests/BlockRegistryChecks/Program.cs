@@ -45,6 +45,12 @@ internal static class Program
 
     private enum TestDeclaredOrder { Z = 2, X = 0, Y = 1 }
 
+    private sealed class ThrowingPaletteResize<T> : IPaletteResize<T> where T : class
+    {
+        public int OnResize(int bits, T lastAddedValue) =>
+            throw new InvalidOperationException($"Unexpected resize to {bits} bits.");
+    }
+
     private sealed class IdentityTestValue
     {
         public int Value { get; }
@@ -98,6 +104,7 @@ internal static class Program
         CheckThreadingDetector();
         CheckIdentityIdMap();
         CheckPaletteExceptions();
+        CheckLinearPaletteOverflow();
         CheckPalettedContainer();
         CheckPalettedContainerGrowthAndGlobalMode();
         CheckChunkSection();
@@ -1252,6 +1259,37 @@ internal static class Program
         MissingPaletteEntryException exception = new(37);
         Require(exception.Message == "Missing Palette entry for index 37.", "Missing palette entries must use the vanilla exception type and message.");
         Require(exception.Index == 37, "Missing palette entry exceptions must preserve the missing index.");
+    }
+
+    private static void CheckLinearPaletteOverflow()
+    {
+        BlockState first = Blocks.AIR.DefaultState;
+        BlockState second = Blocks.TEST_BLOCK.DefaultState;
+        BlockState third = second.SetValue(Blocks.TEST_STAGE, 2);
+        var palette = new LinearPalette<BlockState>(1);
+        var resize = new ThrowingPaletteResize<BlockState>();
+
+        Require(palette.IdFor(first, resize) == 0, "Linear palettes must assign their first value to ID zero.");
+        Require(palette.IdFor(second, resize) == 1, "A one-bit linear palette must accept its second value.");
+
+        bool resizeFailed = false;
+        try
+        {
+            palette.IdFor(third, resize);
+        }
+        catch (InvalidOperationException exception) when (exception.Message == "Unexpected resize to 2 bits.")
+        {
+            resizeFailed = true;
+        }
+
+        Require(resizeFailed, "A full linear palette must request the next bit width.");
+        Require(
+            palette.Count == 2,
+            "A failed resize must not increment the original linear palette size.");
+        Require(
+            ReferenceEquals(palette.ValueFor(0), first) &&
+            ReferenceEquals(palette.ValueFor(1), second),
+            "A failed resize must preserve every existing linear palette entry.");
     }
 
     private static PalettedContainer<BlockState> CreateBlockStateContainer(BlockState defaultState)
