@@ -59,7 +59,9 @@ public sealed class IntegerProperty : StateProperty<int>
         new(name, minimum, maximum);
 
     public override int IndexOf(int value) =>
-        value <= Maximum ? unchecked(value - Minimum) : -1;
+        value < Minimum || value > Maximum
+            ? -1
+            : value - Minimum;
 
     public override string GetName(int value) =>
         value.ToString(CultureInfo.InvariantCulture);

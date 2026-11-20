@@ -1543,8 +1543,17 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(age.PossibleValues.SequenceEqual(new[] { 2, 3, 4 }), "Integer values must be inclusive and ascending.");
         Require(age.IndexOf(2) == 0 && age.IndexOf(4) == 2, "IntegerProperty.getInternalIndex must use min-offset indexing.");
         Require(age.IndexOf(1) == -1 && age.IndexOf(5) == -1, "IntegerProperty.getInternalIndex must reject values outside the range.");
+        Require(age.IndexOf(int.MinValue) == -1, "IntegerProperty.getInternalIndex must reject values below the minimum without integer underflow.");
         Require(age.TryParse("3", out int parsedAge) && parsedAge == 3, "Integer parsing must accept in-range values.");
         Require(!age.TryParse("5", out _), "Integer parsing must reject out-of-range values.");
+        Require(!age.TryParse("-2147483648", out _), "Integer parsing must reject an out-of-range value that would underflow min-offset indexing.");
+        var ageBlock = new TestBlockDefinition(BlockProperties.Of(), builder => builder.Add(age));
+        ArgumentException underflowSet = Capture<ArgumentException>(
+            () => ageBlock.DefaultState.SetValue(age, int.MinValue),
+            "Setting a value below the integer property's minimum must fail with the standard invalid-value exception.");
+        Require(
+            underflowSet.Message == $"Cannot set property {age} to -2147483648 on {ageBlock}, it is not an allowed value",
+            "Integer property underflow must not reach the precomputed neighbor array.");
         Require(!age.TryParse(" 3", out _), "Integer parsing must reject surrounding whitespace.");
         Require(age.GetName(5) == "5", "Integer serialization must return the numeric name without range validation.");
 
