@@ -174,6 +174,30 @@ internal static class Program
             parsed == ResourceLocation.Parse("minecraft:stone"),
             "Identifier.tryParse must accept valid identifiers without an explicit namespace.");
         Require(
+            ResourceLocation.WithDefaultNamespace("stone/slab") == ResourceLocation.Parse("minecraft:stone/slab"),
+            "Identifier.withDefaultNamespace must validate a path and apply the default namespace.");
+        Require(
+            ResourceLocation.BySeparator("asteria|stone/slab", '|') ==
+                ResourceLocation.FromNamespaceAndPath("asteria", "stone/slab"),
+            "Identifier.bySeparator must parse using the supplied separator.");
+        Require(
+            ResourceLocation.BySeparator("|stone", '|') == ResourceLocation.Parse("minecraft:stone") &&
+            ResourceLocation.BySeparator("stone", '|') == ResourceLocation.Parse("minecraft:stone"),
+            "Identifier.bySeparator must apply the default namespace when no namespace is supplied.");
+        Require(
+            ResourceLocation.TryBySeparator("asteria|stone", '|') ==
+                ResourceLocation.FromNamespaceAndPath("asteria", "stone") &&
+            ResourceLocation.TryBySeparator("|stone", '|') == ResourceLocation.Parse("minecraft:stone") &&
+            ResourceLocation.TryBySeparator("stone", '|') == ResourceLocation.Parse("minecraft:stone"),
+            "Identifier.tryBySeparator must parse explicit, default, and omitted namespaces.");
+        Require(
+            ResourceLocation.TryBySeparator("Bad|stone", '|') is null &&
+            ResourceLocation.TryBySeparator("asteria|bad path", '|') is null,
+            "Identifier.tryBySeparator must return no value for an invalid namespace or path.");
+        Require(
+            ResourceLocation.TryParse(null) is null,
+            "Identifier.tryParse must return no value for a null input.");
+        Require(
             !ResourceLocation.TryParse("..:stone", out _),
             "Identifier namespaces must reject the reserved '..' namespace.");
         Require(
@@ -225,6 +249,21 @@ internal static class Program
         Require(
             ResourceLocation.Parse("zeta:alpha").CompareTo(ResourceLocation.Parse("alpha:zeta")) < 0,
             "Identifier ordering must compare path before namespace.");
+
+        string resourceRoot = System.IO.Path.Combine(
+            System.IO.Path.GetTempPath(),
+            "asteria-resource-location-root");
+        ResourceLocation fileLocation = ResourceLocation.Parse("asteria:blocks/stone");
+        string resolved = fileLocation.ResolveAgainst(resourceRoot);
+        Require(
+            resolved == System.IO.Path.Combine(resourceRoot, "asteria", "blocks/stone"),
+            "Identifier.resolveAgainst must retain the namespace/path layout under the supplied root.");
+        InvalidOperationException pathTraversal = Capture<InvalidOperationException>(
+            () => ResourceLocation.Parse("asteria:../../../outside").ResolveAgainst(resourceRoot),
+            "Identifier.resolveAgainst must reject paths that escape the supplied root.");
+        Require(
+            pathTraversal.Message.Contains("tried to access path", StringComparison.Ordinal),
+            "Identifier.resolveAgainst must report the rejected identifier and normalized paths.");
     }
 
     private static void CheckDefaultedBlockRegistry()
