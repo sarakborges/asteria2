@@ -56,6 +56,14 @@ public sealed class BlockState
     public T GetValueOrElse<T>(StateProperty<T> property, T defaultValue) where T : notnull, IComparable =>
         TryGetValue(property, out T value) ? value : defaultValue;
 
+    public IEnumerable<IStatePropertyValue> GetValues()
+    {
+        for (int index = 0; index < _values.Length; index++)
+        {
+            yield return Definition.Properties[index].CreateValue(_values[index]);
+        }
+    }
+
     public bool HasProperty(StateProperty property) => Definition.HasProperty(property);
 
     public BlockState SetValue<T>(StateProperty<T> property, T value) where T : notnull, IComparable
