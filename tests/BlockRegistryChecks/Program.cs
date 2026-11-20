@@ -195,13 +195,20 @@ internal static class Program
             snapshotState.DestroySpeed == 2.5f &&
             snapshotState.RequiresCorrectToolForDrops,
             "Block states must cache air, destroy speed, and tool requirements at construction.");
+        Require(
+            snapshotBlock.ExplosionResistance == 8.0f && snapshotBlock.Friction == 0.6f,
+            "BlockBehaviour must cache explosion resistance and friction during construction.");
 
-        mutableProperties.Air().DestroyTime(9.0f);
+        mutableProperties.Air().DestroyTime(9.0f).ExplosionResistance(20.0f).Friction(0.2f);
         Require(
             !snapshotState.IsAir && snapshotState.DestroySpeed == 2.5f,
             "Mutating BlockBehaviour.Properties after state creation must not alter cached BlockStateBase values.");
         Require(
-            mutableProperties.IsAir && mutableProperties.DestroyTimeValue == 9.0f,
+            snapshotBlock.ExplosionResistance == 8.0f && snapshotBlock.Friction == 0.6f,
+            "Mutating BlockBehaviour.Properties after block construction must not alter cached behavior fields.");
+        Require(
+            mutableProperties.IsAir && mutableProperties.DestroyTimeValue == 9.0f &&
+            mutableProperties.ExplosionResistanceValue == 20.0f && mutableProperties.FrictionValue == 0.2f,
             "The BlockBehaviour.Properties builder itself remains mutable after block construction.");
     }
 

@@ -9,6 +9,8 @@ public class Block
 {
     public BlockProperties Properties { get; }
     public StateDefinition StateDefinition { get; }
+    public float ExplosionResistance { get; }
+    public float Friction { get; }
     public BlockState DefaultState { get; private set; } = null!;
     public Holder<Block>.Reference? BuiltInRegistryHolder { get; }
 
@@ -23,6 +25,8 @@ public class Block
         Action<StateDefinitionBuilder>? configureState = null)
     {
         Properties = properties ?? throw new ArgumentNullException(nameof(properties));
+        ExplosionResistance = Properties.ExplosionResistanceValue;
+        Friction = Properties.FrictionValue;
 
         // Minecraft creates the intrusive holder as a Block field initializer,
         // before the constructor materializes the state definition.
