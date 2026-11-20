@@ -27,7 +27,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 
 ## Identifiers and resource keys
 
-- `ResourceLocation` follows vanilla identifier parsing, custom separators, namespace defaults, validation, ordering, path transformations, and language/debug naming helpers. `ResolveAgainst` also normalizes and guards the resolved path against escaping its root.
+- `ResourceLocation` follows vanilla identifier parsing, custom separators, validation, ordering, path transformations, and language/debug naming helpers. Its project default namespace is `asteria` (not Minecraft's `minecraft` namespace). `ResolveAgainst` also normalizes and guards the resolved path against escaping its root.
 - `RegistryKey<T>` has a private constructor and exposes the vanilla `Create`/`CreateRegistryKey` factories, typed casts, and dependent resource-key creation. `IsFor` compares only the registry identifier, independent of the root key. Its value equality preserves the observable contract of vanilla's weakly interned keys. `TagKey<T>` is a record with a public deprecated canonical constructor and a preferred `Create` factory; it retains the full registry key, compares the entire key for registry membership, and supports typed casts.
 
 ## Blocks and block states
