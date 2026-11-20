@@ -6,14 +6,14 @@ namespace Asteria.Content.Blocks;
 /// Block-state runtime ID map following the reference identity-map contract.
 /// Numeric IDs are insertion ordered by default, but explicit sparse mappings are supported.
 /// </summary>
-public sealed class BlockStateIdMap : IReadOnlyCollection<BlockState>, IIdMap<BlockState>
+public sealed class BlockStateIdMap : IIdMap<BlockState>
 {
     private int _nextId;
     private readonly List<BlockState?> _states;
     private readonly Dictionary<BlockState, int> _ids =
         new(ReferenceEqualityComparer.Instance);
 
-    public int Count => _ids.Count;
+    public int Count => _states.Count;
 
     public BlockStateIdMap(int expectedSize = 512)
     {
