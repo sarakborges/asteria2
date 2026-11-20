@@ -18,7 +18,7 @@ public partial class Main : Node3D
 
         var testBlockKey = new RegistryKey<Block>(BuiltInRegistries.Block.Location, testBlockId);
         Holder<Block>.Reference testBlockHolder =
-            BuiltInRegistries.Block.GetHolderOrThrow(testBlockKey);
+            ((HolderGetter<Block>)BuiltInRegistries.Block).GetOrThrow(testBlockKey);
         BlockState defaultState = Blocks.TEST_BLOCK.DefaultState;
 
         if (defaultState.GetValue(Blocks.TEST_POWERED))
