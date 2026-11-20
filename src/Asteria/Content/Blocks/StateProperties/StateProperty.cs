@@ -8,7 +8,7 @@ namespace Asteria.Content.Blocks.StateProperties;
 public abstract class StateProperty
 {
     public string Name { get; }
-    protected abstract Type ValueType { get; }
+    public abstract Type ValueType { get; }
     public abstract int ValueCount { get; }
 
     protected StateProperty(string name)
@@ -61,7 +61,7 @@ public abstract class StateProperty
 /// </summary>
 public abstract class StateProperty<T> : StateProperty where T : notnull, IComparable
 {
-    protected override Type ValueType => typeof(T);
+    public override Type ValueType => typeof(T);
 
     public abstract IReadOnlyList<T> PossibleValues { get; }
 
