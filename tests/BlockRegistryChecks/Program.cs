@@ -94,7 +94,8 @@ internal static class Program
             "Block states must receive IDs during block construction, before registry bootstrap.");
         CheckBuiltInRegistryRoot();
         RegistryBootstrap.Initialize();
-        Require(RegistryBootstrap.IsInitialized, "Bootstrap must complete.");
+        RegistryBootstrap.Initialize();
+        Require(RegistryBootstrap.IsInitialized, "Bootstrap must complete and remain idempotent.");
         Require(BuiltInRegistries.AreFrozen, "Built-in registries must be frozen.");
         BuiltInRegistries.FreezeAll();
         Require(BuiltInRegistries.AreFrozen, "BuiltInRegistries.freeze must remain idempotent.");
