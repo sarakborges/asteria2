@@ -47,13 +47,13 @@ public readonly record struct RegistryKey<T> where T : class
         RegistryKey<Registry<TOther>> registryKey,
         string suffix)
         where TOther : class =>
-        Create(registryKey, Location.WithSuffix(suffix));
+        RegistryKey<TOther>.Create(registryKey, Location.WithSuffix(suffix));
 
     public RegistryKey<TOther> Dependent<TOther>(
         RegistryKey<Registry<TOther>> registryKey,
         Func<string, string> decoration)
         where TOther : class =>
-        Create(registryKey, Location.WithPath(decoration));
+        RegistryKey<TOther>.Create(registryKey, Location.WithPath(decoration));
 
     public RegistryKey<Registry<T>> GetRegistryKey() =>
         CreateRegistryKey(RegistryLocation);
