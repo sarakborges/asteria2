@@ -1147,6 +1147,43 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             ReferenceEquals(holderFromKeyHelper.Value, Blocks.AIR),
             "Registry.registerForHolder must expose its resource-key overload.");
 
+        var subtypeRegistry =
+            new Registry<Block>(ResourceLocation.Parse("asteria:subtype_registration_registry"));
+        var subtypeByName = new TestBlockDefinition(BlockProperties.Of());
+        TestBlockDefinition subtypeNameResult =
+            Registry.Register(subtypeRegistry, "asteria:subtype_by_name", subtypeByName);
+        Require(
+            ReferenceEquals(subtypeNameResult, subtypeByName),
+            "Registry.register must preserve the concrete subtype return type for string-name registration.");
+
+        var subtypeByKey = new TestBlockDefinition(BlockProperties.Of());
+        RegistryKey<Block> subtypeByKeyKey = RegistryKey<Block>.Create(
+            subtypeRegistry.Key,
+            ResourceLocation.Parse("asteria:subtype_by_key"));
+        TestBlockDefinition subtypeKeyResult =
+            Registry.Register(subtypeRegistry, subtypeByKeyKey, subtypeByKey);
+        Require(
+            ReferenceEquals(subtypeKeyResult, subtypeByKey),
+            "Registry.register must preserve the concrete subtype return type for resource-key registration.");
+
+        var subtypeHolderByNameValue = new TestBlockDefinition(BlockProperties.Of());
+        Holder<Block>.Reference subtypeHolderByName =
+            Registry.RegisterForHolder(
+                subtypeRegistry,
+                ResourceLocation.Parse("asteria:subtype_holder_by_name"),
+                subtypeHolderByNameValue);
+        var subtypeHolderByKeyValue = new TestBlockDefinition(BlockProperties.Of());
+        RegistryKey<Block> subtypeHolderByKeyKey = RegistryKey<Block>.Create(
+            subtypeRegistry.Key,
+            ResourceLocation.Parse("asteria:subtype_holder_by_key"));
+        Holder<Block>.Reference subtypeHolderByKey =
+            Registry.RegisterForHolder(subtypeRegistry, subtypeHolderByKeyKey, subtypeHolderByKeyValue);
+        subtypeRegistry.Freeze();
+        Require(
+            ReferenceEquals(subtypeHolderByName.Value, subtypeHolderByNameValue) &&
+            ReferenceEquals(subtypeHolderByKey.Value, subtypeHolderByKeyValue),
+            "Registry.registerForHolder must accept concrete subtype values for identifier and resource-key overloads.");
+
         var defaultedRegistry = new DefaultedRegistry<Block>(
             ResourceLocation.Parse("asteria:defaulted_lifecycle"),
             ResourceLocation.Parse("asteria:default"));
