@@ -1594,7 +1594,7 @@ internal static class Program
             blockStrategy.GetIndex(3, 5, 7) == 1395,
             "Block-state coordinates must flatten with X least significant, then Z, then Y.");
         Require(
-            biomeStrategy.GetIndex(1, 2, 3) == 61,
+            biomeStrategy.GetIndex(1, 2, 3) == 45,
             "Biome strategy coordinates must use its own two-bit axis width.");
 
         Require(
