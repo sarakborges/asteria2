@@ -93,6 +93,7 @@ internal static class Program
         CheckDefaultedBlockRegistry();
         CheckBlockProperties();
         CheckRegistryHoldersAndTags();
+        CheckHolderReferenceValueBinding();
         CheckRegistryLifecycleAndRegistrationInfo();
         CheckRegistryValueLookups();
         CheckBlockStateDefinition();
@@ -778,6 +779,54 @@ internal static class Program
             () => frozenIntrusiveRegistry.CreateIntrusiveHolder(
                 new TestBlockDefinition(BlockProperties.Of())),
             "MappedRegistry drops its intrusive-holder map after a successful freeze.");
+    }
+
+    private static void CheckHolderReferenceValueBinding()
+    {
+        System.Reflection.MethodInfo bindValue =
+            typeof(Holder<Block>.Reference).GetMethod(
+                "BindValue",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Holder.Reference.BindValue was not found.");
+
+        var standaloneRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:standalone_binding"));
+        RegistryKey<Block> standaloneKey = new(
+            standaloneRegistry.Location,
+            ResourceLocation.Parse("asteria:standalone_entry"));
+        Holder<Block>.Reference standalone =
+            standaloneRegistry.CreateRegistrationLookup().GetOrThrow(standaloneKey);
+        Block firstValue = new TestBlockDefinition(BlockProperties.Of());
+        Block replacementValue = new TestBlockDefinition(BlockProperties.Of());
+
+        _ = bindValue.Invoke(standalone, new object[] { firstValue });
+        _ = bindValue.Invoke(standalone, new object[] { replacementValue });
+        Require(
+            ReferenceEquals(standalone.Value, replacementValue),
+            "Vanilla stand-alone holder references may replace their bound value; only intrusive holders enforce identity.");
+
+        var intrusiveRegistry = new Registry<Block>(
+            ResourceLocation.Parse("asteria:intrusive_binding"),
+            allowIntrusiveHolders: true);
+        Block intrusiveValue = new TestBlockDefinition(BlockProperties.Of());
+        Block differentValue = new TestBlockDefinition(BlockProperties.Of());
+        Holder<Block>.Reference intrusive =
+            intrusiveRegistry.CreateIntrusiveHolder(intrusiveValue);
+
+        _ = bindValue.Invoke(intrusive, new object[] { intrusiveValue });
+        System.Reflection.TargetInvocationException invocationException =
+            Capture<System.Reflection.TargetInvocationException>(
+                () => bindValue.Invoke(intrusive, new object[] { differentValue }),
+                "Vanilla intrusive holders must reject replacing their original value.");
+        Require(
+            invocationException.InnerException?.GetType() == typeof(InvalidOperationException),
+            "An intrusive holder value mismatch must remain an illegal-state failure.");
+        Require(
+            invocationException.InnerException?.Message ==
+                $"Can't change holder null value: existing={intrusiveValue}, new={differentValue}",
+            "Intrusive holder value mismatches must use the vanilla diagnostic.");
+        Require(
+            ReferenceEquals(intrusive.Value, intrusiveValue),
+            "A failed intrusive holder rebind must preserve its original value.");
     }
 
     private static void CheckRegistryLifecycleAndRegistrationInfo()
