@@ -11,7 +11,7 @@ public readonly record struct RegistryKey<T> where T : class
     public ResourceLocation RegistryLocation { get; }
     public ResourceLocation Location { get; }
 
-    public RegistryKey(ResourceLocation registryLocation, ResourceLocation location)
+    private RegistryKey(ResourceLocation registryLocation, ResourceLocation location)
     {
         if (!registryLocation.IsValid)
         {
@@ -41,7 +41,7 @@ public readonly record struct RegistryKey<T> where T : class
 
     public RegistryKey<TOther>? Cast<TOther>(RegistryKey<Registry<TOther>> registry)
         where TOther : class =>
-        IsFor(registry) ? new RegistryKey<TOther>(RegistryLocation, Location) : null;
+        IsFor(registry) ? RegistryKey<TOther>.Create(registry, Location) : null;
 
     public RegistryKey<TOther> Dependent<TOther>(
         RegistryKey<Registry<TOther>> registryKey,
