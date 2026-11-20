@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Asteria.Content.Blocks.StateProperties;
 
 /// <summary>
@@ -38,16 +36,6 @@ public readonly record struct StatePropertyValue<T> : IStatePropertyValue
         Value = value;
     }
 
-    public override string ToString()
-    {
-        string valueText = Value switch
-        {
-            bool booleanValue => booleanValue ? "true" : "false",
-            IFormattable formattable =>
-                formattable.ToString(null, CultureInfo.InvariantCulture) ?? string.Empty,
-            _ => Value.ToString() ?? string.Empty
-        };
-
-        return $"Value[property={Property}, value={valueText}]";
-    }
+    public override string ToString() =>
+        $"{Property.Name}={Property.GetName(Value)}";
 }

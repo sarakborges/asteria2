@@ -1622,12 +1622,8 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         StatePropertyValue<bool>[] booleanValues = lit.GetAllValues().ToArray();
         Require(
             booleanValues.Select(value => value.Value).SequenceEqual(new[] { true, false }) &&
-            booleanValues.Select(value => value.ToString()).SequenceEqual(new[]
-            {
-                "Value[property=BooleanProperty{name=lit, clazz=class java.lang.Boolean, values=[true, false]}, value=true]",
-                "Value[property=BooleanProperty{name=lit, clazz=class java.lang.Boolean, values=[true, false]}, value=false]"
-            }),
-            "Property.getAllValues must expose ordered Property.Value records with record-component formatting.");
+            booleanValues.Select(value => value.ToString()).SequenceEqual(new[] { "lit=true", "lit=false" }),
+            "Property.getAllValues must expose values in the property's declared order and format them as name=value.");
         Require(
             Blocks.TEST_POWERED.Value(Blocks.TEST_BLOCK.DefaultState).Value == false,
             "Property.value(StateHolder) must wrap the value currently stored in the state.");
@@ -1650,12 +1646,8 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             stateValues.Select(value => value.Property.Name).SequenceEqual(new[] { "powered", "stage" }) &&
             stateValues.Select(value => value.ValueName).SequenceEqual(new[] { "false", "1" }) &&
-            stateValues.Select(value => value.ToString()).SequenceEqual(new[]
-            {
-                "Value[property=BooleanProperty{name=powered, clazz=class java.lang.Boolean, values=[true, false]}, value=false]",
-                "Value[property=IntegerProperty{name=stage, clazz=class java.lang.Integer, values=[0, 1, 2]}, value=1]"
-            }),
-            "StateHolder.getValues must expose ordered Property.Value records and their record-component formatting.");
+            stateValues.Select(value => value.ToString()).SequenceEqual(new[] { "powered=false", "stage=1" }),
+            "StateHolder.getValues must expose all property values in state-definition order.");
 
         ArgumentException invalidPropertyValue = Capture<ArgumentException>(
             () => new StatePropertyValue<int>(Blocks.TEST_STAGE, 9),
