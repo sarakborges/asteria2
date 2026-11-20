@@ -32,7 +32,12 @@ public sealed class BlockState
 
     public T GetValue<T>(StateProperty<T> property) where T : notnull, IComparable
     {
-        int propertyIndex = Definition.GetPropertyIndex(property);
+        if (!Definition.TryGetPropertyIndex(property, out int propertyIndex))
+        {
+            throw new ArgumentException(
+                $"Cannot get property {property} as it does not exist in {Block}");
+        }
+
         return (T)_values[propertyIndex];
     }
 
@@ -55,16 +60,13 @@ public sealed class BlockState
 
     public BlockState SetValue<T>(StateProperty<T> property, T value) where T : notnull, IComparable
     {
-        int propertyIndex = Definition.GetPropertyIndex(property);
-        int valueIndex = property.IndexOf(value);
-        if (valueIndex < 0)
+        if (!Definition.TryGetPropertyIndex(property, out int propertyIndex))
         {
             throw new ArgumentException(
-                $"Cannot set property '{property.Name}' to '{value}' on '{Block}'; it is not an allowed value.",
-                nameof(value));
+                $"Cannot set property {property} as it does not exist in {Block}");
         }
 
-        return GetNeighbors()[propertyIndex][valueIndex];
+        return SetValueInternal(property, propertyIndex, value);
     }
 
     public BlockState TrySetValue<T>(StateProperty<T> property, T value) where T : notnull, IComparable
@@ -74,23 +76,30 @@ public sealed class BlockState
             return this;
         }
 
-        int valueIndex = property.IndexOf(value);
-        if (valueIndex < 0)
-        {
-            throw new ArgumentException(
-                $"Cannot set property '{property.Name}' to '{value}' on '{Block}'; it is not an allowed value.",
-                nameof(value));
-        }
-
-        return GetNeighbors()[propertyIndex][valueIndex];
+        return SetValueInternal(property, propertyIndex, value);
     }
 
     public BlockState Cycle<T>(StateProperty<T> property) where T : notnull, IComparable
     {
-        int propertyIndex = Definition.GetPropertyIndex(property);
-        int currentValueIndex = property.IndexOf((T)_values[propertyIndex]);
+        T currentValue = GetValue(property);
+        int currentValueIndex = property.IndexOf(currentValue);
         int nextValueIndex = (currentValueIndex + 1) % property.ValueCount;
-        return GetNeighbors()[propertyIndex][nextValueIndex];
+        return SetValue(property, property.PossibleValues[nextValueIndex]);
+    }
+
+    private BlockState SetValueInternal<T>(
+        StateProperty<T> property,
+        int propertyIndex,
+        T value) where T : notnull, IComparable
+    {
+        int valueIndex = property.IndexOf(value);
+        if (valueIndex < 0)
+        {
+            throw new ArgumentException(
+                $"Cannot set property {property} to {value} on {Block}, it is not an allowed value");
+        }
+
+        return GetNeighbors()[propertyIndex][valueIndex];
     }
 
     internal object[] CopyValues() => (object[])_values.Clone();
