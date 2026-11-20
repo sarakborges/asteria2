@@ -1263,7 +1263,11 @@ internal static class Program
 
         contender.Start();
         Require(contenderStarted.Wait(TimeSpan.FromSeconds(2)), "The competing thread must start.");
-        Thread.Sleep(50);
+        Require(
+            SpinWait.SpinUntil(
+                () => (contender.ThreadState & ThreadState.WaitSleepJoin) != 0,
+                TimeSpan.FromSeconds(2)),
+            "The competing thread must be blocked on the detector semaphore before the owner unlocks.");
 
         Exception? ownerException = null;
         try
