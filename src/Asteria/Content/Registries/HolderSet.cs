@@ -118,8 +118,9 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
             return true;
 
         return GetType() == typeof(HolderSet<T>) &&
-               obj?.GetType() == typeof(HolderSet<T>) &&
-               Contents.SequenceEqual(((HolderSet<T>)obj).Contents);
+               obj is HolderSet<T> other &&
+               other.GetType() == typeof(HolderSet<T>) &&
+               Contents.SequenceEqual(other.Contents);
     }
 
     public override int GetHashCode()
