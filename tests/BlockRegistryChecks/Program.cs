@@ -1582,10 +1582,10 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
         ids.AddMapping(highIdState, 7);
         Require(
-            ids.Count == 8 &&
+            ids.Count == 1 &&
             ids.GetId(highIdState) == 7 &&
             ReferenceEquals(ids.ById(7), highIdState),
-            "IdMapper.size must reflect the ID-indexed list length, including unassigned positions before a sparse mapping.");
+            "IdMapper.size must report mapped values while preserving sparse numeric IDs.");
         Require(
             Enumerable.Range(0, 7).All(id => ids.ById(id) is null && !ids.Contains(id)),
             "Sparse ID mappings must preserve null holes in reverse lookup.");
@@ -1593,9 +1593,9 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         ids.Add(nextState);
         Require(
             ids.GetId(nextState) == 8 &&
-            ids.Count == 9 &&
+            ids.Count == 2 &&
             ReferenceEquals(ids.ById(8), nextState),
-            "Adding after a sparse explicit mapping must continue from nextId, not fill earlier holes.");
+            "Adding after a sparse explicit mapping must continue from nextId, not fill earlier holes, while size counts mapped values.");
         Require(
             ids.SequenceEqual(new[] { highIdState, nextState }),
             "IdMapper iteration must skip empty ID slots while retaining ascending ID order.");
