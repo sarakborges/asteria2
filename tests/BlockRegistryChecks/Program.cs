@@ -691,6 +691,38 @@ internal static class Program
         Require(exception.Index == 37, "Missing palette entry exceptions must preserve the missing index.");
     }
 
+    private static (int X, int Y, int Z) BlockCoordinates(int index)
+    {
+        if ((uint)index >= ChunkSection.BlockCount)
+            throw new ArgumentOutOfRangeException(nameof(index));
+
+        return (index & 15, (index >> 8) & 15, (index >> 4) & 15);
+    }
+
+    private static T GetAt<T>(PalettedContainer<T> container, int index) where T : class
+    {
+        var (x, y, z) = BlockCoordinates(index);
+        return container.Get(x, y, z);
+    }
+
+    private static void SetAt<T>(PalettedContainer<T> container, int index, T value) where T : class
+    {
+        var (x, y, z) = BlockCoordinates(index);
+        container.Set(x, y, z, value);
+    }
+
+    private static T GetAndSetAt<T>(PalettedContainer<T> container, int index, T value) where T : class
+    {
+        var (x, y, z) = BlockCoordinates(index);
+        return container.GetAndSet(x, y, z, value);
+    }
+
+    private static T GetAndSetUncheckedAt<T>(PalettedContainer<T> container, int index, T value) where T : class
+    {
+        var (x, y, z) = BlockCoordinates(index);
+        return container.GetAndSetUnchecked(x, y, z, value);
+    }
+
     private static void CheckPalettedContainer()
     {
         BlockState defaultState = Blocks.TEST_BLOCK.DefaultState;
@@ -700,16 +732,16 @@ internal static class Program
         Require(palette.Mode == PaletteMode.SingleValue, "A uniform section must use a single-value palette.");
         Require(palette.BitsPerEntry == 0, "A single-value palette must use zero storage bits.");
         Require(palette.StorageLongCount == 0, "A single-value palette must allocate no packed array.");
-        Require(ReferenceEquals(palette.Get(2048), defaultState), "A single-value palette must return its only value for every index.");
+        Require(ReferenceEquals(GetAt(palette, 2048), defaultState), "A single-value palette must return its only value for every index.");
         Require(!palette.MaybeHas(state => state.Block.Properties.IsAir), "Single-value maybeHas must inspect the only value.");
 
         BlockState alternate = defaultState.SetValue(Blocks.TEST_STAGE, 2);
-        BlockState previous = palette.GetAndSet(10, alternate);
+        BlockState previous = GetAndSetAt(palette, 10, alternate);
         Require(ReferenceEquals(previous, defaultState), "getAndSet must return the previous state.");
         Require(palette.Mode == PaletteMode.Local, "The second distinct value must create a local palette.");
         Require(palette.BitsPerEntry == 4, "Block-state local palettes start at four bits.");
         Require(palette.LocalPaletteImplementation?.StartsWith("LinearPalette", StringComparison.Ordinal) == true, "The four-bit palette must use linear lookup.");
-        Require(ReferenceEquals(palette.Get(10), alternate), "Local palette lookup must round-trip.");
+        Require(ReferenceEquals(GetAt(palette, 10), alternate), "Local palette lookup must round-trip.");
         Require(!palette.MaybeHas(state => state.Block.Properties.IsAir), "Local palette must report absent air.");
         Require(palette.MaybeHas(state => ReferenceEquals(state, alternate)), "Local palette must inspect its entries.");
 
@@ -734,17 +766,17 @@ internal static class Program
         palette.Count((_, count) => counted += count);
         Require(counted == ChunkSection.BlockCount, "Palette count must account for every position.");
         PalettedContainer<BlockState> copy = palette.Copy();
-        Require(ReferenceEquals(copy.Get(10), alternate), "Copy must preserve stored values.");
-        copy.Set(10, defaultState);
-        Require(ReferenceEquals(palette.Get(10), alternate), "Mutating a copy must not mutate the original.");
+        Require(ReferenceEquals(GetAt(copy, 10), alternate), "Copy must preserve stored values.");
+        SetAt(copy, 10, defaultState);
+        Require(ReferenceEquals(GetAt(palette, 10), alternate), "Mutating a copy must not mutate the original.");
         PalettedContainer<BlockState> recreated = palette.Recreate();
         Require(recreated.IsSingleValue, "Recreate must return a uniform container.");
-        Require(ReferenceEquals(recreated.Get(0), defaultState), "Recreate must use palette entry zero.");
+        Require(ReferenceEquals(GetAt(recreated, 0), defaultState), "Recreate must use palette entry zero.");
 
         palette.Acquire();
         try
         {
-            palette.GetAndSetUnchecked(11, alternate);
+            GetAndSetUncheckedAt(palette, 11, alternate);
         }
         finally { palette.Release(); }
     }
@@ -763,12 +795,12 @@ internal static class Program
         var container = new PalettedContainer<BlockState>(strategy, manyStateBlock.DefaultState);
         IReadOnlyList<BlockState> states = manyStateBlock.StateDefinition.PossibleStates;
 
-        for (int value = 1; value <= 16; value++) container.Set(value - 1, states[value]);
+        for (int value = 1; value <= 16; value++) SetAt(container, value - 1, states[value]);
         Require(container.Mode == PaletteMode.Local, "A palette of 17 states must remain indirect.");
         Require(container.BitsPerEntry == 5, "A seventeenth value must grow a four-bit palette to five bits.");
         Require(container.LocalPaletteImplementation?.StartsWith("HashMapPalette", StringComparison.Ordinal) == true, "A widened palette must use hash-map lookup.");
 
-        for (int value = 17; value <= 256; value++) container.Set(value - 1, states[value]);
+        for (int value = 17; value <= 256; value++) SetAt(container, value - 1, states[value]);
         Require(container.Mode == PaletteMode.Global, "The 257th distinct state must promote the palette to global IDs.");
         Require(container.BitsPerEntry == 9, "A 257-entry global map uses nine bits in memory.");
         Require(container.BitsInStorage == 9, "The requested global storage width is retained separately.");
@@ -779,11 +811,11 @@ internal static class Program
         Require(container.MaybeHas(state => ReferenceEquals(state, manyStateBlock.DefaultState)), "Global maybeHas must be conservative.");
 
         for (int value = 1; value <= 256; value++)
-            Require(ReferenceEquals(container.Get(value - 1), states[value]), "Palette promotion must preserve every stored value.");
-        Require(ReferenceEquals(container.Get(256), manyStateBlock.DefaultState), "Palette promotion must preserve untouched defaults.");
-        container.Set(300, Blocks.AIR.DefaultState);
+            Require(ReferenceEquals(GetAt(container, value - 1), states[value]), "Palette promotion must preserve every stored value.");
+        Require(ReferenceEquals(GetAt(container, 256), manyStateBlock.DefaultState), "Palette promotion must preserve untouched defaults.");
+        SetAt(container, 300, Blocks.AIR.DefaultState);
         Require(
-            ReferenceEquals(container.Get(300), states[0]),
+            ReferenceEquals(GetAt(container, 300), states[0]),
             "The vanilla global palette must map values without a global ID to ID zero.");
     }
 
@@ -799,13 +831,13 @@ internal static class Program
         var container = new PalettedContainer<BlockState>(strategy, block.DefaultState);
         IReadOnlyList<BlockState> states = block.StateDefinition.PossibleStates;
         for (int value = 1; value <= 256; value++)
-            container.Set(value - 1, states[value]);
+            SetAt(container, value - 1, states[value]);
 
         Require(container.Mode == PaletteMode.Global, "The 257th distinct value must select the global palette.");
         Require(container.BitsPerEntry == 10, "The full 1024-state ID map needs ten resident memory bits.");
         Require(container.BitsInStorage == 9, "The ninth-bit resize request is retained for packed storage.");
         Require(container.AlwaysRepack, "Global palette configurations must always repack.");
-        Require(container.Get(255) == states[256], "Global storage must preserve the final inserted state.");
+        Require(GetAt(container, 255) == states[256], "Global storage must preserve the final inserted state.");
     }
 
     private static void CheckChunkSection()
@@ -814,12 +846,18 @@ internal static class Program
         Require(section.HasOnlyAir, "A new section must be empty.");
         Require(section.NonAirBlockCount == 0, "A new section must contain zero non-air blocks.");
         Require(section.PaletteMode == PaletteMode.SingleValue, "An empty section must start in single-value mode.");
-        Require(ChunkSection.GetIndex(15, 15, 15) == 4095, "The last coordinate must map to 4095.");
-        Require(
-            ChunkSection.GetIndex(1, 0, 0) == 1 &&
-            ChunkSection.GetIndex(0, 0, 1) == 16 &&
-            ChunkSection.GetIndex(0, 1, 0) == 256,
-            "Section indices must use x | (z << 4) | (y << 8).");
+        BlockState xAxisState = Blocks.TEST_BLOCK.DefaultState;
+        BlockState zAxisState = xAxisState.SetValue(Blocks.TEST_STAGE, 2);
+        BlockState yAxisState = xAxisState.SetValue(Blocks.TEST_POWERED, true);
+        section.SetBlockState(1, 0, 0, xAxisState);
+        section.SetBlockState(0, 0, 1, zAxisState);
+        section.SetBlockState(0, 1, 0, yAxisState);
+        Require(ReferenceEquals(section.GetBlockState(1, 0, 0), xAxisState), "X contributes the least-significant section index bits.");
+        Require(ReferenceEquals(section.GetBlockState(0, 0, 1), zAxisState), "Z contributes section index bits starting at bit four.");
+        Require(ReferenceEquals(section.GetBlockState(0, 1, 0), yAxisState), "Y contributes section index bits starting at bit eight.");
+        section.SetBlockState(1, 0, 0, Blocks.AIR.DefaultState);
+        section.SetBlockState(0, 0, 1, Blocks.AIR.DefaultState);
+        section.SetBlockState(0, 1, 0, Blocks.AIR.DefaultState);
 
         BlockState placedState = Blocks.TEST_BLOCK.DefaultState;
         BlockState previous = section.SetBlockState(15, 15, 15, placedState);
@@ -836,21 +874,20 @@ internal static class Program
         Require(section.MaybeHas(state => !state.Block.Properties.IsAir), "maybeHas may conservatively return true for an unused local entry.");
 
         // LevelChunkSection exposes its state container and can rebuild its cached counters.
-        section.GetStates().Set(0, placedState);
+        section.GetStates().Set(0, 0, 0, placedState);
         Require(section.NonAirBlockCount == 0, "Direct container writes do not implicitly update section counters.");
         section.RecalculateBlockCounts();
         Require(section.NonAirBlockCount == 1, "RecalculateBlockCounts must rebuild the non-air count from palette contents.");
 
         ChunkSection sectionCopy = section.Copy();
         Require(sectionCopy.NonAirBlockCount == 1, "A copied section must preserve its cached counters.");
-        Require(ReferenceEquals(sectionCopy.GetBlockState(0), placedState), "A copied section must preserve block states.");
+        Require(ReferenceEquals(sectionCopy.GetBlockState(0, 0, 0), placedState), "A copied section must preserve block states.");
         sectionCopy.SetBlockState(0, 0, 0, Blocks.AIR.DefaultState);
         Require(sectionCopy.NonAirBlockCount == 0, "Mutating a copied section must update its own counters.");
         Require(section.NonAirBlockCount == 1, "Mutating a copied section must not affect the original.");
 
         var emptySection = new ChunkSection(BuiltInRegistries.BlockStates, Blocks.AIR.DefaultState);
         Require(!emptySection.MaybeHas(state => !state.Block.Properties.IsAir), "An untouched air-only palette must rule out non-air blocks.");
-        Require(ChunkSection.GetIndex(16, 0, 0) == 16, "Section indices must use vanilla bit shifts without per-axis bounds checks.");
         Require(
             ReferenceEquals(section.GetBlockState(16, 0, 0), section.GetBlockState(0, 0, 1)),
             "Coordinates are flattened in vanilla X/Z/Y order before the final storage index is validated.");

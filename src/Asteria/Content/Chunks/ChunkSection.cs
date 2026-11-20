@@ -48,9 +48,7 @@ public sealed class ChunkSection
     }
 
     public BlockState GetBlockState(int x, int y, int z) =>
-        _states.Get(GetIndex(x, y, z));
-
-    public BlockState GetBlockState(int index) => _states.Get(index);
+        _states.Get(x, y, z);
 
     public BlockState SetBlockState(int x, int y, int z, BlockState state) =>
         SetBlockState(x, y, z, state, true);
@@ -58,11 +56,10 @@ public sealed class ChunkSection
     public BlockState SetBlockState(int x, int y, int z, BlockState state, bool checkThreading)
     {
         ArgumentNullException.ThrowIfNull(state);
-        int index = GetIndex(x, y, z);
 
         BlockState previous = checkThreading
-            ? _states.GetAndSet(index, state)
-            : _states.GetAndSetUnchecked(index, state);
+            ? _states.GetAndSet(x, y, z, state)
+            : _states.GetAndSetUnchecked(x, y, z, state);
 
         if (!ReferenceEquals(previous, state))
         {
@@ -107,6 +104,4 @@ public sealed class ChunkSection
     public ChunkSection Copy() =>
         new(_states.Copy(), _nonAirBlockCount);
 
-    public static int GetIndex(int x, int y, int z) =>
-        (y << 8) | (z << 4) | x;
 }

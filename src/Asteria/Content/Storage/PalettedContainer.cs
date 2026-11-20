@@ -106,7 +106,10 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         return new Data(configuration, palette, storage);
     }
 
-    public T Get(int index)
+    public T Get(int x, int y, int z) =>
+        GetByIndex(_strategy.GetIndex(x, y, z));
+
+    private T GetByIndex(int index)
     {
         ValidateIndex(index);
         Data data = Volatile.Read(ref _data);
@@ -114,15 +117,12 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         return data.Palette.ValueFor(paletteId);
     }
 
-    public T Get(int x, int y, int z) =>
-        Get(_strategy.GetIndex(x, y, z));
-
-    public void Set(int index, T value)
+    public void Set(int x, int y, int z, T value)
     {
         Acquire();
         try
         {
-            SetUnchecked(index, value);
+            SetUnchecked(_strategy.GetIndex(x, y, z), value);
         }
         finally
         {
@@ -130,15 +130,12 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         }
     }
 
-    public T GetAndSet(int x, int y, int z, T value) =>
-        GetAndSet(_strategy.GetIndex(x, y, z), value);
-
-    public T GetAndSet(int index, T value)
+    public T GetAndSet(int x, int y, int z, T value)
     {
         Acquire();
         try
         {
-            return GetAndSetUnchecked(index, value);
+            return GetAndSetUncheckedByIndex(_strategy.GetIndex(x, y, z), value);
         }
         finally
         {
@@ -146,7 +143,10 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         }
     }
 
-    public T GetAndSetUnchecked(int index, T value)
+    public T GetAndSetUnchecked(int x, int y, int z, T value) =>
+        GetAndSetUncheckedByIndex(_strategy.GetIndex(x, y, z), value);
+
+    private T GetAndSetUncheckedByIndex(int index, T value)
     {
         ValidateIndex(index);
         ArgumentNullException.ThrowIfNull(value);
@@ -159,12 +159,6 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         int previousId = data.Storage.GetAndSet(index, paletteId);
         return data.Palette.ValueFor(previousId);
     }
-
-    public T GetAndSetUnchecked(int x, int y, int z, T value) =>
-        GetAndSetUnchecked(_strategy.GetIndex(x, y, z), value);
-
-    public void Set(int x, int y, int z, T value) =>
-        Set(_strategy.GetIndex(x, y, z), value);
 
     private void SetUnchecked(int index, T value)
     {
