@@ -418,6 +418,20 @@ internal static class Program
             tag.CanSerializeIn(selectiveSerializationContext),
             "HolderSet.Named.canSerializeIn must ask the target context to serialize its original owner.");
         Require(ReferenceEquals(registry.GetAny(), registered), "MappedRegistry.getAny must return the first registered holder.");
+
+        IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
+        Require(holderIdMap.Count == registry.Count, "Registry.asHolderIdMap must report the registry size.");
+        Require(
+            ReferenceEquals(holderIdMap.ById(0), registered) &&
+            ReferenceEquals(holderIdMap.ById(1), placeholderEntry),
+            "Registry.asHolderIdMap.byId must return the registered holders by numeric ID.");
+        Require(
+            holderIdMap.GetId(registered) == registry.GetId(value) &&
+            holderIdMap.GetId(Holder<Block>.Direct(value)) == -1,
+            "Registry.asHolderIdMap.getId must resolve registered values through their holders.");
+        Require(
+            holderIdMap.SequenceEqual(new Holder<Block>[] { registered, placeholderEntry }),
+            "Registry.asHolderIdMap must enumerate registered holders in numeric ID order.");
         Holder<Block>.Reference? randomHolder = registry.GetRandom(new Random(0));
         Require(
             randomHolder is not null &&
