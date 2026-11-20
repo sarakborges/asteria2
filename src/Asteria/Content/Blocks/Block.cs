@@ -14,6 +14,10 @@ public class Block
     public StateDefinition StateDefinition { get; }
     public float ExplosionResistance { get; }
     public float Friction { get; }
+    public float SpeedFactor { get; }
+    public float JumpFactor { get; }
+    public float BounceRestitution { get; }
+    public float FallDistanceReduction { get; }
     public BlockState DefaultState { get; private set; } = null!;
     public Holder<Block>.Reference? BuiltInRegistryHolder { get; }
 
@@ -30,6 +34,10 @@ public class Block
         Properties = properties ?? throw new ArgumentNullException(nameof(properties));
         ExplosionResistance = Properties.ExplosionResistanceValue;
         Friction = Properties.FrictionValue;
+        SpeedFactor = Properties.SpeedFactorValue;
+        JumpFactor = Properties.JumpFactorValue;
+        BounceRestitution = Properties.BounceRestitutionValue;
+        FallDistanceReduction = Properties.FallDistanceReductionValue;
 
         // The reference implementation creates the intrusive holder during Block initialization,
         // before the constructor materializes the state definition.

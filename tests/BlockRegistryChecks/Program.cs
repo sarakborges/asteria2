@@ -404,6 +404,10 @@ internal static class Program
         Require(defaults.DestroyTimeValue == 0.0f, "Vanilla block properties default destroy time to zero.");
         Require(defaults.ExplosionResistanceValue == 0.0f, "Vanilla block properties default explosion resistance to zero.");
         Require(defaults.FrictionValue == 0.6f, "Vanilla block properties default friction to 0.6.");
+        Require(
+            defaults.SpeedFactorValue == 1.0f && defaults.JumpFactorValue == 1.0f &&
+            defaults.BounceRestitutionValue == 0.0f && defaults.FallDistanceReductionValue == 0.0f,
+            "Block behavior properties must default speed and jump factors to one and bounce/fall reductions to zero.");
         Require(!defaults.RequiresCorrectToolForDropsValue && !defaults.IsAir, "Vanilla block properties default tool and air flags to false.");
 
         var custom = BlockProperties.Of()
@@ -430,6 +434,22 @@ internal static class Program
         Require(
             semantic.RequiresCorrectToolForDropsValue && semantic.IsAir,
             "Vanilla property flags must be set through the fluent builder.");
+
+        var movementProperties = BlockProperties.Of()
+            .SpeedFactor(0.4f)
+            .JumpFactor(0.5f)
+            .BounceRestitution(0.75f)
+            .FallDistanceReduction(0.5f);
+        var movementBlock = new TestBlockDefinition(movementProperties);
+        Require(
+            movementBlock.SpeedFactor == 0.4f && movementBlock.JumpFactor == 0.5f &&
+            movementBlock.BounceRestitution == 0.75f && movementBlock.FallDistanceReduction == 0.5f,
+            "BlockBehaviour must cache speed, jump, bounce, and fall values from its properties.");
+        movementProperties.SpeedFactor(2.0f).JumpFactor(2.0f).BounceRestitution(0.0f).FallDistanceReduction(0.0f);
+        Require(
+            movementBlock.SpeedFactor == 0.4f && movementBlock.JumpFactor == 0.5f &&
+            movementBlock.BounceRestitution == 0.75f && movementBlock.FallDistanceReduction == 0.5f,
+            "Mutating BlockBehaviour.Properties must not alter the cached movement values.");
 
         BlockProperties mutableProperties = BlockProperties.Of()
             .Strength(2.5f, 8.0f)

@@ -10,6 +10,10 @@ public sealed class BlockProperties
     public float ExplosionResistanceValue { get; private set; }
     public bool RequiresCorrectToolForDropsValue { get; private set; }
     public float FrictionValue { get; private set; } = 0.6f;
+    public float SpeedFactorValue { get; private set; } = 1.0f;
+    public float JumpFactorValue { get; private set; } = 1.0f;
+    public float BounceRestitutionValue { get; private set; }
+    public float FallDistanceReductionValue { get; private set; }
     public bool IsAir { get; private set; }
 
     private BlockProperties()
@@ -42,6 +46,30 @@ public sealed class BlockProperties
     public BlockProperties Friction(float friction)
     {
         FrictionValue = friction;
+        return this;
+    }
+
+    public BlockProperties SpeedFactor(float speedFactor)
+    {
+        SpeedFactorValue = speedFactor;
+        return this;
+    }
+
+    public BlockProperties JumpFactor(float jumpFactor)
+    {
+        JumpFactorValue = jumpFactor;
+        return this;
+    }
+
+    public BlockProperties BounceRestitution(float bounceRestitution)
+    {
+        BounceRestitutionValue = bounceRestitution;
+        return this;
+    }
+
+    public BlockProperties FallDistanceReduction(float fallDistanceReduction)
+    {
+        FallDistanceReductionValue = fallDistanceReduction;
         return this;
     }
 
