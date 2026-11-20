@@ -1453,6 +1453,14 @@ internal static class Program
         // LevelChunkSection exposes its state container and can rebuild its cached counters.
         section.GetStates().Set(0, 0, 0, placedState);
         Require(section.NonAirBlockCount == 0, "Direct container writes do not implicitly update section counters.");
+
+        var staleCounterSection = new ChunkSection(CreateBlockStateContainer(Blocks.AIR.DefaultState));
+        staleCounterSection.GetStates().Set(0, 0, 0, placedState);
+        staleCounterSection.SetBlockState(0, 0, 0, Blocks.AIR.DefaultState);
+        Require(
+            staleCounterSection.NonAirBlockCount == -1 && !staleCounterSection.HasOnlyAir,
+            "LevelChunkSection must preserve vanilla signed-short counter behavior when direct container writes leave the cached count stale.");
+
         section.RecalculateBlockCounts();
         Require(section.NonAirBlockCount == 1, "RecalculateBlockCounts must rebuild the non-air count from palette contents.");
 

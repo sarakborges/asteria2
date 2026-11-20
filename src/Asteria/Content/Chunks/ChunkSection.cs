@@ -14,7 +14,7 @@ public sealed class ChunkSection
     public const int BlockCount = Width * Height * Depth;
 
     private readonly PalettedContainer<BlockState> _states;
-    private ushort _nonAirBlockCount;
+    private short _nonAirBlockCount;
 
     public int NonAirBlockCount => _nonAirBlockCount;
     public bool HasOnlyAir => _nonAirBlockCount == 0;
@@ -35,7 +35,7 @@ public sealed class ChunkSection
         RecalculateBlockCounts();
     }
 
-    private ChunkSection(PalettedContainer<BlockState> states, ushort nonAirBlockCount)
+    private ChunkSection(PalettedContainer<BlockState> states, short nonAirBlockCount)
     {
         _states = states;
         _nonAirBlockCount = nonAirBlockCount;
@@ -55,16 +55,14 @@ public sealed class ChunkSection
             ? _states.GetAndSet(x, y, z, state)
             : _states.GetAndSetUnchecked(x, y, z, state);
 
-        if (!ReferenceEquals(previous, state))
+        if (!previous.IsAir)
         {
-            if (previous.IsAir && !state.IsAir)
-            {
-                _nonAirBlockCount++;
-            }
-            else if (!previous.IsAir && state.IsAir)
-            {
-                _nonAirBlockCount--;
-            }
+            _nonAirBlockCount = unchecked((short)(_nonAirBlockCount - 1));
+        }
+
+        if (!state.IsAir)
+        {
+            _nonAirBlockCount = unchecked((short)(_nonAirBlockCount + 1));
         }
 
         return previous;
@@ -92,7 +90,7 @@ public sealed class ChunkSection
             }
         });
 
-        _nonAirBlockCount = checked((ushort)nonAirBlockCount);
+        _nonAirBlockCount = checked((short)nonAirBlockCount);
     }
 
     public ChunkSection Copy() =>
