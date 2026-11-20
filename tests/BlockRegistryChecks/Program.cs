@@ -1025,18 +1025,42 @@ internal static class Program
             invalidTrySetValue.Message == invalidSetMessage,
             "trySetValue must use the same vanilla invalid-value diagnostic as setValue.");
 
-        RequireThrowsExact<ArgumentException>(
+        ArgumentException invalidMaximum = Capture<ArgumentException>(
             () => IntegerProperty.Create("only", 0, 0),
             "IntegerProperty must throw IllegalArgumentException when max is not greater than min.");
+        Require(
+            invalidMaximum.Message == "Max value of only must be greater than min (0)",
+            "IntegerProperty must use the vanilla maximum validation diagnostic.");
 
-        RequireThrowsExact<ArgumentException>(
+        ArgumentException invalidMinimum = Capture<ArgumentException>(
             () => IntegerProperty.Create("negative", -1, 1),
             "IntegerProperty must throw IllegalArgumentException when min is negative.");
+        Require(
+            invalidMinimum.Message == "Min value of negative must be 0 or greater",
+            "IntegerProperty must use the vanilla minimum validation diagnostic.");
 
         BooleanProperty invalidName = BooleanProperty.Create("Invalid Name");
-        RequireThrows<ArgumentException>(
+        ArgumentException invalidNameException = Capture<ArgumentException>(
             () => new TestBlockDefinition(BlockProperties.Of(), builder => builder.Add(invalidName)),
             "Property names must be validated when the state definition is built.");
+        Require(
+            invalidNameException.Message == "Block{[unregistered]} has invalidly named property: Invalid Name",
+            "StateDefinition.Builder must include the owner and vanilla invalid-name diagnostic.");
+
+        BooleanProperty duplicateFirst = BooleanProperty.Create("duplicate");
+        BooleanProperty duplicateSecond = BooleanProperty.Create("duplicate");
+        ArgumentException duplicatePropertyException = Capture<ArgumentException>(
+            () => new TestBlockDefinition(
+                BlockProperties.Of(),
+                builder =>
+                {
+                    builder.Add(duplicateFirst);
+                    builder.Add(duplicateSecond);
+                }),
+            "StateDefinition.Builder must reject duplicate property names.");
+        Require(
+            duplicatePropertyException.Message == "Block{[unregistered]} has duplicate property: duplicate",
+            "StateDefinition.Builder must use the vanilla duplicate-property diagnostic.");
     }
 
     private static void CheckGlobalStateIds()
@@ -1108,9 +1132,13 @@ internal static class Program
             new[] { TestAxis.Z, TestAxis.X },
             value => value == TestAxis.Z ? "Invalid Name" : "x");
         Require(invalidSerialized.GetName(TestAxis.Z) == "Invalid Name", "EnumProperty construction must retain enum serialized names before state-definition validation.");
-        RequireThrows<ArgumentException>(
+        ArgumentException invalidSerializedException = Capture<ArgumentException>(
             () => new TestBlockDefinition(BlockProperties.Of(), builder => builder.Add(invalidSerialized)),
             "StateDefinition.Builder must validate serialized enum value names when the property is added.");
+        Require(
+            invalidSerializedException.Message ==
+                "Block{[unregistered]} has property: invalid_serialized with invalidly named value: Invalid Name",
+            "StateDefinition.Builder must use the vanilla invalid-value-name diagnostic.");
 
         EnumProperty<TestDeclaredOrder> declared = EnumProperty<TestDeclaredOrder>.Create("declared");
         EnumProperty<TestDeclaredOrder> singleton = EnumProperty<TestDeclaredOrder>.Create(
@@ -1119,15 +1147,32 @@ internal static class Program
         Require(
             singleton.PossibleValues.SequenceEqual(new[] { TestDeclaredOrder.Y }),
             "EnumProperty may represent a single possible value before it is added to a state definition.");
-        RequireThrows<ArgumentException>(
+        ArgumentException singletonException = Capture<ArgumentException>(
             () => new TestBlockDefinition(BlockProperties.Of(), builder => builder.Add(singleton)),
             "StateDefinition.Builder must reject properties with one or fewer possible values.");
+        Require(
+            singletonException.Message ==
+                "Block{[unregistered]} attempted use property singleton with <= 1 possible values",
+            "StateDefinition.Builder must use the vanilla single-value property diagnostic.");
         Require(
             declared.Equals(EnumProperty<TestDeclaredOrder>.Create("declared")),
             "Enum properties with the same name, ordered values, and serialized names must compare equal.");
         Require(
             declared.GetHashCode() == EnumProperty<TestDeclaredOrder>.Create("declared").GetHashCode(),
             "Equal enum properties must have equal hash codes.");
+        EnumProperty<TestDeclaredOrder> renamed = EnumProperty<TestDeclaredOrder>.Create(
+            "declared",
+            new[] { TestDeclaredOrder.Z, TestDeclaredOrder.X, TestDeclaredOrder.Y },
+            value => value.ToString());
+        Require(
+            declared.Equals(renamed) && declared.GetHashCode() == renamed.GetHashCode(),
+            "EnumProperty equality must depend on the ordered enum values, not on a per-instance name selector.");
+        ArgumentException emptyEnumException = Capture<ArgumentException>(
+            () => EnumProperty<TestAxis>.Create("empty", Array.Empty<TestAxis>()),
+            "EnumProperty must reject an empty set of possible values.");
+        Require(
+            emptyEnumException.Message == "Trying to make empty EnumProperty 'empty'",
+            "EnumProperty must use the vanilla empty-property diagnostic.");
         Require(
             declared.PossibleValues.SequenceEqual(new[] { TestDeclaredOrder.Z, TestDeclaredOrder.X, TestDeclaredOrder.Y }),
             "Default enum properties must preserve enum declaration order rather than numeric sorting.");
