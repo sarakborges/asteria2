@@ -18,6 +18,9 @@ public class Block
     public float JumpFactor { get; }
     public float BounceRestitution { get; }
     public float FallDistanceReduction { get; }
+    public bool HasCollision { get; }
+    public bool IsRandomlyTicking { get; }
+    public bool DynamicShape { get; }
     public BlockState DefaultState { get; private set; } = null!;
     public Holder<Block>.Reference? BuiltInRegistryHolder { get; }
 
@@ -38,6 +41,9 @@ public class Block
         JumpFactor = Properties.JumpFactorValue;
         BounceRestitution = Properties.BounceRestitutionValue;
         FallDistanceReduction = Properties.FallDistanceReductionValue;
+        HasCollision = Properties.HasCollisionValue;
+        IsRandomlyTicking = Properties.IsRandomlyTickingValue;
+        DynamicShape = Properties.DynamicShapeValue;
 
         // The reference implementation creates the intrusive holder during Block initialization,
         // before the constructor materializes the state definition.

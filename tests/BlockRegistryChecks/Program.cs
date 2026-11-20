@@ -408,6 +408,11 @@ internal static class Program
             defaults.SpeedFactorValue == 1.0f && defaults.JumpFactorValue == 1.0f &&
             defaults.BounceRestitutionValue == 0.0f && defaults.FallDistanceReductionValue == 0.0f,
             "Block behavior properties must default speed and jump factors to one and bounce/fall reductions to zero.");
+        Require(
+            defaults.HasCollisionValue && defaults.CanOccludeValue && defaults.SpawnTerrainParticlesValue &&
+            !defaults.IsRandomlyTickingValue && !defaults.DynamicShapeValue && !defaults.IgnitedByLavaValue &&
+            !defaults.IsLiquidValue && !defaults.ReplaceableValue,
+            "Block property flags must default to collision, occlusion, and terrain particles enabled, with optional behaviors disabled.");
         Require(!defaults.RequiresCorrectToolForDropsValue && !defaults.IsAir, "Vanilla block properties default tool and air flags to false.");
 
         var custom = BlockProperties.Of()
@@ -434,6 +439,25 @@ internal static class Program
         Require(
             semantic.RequiresCorrectToolForDropsValue && semantic.IsAir,
             "Vanilla property flags must be set through the fluent builder.");
+
+        var stateBehaviorProperties = BlockProperties.Of()
+            .NoCollision()
+            .NoOcclusion()
+            .RandomTicks()
+            .DynamicShape()
+            .IgnitedByLava()
+            .Liquid()
+            .Replaceable()
+            .NoTerrainParticles();
+        var stateBehaviorBlock = new TestBlockDefinition(stateBehaviorProperties);
+        BlockState stateBehavior = stateBehaviorBlock.DefaultState;
+        Require(
+            !stateBehaviorBlock.HasCollision && stateBehaviorBlock.IsRandomlyTicking && stateBehaviorBlock.DynamicShape,
+            "BlockBehaviour must retain collision, random-tick, and dynamic-shape flags.");
+        Require(
+            !stateBehavior.CanOcclude && stateBehavior.IsRandomlyTicking && stateBehavior.IgnitedByLava &&
+            stateBehavior.IsLiquid && stateBehavior.IsReplaceable && !stateBehavior.ShouldSpawnTerrainParticles,
+            "BlockStateBase must cache state-level occlusion, ticking, lava, liquid, replacement, and particle flags.");
 
         var movementProperties = BlockProperties.Of()
             .SpeedFactor(0.4f)

@@ -14,6 +14,14 @@ public sealed class BlockProperties
     public float JumpFactorValue { get; private set; } = 1.0f;
     public float BounceRestitutionValue { get; private set; }
     public float FallDistanceReductionValue { get; private set; }
+    public bool HasCollisionValue { get; private set; } = true;
+    public bool CanOccludeValue { get; private set; } = true;
+    public bool IsRandomlyTickingValue { get; private set; }
+    public bool DynamicShapeValue { get; private set; }
+    public bool IgnitedByLavaValue { get; private set; }
+    public bool IsLiquidValue { get; private set; }
+    public bool ReplaceableValue { get; private set; }
+    public bool SpawnTerrainParticlesValue { get; private set; } = true;
     public bool IsAir { get; private set; }
 
     private BlockProperties()
@@ -70,6 +78,54 @@ public sealed class BlockProperties
     public BlockProperties FallDistanceReduction(float fallDistanceReduction)
     {
         FallDistanceReductionValue = fallDistanceReduction;
+        return this;
+    }
+
+    public BlockProperties NoCollision()
+    {
+        HasCollisionValue = false;
+        return this;
+    }
+
+    public BlockProperties NoOcclusion()
+    {
+        CanOccludeValue = false;
+        return this;
+    }
+
+    public BlockProperties RandomTicks()
+    {
+        IsRandomlyTickingValue = true;
+        return this;
+    }
+
+    public BlockProperties DynamicShape()
+    {
+        DynamicShapeValue = true;
+        return this;
+    }
+
+    public BlockProperties IgnitedByLava()
+    {
+        IgnitedByLavaValue = true;
+        return this;
+    }
+
+    public BlockProperties Liquid()
+    {
+        IsLiquidValue = true;
+        return this;
+    }
+
+    public BlockProperties Replaceable()
+    {
+        ReplaceableValue = true;
+        return this;
+    }
+
+    public BlockProperties NoTerrainParticles()
+    {
+        SpawnTerrainParticlesValue = false;
         return this;
     }
 
