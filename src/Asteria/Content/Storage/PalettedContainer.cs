@@ -62,10 +62,16 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
     public int PaletteSize => Volatile.Read(ref _data).Palette.Count;
     public int StorageLongCount => Volatile.Read(ref _data).Storage.LongCount;
     public bool IsSingleValue => Volatile.Read(ref _data).Configuration.Mode == PaletteMode.SingleValue;
-    public string? LocalPaletteImplementation =>
-        Volatile.Read(ref _data).Configuration.Mode == PaletteMode.Local
-            ? Volatile.Read(ref _data).Palette.GetType().Name
-            : null;
+    public string? LocalPaletteImplementation
+    {
+        get
+        {
+            Data data = Volatile.Read(ref _data);
+            return data.Configuration.Mode == PaletteMode.Local
+                ? data.Palette.GetType().Name
+                : null;
+        }
+    }
 
     public PalettedContainer(T defaultValue, PalettedContainerStrategy<T> strategy)
     {
