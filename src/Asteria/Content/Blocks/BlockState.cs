@@ -66,6 +66,8 @@ public sealed class BlockState
         }
     }
 
+    public IReadOnlyList<StateProperty> GetProperties() => Definition.Properties;
+
     public bool HasProperty(StateProperty property) => Definition.HasProperty(property);
 
     public BlockState SetValue<T>(StateProperty<T> property, T value) where T : notnull, IComparable

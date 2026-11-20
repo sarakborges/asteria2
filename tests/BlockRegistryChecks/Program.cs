@@ -1341,6 +1341,9 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             definition.Properties.Select(property => property.Name).SequenceEqual(new[] { "powered", "stage" }),
             "State properties must be sorted by name.");
+        Require(
+            definition.Any().GetProperties().SequenceEqual(definition.Properties),
+            "StateHolder.getProperties must expose the immutable ordered property collection.");
         Require(ReferenceEquals(definition.GetProperty("powered"), Blocks.TEST_POWERED), "Property lookup must return the declared property.");
         Require(
             definition.GetProperty("") is null && definition.GetProperty(" ") is null &&
