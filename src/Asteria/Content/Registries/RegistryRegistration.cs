@@ -7,21 +7,33 @@ namespace Asteria.Content.Registries;
 /// </summary>
 public static class Registry
 {
-    public static T Register<T>(Registry<T> registry, string name, T value)
-        where T : class =>
+    public static TValue Register<TRegistryValue, TValue>(
+        Registry<TRegistryValue> registry,
+        string name,
+        TValue value)
+        where TRegistryValue : class
+        where TValue : TRegistryValue =>
         Register(registry, ResourceLocation.Parse(name), value);
 
-    public static T Register<T>(Registry<T> registry, ResourceLocation location, T value)
-        where T : class
+    public static TValue Register<TRegistryValue, TValue>(
+        Registry<TRegistryValue> registry,
+        ResourceLocation location,
+        TValue value)
+        where TRegistryValue : class
+        where TValue : TRegistryValue
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(value);
 
-        return Register(registry, RegistryKey<T>.Create(registry.Key, location), value);
+        return Register(registry, RegistryKey<TRegistryValue>.Create(registry.Key, location), value);
     }
 
-    public static T Register<T>(Registry<T> registry, RegistryKey<T> key, T value)
-        where T : class
+    public static TValue Register<TRegistryValue, TValue>(
+        Registry<TRegistryValue> registry,
+        RegistryKey<TRegistryValue> key,
+        TValue value)
+        where TRegistryValue : class
+        where TValue : TRegistryValue
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(value);
@@ -30,23 +42,28 @@ public static class Registry
         return value;
     }
 
-    public static Holder<T>.Reference RegisterForHolder<T>(
-        Registry<T> registry,
+    public static Holder<TRegistryValue>.Reference RegisterForHolder<TRegistryValue, TValue>(
+        Registry<TRegistryValue> registry,
         ResourceLocation location,
-        T value)
-        where T : class
+        TValue value)
+        where TRegistryValue : class
+        where TValue : TRegistryValue
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(value);
 
-        return RegisterForHolder(registry, RegistryKey<T>.Create(registry.Key, location), value);
+        return RegisterForHolder(
+            registry,
+            RegistryKey<TRegistryValue>.Create(registry.Key, location),
+            value);
     }
 
-    public static Holder<T>.Reference RegisterForHolder<T>(
-        Registry<T> registry,
-        RegistryKey<T> key,
-        T value)
-        where T : class
+    public static Holder<TRegistryValue>.Reference RegisterForHolder<TRegistryValue, TValue>(
+        Registry<TRegistryValue> registry,
+        RegistryKey<TRegistryValue> key,
+        TValue value)
+        where TRegistryValue : class
+        where TValue : TRegistryValue
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(value);
