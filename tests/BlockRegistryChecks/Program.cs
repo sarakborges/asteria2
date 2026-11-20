@@ -1046,6 +1046,13 @@ internal static class Program
         Require(changedState.Cycle(Blocks.TEST_STAGE).GetValue(Blocks.TEST_STAGE) == 0, "Integer cycling must wrap.");
         Require(defaultState.Cycle(Blocks.TEST_POWERED).GetValue(Blocks.TEST_POWERED), "Boolean cycling must toggle false to true.");
 
+        InvalidOperationException repeatedInitialization = Capture<InvalidOperationException>(
+            () => defaultState.InitializeNeighbors(Array.Empty<BlockState[]>()),
+            "State-holder neighbor tables must only be initialized once.");
+        Require(
+            repeatedInitialization.Message == string.Empty,
+            "StateHolder.initializeNeighbors must throw the vanilla empty-message IllegalStateException.");
+
         BooleanProperty foreignPowered = BooleanProperty.Create("powered");
         Require(Blocks.TEST_POWERED.Equals(foreignPowered), "Boolean properties with the same value type and name must compare equal.");
         Require(Blocks.TEST_POWERED.GetHashCode() == foreignPowered.GetHashCode(), "Equal Boolean properties must have equal hash codes.");
