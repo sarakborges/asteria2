@@ -35,12 +35,6 @@ public static class RegistryBootstrap
             {
                 global::Asteria.Content.Blocks.Blocks.RegisterAll();
 
-                foreach (Holder<Block>.Reference blockHolder in BuiltInRegistries.Block.ListElements())
-                {
-                    foreach (BlockState state in blockHolder.Value.StateDefinition.PossibleStates)
-                        BuiltInRegistries.BlockStates.Register(state);
-                }
-
                 BuiltInRegistries.FreezeAll();
                 _state = BootstrapState.Complete;
             }
