@@ -900,7 +900,7 @@ internal static class Program
         Require(sectionCopy.NonAirBlockCount == 0, "Mutating a copied section must update its own counters.");
         Require(section.NonAirBlockCount == 1, "Mutating a copied section must not affect the original.");
 
-        var emptySection = new ChunkSection(BuiltInRegistries.BlockStates, Blocks.AIR.DefaultState);
+        var emptySection = new ChunkSection(CreateBlockStateContainer(Blocks.AIR.DefaultState));
         Require(!emptySection.MaybeHas(state => !state.Block.Properties.IsAir), "An untouched air-only palette must rule out non-air blocks.");
         Require(
             ReferenceEquals(section.GetBlockState(16, 0, 0), section.GetBlockState(0, 0, 1)),
