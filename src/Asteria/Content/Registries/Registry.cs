@@ -196,12 +196,12 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
     public IEnumerable<Holder<T>.Reference> ListElements() => _readOnlyEntries;
 
     public IEnumerable<HolderSet<T>.Named> ListTags() =>
-        (_boundTags ?? throw new InvalidOperationException("Tags not bound.")).Values;
+        (_boundTags ?? throw new InvalidOperationException("Tags not bound")).Values;
 
     public HolderSet<T>.Named? GetTag(TagKey<T> tag)
     {
         IReadOnlyDictionary<TagKey<T>, HolderSet<T>.Named> tags =
-            _boundTags ?? throw new InvalidOperationException("Tags not bound.");
+            _boundTags ?? throw new InvalidOperationException($"Tags not bound, trying to access {tag}");
         return tags.TryGetValue(tag, out HolderSet<T>.Named? holders) ? holders : null;
     }
 
@@ -301,7 +301,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         IEnumerable<KeyValuePair<TagKey<T>, IEnumerable<Holder<T>>>> tagDefinitions)
     {
         if (!IsFrozen)
-            throw new InvalidOperationException("Tag reload is only valid after registry freeze.");
+            throw new InvalidOperationException("Invalid method used for tag loading");
         ArgumentNullException.ThrowIfNull(tagDefinitions);
 
         var pending = new Dictionary<TagKey<T>, (HolderSet<T>.Named Set, Holder<T>[] Values)>();
@@ -342,26 +342,32 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         foreach (var pair in _byValue)
             pair.Value.BindValue(pair.Key);
 
-        RegistryKey<T>[] unboundEntries = _byKey
+        ResourceLocation[] unboundEntries = _byKey
             .Where(pair => !pair.Value.IsBound)
-            .Select(pair => pair.Key)
+            .Select(pair => pair.Key.Location)
+            .OrderBy(location => location)
             .ToArray();
         if (unboundEntries.Length > 0)
             throw new InvalidOperationException(
-                $"Unbound values in registry '{Location}': {string.Join(", ", unboundEntries.Select(key => key.Location))}");
+                $"Unbound values in registry {Key}: [{string.Join(", ", unboundEntries)}]");
 
         if (_unregisteredIntrusiveHolders is not null)
         {
             if (_unregisteredIntrusiveHolders.Count != 0)
                 throw new InvalidOperationException(
-                    $"Some intrusive holders were not registered: {_unregisteredIntrusiveHolders.Count}");
+                    $"Some intrusive holders were not registered: [{string.Join(", ", _unregisteredIntrusiveHolders.Values)}]");
 
             _unregisteredIntrusiveHolders = null;
         }
 
-        foreach (HolderSet<T>.Named tag in _registrationTags.Values)
-            if (!tag.IsBound)
-                throw new InvalidOperationException($"Unbound tags in registry '{Location}'.");
+        ResourceLocation[] unboundTags = _registrationTags
+            .Where(pair => !pair.Value.IsBound)
+            .Select(pair => pair.Key.Location)
+            .OrderBy(location => location)
+            .ToArray();
+        if (unboundTags.Length > 0)
+            throw new InvalidOperationException(
+                $"Unbound tags in registry {Key}: [{string.Join(", ", unboundTags)}]");
 
         var frozenTags = new Dictionary<TagKey<T>, HolderSet<T>.Named>(_registrationTags);
         _boundTags = frozenTags;
@@ -379,9 +385,12 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         {
             foreach (Holder<T> holder in tagPair.Value)
             {
-                if (!holder.CanSerializeIn(this) || holder is not Holder<T>.Reference reference)
+                if (!holder.CanSerializeIn(this))
                     throw new InvalidOperationException(
-                        $"Tag '{tagPair.Key}' contains a holder not owned by registry '{Location}'.");
+                        $"Can't create named set {tagPair.Key} containing value {holder} from outside registry {this}");
+                if (holder is not Holder<T>.Reference reference)
+                    throw new InvalidOperationException(
+                        $"Found direct holder {holder} value in tag {tagPair.Key}");
                 if (!tagsByHolder.TryGetValue(reference, out List<TagKey<T>>? holderTags))
                     throw new InvalidOperationException(
                         $"Tag '{tagPair.Key}' contains a reference not registered in '{Location}'.");

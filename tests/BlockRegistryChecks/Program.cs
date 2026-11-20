@@ -419,7 +419,12 @@ internal static class Program
             () => tag.Contains(registered),
             "Named holder membership must follow holder tag bindings and remain unavailable before freeze.");
         Require(!tag.Contains(Holder<Block>.Direct(value)), "A named holder set must not match direct holders.");
-        RequireThrows<InvalidOperationException>(() => registry.GetTag(tagKey), "Tag access must fail before registry freeze.");
+        InvalidOperationException unboundTagLookupException = Capture<InvalidOperationException>(
+            () => registry.GetTag(tagKey),
+            "Tag access must fail before registry freeze.");
+        Require(
+            unboundTagLookupException.Message == $"Tags not bound, trying to access {tagKey}",
+            "MappedRegistry.get(tag) must preserve the vanilla unbound tag lookup message.");
 
         registry.Freeze();
         var selectiveSerializationContext = new SelectiveHolderOwner<Block>(registry);
@@ -631,9 +636,15 @@ internal static class Program
             "MappedRegistry tag registration and binding must preserve TagKeys without adding a registry-identity validation.");
 
         var invalidRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:invalid_registry"));
-        invalidRegistry.CreateRegistrationLookup().GetOrThrow(
-            new RegistryKey<Block>(invalidRegistry.Location, ResourceLocation.Parse("asteria:never_registered")));
-        RequireThrows<InvalidOperationException>(invalidRegistry.Freeze, "Freeze must reject unbound key placeholders.");
+        ResourceLocation unboundEntryLocation = ResourceLocation.Parse("asteria:never_registered");
+        RegistryKey<Block> unboundEntryKey = new(invalidRegistry.Location, unboundEntryLocation);
+        invalidRegistry.CreateRegistrationLookup().GetOrThrow(unboundEntryKey);
+        InvalidOperationException unboundValuesException = Capture<InvalidOperationException>(
+            invalidRegistry.Freeze,
+            "Freeze must reject unbound key placeholders.");
+        Require(
+            unboundValuesException.Message == $"Unbound values in registry {invalidRegistry.Key}: [{unboundEntryLocation}]",
+            "MappedRegistry.freeze must sort and list unbound entry identifiers in its vanilla diagnostic.");
 
         var invalidTagRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:invalid_tag_registry"));
         TagKey<Block> invalidTagKey = new(
@@ -648,9 +659,24 @@ internal static class Program
                 new Holder<Block>[] { Holder<Block>.Direct(value) })
         });
         Require(invalidNamedTag.IsBound, "MappedRegistry.bindTags binds contents without validating tag holders immediately.");
-        RequireThrows<InvalidOperationException>(
+        InvalidOperationException directHolderTagException = Capture<InvalidOperationException>(
             invalidTagRegistry.Freeze,
-            "MappedRegistry validates direct and foreign holders while refreshing tag membership during freeze.");
+            "MappedRegistry validates direct holders while refreshing tag membership during freeze.");
+        Require(
+            directHolderTagException.Message == $"Found direct holder {Holder<Block>.Direct(value)} value in tag {invalidTagKey}",
+            "MappedRegistry must distinguish direct holders from foreign holders in tag diagnostics.");
+
+        var unboundTagRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:unbound_tag_registry"));
+        TagKey<Block> unboundTagKey = new(
+            unboundTagRegistry.Location,
+            ResourceLocation.Parse("asteria:never_bound"));
+        unboundTagRegistry.CreateRegistrationLookup().GetOrThrow(unboundTagKey);
+        InvalidOperationException unboundTagsException = Capture<InvalidOperationException>(
+            unboundTagRegistry.Freeze,
+            "Freeze must reject unbound named tags.");
+        Require(
+            unboundTagsException.Message == $"Unbound tags in registry {unboundTagRegistry.Key}: [{unboundTagKey.Location}]",
+            "MappedRegistry.freeze must sort and list unbound tag identifiers in its vanilla diagnostic.");
 
         var intrusiveRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:intrusive_registry"), allowIntrusiveHolders: true);
         Block intrusiveValue = new TestBlockDefinition(BlockProperties.Of());
@@ -694,9 +720,12 @@ internal static class Program
         Require(
             !ReferenceEquals(secondIntrusiveHolder, intrusiveHolder),
             "MappedRegistry.createIntrusiveHolder must create a new holder when the registered value is no longer in the unregistered holder map.");
-        RequireThrows<InvalidOperationException>(
+        InvalidOperationException orphanIntrusiveHolderException = Capture<InvalidOperationException>(
             intrusiveRegistry.Freeze,
             "A second intrusive holder created after registration must remain unregistered and prevent freeze.");
+        Require(
+            orphanIntrusiveHolderException.Message == $"Some intrusive holders were not registered: [{secondIntrusiveHolder}]",
+            "MappedRegistry.freeze must list unregistered intrusive holders in its vanilla diagnostic.");
 
         var frozenIntrusiveRegistry = new Registry<Block>(
             ResourceLocation.Parse("asteria:frozen_intrusive_registry"),
