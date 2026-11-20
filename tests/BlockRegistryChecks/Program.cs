@@ -110,6 +110,7 @@ internal static class Program
         CheckLinearPaletteOverflow();
         CheckPalettedContainerInvalidIndexOrder();
         CheckPalettedContainer();
+        CheckPalettedContainerStrategyConfiguration();
         CheckPalettedContainerGrowthAndGlobalMode();
         CheckChunkSection();
         CheckFrozenRegistry();
@@ -1574,6 +1575,72 @@ internal static class Program
             GetAndSetUncheckedAt(palette, 11, alternate);
         }
         finally { palette.Release(); }
+    }
+
+    private static void CheckPalettedContainerStrategyConfiguration()
+    {
+        var blockStrategy =
+            PalettedContainerStrategy<BlockState>.CreateForBlockStates(BuiltInRegistries.BlockStates);
+        var biomeStrategy =
+            PalettedContainerStrategy<BlockState>.CreateForBiomes(BuiltInRegistries.BlockStates);
+
+        Require(
+            blockStrategy.BitsPerAxis == 4 && blockStrategy.EntryCount == 4096,
+            "The block-state palette strategy must use a 16-cubed section.");
+        Require(
+            biomeStrategy.BitsPerAxis == 2 && biomeStrategy.EntryCount == 64,
+            "The biome sizing strategy must use a 4-cubed container.");
+        Require(
+            blockStrategy.GetIndex(3, 5, 7) == 1395,
+            "Block-state coordinates must flatten with X least significant, then Z, then Y.");
+        Require(
+            biomeStrategy.GetIndex(1, 2, 3) == 61,
+            "Biome strategy coordinates must use its own two-bit axis width.");
+
+        Require(
+            blockStrategy.GetConfigurationForBitCount(0) ==
+                new PaletteConfiguration(PaletteMode.SingleValue, 0, 0, false),
+            "Zero block-state bits must select single-value storage.");
+        Require(
+            blockStrategy.GetConfigurationForBitCount(1) ==
+                new PaletteConfiguration(PaletteMode.Local, 4, 4, false) &&
+            blockStrategy.GetConfigurationForBitCount(4) ==
+                new PaletteConfiguration(PaletteMode.Local, 4, 4, false),
+            "Block-state palettes through four requested bits must use four-bit linear storage.");
+        Require(
+            blockStrategy.GetConfigurationForBitCount(5) ==
+                new PaletteConfiguration(PaletteMode.Local, 5, 5, false) &&
+            blockStrategy.GetConfigurationForBitCount(8) ==
+                new PaletteConfiguration(PaletteMode.Local, 8, 8, false),
+            "Block-state palettes from five through eight bits must use matching local storage widths.");
+        Require(
+            blockStrategy.GetConfigurationForBitCount(9) ==
+                new PaletteConfiguration(PaletteMode.Global, 3, 9, true),
+            "Block-state global palettes must separate the global map's resident width from the requested storage width.");
+
+        Require(
+            biomeStrategy.GetConfigurationForBitCount(1) ==
+                new PaletteConfiguration(PaletteMode.Local, 1, 1, false) &&
+            biomeStrategy.GetConfigurationForBitCount(3) ==
+                new PaletteConfiguration(PaletteMode.Local, 3, 3, false),
+            "Biome sizing must retain local widths from one through three bits.");
+        Require(
+            biomeStrategy.GetConfigurationForBitCount(4) ==
+                new PaletteConfiguration(PaletteMode.Global, 3, 4, true),
+            "Biome global sizing must retain the global map width separately from its requested storage width.");
+
+        Require(
+            blockStrategy.GetConfigurationForPaletteSize(17) ==
+                new PaletteConfiguration(PaletteMode.Local, 5, 5, false) &&
+            blockStrategy.GetConfigurationForPaletteSize(257) ==
+                new PaletteConfiguration(PaletteMode.Global, 3, 9, true),
+            "Palette-size configuration must use ceiling log2 at local and global transition boundaries.");
+        Require(
+            biomeStrategy.GetConfigurationForPaletteSize(8) ==
+                new PaletteConfiguration(PaletteMode.Local, 3, 3, false) &&
+            biomeStrategy.GetConfigurationForPaletteSize(9) ==
+                new PaletteConfiguration(PaletteMode.Global, 3, 4, true),
+            "Biome palette-size configuration must transition after eight values.");
     }
 
     private static void CheckPalettedContainerGrowthAndGlobalMode()
