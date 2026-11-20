@@ -10,6 +10,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 
 - `Registry<T>` follows `MappedRegistry<T>`: location, registry-key, value-identity, numeric-ID, and holder indexes share stable `Holder.Reference<T>` instances.
 - `Count`/registry size includes standalone key placeholders. Numeric ID lookup remains separate from key lookup.
+- `AsHolderIdMap` exposes registry holders through the vanilla `IdMap<Holder<T>>` view defined by the `Registry` interface.
 - Registration records `RegistrationInfo` and aggregates `Lifecycle`; ordinary registration uses the built-in stable metadata.
 - Registry freezing binds values, rejects unbound standalone references and unregistered intrusive holders, verifies tag binding, and publishes the bound tag set.
 - Intrusive registries require an intrusive holder before registration. A block creates its intrusive holder before its state definition, as vanilla `Block` does.
