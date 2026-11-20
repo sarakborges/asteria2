@@ -27,12 +27,14 @@ public readonly record struct ResourceLocation : IComparable<ResourceLocation>
 
         if (!IsValidNamespace(@namespace))
         {
-            throw new ArgumentException($"Invalid resource namespace '{@namespace}'.", nameof(@namespace));
+            throw new ArgumentException(
+                $"Non [a-z0-9_.-] character in namespace of identifier: {@namespace}:{path}");
         }
 
         if (!IsValidPath(path))
         {
-            throw new ArgumentException($"Invalid resource path '{path}'.", nameof(path));
+            throw new ArgumentException(
+                $"Non [a-z0-9/._-] character in path of location: {@namespace}:{path}");
         }
 
         Namespace = @namespace;
