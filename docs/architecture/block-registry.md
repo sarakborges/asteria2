@@ -28,7 +28,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 ## Identifiers and resource keys
 
 - `ResourceLocation` follows vanilla identifier parsing, custom separators, namespace defaults, validation, ordering, path transformations, and language/debug naming helpers. `ResolveAgainst` also normalizes and guards the resolved path against escaping its root.
-- `RegistryKey<T>` and `TagKey<T>` are created through their vanilla factories rather than public constructors. `RegistryKey<T>` exposes `Create`/`CreateRegistryKey`, registry matching, typed casts, and dependent resource-key creation. Its value equality preserves the observable contract of vanilla's weakly interned keys. `TagKey<T>` retains the full registry key, compares that key for registry membership, and supports typed casts.
+- `RegistryKey<T>` has a private constructor and exposes the vanilla `Create`/`CreateRegistryKey` factories, registry matching, typed casts, and dependent resource-key creation. Its value equality preserves the observable contract of vanilla's weakly interned keys. `TagKey<T>` is a record with a public deprecated canonical constructor and a preferred `Create` factory; it retains the full registry key, compares that key for registry membership, and supports typed casts.
 
 ## Blocks and block states
 
