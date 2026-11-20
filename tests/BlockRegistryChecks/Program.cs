@@ -402,6 +402,9 @@ internal static class Program
         var missingDefault = new DefaultedRegistry<Block>(
             ResourceLocation.Parse("asteria:missing_default_registry"),
             ResourceLocation.Parse("asteria:not_registered"));
+        Require(
+            missingDefault.GetKey(new Block(BlockProperties.Default)) == missingDefault.DefaultKey,
+            "DefaultedMappedRegistry.getKey must return defaultKey even before its default holder is registered.");
         missingDefault.Freeze();
         RequireThrows<InvalidOperationException>(
             () => missingDefault.GetValue(missingId),
