@@ -51,14 +51,6 @@ public class Block
 
     protected void RegisterDefaultState(BlockState state)
     {
-        ArgumentNullException.ThrowIfNull(state);
-        if (!ReferenceEquals(state.Block, this))
-        {
-            throw new ArgumentException(
-                "The default state must belong to this block.",
-                nameof(state));
-        }
-
         DefaultState = state;
     }
 

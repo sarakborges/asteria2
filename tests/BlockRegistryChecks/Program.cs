@@ -29,7 +29,10 @@ internal static class Program
                 configureState: configureState)
         {
         }
+
+        public void SetDefaultState(BlockState state) => RegisterDefaultState(state);
     }
+
     private enum TestDeclaredOrder { Z = 2, X = 0, Y = 1 }
 
     private sealed class IdentityTestValue
@@ -556,6 +559,12 @@ internal static class Program
     {
         StateDefinition definition = Blocks.TEST_BLOCK.StateDefinition;
         Require(definition.PossibleStates.Count == 6, "powered(2) x stage(3) must create six states.");
+
+        var alternateDefaultOwner = new TestBlockDefinition(BlockProperties.Of());
+        alternateDefaultOwner.SetDefaultState(Blocks.AIR.DefaultState);
+        Require(
+            ReferenceEquals(alternateDefaultOwner.DefaultState, Blocks.AIR.DefaultState),
+            "registerDefaultState must store the supplied state directly, matching vanilla.");
         Require(
             definition.Properties.Select(property => property.Name).SequenceEqual(new[] { "powered", "stage" }),
             "State properties must be sorted by name.");
