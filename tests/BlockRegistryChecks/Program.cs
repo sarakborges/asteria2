@@ -164,6 +164,11 @@ internal static class Program
         HolderGetter<Block> lookup = registry.CreateRegistrationLookup();
 
         Holder<Block>.Reference placeholder = lookup.GetOrThrow(placeholderKey);
+        Require(
+            ReferenceEquals(lookup.Get(placeholderKey), placeholder),
+            "HolderGetter.get must return the same standalone placeholder as getOrThrow.");
+        Require(lookup.CanSerializeIn(registry), "A registration lookup must serialize in its owning registry context.");
+        Require(!lookup.CanSerializeIn(new Registry<Block>(ResourceLocation.Parse("asteria:foreign_owner"))), "A registration lookup must reject serialization in a foreign owner context.");
         Require(!registry.IsEmpty(), "A standalone key placeholder makes the registry non-empty.");
         Require(registry.GetAny() is null, "Standalone key placeholders do not create registered numeric IDs.");
         Require(registry.RegistryKeySet().Contains(placeholderKey), "registryKeySet must include standalone key placeholders.");
@@ -185,6 +190,9 @@ internal static class Program
         Require(ReferenceEquals(placeholderEntry, placeholder), "Registering a placeholder key must bind the existing holder.");
 
         HolderSet<Block>.Named tag = lookup.GetOrThrow(tagKey);
+        Require(
+            ReferenceEquals(lookup.Get(tagKey), tag),
+            "HolderGetter.get(tag) must return the same named placeholder as getOrThrow(tag).");
         Require(!tag.IsBound, "A registration-time tag starts unbound.");
         RequireThrows<InvalidOperationException>(
             () => registered.Is(tagKey),
@@ -199,6 +207,9 @@ internal static class Program
                 new Holder<Block>[] { registered, registered })
         });
         Require(tag.IsBound, "Binding tags must bind the named holder set.");
+        Require(
+            ReferenceEquals(lookup.GetRandomElementOf(tagKey, new Random(0)), registered),
+            "HolderGetter.getRandomElementOf must choose from the resolved named holder set.");
         Require(tag.Count == 2, "Named holder sets must preserve the supplied contents, including duplicates.");
         RequireThrows<InvalidOperationException>(
             () => registered.Is(tagKey),

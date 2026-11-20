@@ -385,9 +385,14 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
     {
         private readonly Registry<T> _registry;
         public RegistrationLookup(Registry<T> registry) => _registry = registry;
-        public Holder<T>.Reference GetOrThrow(RegistryKey<T> key) =>
+
+        public Holder<T>.Reference? Get(RegistryKey<T> key) =>
             _registry.GetOrCreateHolderOrThrow(key);
-        public HolderSet<T>.Named GetOrThrow(TagKey<T> tag) =>
+
+        public HolderSet<T>.Named? Get(TagKey<T> tag) =>
             _registry.GetOrCreateTagForRegistration(tag);
+
+        public bool CanSerializeIn(HolderOwner<T> owner) =>
+            _registry.CanSerializeIn(owner);
     }
 }
