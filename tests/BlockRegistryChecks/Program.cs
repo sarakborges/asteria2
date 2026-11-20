@@ -50,6 +50,15 @@ internal static class Program
         public void BindValueFromSubclass(Block value) => BindValue(value);
     }
 
+    private sealed class DelegatingRegistryLookup<T> : HolderLookup<T>.RegistryLookup.Delegate
+        where T : class
+    {
+        public HolderLookup<T>.RegistryLookup Parent { get; }
+
+        public DelegatingRegistryLookup(HolderLookup<T>.RegistryLookup parent) =>
+            Parent = parent;
+    }
+
     private sealed class TestBlockDefinition : Block
     {
         private StateDefinitionBuilder? _capturedBuilder;
@@ -763,6 +772,17 @@ internal static class Program
             "HolderLookup must resolve registered element and tag holders.");
         HolderLookup<Block>.RegistryLookup filteredLookup =
             lookupView.FilterElements(block => ReferenceEquals(block, value));
+        HolderLookup<Block>.RegistryLookup delegatedLookup =
+            new DelegatingRegistryLookup<Block>(lookupView);
+        Require(
+            delegatedLookup.Key == lookupView.Key &&
+            ReferenceEquals(delegatedLookup.RegistryLifecycle, lookupView.RegistryLifecycle) &&
+            ReferenceEquals(delegatedLookup.Get(entryKey), registered) &&
+            ReferenceEquals(delegatedLookup.Get(tagKey), tag) &&
+            delegatedLookup.ListElements().SequenceEqual(lookupView.ListElements()) &&
+            delegatedLookup.ListTags().SequenceEqual(lookupView.ListTags()) &&
+            delegatedLookup.CanSerializeIn(registry),
+            "RegistryLookup.Delegate must forward registry metadata, element/tag lookup, enumeration, and serialization ownership to its parent.");
         Require(
             filteredLookup.ListElements().SequenceEqual(new[] { registered }) &&
             ReferenceEquals(filteredLookup.Get(entryKey), registered) &&

@@ -24,6 +24,21 @@ public interface HolderLookup<T> : HolderGetter<T> where T : class
             ArgumentNullException.ThrowIfNull(filter);
             return new FilteredHolderLookup<T>(this, filter);
         }
+
+        /// <summary>A registry lookup decorator that forwards unspecified operations to its parent.</summary>
+        public interface Delegate : RegistryLookup
+        {
+            RegistryLookup Parent { get; }
+
+            new RegistryKey<Registry<T>> Key => Parent.Key;
+            new Lifecycle RegistryLifecycle => Parent.RegistryLifecycle;
+            new RegistryKey<IRegistry> RegistryKey => ((IRegistryLookup)Parent).RegistryKey;
+            new Holder<T>.Reference? Get(RegistryKey<T> key) => Parent.Get(key);
+            new HolderSet<T>.Named? Get(TagKey<T> tag) => Parent.Get(tag);
+            new IEnumerable<Holder<T>.Reference> ListElements() => Parent.ListElements();
+            new IEnumerable<HolderSet<T>.Named> ListTags() => Parent.ListTags();
+            new bool CanSerializeIn(HolderOwner<T> owner) => Parent.CanSerializeIn(owner);
+        }
     }
 }
 
@@ -31,10 +46,12 @@ public interface HolderLookup<T> : HolderGetter<T> where T : class
 /// Filtered registry lookup. Element enumeration and direct key lookup are filtered;
 /// named tags continue to come from the parent lookup, matching vanilla Delegate behavior.
 /// </summary>
-internal sealed class FilteredHolderLookup<T> : HolderLookup<T>.RegistryLookup where T : class
+internal sealed class FilteredHolderLookup<T> : HolderLookup<T>.RegistryLookup.Delegate where T : class
 {
     private readonly HolderLookup<T>.RegistryLookup _parent;
     private readonly Predicate<T> _filter;
+
+    public HolderLookup<T>.RegistryLookup Parent => _parent;
 
     public FilteredHolderLookup(
         HolderLookup<T>.RegistryLookup parent,
