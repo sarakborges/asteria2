@@ -52,13 +52,6 @@ public sealed class BlockStateIdMap : IReadOnlyCollection<BlockState>, IIdMap<Bl
         }
     }
 
-    internal int Register(BlockState state)
-    {
-        int id = _nextId;
-        Add(state);
-        return id;
-    }
-
     public int GetId(BlockState? state) =>
         state is not null && _ids.TryGetValue(state, out int id) ? id : -1;
 
