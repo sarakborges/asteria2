@@ -8,7 +8,9 @@ This stage covers only systems already introduced in Asteria: registries and hol
 
 ## Registry and holder model
 
+- `BuiltInRegistries.Root` is the root registry of registries. It owns the `asteria:root` identity; each child registry is registered there under its own identifier.
 - `Registry<T>` follows `MappedRegistry<T>`: location, registry-key, value-identity, numeric-ID, and holder indexes share stable `Holder.Reference<T>` instances.
+- The root registry freezes first. Each child registry then binds all bootstrapped tags to empty, freezes, and validates its default entry when it is a `DefaultedRegistry`.
 - `Count`/registry size includes standalone key placeholders. Numeric ID lookup remains separate from key lookup.
 - `AsHolderIdMap` exposes registry holders through the vanilla `IdMap<Holder<T>>` view defined by the `Registry` interface.
 - Registration records `RegistrationInfo` and aggregates `Lifecycle`; ordinary registration uses the built-in stable metadata.
