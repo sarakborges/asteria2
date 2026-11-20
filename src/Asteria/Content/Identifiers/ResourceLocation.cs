@@ -10,15 +10,15 @@ public readonly record struct ResourceLocation
     public string Path { get; }
 
     public bool IsValid =>
-        !string.IsNullOrEmpty(Namespace) &&
-        !string.IsNullOrEmpty(Path) &&
+        Namespace is not null &&
+        Path is not null &&
         IsValidNamespace(Namespace) &&
         IsValidPath(Path);
 
     public ResourceLocation(string @namespace, string path)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(@namespace);
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(@namespace);
+        ArgumentNullException.ThrowIfNull(path);
 
         if (!IsValidNamespace(@namespace))
         {
@@ -53,7 +53,7 @@ public readonly record struct ResourceLocation
     {
         location = default;
 
-        if (string.IsNullOrWhiteSpace(value))
+        if (value is null)
         {
             return false;
         }

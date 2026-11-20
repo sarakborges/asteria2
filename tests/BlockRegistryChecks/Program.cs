@@ -109,6 +109,21 @@ internal static class Program
         Require(
             !ResourceLocation.TryParse("..:stone", out _),
             "Identifier namespaces must reject the reserved '..' namespace.");
+        Require(
+            ResourceLocation.Parse("").Namespace == "minecraft" &&
+            ResourceLocation.Parse("").Path == "",
+            "Identifier.parse must preserve the vanilla-valid empty path.");
+        Require(
+            ResourceLocation.Parse("asteria:").Path == "" &&
+            ResourceLocation.Parse(":").Namespace == "minecraft",
+            "Identifier.parse must accept empty paths with explicit and default namespaces.");
+        Require(
+            ResourceLocation.TryParse("", out ResourceLocation emptyIdentifier) &&
+            emptyIdentifier == ResourceLocation.Parse(""),
+            "Identifier.tryParse must accept the empty identifier because an empty path is valid in vanilla.");
+        Require(
+            ResourceLocation.FromNamespaceAndPath("", "").IsValid,
+            "Identifier namespace and path validation must permit empty strings when they contain no invalid characters.");
     }
 
     private static void CheckDefaultedBlockRegistry()
