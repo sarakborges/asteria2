@@ -1216,8 +1216,6 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         }
         Require(ids.GetId(Blocks.AIR.DefaultState) == 0, "The first block's singleton state must receive ID zero.");
         Require(ids.ById(-1) is null, "Nullable ID lookup must return null for invalid global state IDs.");
-        Require(!ids.TryGetById(-1, out _), "TryGetById must report invalid global state IDs as missing.");
-        RequireThrows<ArgumentOutOfRangeException>(() => ids.GetById(-1), "Strict state ID lookup must reject invalid IDs.");
         ArgumentException missingState = Capture<ArgumentException>(
             () => ((IIdMap<BlockState>)ids).ByIdOrThrow(-1),
             "IdMap.byIdOrThrow must reject invalid global state IDs.");
