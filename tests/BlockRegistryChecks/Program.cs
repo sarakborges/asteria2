@@ -773,6 +773,84 @@ internal static class Program
             filteredLookup.ListTags().SequenceEqual(lookupView.ListTags()),
             "HolderLookup.filterElements must preserve the parent tag view.");
 
+        var providerRegistry = new Registry<IdentityTestValue>(
+            ResourceLocation.Parse("asteria:provider_identity_registry"),
+            initialLifecycle: Lifecycle.Experimental());
+        var providerValue = new IdentityTestValue(73);
+        RegistryKey<IdentityTestValue> providerValueKey = CreateEntryKey<IdentityTestValue>(
+            providerRegistry.Location,
+            ResourceLocation.Parse("asteria:provider_value"));
+        Holder<IdentityTestValue>.Reference providerValueHolder =
+            providerRegistry.Register(providerValueKey, providerValue, RegistrationInfo.BuiltIn);
+        providerRegistry.Freeze();
+
+        HolderLookupProvider provider = HolderLookupProvider.Create(new IRegistryLookup[]
+        {
+            filteredLookup,
+            providerRegistry
+        });
+        RegistryKey<IRegistry> blockRegistryIdentity =
+            ((IRegistryLookup)lookupView).RegistryKey;
+        RegistryKey<IRegistry> providerRegistryIdentity =
+            ((IRegistryLookup)providerRegistry).RegistryKey;
+        Require(
+            provider.ListRegistryKeys().SequenceEqual(new[]
+            {
+                blockRegistryIdentity,
+                providerRegistryIdentity
+            }) &&
+            provider.ListRegistries().SequenceEqual(new IRegistryLookup[]
+            {
+                filteredLookup,
+                providerRegistry
+            }),
+            "HolderLookup.Provider must enumerate its registry keys and lookups in provider order.");
+        Require(
+            ReferenceEquals(provider.Lookup<Block>(registry.Key), filteredLookup) &&
+            ReferenceEquals(((HolderGetterProvider)provider).Lookup<Block>(registry.Key), filteredLookup) &&
+            ReferenceEquals(provider.Lookup<IdentityTestValue>(providerRegistry.Key), providerRegistry),
+            "HolderLookup.Provider and HolderGetter.Provider must resolve typed registry lookups.");
+        Require(
+            ReferenceEquals(provider.Get(entryKey), registered) &&
+            ReferenceEquals(provider.Get(tagKey), tag) &&
+            ReferenceEquals(provider.Get(providerValueKey), providerValueHolder),
+            "HolderGetter.Provider must resolve element and tag holders across registries.");
+        Require(
+            provider.Get(CreateEntryKey<Block>(registryId, ResourceLocation.Parse("asteria:provider_missing"))) is null,
+            "HolderGetter.Provider.get must return an empty result for a missing element.");
+        RegistryKey<Block> providerMissingKey = CreateEntryKey<Block>(
+            registryId,
+            ResourceLocation.Parse("asteria:provider_missing"));
+        InvalidOperationException providerMissingElement = Capture<InvalidOperationException>(
+            () => provider.GetOrThrow(providerMissingKey),
+            "HolderGetter.Provider.getOrThrow must reject missing global elements.");
+        Require(
+            providerMissingElement.Message == $"Missing element {providerMissingKey}",
+            "HolderGetter.Provider.getOrThrow(element) must preserve the missing-element diagnostic.");
+        TagKey<Block> providerMissingTagKey = TagKey<Block>.Create(registry.Key, ResourceLocation.Parse("asteria:provider_missing_tag"));
+        InvalidOperationException providerMissingTag = Capture<InvalidOperationException>(
+            () => provider.GetOrThrow(providerMissingTagKey),
+            "HolderGetter.Provider.getOrThrow must reject missing global tags.");
+        Require(
+            providerMissingTag.Message == $"Missing tag {providerMissingTagKey}",
+            "HolderGetter.Provider.getOrThrow(tag) must preserve the missing-tag diagnostic.");
+        RegistryKey<Registry<Block>> foreignRootProviderKey =
+            CreateRegistryKeyInRoot<Block>(ResourceLocation.Parse("asteria:provider_foreign_root"), registryId);
+        Require(
+            provider.Lookup<Block>(foreignRootProviderKey) is null,
+            "HolderLookup.Provider lookup must include the complete registry key identity.");
+        RegistryKey<Registry<Block>> missingRegistryKey =
+            RegistryKey<Registry<Block>>.CreateRegistryKey(ResourceLocation.Parse("asteria:provider_missing_registry"));
+        InvalidOperationException missingProviderRegistry = Capture<InvalidOperationException>(
+            () => provider.LookupOrThrow<Block>(missingRegistryKey),
+            "HolderLookup.Provider.lookupOrThrow must reject a missing registry.");
+        Require(
+            missingProviderRegistry.Message == $"Registry {missingRegistryKey.Location} not found",
+            "HolderLookup.Provider.lookupOrThrow must preserve the missing-registry diagnostic.");
+        Require(
+            ReferenceEquals(provider.AllRegistriesLifecycle(), Lifecycle.Experimental()),
+            "HolderLookup.Provider must aggregate lifecycle metadata across all included registries.");
+
 IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(holderIdMap.Count == registry.Count, "Registry.asHolderIdMap must report the registry size.");
         Require(

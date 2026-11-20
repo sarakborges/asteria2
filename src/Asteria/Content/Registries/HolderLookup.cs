@@ -15,7 +15,7 @@ public interface HolderLookup<T> : HolderGetter<T> where T : class
         ListTags().Select(tag => tag.Key);
 
     /// <summary>A read-only lookup tied to one registry and its lifecycle metadata.</summary>
-    public interface RegistryLookup : HolderLookup<T>
+    public interface RegistryLookup : HolderLookup<T>, IRegistryLookup
     {
         RegistryKey<Registry<T>> Key { get; }
         Lifecycle RegistryLifecycle { get; }
@@ -47,6 +47,9 @@ internal sealed class FilteredHolderLookup<T> : HolderLookup<T>.RegistryLookup w
 
     public RegistryKey<Registry<T>> Key => _parent.Key;
     public Lifecycle RegistryLifecycle => _parent.RegistryLifecycle;
+
+    RegistryKey<IRegistry> IRegistryLookup.RegistryKey =>
+        ((IRegistryLookup)_parent).RegistryKey;
 
     public Holder<T>.Reference? Get(RegistryKey<T> key)
     {

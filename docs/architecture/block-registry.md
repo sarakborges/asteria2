@@ -23,7 +23,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 - `HolderGetter<T>` exposes optional and throwing key/tag lookup plus random element selection. Registration lookups create stable standalone placeholders.
 - `HolderLookup<T>` and `RegistryLookup` expose element/tag enumeration, registry key and lifecycle metadata, and vanilla-style element filtering.
 - `DefaultedRegistry<T>` applies fallback semantics only to the vanilla defaulted lookup paths; exact holder and optional lookups remain exact.
-- Tag reload uses a pending replacement snapshot. The cross-registry `HolderGetter.Provider` / `HolderLookup.Provider`, complete tag-loader pipeline, and serialization context are not yet introduced.
+- `HolderGetterProvider` and `HolderLookupProvider` provide typed cross-registry lookup, global element/tag retrieval, registry enumeration, and lifecycle aggregation. The complete tag-loader pipeline and codec serialization context remain deferred.
 
 ## Identifiers and resource keys
 

@@ -24,6 +24,11 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
 
     public ResourceLocation Location { get; }
     public RegistryKey<Registry<T>> Key { get; }
+
+    RegistryKey<IRegistry> IRegistryLookup.RegistryKey =>
+        RegistryKey<IRegistry>.Create(
+            RegistryKey<IRegistry>.CreateRegistryKey(Key.RegistryLocation),
+            Key.Location);
     public int Count => _byKey.Count;
     public bool IsFrozen { get; protected set; }
     public Lifecycle RegistryLifecycle { get; private set; }
