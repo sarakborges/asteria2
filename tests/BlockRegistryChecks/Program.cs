@@ -515,6 +515,10 @@ internal static class Program
         RegistryKey<Registry<Block>> foreignRootRegistryKey =
             CreateRegistryKeyInRoot<Block>(ResourceLocation.Parse("asteria:foreign_root"), registryId);
         Require(
+            entryKey.IsFor(foreignRootRegistryKey) &&
+            entryKey.Cast(foreignRootRegistryKey) is RegistryKey<Block>,
+            "ResourceKey.isFor must compare only the registry identifier, not the registry root.");
+        Require(
             !tagKey.IsFor(foreignRootRegistryKey) &&
             tagKey.Cast(CreateRegistryKeyInRoot<string>(foreignRootRegistryKey.RegistryLocation, foreignRootRegistryKey.Location)) is null,
             "TagKey.isFor and cast must reject matching registry identifiers under a different root key.");
