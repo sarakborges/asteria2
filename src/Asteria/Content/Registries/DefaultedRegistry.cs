@@ -40,9 +40,6 @@ public sealed class DefaultedRegistry<T> : Registry<T> where T : class
         DefaultKey = defaultKey;
     }
 
-    public override T Get(ResourceLocation location) =>
-        GetValue(location) ?? GetDefaultHolder().Value;
-
     public override T GetValue(ResourceLocation location) =>
         base.GetValue(location) ?? GetDefaultHolder().Value;
 
