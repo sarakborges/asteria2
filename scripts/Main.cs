@@ -63,7 +63,7 @@ public partial class Main : Node3D
         if (!rejectedInvalidValue)
             throw new InvalidOperationException("Invalid block-state values must be rejected.");
 
-        Block missingBlockFallback = BuiltInRegistries.Block.Get(missingBlockId);
+        Block missingBlockFallback = BuiltInRegistries.Block.GetValue(missingBlockId);
         if (!ReferenceEquals(missingBlockFallback, Blocks.AIR))
             throw new InvalidOperationException("Unknown block IDs must resolve to the configured air block.");
 
