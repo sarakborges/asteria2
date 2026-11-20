@@ -101,7 +101,9 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         if (_unregisteredIntrusiveHolders.TryGetValue(value, out Holder<T>.Reference? existing))
             return existing;
 
+#pragma warning disable CS0618
         Holder<T>.Reference holder = Holder<T>.Reference.CreateIntrusive(this, value);
+#pragma warning restore CS0618
         _unregisteredIntrusiveHolders.Add(value, holder);
         return holder;
     }

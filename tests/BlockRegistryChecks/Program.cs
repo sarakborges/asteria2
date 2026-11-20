@@ -40,6 +40,14 @@ internal static class Program
         }
     }
 
+    private sealed class ExtensibleBlockReference : Holder<Block>.Reference
+    {
+        public ExtensibleBlockReference(HolderOwner<Block> owner, RegistryKey<Block> key)
+            : base(Type.StandAlone, owner, key, null)
+        {
+        }
+    }
+
     private sealed class TestBlockDefinition : Block
     {
         private StateDefinitionBuilder? _capturedBuilder;
@@ -543,6 +551,35 @@ internal static class Program
         var entryKey = RegistryKey<Block>.Create(rootRegistryKey, entryId);
         var placeholderKey = RegistryKey<Block>.Create(rootRegistryKey, placeholderId);
         var tagKey = TagKey<Block>.Create(rootRegistryKey, tagId);
+        Type referenceType = typeof(Holder<Block>.Reference);
+        System.Reflection.ConstructorInfo referenceConstructor = referenceType
+            .GetConstructors(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            .Single();
+        System.Reflection.MethodInfo standaloneFactory = referenceType.GetMethod(
+            nameof(Holder<Block>.Reference.CreateStandAlone),
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            ?? throw new InvalidOperationException("Holder.Reference.createStandAlone is missing.");
+        System.Reflection.MethodInfo intrusiveFactory = referenceType.GetMethod(
+            nameof(Holder<Block>.Reference.CreateIntrusive),
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            ?? throw new InvalidOperationException("Holder.Reference.createIntrusive is missing.");
+        Require(
+            !referenceType.IsSealed && referenceConstructor.IsFamily &&
+            standaloneFactory.IsPublic && intrusiveFactory.IsPublic &&
+            intrusiveFactory.GetCustomAttributes(typeof(ObsoleteAttribute), inherit: false).Length > 0,
+            "Holder.Reference must remain extensible with a protected constructor and public standalone/intrusive factories.");
+        ExtensibleBlockReference extensibleReference = new(registry, entryKey);
+        Holder<Block>.Reference factoryStandaloneReference =
+            Holder<Block>.Reference.CreateStandAlone(registry, entryKey);
+#pragma warning disable CS0618
+        Holder<Block>.Reference factoryIntrusiveReference =
+            Holder<Block>.Reference.CreateIntrusive(registry, new TestBlockDefinition(BlockProperties.Of()));
+#pragma warning restore CS0618
+        Require(
+            !extensibleReference.IsIntrusive && !extensibleReference.IsBound &&
+            !factoryStandaloneReference.IsIntrusive && !factoryStandaloneReference.IsBound &&
+            factoryIntrusiveReference.IsIntrusive && !factoryIntrusiveReference.IsBound,
+            "Holder.Reference factories and subclasses must preserve standalone/intrusive initial binding state.");
         System.Reflection.ConstructorInfo tagKeyConstructor =
             typeof(TagKey<Block>).GetConstructor(new[]
             {

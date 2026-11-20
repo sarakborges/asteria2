@@ -101,20 +101,22 @@ public abstract class Holder<T> where T : class
         public override string ToString() => $"Direct{{{_value}}}";
     }
 
-    public sealed class Reference : Holder<T>
+    public class Reference : Holder<T>
     {
+        protected enum Type { StandAlone, Intrusive }
+
         private readonly HolderOwner<T> _owner;
-        private readonly bool _intrusive;
+        private readonly Type _type;
         private RegistryKey<T>? _key;
         private T? _value;
         private IReadOnlyList<TagKey<T>>? _tags;
 
-        internal Reference(HolderOwner<T> owner, RegistryKey<T>? key, T? value, bool intrusive)
+        protected Reference(Type type, HolderOwner<T> owner, RegistryKey<T>? key, T? value)
         {
             _owner = owner ?? throw new ArgumentNullException(nameof(owner));
+            _type = type;
             _key = key;
             _value = value;
-            _intrusive = intrusive;
         }
 
         public override T Value =>
@@ -125,7 +127,7 @@ public abstract class Holder<T> where T : class
         public override RegistryKey<T>? KeyOrNull => _key;
         public RegistryKey<T> Key => _key ?? throw new InvalidOperationException(
             $"Trying to access unbound value '{_value?.ToString() ?? "null"}' from registry {_owner}");
-        public bool IsIntrusive => _intrusive;
+        public bool IsIntrusive => _type == Type.Intrusive;
         public override IEnumerable<TagKey<T>> Tags =>
             _tags ?? throw new InvalidOperationException("Tags not bound");
 
@@ -158,10 +160,12 @@ public abstract class Holder<T> where T : class
             return owner.CanSerializeIn(_owner);
         }
 
-        internal static Reference CreateStandAlone(HolderOwner<T> owner, RegistryKey<T> key) =>
-            new(owner, key, null, false);
-        internal static Reference CreateIntrusive(HolderOwner<T> owner, T value) =>
-            new(owner, null, value, true);
+        public static Reference CreateStandAlone(HolderOwner<T> owner, RegistryKey<T> key) =>
+            new(Type.StandAlone, owner, key, null);
+
+        [Obsolete("Use Registry<T>.CreateIntrusiveHolder instead.")]
+        public static Reference CreateIntrusive(HolderOwner<T> owner, T? value) =>
+            new(Type.Intrusive, owner, null, value);
 
         internal void BindKey(RegistryKey<T> key)
         {
@@ -173,7 +177,7 @@ public abstract class Holder<T> where T : class
         internal void BindValue(T value)
         {
             ArgumentNullException.ThrowIfNull(value);
-            if (_intrusive && !ReferenceEquals(_value, value))
+            if (_type == Type.Intrusive && !ReferenceEquals(_value, value))
             {
                 throw new InvalidOperationException(
                     $"Can't change holder {_key?.ToString() ?? "null"} value: existing={_value?.ToString() ?? "null"}, new={value}");
