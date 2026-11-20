@@ -7,7 +7,7 @@ namespace Asteria.Content.Storage;
 /// Identity-keyed incremental value-to-ID map equivalent to
 /// Minecraft's CrudeIncrementalIntIdentityHashBiMap.
 /// </summary>
-public sealed class CrudeIncrementalIntIdentityHashBiMap<T> : IEnumerable<T> where T : class
+public sealed class CrudeIncrementalIntIdentityHashBiMap<T> : IIdMap<T> where T : class
 {
     private const float LoadFactor = 0.8f;
 
