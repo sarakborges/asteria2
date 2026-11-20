@@ -100,6 +100,7 @@ internal static class Program
         CheckGlobalStateIds();
         CheckPropertyImplementations();
         CheckPackedBitStorage();
+        CheckPackedBitStorageWidths();
         CheckZeroBitStorage();
         CheckThreadingDetector();
         CheckIdentityIdMap();
@@ -1150,6 +1151,69 @@ internal static class Program
             traversedValues[8] == 7 &&
             traversedValues.Where((_, index) => index != 8).All(value => value == 19),
             "GetAll must visit entries in index order and stop at the logical size, not padded word capacity.");
+    }
+
+    private static void CheckPackedBitStorageWidths()
+    {
+        for (int bits = 1; bits <= 32; bits++)
+        {
+            int valuesPerLong = 64 / bits;
+            int size = valuesPerLong * 2 + Math.Max(1, valuesPerLong / 3);
+            int maximumValue = bits == 32
+                ? int.MaxValue
+                : (int)((1UL << bits) - 1UL);
+            int[] expected = Enumerable.Range(0, size)
+                .Select(index => (index * 17 + bits * 11) & maximumValue)
+                .ToArray();
+
+            var storage = new PackedBitStorage(bits, size, expected);
+            Require(
+                storage.LongCount == (size + valuesPerLong - 1) / valuesPerLong,
+                $"Bit width {bits} must allocate the exact number of non-spanning words.");
+
+            for (int index = 0; index < size; index++)
+            {
+                Require(
+                    storage.Get(index) == expected[index],
+                    $"Bit width {bits} must round-trip initial values at index {index}.");
+            }
+
+            var traversed = new List<int>();
+            storage.GetAll(traversed.Add);
+            Require(
+                traversed.SequenceEqual(expected),
+                $"Bit width {bits} getAll must preserve logical order and ignore padded capacity.");
+
+            int[] unpacked = Enumerable.Repeat(-1, size + 2).ToArray();
+            storage.Unpack(unpacked);
+            Require(
+                unpacked.Take(size).SequenceEqual(expected) &&
+                unpacked[size] == -1 &&
+                unpacked[size + 1] == -1,
+                $"Bit width {bits} unpack must preserve the destination tail.");
+
+            int boundaryIndex = valuesPerLong - 1;
+            int nextWordIndex = valuesPerLong;
+            int previousBoundary = storage.GetAndSet(boundaryIndex, maximumValue);
+            Require(
+                previousBoundary == expected[boundaryIndex] &&
+                storage.Get(boundaryIndex) == maximumValue,
+                $"Bit width {bits} getAndSet must preserve the final entry of a word.");
+            storage.Set(nextWordIndex, maximumValue);
+            Require(
+                storage.Get(nextWordIndex) == maximumValue,
+                $"Bit width {bits} set must preserve the first entry of the next word.");
+
+            storage.Fill(maximumValue);
+            Require(
+                Enumerable.Range(0, size).All(index => storage.Get(index) == maximumValue),
+                $"Bit width {bits} fill must cover complete and partial words.");
+
+            PackedBitStorage copy = storage.Copy();
+            Require(
+                Enumerable.Range(0, size).All(index => copy.Get(index) == maximumValue),
+                $"Bit width {bits} copy must preserve every logical entry.");
+        }
     }
 
     private static void CheckZeroBitStorage()
