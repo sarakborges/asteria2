@@ -821,7 +821,8 @@ internal static class Program
             missingValueException.Message == $"Missing key in {registry.Key}: {missingKey}",
             "Registry.getValueOrThrow must use the vanilla missing-key error message.");
 
-        HolderLookup<Block>.RegistryLookup filteredLookup = registry.FilterElements(_ => false);
+        HolderLookup<Block>.RegistryLookup filteredLookup =
+            ((HolderLookup<Block>.RegistryLookup)registry).FilterElements(_ => false);
         InvalidOperationException missingElementException = Capture<InvalidOperationException>(
             () => filteredLookup.GetOrThrow(missingKey),
             "HolderGetter.getOrThrow must reject a missing filtered entry.");
