@@ -149,9 +149,11 @@ internal static class Program
 
         RegistryKey<IRegistry> blockRegistryKey =
             new(BuiltInRegistries.Root.Location, BuiltInRegistries.Block.Location);
+        Holder<IRegistry>.Reference? blockRegistryHolder =
+            BuiltInRegistries.Root.GetHolder(blockRegistryKey);
         Require(
-            ReferenceEquals(BuiltInRegistries.Root.GetValue(blockRegistryKey), BuiltInRegistries.Block),
-            "The root registry must resolve its block registry entry.");
+            blockRegistryHolder is not null && !blockRegistryHolder.IsBound,
+            "The root registry must create an unbound holder for each child registry before bootstrap.");
         Require(
             BuiltInRegistries.Block.Key.RegistryLocation == BuiltInRegistries.RootLocation,
             "Child registry keys must be rooted in the Asteria root registry.");
