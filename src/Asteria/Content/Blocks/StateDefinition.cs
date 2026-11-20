@@ -19,6 +19,7 @@ public sealed class StateDefinition
     public Block Owner { get; }
     public IReadOnlyList<StateProperty> Properties => _readOnlyProperties;
     public IReadOnlyList<BlockState> PossibleStates => _readOnlyStates;
+    public bool IsSingletonState => _properties.Length == 0;
 
     internal StateDefinition(
         Block owner,
@@ -78,6 +79,9 @@ public sealed class StateDefinition
     }
 
     public BlockState Any() => _states[0];
+
+    public override string ToString() =>
+        $"StateDefinition{{block={Owner}, properties=[{string.Join(", ", _properties.Select(property => property.Name))}]}}";
 
     public StateProperty? GetProperty(string name)
     {

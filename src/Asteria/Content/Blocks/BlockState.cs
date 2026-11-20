@@ -12,6 +12,7 @@ public sealed class BlockState
 
     public Block Block => Definition.Owner;
     public StateDefinition Definition { get; }
+    public bool IsSingletonState => _values.Length == 0;
 
     // BlockStateBase caches these values when each state is constructed.
     public bool IsAir { get; }

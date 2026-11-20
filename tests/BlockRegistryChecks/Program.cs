@@ -920,6 +920,16 @@ internal static class Program
     {
         StateDefinition definition = Blocks.TEST_BLOCK.StateDefinition;
         Require(definition.PossibleStates.Count == 6, "powered(2) x stage(3) must create six states.");
+        Require(!definition.IsSingletonState, "StateDefinition.isSingletonState must be false when properties are declared.");
+        Require(
+            definition.ToString() == $"StateDefinition{{block={Blocks.TEST_BLOCK}, properties=[powered, stage]}}",
+            "StateDefinition.toString must expose the owner and sorted property names.");
+        Require(
+            Blocks.AIR.StateDefinition.IsSingletonState && Blocks.AIR.DefaultState.IsSingletonState,
+            "An empty StateDefinition and its StateHolder must both report singleton state.");
+        Require(
+            !Blocks.TEST_BLOCK.DefaultState.IsSingletonState,
+            "A state definition with properties must not report singleton states.");
 
         var alternateDefaultOwner = new TestBlockDefinition(BlockProperties.Of());
         BooleanProperty addedAfterConstruction = BooleanProperty.Create("added_after_construction");
