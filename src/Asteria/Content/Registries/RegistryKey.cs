@@ -27,6 +27,14 @@ public readonly record struct RegistryKey<T> where T : class
         Location = location;
     }
 
+    public static RegistryKey<T> Create(
+        RegistryKey<Registry<T>> registry,
+        ResourceLocation location) =>
+        new(registry.Location, location);
+
+    public static RegistryKey<Registry<T>> CreateRegistryKey(ResourceLocation location) =>
+        new(BuiltInRegistries.RootLocation, location);
+
     public bool IsFor<TRegistry>(RegistryKey<Registry<TRegistry>> registry)
         where TRegistry : class =>
         RegistryLocation.Equals(registry.Location);
@@ -39,16 +47,16 @@ public readonly record struct RegistryKey<T> where T : class
         RegistryKey<Registry<TOther>> registryKey,
         string suffix)
         where TOther : class =>
-        new(registryKey.Location, Location.WithSuffix(suffix));
+        Create(registryKey, Location.WithSuffix(suffix));
 
     public RegistryKey<TOther> Dependent<TOther>(
         RegistryKey<Registry<TOther>> registryKey,
         Func<string, string> decoration)
         where TOther : class =>
-        new(registryKey.Location, Location.WithPath(decoration));
+        Create(registryKey, Location.WithPath(decoration));
 
     public RegistryKey<Registry<T>> GetRegistryKey() =>
-        new(BuiltInRegistries.RootLocation, RegistryLocation);
+        CreateRegistryKey(RegistryLocation);
 
     public override string ToString() =>
         $"ResourceKey[{RegistryLocation} / {Location}]";
