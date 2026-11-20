@@ -1412,6 +1412,14 @@ internal static class Program
 
     private static void CheckChunkSection()
     {
+        var smallContainerStrategy =
+            PalettedContainerStrategy<BlockState>.CreateForBiomes(BuiltInRegistries.BlockStates);
+        var sectionWithSuppliedStrategy = new ChunkSection(
+            new PalettedContainer<BlockState>(Blocks.AIR.DefaultState, smallContainerStrategy));
+        Require(
+            ReferenceEquals(sectionWithSuppliedStrategy.GetBlockState(3, 3, 3), Blocks.AIR.DefaultState),
+            "LevelChunkSection must accept the supplied block-state container without imposing a section-size validation.");
+
         var section = new ChunkSection(CreateBlockStateContainer(Blocks.AIR.DefaultState));
         Require(section.HasOnlyAir, "A new section must be empty.");
         Require(section.NonAirBlockCount == 0, "A new section must contain zero non-air blocks.");

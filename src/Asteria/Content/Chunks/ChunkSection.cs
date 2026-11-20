@@ -25,13 +25,6 @@ public sealed class ChunkSection
     public ChunkSection(PalettedContainer<BlockState> states)
     {
         _states = states ?? throw new ArgumentNullException(nameof(states));
-        if (_states.Size != BlockCount)
-        {
-            throw new ArgumentException(
-                $"A block-state container must contain exactly {BlockCount} entries.",
-                nameof(states));
-        }
-
         RecalculateBlockCounts();
     }
 
