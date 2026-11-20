@@ -114,10 +114,6 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         return holder;
     }
 
-    public virtual T Get(ResourceLocation location) =>
-        GetValue(location) ?? throw new KeyNotFoundException(
-            $"Registry '{Location}' does not contain an entry named '{location}'.");
-
     public virtual T? GetValue(ResourceLocation location) =>
         _byLocation.TryGetValue(location, out Holder<T>.Reference? holder)
             ? holder.Value
