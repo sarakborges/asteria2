@@ -691,6 +691,13 @@ internal static class Program
         Require(exception.Index == 37, "Missing palette entry exceptions must preserve the missing index.");
     }
 
+    private static PalettedContainer<BlockState> CreateBlockStateContainer(BlockState defaultState)
+    {
+        PalettedContainerStrategy<BlockState> strategy =
+            PalettedContainerStrategy<BlockState>.CreateForBlockStates(BuiltInRegistries.BlockStates);
+        return new PalettedContainer<BlockState>(defaultState, strategy);
+    }
+
     private static (int X, int Y, int Z) BlockCoordinates(int index)
     {
         if ((uint)index >= ChunkSection.BlockCount)
@@ -842,10 +849,17 @@ internal static class Program
 
     private static void CheckChunkSection()
     {
-        var section = new ChunkSection(BuiltInRegistries.BlockStates, Blocks.AIR.DefaultState);
+        var section = new ChunkSection(CreateBlockStateContainer(Blocks.AIR.DefaultState));
         Require(section.HasOnlyAir, "A new section must be empty.");
         Require(section.NonAirBlockCount == 0, "A new section must contain zero non-air blocks.");
         Require(section.PaletteMode == PaletteMode.SingleValue, "An empty section must start in single-value mode.");
+
+        PalettedContainer<BlockState> prefilledStates = CreateBlockStateContainer(Blocks.AIR.DefaultState);
+        prefilledStates.Set(1, 0, 0, Blocks.TEST_BLOCK.DefaultState);
+        ChunkSection prefilledSection = new(prefilledStates);
+        Require(
+            prefilledSection.NonAirBlockCount == 1,
+            "The LevelChunkSection container constructor must recalculate cached counts from the supplied state container.");
         BlockState xAxisState = Blocks.TEST_BLOCK.DefaultState;
         BlockState zAxisState = xAxisState.SetValue(Blocks.TEST_STAGE, 2);
         BlockState yAxisState = xAxisState.SetValue(Blocks.TEST_POWERED, true);

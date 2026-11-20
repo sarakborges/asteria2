@@ -22,23 +22,17 @@ public sealed class ChunkSection
     public int BitsPerEntry => _states.BitsPerEntry;
     public int PaletteSize => _states.PaletteSize;
 
-    public ChunkSection(BlockStateIdMap stateIds, BlockState airState)
+    public ChunkSection(PalettedContainer<BlockState> states)
     {
-        ArgumentNullException.ThrowIfNull(stateIds);
-        ArgumentNullException.ThrowIfNull(airState);
-
-        if (!airState.Block.Properties.IsAir)
+        _states = states ?? throw new ArgumentNullException(nameof(states));
+        if (_states.Size != BlockCount)
         {
-            throw new ArgumentException("The section default state must belong to an air block.", nameof(airState));
+            throw new ArgumentException(
+                $"A block-state container must contain exactly {BlockCount} entries.",
+                nameof(states));
         }
 
-        var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(stateIds);
-        if (strategy.EntryCount != BlockCount)
-        {
-            throw new InvalidOperationException("A block-state strategy must create exactly 4096 entries per section.");
-        }
-
-        _states = new PalettedContainer<BlockState>(airState, strategy);
+        RecalculateBlockCounts();
     }
 
     private ChunkSection(PalettedContainer<BlockState> states, ushort nonAirBlockCount)
