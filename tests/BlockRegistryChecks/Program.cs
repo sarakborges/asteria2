@@ -202,9 +202,9 @@ internal static class Program
         ResourceLocation missingId = ResourceLocation.Parse("asteria:not_registered");
 
         Require(
-            BuiltInRegistries.Block.Location == ResourceLocation.Parse("minecraft:block") &&
+            BuiltInRegistries.Block.Location == ResourceLocation.Parse("asteria:block") &&
             BuiltInRegistries.Block.Key.RegistryLocation == ResourceLocation.Parse("root"),
-            "The built-in block registry must use the vanilla minecraft:block registry key.");
+            "The built-in block registry must use the Asteria namespace while retaining the vanilla root-registry key structure.");
 
         Require(ReferenceEquals(BuiltInRegistries.Block.GetValue(airId), Blocks.AIR), "The air block must be registered.");
         Require(
