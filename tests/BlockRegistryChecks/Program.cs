@@ -419,6 +419,33 @@ internal static class Program
             "HolderSet.Named.canSerializeIn must ask the target context to serialize its original owner.");
         Require(ReferenceEquals(registry.GetAny(), registered), "MappedRegistry.getAny must return the first registered holder.");
 
+        HolderLookup<Block>.RegistryLookup lookupView = registry;
+        Require(
+            lookupView.Key == new RegistryKey<Registry<Block>>(ResourceLocation.Parse("root"), registryId),
+            "HolderLookup.RegistryLookup.key must expose the root registry key.");
+        Require(
+            ReferenceEquals(lookupView.RegistryLifecycle, registry.RegistryLifecycle),
+            "HolderLookup.RegistryLookup must expose the registry lifecycle.");
+        Require(
+            lookupView.ListElementIds().SequenceEqual(new[] { entryKey, placeholderKey }) &&
+            lookupView.ListTagIds().SequenceEqual(new[] { tagKey }),
+            "HolderLookup must enumerate element and tag keys in lookup order.");
+        Require(
+            ReferenceEquals(lookupView.Get(entryKey), registered) &&
+            ReferenceEquals(lookupView.Get(tagKey), tag),
+            "HolderLookup must resolve registered element and tag holders.");
+        HolderLookup<Block>.RegistryLookup filteredLookup =
+            lookupView.FilterElements(block => ReferenceEquals(block, value));
+        Require(
+            filteredLookup.ListElements().SequenceEqual(new[] { registered }) &&
+            ReferenceEquals(filteredLookup.Get(entryKey), registered) &&
+            filteredLookup.Get(placeholderKey) is null,
+            "HolderLookup.filterElements must filter direct element lookup and enumeration.");
+        Require(
+            ReferenceEquals(filteredLookup.Get(tagKey), tag) &&
+            filteredLookup.ListTags().SequenceEqual(lookupView.ListTags()),
+            "HolderLookup.filterElements must preserve the parent tag view.");
+
         IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(holderIdMap.Count == registry.Count, "Registry.asHolderIdMap must report the registry size.");
         Require(

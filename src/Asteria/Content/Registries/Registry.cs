@@ -7,7 +7,7 @@ namespace Asteria.Content.Registries;
 /// MappedRegistry-style registry. All key, value, location, and numeric-ID indexes point
 /// directly to stable Holder.Reference instances.
 /// </summary>
-public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : class
+public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLookup where T : class
 {
     private static readonly ResourceLocation RootRegistryLocation = ResourceLocation.Parse("root");
 
@@ -153,6 +153,12 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
     public bool ContainsKey(ResourceLocation location) => _byLocation.ContainsKey(location);
 
     public bool ContainsKey(RegistryKey<T> key) => _byKey.ContainsKey(key);
+
+    Holder<T>.Reference? HolderGetter<T>.Get(RegistryKey<T> key) =>
+        GetHolder(key);
+
+    HolderSet<T>.Named? HolderGetter<T>.Get(TagKey<T> tag) =>
+        GetTag(tag);
 
     public Holder<T>.Reference? GetHolder(ResourceLocation location) =>
         _byLocation.TryGetValue(location, out Holder<T>.Reference? holder) ? holder : null;
