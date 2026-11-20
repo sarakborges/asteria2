@@ -646,22 +646,12 @@ internal static class Program
         EnumProperty<TestDeclaredOrder> singleton = EnumProperty<TestDeclaredOrder>.Create(
             "singleton",
             new[] { TestDeclaredOrder.Y });
-        var singletonBlock = new TestBlockDefinition(
-            BlockProperties.Of(),
-            builder => builder.Add(singleton));
-        BlockState singletonState = singletonBlock.DefaultState;
         Require(
-            singletonBlock.StateDefinition.PossibleStates.Count == 1,
-            "StateDefinition must allow an enum property with exactly one possible value.");
-        Require(
-            ReferenceEquals(singletonState, singletonState.Cycle(singleton)),
-            "Cycling a singleton property must return the same state.");
-        Require(
-            ReferenceEquals(singletonState, singletonState.SetValue(singleton, TestDeclaredOrder.Y)),
-            "Setting the only valid singleton property value must return the same state.");
-        Require(
-            ReferenceEquals(singletonState, singletonState.TrySetValue(singleton, TestDeclaredOrder.Y)),
-            "trySetValue must support singleton enum properties.");
+            singleton.PossibleValues.SequenceEqual(new[] { TestDeclaredOrder.Y }),
+            "EnumProperty may represent a single possible value before it is added to a state definition.");
+        RequireThrows<ArgumentException>(
+            () => new TestBlockDefinition(BlockProperties.Of(), builder => builder.Add(singleton)),
+            "StateDefinition.Builder must reject properties with one or fewer possible values.");
         Require(
             declared.Equals(EnumProperty<TestDeclaredOrder>.Create("declared")),
             "Enum properties with the same name, ordered values, and serialized names must compare equal.");

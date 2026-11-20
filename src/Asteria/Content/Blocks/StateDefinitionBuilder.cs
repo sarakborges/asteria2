@@ -22,10 +22,10 @@ public sealed class StateDefinitionBuilder
                 nameof(property));
         }
 
-        if (property.ValueCount == 0)
+        if (property.ValueCount <= 1)
         {
             throw new ArgumentException(
-                $"State property '{property.Name}' must have at least one possible value.",
+                $"State definition cannot use property '{property.Name}' with one or fewer possible values.",
                 nameof(property));
         }
 
