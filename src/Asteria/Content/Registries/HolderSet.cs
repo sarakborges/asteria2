@@ -107,34 +107,6 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
         return true;
     }
 
-    public override bool Equals(object? obj)
-    {
-        if (GetType() != typeof(HolderSet<T>) ||
-            obj?.GetType() != typeof(HolderSet<T>))
-        {
-            return ReferenceEquals(this, obj);
-        }
-
-        return ReferenceEquals(this, obj) ||
-            obj is HolderSet<T> other && Contents.SequenceEqual(other.Contents);
-    }
-
-    public override int GetHashCode()
-    {
-        if (GetType() != typeof(HolderSet<T>))
-        {
-            return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);
-        }
-
-        var hash = new HashCode();
-        foreach (Holder<T> holder in Contents)
-        {
-            hash.Add(holder);
-        }
-
-        return hash.ToHashCode();
-    }
-
     public virtual IEnumerator<Holder<T>> GetEnumerator() => Contents.GetEnumerator();
     System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 

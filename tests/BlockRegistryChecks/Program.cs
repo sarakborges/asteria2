@@ -772,8 +772,11 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             directFactory.SequenceEqual(new Holder<Block>[] { registered, registered }),
             "HolderSet.direct(varargs) must preserve order and duplicate entries.");
         Require(
-            directSet.Equals(directFactory) && directSet.GetHashCode() == directFactory.GetHashCode(),
-            "HolderSet.Direct equality must compare the ordered holder list and provide a matching hash code.");
+            !directSet.Equals(directFactory) && !ReferenceEquals(directSet, directFactory),
+            "HolderSet.Direct must retain object identity equality instead of comparing list contents.");
+        Require(
+            directSet.Equals(directSet) && directFactory.Equals(directFactory),
+            "A direct holder set must remain equal to itself.");
         var customSet = new CustomHolderSet<Block>(new Holder<Block>[] { registered, registered });
         Require(
             !directFactory.Equals(customSet) &&
