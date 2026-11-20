@@ -46,6 +46,8 @@ internal static class Program
             : base(Type.StandAlone, owner, key, null)
         {
         }
+
+        public void BindValueFromSubclass(Block value) => BindValue(value);
     }
 
     private sealed class TestBlockDefinition : Block
@@ -563,11 +565,16 @@ internal static class Program
             nameof(Holder<Block>.Reference.CreateIntrusive),
             System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
             ?? throw new InvalidOperationException("Holder.Reference.createIntrusive is missing.");
+        System.Reflection.MethodInfo bindValueMethod = referenceType.GetMethod(
+            "BindValue",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Holder.Reference.bindValue is missing.");
         Require(
             !referenceType.IsSealed && referenceConstructor.IsFamily &&
             standaloneFactory.IsPublic && intrusiveFactory.IsPublic &&
+            bindValueMethod.IsFamilyOrAssembly &&
             intrusiveFactory.GetCustomAttributes(typeof(ObsoleteAttribute), inherit: false).Length > 0,
-            "Holder.Reference must remain extensible with a protected constructor and public standalone/intrusive factories.");
+            "Holder.Reference must remain extensible with protected binding and public standalone/intrusive factories.");
         ExtensibleBlockReference extensibleReference = new(registry, entryKey);
         Holder<Block>.Reference factoryStandaloneReference =
             Holder<Block>.Reference.CreateStandAlone(registry, entryKey);
@@ -580,6 +587,11 @@ internal static class Program
             !factoryStandaloneReference.IsIntrusive && !factoryStandaloneReference.IsBound &&
             factoryIntrusiveReference.IsIntrusive && !factoryIntrusiveReference.IsBound,
             "Holder.Reference factories and subclasses must preserve standalone/intrusive initial binding state.");
+        Block extensibleValue = new TestBlockDefinition(BlockProperties.Of());
+        extensibleReference.BindValueFromSubclass(extensibleValue);
+        Require(
+            extensibleReference.IsBound && ReferenceEquals(extensibleReference.Value, extensibleValue),
+            "Holder.Reference subclasses must be able to bind their value through the protected API.");
         System.Reflection.ConstructorInfo tagKeyConstructor =
             typeof(TagKey<Block>).GetConstructor(new[]
             {

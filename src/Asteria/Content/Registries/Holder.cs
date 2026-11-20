@@ -174,7 +174,7 @@ public abstract class Holder<T> where T : class
             _key = key;
         }
 
-        internal void BindValue(T value)
+        protected internal void BindValue(T value)
         {
             ArgumentNullException.ThrowIfNull(value);
             if (_type == Type.Intrusive && !ReferenceEquals(_value, value))
