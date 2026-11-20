@@ -99,13 +99,6 @@ public readonly record struct ResourceLocation : IComparable<ResourceLocation>
             : null;
     }
 
-    public static bool TryParse(string? value, out ResourceLocation location)
-    {
-        ResourceLocation? parsed = TryParse(value);
-        location = parsed.GetValueOrDefault();
-        return parsed.HasValue;
-    }
-
     public static ResourceLocation FromNamespaceAndPath(string @namespace, string path) =>
         new(@namespace, path);
 
