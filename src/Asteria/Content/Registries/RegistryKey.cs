@@ -48,7 +48,7 @@ public readonly record struct RegistryKey<T> where T : class
         new(registryKey.Location, Location.WithPath(decoration));
 
     public RegistryKey<Registry<T>> GetRegistryKey() =>
-        new(ResourceLocation.Parse("root"), RegistryLocation);
+        new(BuiltInRegistries.RootLocation, RegistryLocation);
 
     public override string ToString() =>
         $"ResourceKey[{RegistryLocation} / {Location}]";
