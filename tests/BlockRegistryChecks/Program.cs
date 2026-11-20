@@ -1232,11 +1232,14 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
         registry.Freeze();
 
+        RegistryKey<Block> canonicalRegistryEntryKey =
+            CreateEntryKey<Block>(registryId, foreignRootEntryKey.Location);
         Require(
+            foreignRootEntryKey == canonicalRegistryEntryKey &&
             ReferenceEquals(registry.GetValue(foreignRootEntryKey), foreignRootValue) &&
-            ReferenceEquals(registry.GetValue(foreignRootEntryKey.Location), foreignRootValue) &&
-            registry.GetValue(CreateEntryKey<Block>(registryId, foreignRootEntryKey.Location)) is null,
-            "MappedRegistry lookups must preserve the foreign full key while identifier lookup resolves its indexed holder.");
+            ReferenceEquals(registry.GetValue(canonicalRegistryEntryKey), foreignRootValue) &&
+            ReferenceEquals(registry.GetValue(foreignRootEntryKey.Location), foreignRootValue),
+            "ResourceKey.create must retain only the registry identifier, so alternate root keys canonicalize to the same entry key.");
 
         Require(
             ReferenceEquals(registry.GetOptional(entryId), registeredValue),
