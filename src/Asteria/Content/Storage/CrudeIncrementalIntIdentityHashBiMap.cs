@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Runtime.CompilerServices;
+using Asteria.Content.Registries;
 
 namespace Asteria.Content.Storage;
 
