@@ -1211,6 +1211,19 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         var registeredKey = CreateEntryKey<Block>(registryId, entryId);
         registry.Register(registeredKey, registeredValue, RegistrationInfo.BuiltIn);
 
+        RegistryKey<Registry<Block>> foreignRootRegistryKey =
+            CreateRegistryKeyInRoot<Block>(ResourceLocation.Parse("asteria:foreign_registry_root"), registryId);
+        RegistryKey<Block> foreignRootEntryKey =
+            RegistryKey<Block>.Create(foreignRootRegistryKey, ResourceLocation.Parse("asteria:foreign_root_entry"));
+        Block foreignRootValue = new TestBlockDefinition(BlockProperties.Of());
+        Holder<Block>.Reference foreignRootHolder =
+            registry.Register(foreignRootEntryKey, foreignRootValue, RegistrationInfo.BuiltIn);
+        Require(
+            ReferenceEquals(registry.GetHolder(foreignRootEntryKey), foreignRootHolder) &&
+            ReferenceEquals(registry.GetHolder(foreignRootEntryKey.Location), foreignRootHolder) &&
+            registry.GetValue(CreateEntryKey<Block>(registryId, foreignRootEntryKey.Location)) is null,
+            "MappedRegistry.register must index by identifier and the supplied full key without validating its root registry key.");
+
         Require(
             registry.GetResourceKey(registeredValue) == registeredKey,
             "Registry.getResourceKey must recover the resource key for a registered value.");
