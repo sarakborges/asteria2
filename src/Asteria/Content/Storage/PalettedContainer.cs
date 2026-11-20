@@ -160,7 +160,6 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
 
     private void SetUnchecked(int index, T value)
     {
-        ValidateIndex(index);
         ArgumentNullException.ThrowIfNull(value);
 
         Data data = Volatile.Read(ref _data);
