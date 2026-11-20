@@ -165,7 +165,7 @@ internal static class Program
             "The root registry must register built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =
-            new(BuiltInRegistries.Root.Location, BuiltInRegistries.Block.Location);
+            RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Block.Location);
         Holder<IRegistry>.Reference? blockRegistryHolder =
             BuiltInRegistries.Root.GetHolder(blockRegistryKey);
         Require(
@@ -329,8 +329,8 @@ internal static class Program
             BuiltInRegistries.Block.GetOptional(nullKey) is null,
             "A null resource key must remain an exact empty lookup even in a defaulted registry.");
 
-        RegistryKey<Block> missingKey = new(BuiltInRegistries.Block.Location, missingId);
-        RegistryKey<Block> testKey = new(BuiltInRegistries.Block.Location, testId);
+        RegistryKey<Block> missingKey = CreateEntryKey<Block>(BuiltInRegistries.Block.Location, missingId);
+        RegistryKey<Block> testKey = CreateEntryKey<Block>(BuiltInRegistries.Block.Location, testId);
         Require(
             BuiltInRegistries.Block.GetValue(missingKey) is null &&
             BuiltInRegistries.Block.GetOptional(missingKey) is null &&
@@ -684,7 +684,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             tag.ToString() == $"NamedSet({tagKey})[[{registered}, {registered}]]",
             "Bound HolderSet.Named.toString must render its contents list.");
-        TagKey<Block> lateTagKey = new(registry.Key, ResourceLocation.Parse("asteria:late_registration_tag"));
+        TagKey<Block> lateTagKey = TagKey<Block>.Create(registry.Key, ResourceLocation.Parse("asteria:late_registration_tag"));
         HolderSet<Block>.Named lateTag = lookup.GetOrThrow(lateTagKey);
         Require(
             !lateTag.IsBound && registry.GetTag(lateTagKey) is null,
@@ -773,7 +773,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             ReferenceEquals(registry.GetTag(lateTagKey), lateTag) && lateTag.IsBound,
             "Tag reload must reuse a named tag created through the registry's retained registration lookup.");
 
-        TagKey<Block> reloadOnlyTagKey = new(
+        TagKey<Block> reloadOnlyTagKey = TagKey<Block>.Create(
             registry.Key,
             ResourceLocation.Parse("asteria:reload_only_tag"));
         KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>[] reloadOnlyDefinition =
@@ -806,7 +806,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         var crossRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:cross_registry"));
         var otherRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:other_registry"));
         ResourceLocation foreignEntryLocation = ResourceLocation.Parse("asteria:foreign_entry");
-        RegistryKey<Block> foreignEntryKey = new(otherRegistry.Location, foreignEntryLocation);
+        RegistryKey<Block> foreignEntryKey = CreateEntryKey<Block>(otherRegistry.Location, foreignEntryLocation);
         HolderGetter<Block> crossLookup = crossRegistry.CreateRegistrationLookup();
         Holder<Block>.Reference foreignPlaceholder = crossLookup.GetOrThrow(foreignEntryKey);
         Block foreignValue = new TestBlockDefinition(BlockProperties.Of());
@@ -816,7 +816,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
                 foreignPlaceholder),
             "MappedRegistry.register must retain a supplied ResourceKey without revalidating its registry identifier.");
 
-        TagKey<Block> foreignTagKey = new(otherRegistry.Key, ResourceLocation.Parse("asteria:foreign_tag"));
+        TagKey<Block> foreignTagKey = TagKey<Block>.Create(otherRegistry.Key, ResourceLocation.Parse("asteria:foreign_tag"));
         HolderSet<Block>.Named foreignTag = crossLookup.GetOrThrow(foreignTagKey);
         crossRegistry.BindTags(new[]
         {
@@ -833,7 +833,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
         var invalidRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:invalid_registry"));
         ResourceLocation unboundEntryLocation = ResourceLocation.Parse("asteria:never_registered");
-        RegistryKey<Block> unboundEntryKey = new(invalidRegistry.Location, unboundEntryLocation);
+        RegistryKey<Block> unboundEntryKey = CreateEntryKey<Block>(invalidRegistry.Location, unboundEntryLocation);
         invalidRegistry.CreateRegistrationLookup().GetOrThrow(unboundEntryKey);
         InvalidOperationException unboundValuesException = Capture<InvalidOperationException>(
             invalidRegistry.Freeze,
@@ -843,7 +843,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "MappedRegistry.freeze must sort and list unbound entry identifiers in its vanilla diagnostic.");
 
         var invalidTagRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:invalid_tag_registry"));
-        TagKey<Block> invalidTagKey = new(
+        TagKey<Block> invalidTagKey = TagKey<Block>.Create(
             invalidTagRegistry.Key,
             ResourceLocation.Parse("asteria:invalid"));
         HolderSet<Block>.Named invalidNamedTag =
@@ -863,7 +863,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "MappedRegistry must distinguish direct holders from foreign holders in tag diagnostics.");
 
         var unboundTagRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:unbound_tag_registry"));
-        TagKey<Block> unboundTagKey = new(
+        TagKey<Block> unboundTagKey = TagKey<Block>.Create(
             unboundTagRegistry.Key,
             ResourceLocation.Parse("asteria:never_bound"));
         unboundTagRegistry.CreateRegistrationLookup().GetOrThrow(unboundTagKey);
@@ -883,7 +883,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             unboundKeyException.Message == $"Trying to access unbound value '{intrusiveValue}' from registry {intrusiveRegistry}",
             "Holder.Reference.key must include its value and owner in the vanilla error message.");
-        RegistryKey<Block> intrusiveKey = new(intrusiveRegistry.Location, entryId);
+        RegistryKey<Block> intrusiveKey = CreateEntryKey<Block>(intrusiveRegistry.Location, entryId);
         RequireThrows<InvalidOperationException>(
             () => intrusiveHolder.Is(intrusiveKey),
             "Holder.Reference.is(resource key) must access the key and fail before an intrusive holder is registered.");
@@ -927,7 +927,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             ResourceLocation.Parse("asteria:frozen_intrusive_registry"),
             allowIntrusiveHolders: true);
         Block frozenIntrusiveValue = new TestBlockDefinition(BlockProperties.Of());
-        RegistryKey<Block> frozenIntrusiveKey = new(
+        RegistryKey<Block> frozenIntrusiveKey = CreateEntryKey<Block>(
             frozenIntrusiveRegistry.Location,
             ResourceLocation.Parse("asteria:frozen_intrusive_entry"));
         HolderGetter<Block> staleIntrusiveLookup = frozenIntrusiveRegistry.CreateRegistrationLookup();
@@ -962,7 +962,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             ?? throw new InvalidOperationException("Holder.Reference.BindValue was not found.");
 
         var standaloneRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:standalone_binding"));
-        RegistryKey<Block> standaloneKey = new(
+        RegistryKey<Block> standaloneKey = CreateEntryKey<Block>(
             standaloneRegistry.Location,
             ResourceLocation.Parse("asteria:standalone_entry"));
         Holder<Block>.Reference standalone =
@@ -1007,7 +1007,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             ResourceLocation.Parse("asteria:missing_intrusive_registration"),
             allowIntrusiveHolders: true);
         Block unregisteredValue = new TestBlockDefinition(BlockProperties.Of());
-        RegistryKey<Block> unregisteredKey = new(
+        RegistryKey<Block> unregisteredKey = CreateEntryKey<Block>(
             registry.Location,
             ResourceLocation.Parse("asteria:missing_holder_entry"));
 
@@ -1019,7 +1019,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
                 $"Missing intrusive holder for {unregisteredKey}:{unregisteredValue}",
             "Missing intrusive holder failures must preserve the vanilla diagnostic.");
 
-        RegistryKey<Block> placeholderKey = new(
+        RegistryKey<Block> placeholderKey = CreateEntryKey<Block>(
             registry.Location,
             ResourceLocation.Parse("asteria:intrusive_placeholder"));
         InvalidOperationException placeholderException = Capture<InvalidOperationException>(
@@ -1137,7 +1137,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             ResourceLocation.Parse("asteria:defaulted_lifecycle"),
             ResourceLocation.Parse("asteria:default"));
         Block defaultBlock = new TestBlockDefinition(BlockProperties.Of());
-        RegistryKey<Block> defaultKey = new(
+        RegistryKey<Block> defaultKey = CreateEntryKey<Block>(
             defaultedRegistry.Location,
             ResourceLocation.Parse("asteria:default"));
         defaultedRegistry.Register(defaultKey, defaultBlock, RegistrationInfo.BuiltIn);
@@ -1182,7 +1182,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             ReferenceEquals(registry.GetValueOrThrow(registeredKey), registeredValue),
             "getValueOrThrow must return the value registered for a resource key.");
-        RegistryKey<Block> missingKey = new(registryId, missingId);
+        RegistryKey<Block> missingKey = CreateEntryKey<Block>(registryId, missingId);
         InvalidOperationException missingValueException = Capture<InvalidOperationException>(
             () => registry.GetValueOrThrow(missingKey),
             "getValueOrThrow must reject a missing resource key.");
@@ -1198,7 +1198,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             missingElementException.Message == $"Missing element {missingKey}",
             "HolderGetter.getOrThrow(element) must use the vanilla missing-element error message.");
-        TagKey<Block> missingTagKey = new(registry.Key, missingId);
+        TagKey<Block> missingTagKey = TagKey<Block>.Create(registry.Key, missingId);
         InvalidOperationException missingTagException = Capture<InvalidOperationException>(
             () => filteredLookup.GetOrThrow(missingTagKey),
             "HolderGetter.getOrThrow must reject a missing tag.");
@@ -2285,7 +2285,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
     private static void CheckFrozenRegistry()
     {
-        RegistryKey<Block> lateKey = new(
+        RegistryKey<Block> lateKey = CreateEntryKey<Block>(
             BuiltInRegistries.Block.Location,
             ResourceLocation.Parse("asteria:late_block"));
         InvalidOperationException frozenRegistrationException = Capture<InvalidOperationException>(
