@@ -1,30 +1,59 @@
 namespace Asteria.Content.Blocks;
 
 /// <summary>
-/// Core physical and semantic properties owned by a block type.
-/// Visual resources and block-state properties are intentionally separate.
+/// Mutable block behavior properties. Its fluent API follows BlockBehaviour.Properties
+/// for the fields currently represented by Asteria.
 /// </summary>
 public sealed class BlockProperties
 {
-    public float DestroyTime { get; }
-    public float ExplosionResistance { get; }
-    public bool RequiresCorrectToolForDrops { get; }
-    public float Friction { get; }
-    public bool IsAir { get; }
+    public float DestroyTime { get; private set; }
+    public float ExplosionResistance { get; private set; }
+    public bool RequiresCorrectToolForDrops { get; private set; }
+    public float Friction { get; private set; } = 0.6f;
+    public bool IsAir { get; private set; }
 
-    public BlockProperties(
-        float destroyTime = 0.0f,
-        float explosionResistance = 0.0f,
-        bool requiresCorrectToolForDrops = false,
-        float friction = 0.6f,
-        bool isAir = false)
+    private BlockProperties()
     {
-        DestroyTime = destroyTime;
-        ExplosionResistance = MathF.Max(0.0f, explosionResistance);
-        RequiresCorrectToolForDrops = requiresCorrectToolForDrops;
-        Friction = friction;
-        IsAir = isAir;
     }
 
-    public static BlockProperties Default => new();
+    public static BlockProperties Of() => new();
+
+    public BlockProperties Strength(float destroyTime, float explosionResistance) =>
+        DestroyTime(destroyTime).ExplosionResistance(explosionResistance);
+
+    public BlockProperties Strength(float destroyTime) =>
+        Strength(destroyTime, destroyTime);
+
+    public BlockProperties Instabreak() =>
+        Strength(0.0f);
+
+    public BlockProperties DestroyTime(float destroyTime)
+    {
+        DestroyTime = destroyTime;
+        return this;
+    }
+
+    public BlockProperties ExplosionResistance(float explosionResistance)
+    {
+        ExplosionResistance = MathF.Max(0.0f, explosionResistance);
+        return this;
+    }
+
+    public BlockProperties Friction(float friction)
+    {
+        Friction = friction;
+        return this;
+    }
+
+    public BlockProperties RequiresCorrectToolForDrops()
+    {
+        RequiresCorrectToolForDrops = true;
+        return this;
+    }
+
+    public BlockProperties Air()
+    {
+        IsAir = true;
+        return this;
+    }
 }

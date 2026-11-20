@@ -17,19 +17,14 @@ public static class Blocks
         IntegerProperty.Create("stage", 0, 2);
 
     public static Block AIR { get; } = new(
-        new BlockProperties(
-            destroyTime: 0.0f,
-            explosionResistance: 0.0f,
-            isAir: true));
+        BlockProperties.Of().Air());
 
     public static Block TEST_BLOCK { get; } = new TestBlock();
 
     private sealed class TestBlock : Block
     {
         public TestBlock()
-            : base(new BlockProperties(
-                destroyTime: 1.5f,
-                explosionResistance: 6.0f))
+            : base(BlockProperties.Of().Strength(1.5f, 6.0f))
         {
             RegisterDefaultState(
                 DefaultState
