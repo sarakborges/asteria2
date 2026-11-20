@@ -22,26 +22,26 @@ public static class Blocks
             explosionResistance: 0.0f,
             isAir: true));
 
-    public static Block TEST_BLOCK { get; } = CreateTestBlock();
+    public static Block TEST_BLOCK { get; } = new TestBlock();
 
-    private static Block CreateTestBlock()
+    private sealed class TestBlock : Block
     {
-        var block = new Block(
-            new BlockProperties(
+        public TestBlock()
+            : base(new BlockProperties(
                 destroyTime: 1.5f,
-                explosionResistance: 6.0f),
-            static builder =>
-            {
-                builder.Add(TEST_POWERED);
-                builder.Add(TEST_STAGE);
-            });
+                explosionResistance: 6.0f))
+        {
+            RegisterDefaultState(
+                DefaultState
+                    .SetValue(TEST_POWERED, false)
+                    .SetValue(TEST_STAGE, 1));
+        }
 
-        block.RegisterDefaultState(
-            block.DefaultState
-                .SetValue(TEST_POWERED, false)
-                .SetValue(TEST_STAGE, 1));
-
-        return block;
+        protected override void CreateBlockStateDefinition(StateDefinitionBuilder builder)
+        {
+            builder.Add(TEST_POWERED);
+            builder.Add(TEST_STAGE);
+        }
     }
 
     internal static void RegisterAll()

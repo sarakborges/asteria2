@@ -8,6 +8,19 @@ using Asteria.Content.Storage;
 internal static class Program
 {
     private enum TestAxis { X = 0, Y = 1, Z = 2 }
+
+    private sealed class TestBlockDefinition : Block
+    {
+        public TestBlockDefinition(
+            BlockProperties properties,
+            Action<StateDefinitionBuilder>? configureState = null)
+            : base(
+                properties,
+                createIntrusiveRegistryHolder: false,
+                configureState: configureState)
+        {
+        }
+    }
     private enum TestDeclaredOrder { Z = 2, X = 0, Y = 1 }
 
     private sealed class IdentityTestValue
@@ -103,7 +116,7 @@ internal static class Program
              ReferenceEquals(randomDefaultedHolder, Blocks.TEST_BLOCK.BuiltInRegistryHolder)),
             "DefaultedMappedRegistry.getRandom must use the registry values and retain the default holder fallback.");
         Require(BuiltInRegistries.Block.GetHolder(missingId) is null, "Exact holder lookups must not hide missing keys.");
-        Require(BuiltInRegistries.Block.GetId(new Block(BlockProperties.Default, createIntrusiveRegistryHolder: false)) == 0, "Unknown objects must resolve to the default block ID.");
+        Require(BuiltInRegistries.Block.GetId(new TestBlockDefinition(BlockProperties.Default)) == 0, "Unknown objects must resolve to the default block ID.");
         Require(BuiltInRegistries.Block.GetId(null!) == 0, "Null reverse lookups in a defaulted registry must resolve to the default ID.");
         Require(BuiltInRegistries.Block.GetKey(null!) == airId, "Null key lookups in a defaulted registry must resolve to the default key.");
         Require(
@@ -119,7 +132,7 @@ internal static class Program
         Require(registered.CanSerializeIn(BuiltInRegistries.Block), "A reference holder must serialize in its owning registry.");
         Require(ReferenceEquals(BuiltInRegistries.Block.WrapAsHolder(Blocks.TEST_BLOCK), registered), "wrapAsHolder must reuse registered references.");
 
-        Block directValue = new(BlockProperties.Default, createIntrusiveRegistryHolder: false);
+        Block directValue = new TestBlockDefinition(BlockProperties.Default);
         Holder<Block> direct = BuiltInRegistries.Block.WrapAsHolder(directValue);
         Require(direct.Kind == HolderKind.Direct, "Unregistered values must be wrapped as direct holders.");
         Require(direct.CanSerializeIn(BuiltInRegistries.Block), "Direct holders are serializable in any registry context.");
@@ -177,7 +190,7 @@ internal static class Program
         Require(!placeholder.IsBound, "A registration lookup creates an unbound standalone holder.");
         RequireThrows<InvalidOperationException>(() => _ = placeholder.Value, "An unbound holder value must not be readable.");
 
-        Block value = new(BlockProperties.Default, createIntrusiveRegistryHolder: false);
+        Block value = new TestBlockDefinition(BlockProperties.Default);
         Holder<Block>.Reference registered = lookup.GetOrThrow(entryKey);
         Require(registry.Count == 2, "Each distinct standalone key must contribute to registry size before registration.");
         Holder<Block>.Reference entry = registry.Register(entryId, value);
@@ -185,7 +198,7 @@ internal static class Program
         Require(registry.Count == 2, "Registering a reserved key must not change registry size.");
         Require(!registered.IsBound, "Standalone holder values are bound during registry freeze.");
 
-        Block placeholderValue = new(BlockProperties.Default, createIntrusiveRegistryHolder: false);
+        Block placeholderValue = new TestBlockDefinition(BlockProperties.Default);
         Holder<Block>.Reference placeholderEntry = registry.Register(placeholderId, placeholderValue);
         Require(ReferenceEquals(placeholderEntry, placeholder), "Registering a placeholder key must bind the existing holder.");
 
@@ -266,7 +279,7 @@ internal static class Program
 
         var parallelRegistry = new Registry<Block>(registryId);
         Holder<Block>.Reference parallelReference =
-            parallelRegistry.Register(entryId, new Block(BlockProperties.Default, createIntrusiveRegistryHolder: false));
+            parallelRegistry.Register(entryId, new TestBlockDefinition(BlockProperties.Default));
         parallelRegistry.Freeze();
         Require(!registered.Equals(parallelReference), "Reference holders from separate registry instances must retain object identity.");
         Require(registered.Is(parallelReference), "Reference holder matching must follow the resource key, not holder instance identity.");
@@ -305,7 +318,7 @@ internal static class Program
 
         var intrusiveRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:intrusive_registry"), allowIntrusiveHolders: true);
         RequireThrows<InvalidOperationException>(
-            () => intrusiveRegistry.Register(entryId, new Block(BlockProperties.Default, createIntrusiveRegistryHolder: false)),
+            () => intrusiveRegistry.Register(entryId, new TestBlockDefinition(BlockProperties.Default)),
             "Intrusive registries must reject values without a pre-created intrusive holder.");
     }
 
@@ -327,31 +340,31 @@ internal static class Program
         var fourthKey = new RegistryKey<Block>(registryId, fourthId);
 
         RegistrationInfo firstInfo = new(Lifecycle.Deprecated(10));
-        registry.Register(firstKey, new Block(BlockProperties.Default, createIntrusiveRegistryHolder: false), firstInfo);
+        registry.Register(firstKey, new TestBlockDefinition(BlockProperties.Default), firstInfo);
         Require(ReferenceEquals(registry.GetRegistrationInfo(firstKey), firstInfo), "Registration metadata must be retained per registered key.");
         Require(registry.RegistryLifecycle is Lifecycle.DeprecatedLifecycle firstLifecycle && firstLifecycle.Since == 10, "A deprecated registration must make the registry lifecycle deprecated.");
 
         RegistrationInfo earlierDeprecatedInfo = new(Lifecycle.Deprecated(5));
-        registry.Register(secondKey, new Block(BlockProperties.Default, createIntrusiveRegistryHolder: false), earlierDeprecatedInfo);
+        registry.Register(secondKey, new TestBlockDefinition(BlockProperties.Default), earlierDeprecatedInfo);
         Require(
             registry.RegistryLifecycle is Lifecycle.DeprecatedLifecycle secondLifecycle && secondLifecycle.Since == 5,
             "Aggregated deprecated lifecycles must retain the earliest deprecation version.");
 
         RegistrationInfo stableInfo = RegistrationInfo.BuiltIn;
-        registry.Register(thirdKey, new Block(BlockProperties.Default, createIntrusiveRegistryHolder: false), stableInfo);
+        registry.Register(thirdKey, new TestBlockDefinition(BlockProperties.Default), stableInfo);
         Require(
             registry.RegistryLifecycle is Lifecycle.DeprecatedLifecycle thirdLifecycle && thirdLifecycle.Since == 5,
             "A stable registration must not erase an existing deprecated lifecycle.");
 
         RegistrationInfo experimentalInfo = new(Lifecycle.Experimental());
-        registry.Register(fourthKey, new Block(BlockProperties.Default, createIntrusiveRegistryHolder: false), experimentalInfo);
+        registry.Register(fourthKey, new TestBlockDefinition(BlockProperties.Default), experimentalInfo);
         Require(ReferenceEquals(registry.RegistryLifecycle, Lifecycle.Experimental()), "An experimental registration must make the aggregate lifecycle experimental.");
 
         var builtInRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:built_in_registration"));
         var builtInKey = new RegistryKey<Block>(
             builtInRegistry.Location,
             ResourceLocation.Parse("asteria:built_in"));
-        builtInRegistry.Register(builtInKey.Location, new Block(BlockProperties.Default, createIntrusiveRegistryHolder: false));
+        builtInRegistry.Register(builtInKey.Location, new TestBlockDefinition(BlockProperties.Default));
         Require(
             Equals(builtInRegistry.GetRegistrationInfo(builtInKey), RegistrationInfo.BuiltIn),
             "The ordinary register overload must attach RegistrationInfo.BUILT_IN.");
@@ -360,7 +373,7 @@ internal static class Program
         var defaultedRegistry = new DefaultedRegistry<Block>(
             ResourceLocation.Parse("asteria:defaulted_lifecycle"),
             ResourceLocation.Parse("asteria:default"));
-        Block defaultBlock = new(BlockProperties.Default, createIntrusiveRegistryHolder: false);
+        Block defaultBlock = new TestBlockDefinition(BlockProperties.Default);
         RegistryKey<Block> defaultKey = new(
             defaultedRegistry.Location,
             ResourceLocation.Parse("asteria:default"));
@@ -380,7 +393,7 @@ internal static class Program
         ResourceLocation entryId = ResourceLocation.Parse("asteria:registered");
         ResourceLocation missingId = ResourceLocation.Parse("asteria:missing");
         var registry = new Registry<Block>(registryId);
-        Block registeredValue = new(BlockProperties.Default, createIntrusiveRegistryHolder: false);
+        Block registeredValue = new TestBlockDefinition(BlockProperties.Default);
         var registeredKey = new RegistryKey<Block>(registryId, entryId);
         registry.Register(registeredKey, registeredValue, RegistrationInfo.BuiltIn);
 
@@ -388,7 +401,7 @@ internal static class Program
             registry.GetResourceKey(registeredValue) == registeredKey,
             "Registry.getResourceKey must recover the resource key for a registered value.");
         Require(
-            registry.GetResourceKey(new Block(BlockProperties.Default, createIntrusiveRegistryHolder: false)) is null,
+            registry.GetResourceKey(new TestBlockDefinition(BlockProperties.Default)) is null,
             "Registry.getResourceKey must return no key for an unregistered value.");
 
         registry.Freeze();
@@ -414,7 +427,7 @@ internal static class Program
             ResourceLocation.Parse("asteria:missing_default_registry"),
             ResourceLocation.Parse("asteria:not_registered"));
         Require(
-            missingDefault.GetKey(new Block(BlockProperties.Default, createIntrusiveRegistryHolder: false)) == missingDefault.DefaultKey,
+            missingDefault.GetKey(new TestBlockDefinition(BlockProperties.Default)) == missingDefault.DefaultKey,
             "DefaultedMappedRegistry.getKey must return defaultKey even before its default holder is registered.");
         missingDefault.Freeze();
         RequireThrows<InvalidOperationException>(
@@ -424,7 +437,7 @@ internal static class Program
         var defaulted = new DefaultedRegistry<Block>(
             ResourceLocation.Parse("asteria:defaulted_value_lookup"),
             ResourceLocation.Parse("asteria:air"));
-        Block air = new(BlockProperties.Default, createIntrusiveRegistryHolder: false);
+        Block air = new TestBlockDefinition(BlockProperties.Default);
         defaulted.Register(ResourceLocation.Parse("asteria:air"), air);
         defaulted.Freeze();
         Require(
@@ -486,7 +499,7 @@ internal static class Program
 
         BooleanProperty invalidName = BooleanProperty.Create("Invalid Name");
         RequireThrows<ArgumentException>(
-            () => new Block(BlockProperties.Default, builder => builder.Add(invalidName), createIntrusiveRegistryHolder: false),
+            () => new TestBlockDefinition(BlockProperties.Default, builder => builder.Add(invalidName)),
             "Property names must be validated when the state definition is built.");
     }
 
@@ -536,7 +549,7 @@ internal static class Program
             _ => "Invalid Name");
         Require(invalidSerialized.GetName(TestAxis.Z) == "Invalid Name", "EnumProperty construction must retain enum serialized names before state-definition validation.");
         RequireThrows<ArgumentException>(
-            () => new Block(BlockProperties.Default, builder => builder.Add(invalidSerialized), createIntrusiveRegistryHolder: false),
+            () => new TestBlockDefinition(BlockProperties.Default, builder => builder.Add(invalidSerialized)),
             "StateDefinition.Builder must validate serialized enum value names when the property is added.");
 
         EnumProperty<TestDeclaredOrder> declared = EnumProperty<TestDeclaredOrder>.Create("declared");
@@ -814,10 +827,9 @@ internal static class Program
     private static void CheckPalettedContainerGrowthAndGlobalMode()
     {
         IntegerProperty variant = IntegerProperty.Create("variant", 0, 256);
-        var manyStateBlock = new Block(
+        var manyStateBlock = new TestBlockDefinition(
             BlockProperties.Default,
-            builder => builder.Add(variant),
-            createIntrusiveRegistryHolder: false);
+            builder => builder.Add(variant));
 
         var ids = new BlockStateIdMap();
         foreach (BlockState state in manyStateBlock.StateDefinition.PossibleStates) ids.Register(state);
@@ -853,7 +865,7 @@ internal static class Program
     private static void CheckGlobalPaletteMemoryAndStorageWidths()
     {
         IntegerProperty variant = IntegerProperty.Create("variant", 0, 1023);
-        var block = new Block(BlockProperties.Default, builder => builder.Add(variant), createIntrusiveRegistryHolder: false);
+        var block = new TestBlockDefinition(BlockProperties.Default, builder => builder.Add(variant));
         var ids = new BlockStateIdMap();
         foreach (BlockState state in block.StateDefinition.PossibleStates)
             ids.Register(state);
@@ -935,7 +947,7 @@ internal static class Program
     private static void CheckFrozenRegistry()
     {
         RequireThrows<InvalidOperationException>(
-            () => BuiltInRegistries.Block.Register(ResourceLocation.Parse("asteria:late_block"), new Block(BlockProperties.Default, createIntrusiveRegistryHolder: false)),
+            () => BuiltInRegistries.Block.Register(ResourceLocation.Parse("asteria:late_block"), new TestBlockDefinition(BlockProperties.Default)),
             "A frozen block registry must reject new entries.");
     }
 
