@@ -109,7 +109,8 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
 
     public override bool Equals(object? obj)
     {
-        if (this is Named || obj is Named)
+        if (GetType() != typeof(HolderSet<T>) ||
+            obj?.GetType() != typeof(HolderSet<T>))
         {
             return ReferenceEquals(this, obj);
         }
@@ -120,7 +121,7 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
 
     public override int GetHashCode()
     {
-        if (this is Named)
+        if (GetType() != typeof(HolderSet<T>))
         {
             return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);
         }
