@@ -252,8 +252,11 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
 
         public int Count => _registry.Count;
 
-        public int GetId(Holder<T>? holder) =>
-            holder is null ? -1 : _registry.GetId(holder.Value);
+        public int GetId(Holder<T>? holder)
+        {
+            ArgumentNullException.ThrowIfNull(holder);
+            return _registry.GetId(holder.Value);
+        }
 
         public Holder<T>? ById(int id) => _registry.GetHolderById(id);
 
