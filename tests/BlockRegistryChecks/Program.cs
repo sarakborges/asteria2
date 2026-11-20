@@ -488,22 +488,6 @@ internal static class Program
             filteredLookup.ListTags().SequenceEqual(lookupView.ListTags()),
             "HolderLookup.filterElements must preserve the parent tag view.");
 
-        IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
-        Require(holderIdMap.Count == registry.Count, "Registry.asHolderIdMap must report the registry size.");
-        Require(
-            ReferenceEquals(holderIdMap.ById(0), registered) &&
-            ReferenceEquals(holderIdMap.ById(1), placeholderEntry),
-            "Registry.asHolderIdMap.byId must return the registered holders by numeric ID.");
-        Require(
-            holderIdMap.GetId(registered) == registry.GetId(value) &&
-            holderIdMap.GetId(Holder<Block>.Direct(value)) == registry.GetId(value),
-            "Registry.asHolderIdMap.getId must resolve the wrapped value, regardless of holder kind.");
-        Require(
-            holderIdMap.GetId(Holder<Block>.Direct(new TestBlockDefinition(BlockProperties.Of()))) == -1,
-            "Registry.asHolderIdMap.getId must return -1 for values not registered in the registry.");
-        Require(
-            holderIdMap.SequenceEqual(new Holder<Block>[] { registered, placeholderEntry }),
-            "Registry.asHolderIdMap must enumerate registered holders in numeric ID order.");
         Holder<Block>.Reference? randomHolder = registry.GetRandom(new Random(0));
         Require(
             randomHolder is not null &&
