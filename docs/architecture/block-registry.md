@@ -26,7 +26,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 ## Identifiers and resource keys
 
 - `ResourceLocation` follows vanilla identifier parsing, validation, ordering, path transformations, and language/debug naming helpers.
-- `RegistryKey<T>` and `TagKey<T>` expose registry matching, typed casts, and dependent resource-key creation.
+- `RegistryKey<T>` exposes registry matching, typed casts, and dependent resource-key creation. `TagKey<T>` retains the full registry key, compares that key for registry membership, and supports typed casts.
 
 ## Blocks and block states
 
