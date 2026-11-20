@@ -103,6 +103,7 @@ internal static class Program
         CheckPackedBitStorageWidths();
         CheckZeroBitStorage();
         CheckThreadingDetector();
+        CheckThreadingDetectorInterruptHandling();
         CheckIdentityIdMap();
         CheckIdentityIdMapSparseMappings();
         CheckPaletteExceptions();
@@ -1296,6 +1297,42 @@ internal static class Program
         var unboundedReleaseDetector = new ThreadingDetector("UnboundedSemaphore");
         unboundedReleaseDetector.CheckAndUnlock();
         unboundedReleaseDetector.CheckAndUnlock();
+    }
+
+    private static void CheckThreadingDetectorInterruptHandling()
+    {
+        const string detectorName = "InterruptedBlockRegistryChecks";
+        var detector = new ThreadingDetector(detectorName);
+        detector.CheckAndLock();
+
+        Thread.CurrentThread.Interrupt();
+        InvalidOperationException acquireException = Capture<InvalidOperationException>(
+            () => detector.CheckAndLock(),
+            "An interrupted semaphore waiter must still receive the threading detector exception.");
+        Require(
+            acquireException.InnerException?.Message == $"Accessing {detectorName} from multiple threads",
+            "An interrupted waiter must not leak ThreadInterruptedException instead of the concurrency violation.");
+
+        bool interruptRestored = false;
+        try
+        {
+            Thread.Sleep(1);
+        }
+        catch (ThreadInterruptedException)
+        {
+            interruptRestored = true;
+        }
+
+        Require(
+            interruptRestored,
+            "ThreadingDetector must restore the interrupted status after its semaphore wait is interrupted.");
+
+        InvalidOperationException releaseException = RequireThrows<InvalidOperationException>(
+            () => detector.CheckAndUnlock(),
+            "The original owner must still report the concurrent-access violation when it releases.");
+        Require(
+            releaseException.InnerException?.Message == $"Accessing {detectorName} from multiple threads",
+            "The owner must retain the same concurrency error after an interrupted waiter.");
     }
 
     private static void CheckIdentityIdMap()
