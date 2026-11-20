@@ -31,6 +31,31 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
     private HashSet<Holder<T>>? _contentsSet;
 
     public static HolderSet<T> Empty { get; } = new(Array.Empty<Holder<T>>());
+
+    public static HolderSet<T> Direct(params Holder<T>[] values) =>
+        new(values ?? throw new ArgumentNullException(nameof(values)));
+
+    public static HolderSet<T> Direct(IEnumerable<Holder<T>> values) =>
+        new(values);
+
+    public static HolderSet<T> Direct<TElement>(
+        Func<TElement, Holder<T>> holderGetter,
+        params TElement[] elements)
+    {
+        ArgumentNullException.ThrowIfNull(holderGetter);
+        ArgumentNullException.ThrowIfNull(elements);
+        return new HolderSet<T>(elements.Select(holderGetter));
+    }
+
+    public static HolderSet<T> Direct<TElement>(
+        Func<TElement, Holder<T>> holderGetter,
+        IEnumerable<TElement> elements)
+    {
+        ArgumentNullException.ThrowIfNull(holderGetter);
+        ArgumentNullException.ThrowIfNull(elements);
+        return new HolderSet<T>(elements.Select(holderGetter));
+    }
+
     public virtual bool IsBound => _contents is not null;
     public virtual int Count => Contents.Count;
     public virtual Holder<T> this[int index] => Contents[index];

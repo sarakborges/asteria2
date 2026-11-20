@@ -466,6 +466,19 @@ internal static class Program
 
         HolderSet<Block> directSet = new(new Holder<Block>[] { registered, registered });
         Require(directSet.Count == 2, "Direct holder sets must preserve order and duplicate entries.");
+
+        HolderSet<Block> directFactory = HolderSet<Block>.Direct(registered, registered);
+        Require(
+            directFactory.SequenceEqual(new Holder<Block>[] { registered, registered }),
+            "HolderSet.direct(varargs) must preserve order and duplicate entries.");
+        HolderSet<Block> mappedDirectFactory = HolderSet<Block>.Direct(
+            static block => Holder<Block>.Direct(block),
+            new[] { value, placeholderValue });
+        Require(
+            mappedDirectFactory.Count == 2 &&
+            ReferenceEquals(mappedDirectFactory[0].Value, value) &&
+            ReferenceEquals(mappedDirectFactory[1].Value, placeholderValue),
+            "HolderSet.direct(holderGetter, elements) must map source values to direct holders in order.");
         Require(
             directSet.ToString() == $"DirectSet[[{registered}, {registered}]]",
             "HolderSet.Direct.toString must render its contents list.");
