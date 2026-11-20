@@ -35,7 +35,7 @@ public class Block
             BuiltInRegistryHolder = BuiltInRegistries.Block.CreateIntrusiveHolder(this);
         }
 
-        var builder = new StateDefinitionBuilder();
+        var builder = new StateDefinitionBuilder(this);
         CreateBlockStateDefinition(builder);
         configureState?.Invoke(builder);
         StateDefinition = builder.Build(this);
