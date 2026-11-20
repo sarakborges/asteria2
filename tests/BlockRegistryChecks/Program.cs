@@ -20,6 +20,8 @@ internal static class Program
 
     private sealed class TestBlockDefinition : Block
     {
+        private StateDefinitionBuilder? _capturedBuilder;
+
         public TestBlockDefinition(
             BlockProperties properties,
             Action<StateDefinitionBuilder>? configureState = null)
@@ -29,6 +31,14 @@ internal static class Program
                 configureState: configureState)
         {
         }
+
+        protected override void CreateBlockStateDefinition(StateDefinitionBuilder builder) =>
+            _capturedBuilder = builder;
+
+        public void AddPropertyAfterConstruction<T>(StateProperty<T> property)
+            where T : notnull, IComparable =>
+            (_capturedBuilder ?? throw new InvalidOperationException("No state builder was captured."))
+                .Add(property);
 
         public void SetDefaultState(BlockState state) => RegisterDefaultState(state);
     }
@@ -912,6 +922,11 @@ internal static class Program
         Require(definition.PossibleStates.Count == 6, "powered(2) x stage(3) must create six states.");
 
         var alternateDefaultOwner = new TestBlockDefinition(BlockProperties.Of());
+        BooleanProperty addedAfterConstruction = BooleanProperty.Create("added_after_construction");
+        alternateDefaultOwner.AddPropertyAfterConstruction(addedAfterConstruction);
+        Require(
+            !alternateDefaultOwner.StateDefinition.HasProperty(addedAfterConstruction),
+            "StateDefinition.Builder additions after create must not mutate the already materialized definition.");
         alternateDefaultOwner.SetDefaultState(Blocks.AIR.DefaultState);
         Require(
             ReferenceEquals(alternateDefaultOwner.DefaultState, Blocks.AIR.DefaultState),

@@ -8,11 +8,9 @@ namespace Asteria.Content.Blocks;
 public sealed class StateDefinitionBuilder
 {
     private readonly List<StateProperty> _properties = new();
-    private bool _built;
 
     public StateDefinitionBuilder Add<T>(StateProperty<T> property) where T : notnull, IComparable
     {
-        EnsureMutable();
         ArgumentNullException.ThrowIfNull(property);
 
         if (!StateProperty.IsValidName(property.Name))
@@ -54,18 +52,7 @@ public sealed class StateDefinitionBuilder
 
     internal StateDefinition Build(Block owner)
     {
-        EnsureMutable();
         ArgumentNullException.ThrowIfNull(owner);
-
-        _built = true;
         return new StateDefinition(owner, _properties);
-    }
-
-    private void EnsureMutable()
-    {
-        if (_built)
-        {
-            throw new InvalidOperationException("A state definition builder can only be used once.");
-        }
     }
 }
