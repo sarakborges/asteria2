@@ -95,9 +95,18 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(RegistryBootstrap.IsInitialized, "Bootstrap must complete.");
         Require(BuiltInRegistries.AreFrozen, "Built-in registries must be frozen.");
+        Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
+        Require(BuiltInRegistries.Root.Count == 1, "The root registry must contain the built-in block registry.");
+        Require(
+            ReferenceEquals(
+                BuiltInRegistries.Root.GetValue(
+                    new RegistryKey<IRegistry>(BuiltInRegistries.Root.Location, BuiltInRegistries.Block.Location)),
+                BuiltInRegistries.Block),
+            "The root registry must resolve the block registry by its registry key.");
         Require(BuiltInRegistries.Block.Count == 2, "Two Asteria blocks should be registered.");
         Require(Block.BlockStateRegistry.Count == 7, "Expected one air state and six test states.");
 
+        CheckBuiltInRegistryRoot();
         CheckResourceLocations();
         CheckDefaultedBlockRegistry();
         CheckBlockProperties();
@@ -127,6 +136,25 @@ internal static class Program
         CheckChunkSection();
         CheckStateIdsAreAssignedAtConstruction();
         CheckFrozenRegistry();
+    }
+
+    private static void CheckBuiltInRegistryRoot()
+    {
+        Require(
+            BuiltInRegistries.RootLocation == ResourceLocation.Parse("asteria:root"),
+            "The root registry must use the Asteria namespace.");
+        Require(
+            BuiltInRegistries.Root.Count == 1 && !BuiltInRegistries.Root.IsFrozen,
+            "The root registry must register built-in registries before bootstrap freezes it.");
+
+        RegistryKey<IRegistry> blockRegistryKey =
+            new(BuiltInRegistries.Root.Location, BuiltInRegistries.Block.Location);
+        Require(
+            ReferenceEquals(BuiltInRegistries.Root.GetValue(blockRegistryKey), BuiltInRegistries.Block),
+            "The root registry must resolve its block registry entry.");
+        Require(
+            BuiltInRegistries.Block.Key.RegistryLocation == BuiltInRegistries.RootLocation,
+            "Child registry keys must be rooted in the Asteria root registry.");
     }
 
     private static void CheckResourceLocations()
@@ -203,7 +231,7 @@ internal static class Program
 
         Require(
             BuiltInRegistries.Block.Location == ResourceLocation.Parse("asteria:block") &&
-            BuiltInRegistries.Block.Key.RegistryLocation == ResourceLocation.Parse("root"),
+            BuiltInRegistries.Block.Key.RegistryLocation == BuiltInRegistries.RootLocation,
             "The built-in block registry must use the Asteria namespace while retaining the vanilla root-registry key structure.");
 
         Require(ReferenceEquals(BuiltInRegistries.Block.GetValue(airId), Blocks.AIR), "The air block must be registered.");
@@ -361,7 +389,7 @@ internal static class Program
 
         var registry = new Registry<Block>(registryId);
         Require(
-            registry.Key == new RegistryKey<Registry<Block>>(ResourceLocation.Parse("root"), registryId),
+            registry.Key == new RegistryKey<Registry<Block>>(BuiltInRegistries.RootLocation, registryId),
             "MappedRegistry.key must identify the registry through the root registry.");
         Require(
             registry.ToString() == $"Registry[{registry.Key} (Stable)]",
@@ -376,17 +404,17 @@ internal static class Program
         var entryKey = new RegistryKey<Block>(registryId, entryId);
         var placeholderKey = new RegistryKey<Block>(registryId, placeholderId);
         var tagKey = new TagKey<Block>(registryId, tagId);
-        var rootRegistryKey = new RegistryKey<Registry<Block>>(ResourceLocation.Parse("root"), registryId);
+        var rootRegistryKey = new RegistryKey<Registry<Block>>(BuiltInRegistries.RootLocation, registryId);
         Require(entryKey.IsFor(rootRegistryKey), "ResourceKey.isFor must compare its registry identifier.");
         Require(entryKey.GetRegistryKey() == rootRegistryKey, "ResourceKey.registryKey must return the root registry key.");
         RegistryKey<string>? castEntryKey = entryKey.Cast(
-            new RegistryKey<Registry<string>>(ResourceLocation.Parse("root"), registryId));
+            new RegistryKey<Registry<string>>(BuiltInRegistries.RootLocation, registryId));
         Require(
             castEntryKey is RegistryKey<string> castKey && castKey.Location == entryId,
             "ResourceKey.cast must preserve the identifier when the registry matches.");
         Require(
             entryKey.Cast(new RegistryKey<Registry<string>>(
-                ResourceLocation.Parse("root"),
+                BuiltInRegistries.RootLocation,
                 ResourceLocation.Parse("asteria:other_registry"))) is null,
             "ResourceKey.cast must return an empty result for a different registry.");
         Require(
@@ -394,18 +422,18 @@ internal static class Program
             "ResourceKey.dependent(suffix) must append to its identifier.");
         Require(
             entryKey.Dependent(
-                new RegistryKey<Registry<Block>>(ResourceLocation.Parse("root"), ResourceLocation.Parse("asteria:other_registry")),
+                new RegistryKey<Registry<Block>>(BuiltInRegistries.RootLocation, ResourceLocation.Parse("asteria:other_registry")),
                 path => $"metadata/{path}").Location.Path == "metadata/test_entry",
             "ResourceKey.dependent(decoration) must transform the identifier path.");
         Require(tagKey.IsFor(rootRegistryKey), "TagKey.isFor must compare its registry identifier.");
         TagKey<string>? castTagKey = tagKey.Cast(
-            new RegistryKey<Registry<string>>(ResourceLocation.Parse("root"), registryId));
+            new RegistryKey<Registry<string>>(BuiltInRegistries.RootLocation, registryId));
         Require(
             castTagKey is TagKey<string> castTag && castTag.Location == tagId,
             "TagKey.cast must preserve the tag location when the registry matches.");
         Require(
             tagKey.Cast(new RegistryKey<Registry<string>>(
-                ResourceLocation.Parse("root"),
+                BuiltInRegistries.RootLocation,
                 ResourceLocation.Parse("asteria:other_registry"))) is null,
             "TagKey.cast must return an empty result for a different registry.");
         HolderGetter<Block> lookup = registry.CreateRegistrationLookup();
@@ -517,7 +545,7 @@ internal static class Program
 
         HolderLookup<Block>.RegistryLookup lookupView = registry;
         Require(
-            lookupView.Key == new RegistryKey<Registry<Block>>(ResourceLocation.Parse("root"), registryId),
+            lookupView.Key == new RegistryKey<Registry<Block>>(BuiltInRegistries.RootLocation, registryId),
             "HolderLookup.RegistryLookup.key must expose the root registry key.");
         Require(
             ReferenceEquals(lookupView.RegistryLifecycle, registry.RegistryLifecycle),
