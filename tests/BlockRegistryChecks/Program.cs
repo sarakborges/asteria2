@@ -1220,8 +1220,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             registry.Register(foreignRootEntryKey, foreignRootValue, RegistrationInfo.BuiltIn);
         Require(
             ReferenceEquals(registry.GetHolder(foreignRootEntryKey), foreignRootHolder) &&
-            ReferenceEquals(registry.GetHolder(foreignRootEntryKey.Location), foreignRootHolder) &&
-            registry.GetValue(CreateEntryKey<Block>(registryId, foreignRootEntryKey.Location)) is null,
+            ReferenceEquals(registry.GetHolder(foreignRootEntryKey.Location), foreignRootHolder),
             "MappedRegistry.register must index by identifier and the supplied full key without validating its root registry key.");
 
         Require(
@@ -1232,6 +1231,12 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "Registry.getResourceKey must return no key for an unregistered value.");
 
         registry.Freeze();
+
+        Require(
+            ReferenceEquals(registry.GetValue(foreignRootEntryKey), foreignRootValue) &&
+            ReferenceEquals(registry.GetValue(foreignRootEntryKey.Location), foreignRootValue) &&
+            registry.GetValue(CreateEntryKey<Block>(registryId, foreignRootEntryKey.Location)) is null,
+            "MappedRegistry lookups must preserve the foreign full key while identifier lookup resolves its indexed holder.");
 
         Require(
             ReferenceEquals(registry.GetOptional(entryId), registeredValue),
