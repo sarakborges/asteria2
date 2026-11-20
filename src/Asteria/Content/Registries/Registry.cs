@@ -114,13 +114,13 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         return holder;
     }
 
-    public virtual T? GetValue(ResourceLocation location) =>
-        _byLocation.TryGetValue(location, out Holder<T>.Reference? holder)
+    public virtual T? GetValue(ResourceLocation? location) =>
+        location.HasValue && _byLocation.TryGetValue(location.Value, out Holder<T>.Reference? holder)
             ? holder.Value
             : null;
 
-    public T? GetValue(RegistryKey<T> key) =>
-        _byKey.TryGetValue(key, out Holder<T>.Reference? holder)
+    public T? GetValue(RegistryKey<T>? key) =>
+        key.HasValue && _byKey.TryGetValue(key.Value, out Holder<T>.Reference? holder)
             ? holder.Value
             : null;
 
@@ -128,15 +128,11 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         GetValue(key) ?? throw new InvalidOperationException(
             $"Missing key in {Key}: {key}");
 
-    public T? GetOptional(ResourceLocation location) =>
-        _byLocation.TryGetValue(location, out Holder<T>.Reference? holder)
-            ? holder.Value
-            : null;
+    public T? GetOptional(ResourceLocation? location) =>
+        GetValue(location);
 
-    public T? GetOptional(RegistryKey<T> key) =>
-        _byKey.TryGetValue(key, out Holder<T>.Reference? holder)
-            ? holder.Value
-            : null;
+    public T? GetOptional(RegistryKey<T>? key) =>
+        GetValue(key);
 
     public RegistryKey<T>? GetResourceKey(T? value) =>
         value is not null && _byValue.TryGetValue(value, out Holder<T>.Reference? holder)
