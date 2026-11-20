@@ -2413,6 +2413,10 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(tickingCopy.TickingBlockCount == 1 && tickingCopy.IsRandomlyTicking, "Copy must preserve the ticking-block counter.");
         tickingCopy.SetBlockState(1, 0, 0, Blocks.AIR.DefaultState);
         Require(tickingCopy.TickingBlockCount == 0 && tickingSection.TickingBlockCount == 1, "A copied section must maintain an independent ticking-block counter.");
+        tickingSection.GetStates().Set(2, 0, 0, tickingOff);
+        Require(tickingSection.TickingBlockCount == 1, "Direct container writes must leave the cached ticking-block count unchanged.");
+        tickingSection.RecalculateBlockCounts();
+        Require(tickingSection.TickingBlockCount == 2, "RecalculateBlockCounts must rebuild the ticking-block count after direct container writes.");
 
         BlockState placedState = Blocks.TEST_BLOCK.DefaultState;
         BlockState previous = section.SetBlockState(15, 15, 15, placedState);
