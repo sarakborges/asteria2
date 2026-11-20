@@ -1,3 +1,4 @@
+using Block = Asteria.Content.Blocks.Block;
 using BuiltInBlocks = Asteria.Content.Blocks.Blocks;
 using Asteria.Content.Identifiers;
 
