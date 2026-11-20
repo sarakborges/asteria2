@@ -758,7 +758,6 @@ internal static class Program
 
         var ids = new BlockStateIdMap();
         foreach (BlockState state in manyStateBlock.StateDefinition.PossibleStates) ids.Register(state);
-        ids.Freeze();
 
         var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(ids);
         var container = new PalettedContainer<BlockState>(strategy, manyStateBlock.DefaultState);
@@ -795,7 +794,6 @@ internal static class Program
         var ids = new BlockStateIdMap();
         foreach (BlockState state in block.StateDefinition.PossibleStates)
             ids.Register(state);
-        ids.Freeze();
 
         var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(ids);
         var container = new PalettedContainer<BlockState>(strategy, block.DefaultState);
