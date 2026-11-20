@@ -444,10 +444,10 @@ internal static class Program
         Require(registry.GetId(null!) == -1, "A non-defaulted registry must return -1 for a null reverse lookup.");
         Require(registry.GetKey(null!) is null, "A non-defaulted registry must return null for a null key lookup.");
         Require(registry.ById(-1) is null, "MappedRegistry.byId must return null for an invalid numeric ID.");
-        var entryKey = new RegistryKey<Block>(registryId, entryId);
-        var placeholderKey = new RegistryKey<Block>(registryId, placeholderId);
-        var tagKey = TagKey<Block>.Create(registry.Key, tagId);
-        var rootRegistryKey = new RegistryKey<Registry<Block>>(BuiltInRegistries.RootLocation, registryId);
+        var rootRegistryKey = RegistryKey<Block>.CreateRegistryKey(registryId);
+        var entryKey = RegistryKey<Block>.Create(rootRegistryKey, entryId);
+        var placeholderKey = RegistryKey<Block>.Create(rootRegistryKey, placeholderId);
+        var tagKey = TagKey<Block>.Create(rootRegistryKey, tagId);
         Require(entryKey.IsFor(rootRegistryKey), "ResourceKey.isFor must compare its registry identifier.");
         Require(entryKey.GetRegistryKey() == rootRegistryKey, "ResourceKey.registryKey must return the root registry key.");
         RegistryKey<string>? castEntryKey = entryKey.Cast(
