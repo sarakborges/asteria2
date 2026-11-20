@@ -66,8 +66,9 @@ public sealed class BlockState
         int valueIndex = property.IndexOf(value);
         if (valueIndex < 0)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(value), value, $"Value is not valid for state property '{property.Name}'.");
+            throw new ArgumentException(
+                $"Cannot set property '{property.Name}' to '{value}' on '{Block}'; it is not an allowed value.",
+                nameof(value));
         }
 
         return GetNeighbors()[propertyIndex][valueIndex];
