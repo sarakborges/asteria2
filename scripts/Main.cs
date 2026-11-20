@@ -43,11 +43,11 @@ public partial class Main : Node3D
 
         if (Blocks.TEST_BLOCK.StateDefinition.PossibleStates.Count != 6)
             throw new InvalidOperationException("The test block should have exactly six possible states.");
-        if (BuiltInRegistries.BlockStates.Count != 7)
+        if (Block.BlockStateRegistry.Count != 7)
             throw new InvalidOperationException("The global block-state map should contain seven states.");
-        int changedStateId = BuiltInRegistries.BlockStates.GetId(changedState);
+        int changedStateId = Block.BlockStateRegistry.GetId(changedState);
         if (changedStateId < 0 ||
-            !ReferenceEquals(BuiltInRegistries.BlockStates.ById(changedStateId), changedState))
+            !ReferenceEquals(Block.BlockStateRegistry.ById(changedStateId), changedState))
             throw new InvalidOperationException("Global block-state ID lookup failed.");
 
         bool rejectedInvalidValue = false;
@@ -72,7 +72,7 @@ public partial class Main : Node3D
 
         GD.Print(
             $"Block registry ready: {BuiltInRegistries.Block.Count} blocks, " +
-            $"{BuiltInRegistries.BlockStates.Count} block states. " +
+            $"{Block.BlockStateRegistry.Count} block states. " +
             $"'{testBlockHolder.Key.Location}' state '{changedState}' has global id " +
             $"{changedStateId}; registries frozen.");
     }
