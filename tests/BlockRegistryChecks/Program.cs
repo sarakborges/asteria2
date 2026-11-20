@@ -427,8 +427,11 @@ internal static class Program
             "Registry.asHolderIdMap.byId must return the registered holders by numeric ID.");
         Require(
             holderIdMap.GetId(registered) == registry.GetId(value) &&
-            holderIdMap.GetId(Holder<Block>.Direct(value)) == -1,
-            "Registry.asHolderIdMap.getId must resolve registered values through their holders.");
+            holderIdMap.GetId(Holder<Block>.Direct(value)) == registry.GetId(value),
+            "Registry.asHolderIdMap.getId must resolve the wrapped value, regardless of holder kind.");
+        Require(
+            holderIdMap.GetId(Holder<Block>.Direct(new TestBlockDefinition(BlockProperties.Of()))) == -1,
+            "Registry.asHolderIdMap.getId must return -1 for values not registered in the registry.");
         Require(
             holderIdMap.SequenceEqual(new Holder<Block>[] { registered, placeholderEntry }),
             "Registry.asHolderIdMap must enumerate registered holders in numeric ID order.");
