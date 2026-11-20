@@ -7,7 +7,13 @@ namespace Asteria.Content.Blocks;
 /// </summary>
 public sealed class StateDefinitionBuilder
 {
+    private readonly Block _owner;
     private readonly List<StateProperty> _properties = new();
+
+    public StateDefinitionBuilder(Block owner)
+    {
+        _owner = owner ?? throw new ArgumentNullException(nameof(owner));
+    }
 
     public StateDefinitionBuilder Add<T>(StateProperty<T> property) where T : notnull, IComparable
     {
@@ -16,15 +22,13 @@ public sealed class StateDefinitionBuilder
         if (!StateProperty.IsValidName(property.Name))
         {
             throw new ArgumentException(
-                $"Invalid state property name '{property.Name}'. Names must use lowercase ASCII letters, digits, or underscores.",
-                nameof(property));
+                $"{_owner} has invalidly named property: {property.Name}");
         }
 
         if (property.ValueCount <= 1)
         {
             throw new ArgumentException(
-                $"State definition cannot use property '{property.Name}' with one or fewer possible values.",
-                nameof(property));
+                $"{_owner} attempted use property {property.Name} with <= 1 possible values");
         }
 
         for (int index = 0; index < property.ValueCount; index++)
@@ -33,8 +37,7 @@ public sealed class StateDefinitionBuilder
             if (!StateProperty.IsValidName(serializedValue))
             {
                 throw new ArgumentException(
-                    $"State property '{property.Name}' has an invalid serialized value '{serializedValue}'.",
-                    nameof(property));
+                    $"{_owner} has property: {property.Name} with invalidly named value: {serializedValue}");
             }
         }
 
@@ -42,8 +45,7 @@ public sealed class StateDefinitionBuilder
                 string.Equals(existing.Name, property.Name, StringComparison.Ordinal)))
         {
             throw new ArgumentException(
-                $"State property '{property.Name}' has already been added to this block.",
-                nameof(property));
+                $"{_owner} has duplicate property: {property.Name}");
         }
 
         _properties.Add(property);
