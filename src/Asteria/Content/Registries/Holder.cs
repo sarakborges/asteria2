@@ -173,8 +173,12 @@ public abstract class Holder<T> where T : class
         internal void BindValue(T value)
         {
             ArgumentNullException.ThrowIfNull(value);
-            if (_value is not null && !ReferenceEquals(_value, value))
-                throw new InvalidOperationException("Can't change holder value.");
+            if (_intrusive && !ReferenceEquals(_value, value))
+            {
+                throw new InvalidOperationException(
+                    $"Can't change holder {_key?.ToString() ?? "null"} value: existing={_value?.ToString() ?? "null"}, new={value}");
+            }
+
             _value = value;
         }
 
