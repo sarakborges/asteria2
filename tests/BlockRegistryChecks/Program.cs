@@ -480,6 +480,12 @@ internal static class Program
         Require(
             tag.ToString() == $"NamedSet({tagKey})[[{registered}, {registered}]]",
             "Bound HolderSet.Named.toString must render its contents list.");
+        TagKey<Block> lateTagKey = new(registryId, ResourceLocation.Parse("asteria:late_registration_tag"));
+        HolderSet<Block>.Named lateTag = lookup.GetOrThrow(lateTagKey);
+        Require(
+            !lateTag.IsBound && registry.GetTag(lateTagKey) is null,
+            "A registration lookup retained past freeze may create a tag placeholder without publishing it into the frozen tag set.");
+
         HolderSetUnwrap<Block> namedUnwrap = tag.Unwrap();
         Require(
             namedUnwrap.IsTag &&
@@ -539,6 +545,34 @@ internal static class Program
         registry.PrepareTagReload(Array.Empty<KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>>()).Apply();
         Require(!registered.Is(tagKey), "A tag reload must replace holder tag membership.");
         Require(registry.GetTag(tagKey) is null, "Tags omitted from a reload must no longer be present.");
+
+        var crossRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:cross_registry"));
+        var otherRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:other_registry"));
+        ResourceLocation foreignEntryLocation = ResourceLocation.Parse("asteria:foreign_entry");
+        RegistryKey<Block> foreignEntryKey = new(otherRegistry.Location, foreignEntryLocation);
+        HolderGetter<Block> crossLookup = crossRegistry.CreateRegistrationLookup();
+        Holder<Block>.Reference foreignPlaceholder = crossLookup.GetOrThrow(foreignEntryKey);
+        Block foreignValue = new TestBlockDefinition(BlockProperties.Of());
+        Require(
+            ReferenceEquals(
+                crossRegistry.Register(foreignEntryKey, foreignValue, RegistrationInfo.BuiltIn),
+                foreignPlaceholder),
+            "MappedRegistry.register must retain a supplied ResourceKey without revalidating its registry identifier.");
+
+        TagKey<Block> foreignTagKey = new(otherRegistry.Location, ResourceLocation.Parse("asteria:foreign_tag"));
+        HolderSet<Block>.Named foreignTag = crossLookup.GetOrThrow(foreignTagKey);
+        crossRegistry.BindTags(new[]
+        {
+            new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
+                foreignTagKey,
+                new Holder<Block>[] { foreignPlaceholder })
+        });
+        crossRegistry.Freeze();
+        Require(
+            foreignTag.IsBound &&
+            foreignPlaceholder.Is(foreignTagKey) &&
+            ReferenceEquals(crossRegistry.GetTag(foreignTagKey), foreignTag),
+            "MappedRegistry tag registration and binding must preserve TagKeys without adding a registry-identity validation.");
 
         var invalidRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:invalid_registry"));
         invalidRegistry.CreateRegistrationLookup().GetOrThrow(

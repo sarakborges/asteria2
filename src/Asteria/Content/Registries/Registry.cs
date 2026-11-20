@@ -63,8 +63,6 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         ArgumentNullException.ThrowIfNull(value);
         ArgumentNullException.ThrowIfNull(registrationInfo);
 
-        if (key.RegistryLocation != Location)
-            throw new ArgumentException($"Key '{key}' belongs to another registry.", nameof(key));
         if (!key.Location.IsValid)
             throw new ArgumentException("A valid entry location is required.", nameof(key));
         if (_byLocation.ContainsKey(key.Location))
@@ -225,9 +223,6 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
 
     private Holder<T>.Reference GetOrCreateHolderOrThrow(RegistryKey<T> key)
     {
-        if (key.RegistryLocation != Location)
-            throw new ArgumentException($"Key '{key}' belongs to another registry.", nameof(key));
-
         if (_byKey.TryGetValue(key, out Holder<T>.Reference? registered))
             return registered;
 
@@ -242,10 +237,6 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
 
     private HolderSet<T>.Named GetOrCreateTagForRegistration(TagKey<T> tag)
     {
-        if (tag.RegistryLocation != Location)
-            throw new ArgumentException($"Tag '{tag}' belongs to another registry.", nameof(tag));
-
-        EnsureWritable();
         if (!_registrationTags.TryGetValue(tag, out HolderSet<T>.Named? holders))
         {
             holders = new HolderSet<T>.Named(this, tag);
