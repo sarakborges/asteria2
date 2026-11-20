@@ -41,11 +41,11 @@ public static class Blocks
 
     internal static void RegisterAll()
     {
-        BuiltInRegistries.Block.Register(
+        Registry.Register(BuiltInRegistries.Block,
             ResourceLocation.FromNamespaceAndPath("asteria", "air"),
             AIR);
 
-        BuiltInRegistries.Block.Register(
+        Registry.Register(BuiltInRegistries.Block,
             ResourceLocation.FromNamespaceAndPath("asteria", "registry_test"),
             TEST_BLOCK);
     }
