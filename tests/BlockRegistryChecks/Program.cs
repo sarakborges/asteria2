@@ -111,8 +111,8 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(RegistryBootstrap.IsInitialized, "Bootstrap must complete and remain idempotent.");
         Require(BuiltInRegistries.AreFrozen, "Built-in registries must be frozen.");
-        BuiltInRegistries.FreezeAll();
-        Require(BuiltInRegistries.AreFrozen, "BuiltInRegistries.freeze must remain idempotent.");
+        RegistryBootstrap.Initialize();
+        Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
         Require(BuiltInRegistries.Root.Count == 1, "The root registry must contain the built-in block registry.");
         Require(
