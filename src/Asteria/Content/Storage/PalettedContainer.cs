@@ -111,7 +111,6 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
 
     private T GetByIndex(int index)
     {
-        ValidateIndex(index);
         Data data = Volatile.Read(ref _data);
         int paletteId = data.Storage.Get(index);
         return data.Palette.ValueFor(paletteId);
@@ -148,7 +147,6 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
 
     private T GetAndSetUncheckedByIndex(int index, T value)
     {
-        ValidateIndex(index);
         ArgumentNullException.ThrowIfNull(value);
 
         Data data = Volatile.Read(ref _data);
@@ -260,11 +258,4 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
         return newData.Palette.IdFor(lastAddedValue, NoResizePaletteResize<T>.Instance);
     }
 
-    private void ValidateIndex(int index)
-    {
-        if ((uint)index >= (uint)Size)
-        {
-            throw new ArgumentOutOfRangeException(nameof(index), index, "Paletted container index is out of range.");
-        }
-    }
 }
