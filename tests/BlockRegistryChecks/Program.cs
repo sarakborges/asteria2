@@ -542,6 +542,33 @@ internal static class Program
             () => registry.BindTags(Array.Empty<KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>>()),
             "Direct tag binding must be rejected after freeze.");
 
+        registry.PrepareTagReload(new[]
+        {
+            new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
+                lateTagKey,
+                new Holder<Block>[] { registered })
+        }).Apply();
+        Require(
+            ReferenceEquals(registry.GetTag(lateTagKey), lateTag) && lateTag.IsBound,
+            "Tag reload must reuse a named tag created through the registry's retained registration lookup.");
+
+        TagKey<Block> reloadOnlyTagKey = new(
+            registryId,
+            ResourceLocation.Parse("asteria:reload_only_tag"));
+        KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>[] reloadOnlyDefinition =
+        {
+            new(
+                reloadOnlyTagKey,
+                new Holder<Block>[] { registered })
+        };
+        registry.PrepareTagReload(reloadOnlyDefinition).Apply();
+        HolderSet<Block>.Named firstReloadOnlyTag = registry.GetTag(reloadOnlyTagKey)!;
+        registry.PrepareTagReload(reloadOnlyDefinition).Apply();
+        HolderSet<Block>.Named secondReloadOnlyTag = registry.GetTag(reloadOnlyTagKey)!;
+        Require(
+            !ReferenceEquals(firstReloadOnlyTag, secondReloadOnlyTag),
+            "Tags introduced only by a reload must be recreated on a later reload unless they were registered before freeze.");
+
         registry.PrepareTagReload(Array.Empty<KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>>()).Apply();
         Require(!registered.Is(tagKey), "A tag reload must replace holder tag membership.");
         Require(registry.GetTag(tagKey) is null, "Tags omitted from a reload must no longer be present.");

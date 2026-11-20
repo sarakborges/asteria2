@@ -308,10 +308,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         foreach (KeyValuePair<TagKey<T>, IEnumerable<Holder<T>>> definition in tagDefinitions)
         {
             TagKey<T> key = definition.Key;
-            if (key.RegistryLocation != Location)
-                throw new ArgumentException($"Tag '{key}' belongs to another registry.", nameof(tagDefinitions));
-
-            HolderSet<T>.Named set = _boundTags!.TryGetValue(key, out HolderSet<T>.Named? existing)
+            HolderSet<T>.Named set = _registrationTags.TryGetValue(key, out HolderSet<T>.Named? existing)
                 ? existing
                 : new HolderSet<T>.Named(this, key);
             pending.Add(key, (set, definition.Value.ToArray()));
