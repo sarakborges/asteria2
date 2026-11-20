@@ -1,48 +1,53 @@
 # Block registry, block states, and chunk-section storage
 
-## Reference
+## Reference and scope
 
-Minecraft Java Edition 26.3 source is the reference for the port. Asteria content definitions remain original; system architecture and data flow are ported rather than re-invented.
+Minecraft Java Edition 26.3 is the reference for architecture, contracts, and behavior. Asteria keeps its own block content; this port follows vanilla systems rather than substituting project-specific designs.
+
+This stage covers only systems already introduced in Asteria: registries and holders, blocks and block states, block-state IDs, palette storage, and the block-state portion of chunk sections. Fluid, biome, data-component, network, and disk-persistence behavior are deferred until their corresponding domain systems are introduced.
 
 ## Registry and holder model
 
-- Registry<T> mirrors the MappedRegistry lookup model: key, location, value-identity, and numeric-ID maps point directly to stable Holder.Reference<T> objects.
-- Registry iteration exposes values; ListElements exposes the stable registered references.
-- Holder<T> distinguishes direct values from registry references. Direct holders cannot be serialized as registry references.
-- Standalone references may be requested before registration through HolderGetter<T>. Their values bind during registry freeze.
-- Intrusive registries require values to have an intrusive holder created before registration. Registration binds the key to that same holder; missing intrusive holders are rejected.
-- Freeze binds values, rejects unbound placeholders and unregistered intrusive holders, and publishes the initial bound tag set.
-- Registration-time tags are named holder sets. Tag access is unavailable before binding. Post-freeze changes use PrepareTagReload and publish a replacement tag snapshot.
-- DefaultedRegistry<T> adds default lookup semantics without changing exact holder lookups.
+- `Registry<T>` follows `MappedRegistry<T>`: location, registry-key, value-identity, numeric-ID, and holder indexes share stable `Holder.Reference<T>` instances.
+- `Count`/registry size includes standalone key placeholders. Numeric ID lookup remains separate from key lookup.
+- Registration records `RegistrationInfo` and aggregates `Lifecycle`; ordinary registration uses the built-in stable metadata.
+- Registry freezing binds values, rejects unbound standalone references and unregistered intrusive holders, verifies tag binding, and publishes the bound tag set.
+- Intrusive registries require an intrusive holder before registration. A block creates its intrusive holder before its state definition, as vanilla `Block` does.
+- `Holder<T>` supports direct and reference variants, key/predicate/tag membership, ownership checks, unwrap/unwrap-key, registered names, and bound/unbound tag behavior.
+- `HolderSet<T>` supports direct and named sets, ordered contents, membership, random selection, unwrap/unwrap-key, and serialization ownership.
+- `HolderGetter<T>` exposes optional and throwing key/tag lookup plus random element selection. Registration lookups create stable standalone placeholders.
+- `DefaultedRegistry<T>` applies fallback semantics only to the vanilla defaulted lookup paths; exact holder and optional lookups remain exact.
+- Tag reload uses a pending replacement snapshot. The complete vanilla tag-loader pipeline and `HolderLookup.Provider` are not yet introduced.
 
-The port does not yet include RegistrationInfo/Lifecycle, data-component lookup, HolderLookup.Provider, the complete tag-loader pipeline, or registry synchronization codecs.
+## Blocks and block states
 
-## Block states
-
-- StateProperty<T> describes a named, typed property and its finite ordered values.
-- StateDefinition sorts property names, materializes the Cartesian product, and links each state to precomputed neighbor states.
-- BlockState.SetValue, TrySetValue, and Cycle resolve through cached neighbor tables, following the StateHolder transition model.
-- Global runtime state IDs are assigned after block registration and frozen before palette containers are created.
+- `BlockProperties` is a mutable fluent builder for the properties represented so far. Defaults and setter behavior follow `BlockBehaviour.Properties`.
+- `Block` creates its intrusive holder before building states and calls the virtual `CreateBlockStateDefinition` extension point.
+- `StateProperty<T>` exposes a name, value type, ordered possible values, parsing, and serialization. Equality follows vanilla property type/name/value contracts.
+- `StateDefinition` sorts property names, materializes the Cartesian product in vanilla order, and links each state to precomputed neighbor states.
+- `BlockState.SetValue`, `TrySetValue`, and `Cycle` resolve through the precomputed neighbor tables.
+- Each `BlockState` caches the currently modeled `BlockStateBase` values (`IsAir`, destroy speed, and correct-tool requirement) at construction. Mutating the retained properties builder does not retroactively change existing states.
+- `BlockStateIdMap` follows `IdMapper`: mutable insertion and explicit ID mapping, sparse slots, nullable reverse lookup, and size based on mapped values. It is not frozen with the block registry.
 
 ## Paletted storage
 
-- PalettedContainerStrategy<T> selects cubic size, coordinate layout, and palette configuration. Block states use 16³ entries and 4–8 bit local palettes; biomes use 4³ entries and 1–3 bit local palettes.
-- Global palette configurations keep distinct resident-memory and packed-storage bit widths, and request repacking, as Minecraft Configuration.Global does.
-- PalettedContainer<T>.Data groups the active palette, storage, and configuration. Resize builds a new data snapshot and publishes it atomically.
-- Acquire/Release enforce one writer at a time; unchecked writes are for callers already holding the permit.
-- Palette implementations are single-value, linear, hash-map, and global/direct.
-- PackedBitStorage matches the vanilla word layout: entries never cross 64-bit word boundaries.
-- Full codec, network buffer, NBT packing, and disk serialization paths are not implemented yet.
+- `PalettedContainerStrategy<T>` follows the vanilla cubic dimensions and coordinate layout. Block-state containers use 16³ entries and 4–8 bit local palettes. The 4³ biome strategy exists as a sizing strategy only; biome values and biome storage are deferred.
+- Configuration selection follows vanilla single-value, linear, hash-map, and global modes, including distinct resident-memory and packed-storage bit widths for global mode.
+- `PalettedContainer<T>` exposes coordinate-based get, set, get-and-set, unchecked mutation, palette enumeration, counting, copying, and recreation.
+- Resize builds or reuses the matching configuration data, remaps old palette values, then publishes the resulting snapshot.
+- `Acquire`/`Release` use a one-writer detector. Unchecked writes are for callers that already hold the write permit.
+- `SingleValuePalette`, `LinearPalette`, `HashMapPalette`, and `GlobalPalette` follow their corresponding vanilla palette contracts.
+- `PackedBitStorage` follows `SimpleBitStorage` word packing, per-word indexing, fill, get-all, unpack, and raw-array access. `ZeroBitStorage` represents zero-bit palettes without allocating a packed array.
+- Missing palette entries use the dedicated exception type.
+- Data codecs, network buffer read/write, NBT packing, and disk serialization are not yet introduced.
 
 ## Chunk sections
 
-- ChunkSection is a 16×16×16 block-state container.
-- Linear index is (y << 8) | (z << 4) | x.
-- The section tracks the non-air block count, exposes its mutable state container, can recalculate cached counts from palette contents, and copies both its palette storage and cached count, matching the corresponding LevelChunkSection operations.
-- Fluid-derived and random-tick counters, fluid states, the biome holder palette, biome resolver operations, and serialization still require their matching Minecraft domain types and codecs.
+- `ChunkSection` receives a prebuilt 16×16×16 block-state `PalettedContainer`, checks the expected size, and recalculates its initial non-air count.
+- Block-state access is coordinate-based. The flattening formula remains the vanilla `(y << 8) | (z << 4) | x` through the strategy.
+- The currently applicable cached counter is non-air block count. The section exposes its state container, can recalculate this count, and copies its state container and cached count.
+- Fluid states, fluid/random-tick counters, biome holder storage and resolution, and section serialization are deferred until those matching domain systems and codecs exist.
 
-## Remaining parity work
+## Parity gate
 
-- Complete MappedRegistry details: registration metadata/lifecycle, complete Holder/HolderSet contracts, HolderLookup, PendingTags, and synchronization.
-- Port block/fluid state behavior, section counters, biome storage, chunk column layout, and chunk persistence using matching Minecraft class relationships.
-- Compare each subsequent system against the same Minecraft 26.3 source before implementation; do not substitute a fresh Asteria-specific design for a vanilla system.
+This document records implemented scope; it does not certify total parity. The stage remains open until every behavior and structural contract within the systems above has been compared with Minecraft 26.3 and the relevant checks/build pass. Future systems remain deferred rather than being counted as current-stage defects. No later development stage may begin while a current-scope divergence remains.
