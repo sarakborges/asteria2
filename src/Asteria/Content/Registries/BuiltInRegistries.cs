@@ -21,7 +21,7 @@ public static class BuiltInRegistries
     static BuiltInRegistries()
     {
         Root.Register(
-            new RegistryKey<IRegistry>(Root.Location, Block.Location),
+            RegistryKey<IRegistry>.Create(Root.Key, Block.Location),
             Block,
             RegistrationInfo.BuiltIn);
     }
