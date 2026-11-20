@@ -55,7 +55,7 @@ public partial class Main : Node3D
         {
             changedState.TrySetValue(Blocks.TEST_STAGE, 9);
         }
-        catch (ArgumentOutOfRangeException)
+        catch (ArgumentException)
         {
             rejectedInvalidValue = true;
         }
