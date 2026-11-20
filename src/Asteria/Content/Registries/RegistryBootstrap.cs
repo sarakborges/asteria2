@@ -1,8 +1,6 @@
-using Asteria.Content.Blocks;
-
 namespace Asteria.Content.Registries;
 
-/// <summary>Registers built-in content, assigns runtime state IDs, then freezes registries.</summary>
+/// <summary>Coordinates the one-time bootstrap of built-in registries.</summary>
 public static class RegistryBootstrap
 {
     private enum BootstrapState { NotStarted, Running, Complete, Failed }
@@ -33,9 +31,7 @@ public static class RegistryBootstrap
             _state = BootstrapState.Running;
             try
             {
-                global::Asteria.Content.Blocks.Blocks.RegisterAll();
-
-                BuiltInRegistries.FreezeAll();
+                BuiltInRegistries.Bootstrap();
                 _state = BootstrapState.Complete;
             }
             catch
