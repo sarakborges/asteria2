@@ -33,7 +33,16 @@ public sealed class ThreadingDetector
             _stackTraceOfThreadThatFailedToAcquire = Environment.StackTrace;
         }
 
-        _lock.Wait();
+        try
+        {
+            _lock.Wait();
+        }
+        catch (ThreadInterruptedException)
+        {
+            // Java's Semaphore.acquire restores the interrupted status before reporting the violation.
+            Thread.CurrentThread.Interrupt();
+        }
+
         throw _fullException ?? CreateThreadingException(Thread.CurrentThread, Environment.StackTrace);
     }
 
