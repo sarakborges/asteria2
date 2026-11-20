@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Asteria.Content.Registries;
 
 /// <summary>
@@ -109,6 +111,31 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
 
     public virtual IEnumerator<Holder<T>> GetEnumerator() => Contents.GetEnumerator();
     System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(this, obj))
+            return true;
+
+        return GetType() == typeof(HolderSet<T>) &&
+               obj?.GetType() == typeof(HolderSet<T>) &&
+               Contents.SequenceEqual(((HolderSet<T>)obj).Contents);
+    }
+
+    public override int GetHashCode()
+    {
+        if (GetType() != typeof(HolderSet<T>))
+            return RuntimeHelpers.GetHashCode(this);
+
+        unchecked
+        {
+            int hash = 1;
+            foreach (Holder<T> holder in Contents)
+                hash = hash * 31 + holder.GetHashCode();
+
+            return hash;
+        }
+    }
 
     public override string ToString() =>
         $"DirectSet[{FormatContents(Contents)}]";

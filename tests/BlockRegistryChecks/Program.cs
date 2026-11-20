@@ -772,17 +772,26 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             directFactory.SequenceEqual(new Holder<Block>[] { registered, registered }),
             "HolderSet.direct(varargs) must preserve order and duplicate entries.");
         Require(
-            !directSet.Equals(directFactory) && !ReferenceEquals(directSet, directFactory),
-            "HolderSet.Direct must retain object identity equality instead of comparing list contents.");
+            directSet.Equals(directFactory) &&
+            directSet.GetHashCode() == directFactory.GetHashCode() &&
+            !ReferenceEquals(directSet, directFactory),
+            "HolderSet.Direct must compare ordered contents and derive its hash code from them.");
         Require(
             directSet.Equals(directSet) && directFactory.Equals(directFactory),
             "A direct holder set must remain equal to itself.");
+        HolderSet<Block> orderedDirect = HolderSet<Block>.Direct(registered, placeholderEntry);
+        HolderSet<Block> reversedDirect = HolderSet<Block>.Direct(placeholderEntry, registered);
+        Require(
+            !orderedDirect.Equals(reversedDirect),
+            "HolderSet.Direct equality must preserve element order.");
         var customSet = new CustomHolderSet<Block>(new Holder<Block>[] { registered, registered });
+        var anotherCustomSet = new CustomHolderSet<Block>(new Holder<Block>[] { registered, registered });
         Require(
             !directFactory.Equals(customSet) &&
             !customSet.Equals(directFactory) &&
+            !customSet.Equals(anotherCustomSet) &&
             customSet.Equals(customSet),
-            "HolderSet.Direct must not compare equal to a custom ListBacked set that inherits identity equality.");
+            "ListBacked variants must retain identity equality and must not compare equal to Direct sets.");
         HolderSet<Block> mappedDirectFactory = HolderSet<Block>.Direct(
             static block => Holder<Block>.Direct(block),
             new[] { value, placeholderValue });
