@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Asteria.Content.Blocks.StateProperties;
 
 /// <summary>
@@ -109,4 +111,32 @@ public abstract class StateProperty<T> : StateProperty where T : notnull, ICompa
 
         return GetName(typedValue);
     }
+
+    public override string ToString()
+    {
+        string propertyTypeName = GetType().Name;
+        int genericSuffix = propertyTypeName.IndexOf('`');
+        if (genericSuffix >= 0)
+        {
+            propertyTypeName = propertyTypeName[..genericSuffix];
+        }
+
+        string valueClassName = typeof(T) == typeof(bool)
+            ? "java.lang.Boolean"
+            : typeof(T) == typeof(int)
+                ? "java.lang.Integer"
+                : (typeof(T).FullName ?? typeof(T).Name).Replace('+', '$');
+
+        string values = string.Join(", ", PossibleValues.Select(FormatValue));
+        return $"{propertyTypeName}{{name={Name}, clazz=class {valueClassName}, values=[{values}]}}";
+    }
+
+    private static string FormatValue(T value) =>
+        value switch
+        {
+            bool booleanValue => booleanValue ? "true" : "false",
+            IFormattable formattable =>
+                formattable.ToString(null, CultureInfo.InvariantCulture) ?? string.Empty,
+            _ => value.ToString() ?? string.Empty
+        };
 }
