@@ -25,6 +25,13 @@ public sealed class DefaultedRegistry<T> : Registry<T> where T : class
 
     public override Holder<T>.Reference? GetAny() => _defaultHolder;
 
+    public override void Validate()
+    {
+        if (GetOptional(DefaultKey) is null)
+            throw new InvalidOperationException(
+                $"Missing default of DefaultedMappedRegistry: {DefaultKey}");
+    }
+
     public override Holder<T>.Reference? GetRandom(Random random) =>
         base.GetRandom(random) ?? GetDefaultHolder();
 
