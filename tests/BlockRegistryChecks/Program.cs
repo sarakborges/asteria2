@@ -103,6 +103,7 @@ internal static class Program
         CheckZeroBitStorage();
         CheckThreadingDetector();
         CheckIdentityIdMap();
+        CheckIdentityIdMapSparseMappings();
         CheckPaletteExceptions();
         CheckLinearPaletteOverflow();
         CheckPalettedContainerInvalidIndexOrder();
@@ -1253,6 +1254,42 @@ internal static class Program
             ReferenceEquals(copy.ById(11), values[11]) &&
             copy.GetId(values[11]) == 11,
             "Copy must preserve hash entries, ID mapping, and insertion cursor.");
+    }
+
+    private static void CheckIdentityIdMapSparseMappings()
+    {
+        var map = CrudeIncrementalIntIdentityHashBiMap<IdentityTestValue>.Create(4);
+        IdentityTestValue highId = new(70);
+        IdentityTestValue firstFreeId = new(0);
+        IdentityTestValue secondFreeId = new(1);
+        IdentityTestValue thirdFreeId = new(2);
+        IdentityTestValue nextMappedId = new(4);
+
+        map.AddMapping(highId, 7);
+        Require(
+            map.Count == 1 && map.GetId(highId) == 7 && ReferenceEquals(map.ById(7), highId),
+            "Explicit sparse mappings must preserve identity in both lookup directions.");
+
+        Require(map.Add(firstFreeId) == 0, "Add must use the first available ID below an existing sparse mapping.");
+        Require(map.Add(secondFreeId) == 1, "Add must advance through available IDs in order.");
+        Require(map.Add(thirdFreeId) == 2, "Add must continue filling gaps before a sparse ID.");
+        map.AddMapping(nextMappedId, 4);
+
+        Require(
+            map.Count == 5 &&
+            map.GetId(nextMappedId) == 4 &&
+            ReferenceEquals(map.ById(4), nextMappedId) &&
+            !map.Contains(3) &&
+            map.Contains(7),
+            "Explicit mappings must retain holes without disturbing existing sparse IDs.");
+
+        IdentityTestValue finalFreeId = new(3);
+        Require(map.Add(finalFreeId) == 3, "The insertion cursor must continue at the first remaining hole.");
+        Require(
+            ReferenceEquals(map.ById(3), finalFreeId) &&
+            ReferenceEquals(map.ById(7), highId) &&
+            map.Count == 6,
+            "Filling a hole must not overwrite higher explicit mappings after capacity growth.");
     }
 
     private static void CheckPaletteExceptions()
