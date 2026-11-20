@@ -107,6 +107,7 @@ internal static class Program
         CheckIdentityIdMap();
         CheckIdentityIdMapSparseMappings();
         CheckPaletteExceptions();
+        CheckNoResizePaletteResizeFailure();
         CheckLinearPaletteOverflow();
         CheckPalettedContainerInvalidIndexOrder();
         CheckPalettedContainer();
@@ -1410,6 +1411,29 @@ internal static class Program
         MissingPaletteEntryException exception = new(37);
         Require(exception.Message == "Missing Palette entry for index 37.", "Missing palette entries must use the vanilla exception type and message.");
         Require(exception.Index == 37, "Missing palette entry exceptions must preserve the missing index.");
+    }
+
+    private static void CheckNoResizePaletteResizeFailure()
+    {
+        Type openType = typeof(PalettedContainer<>).Assembly.GetType(
+            "Asteria.Content.Storage.NoResizePaletteResize\u00601",
+            throwOnError: true)!;
+        Type closedType = openType.MakeGenericType(typeof(string));
+        object instance = closedType.GetProperty("Instance")!.GetValue(null)!;
+        System.Reflection.MethodInfo onResize = closedType.GetMethod("OnResize")!;
+
+        System.Reflection.TargetInvocationException invocationException =
+            Capture<System.Reflection.TargetInvocationException>(
+                () => onResize.Invoke(instance, new object[] { 2, "sentinel" }),
+                "The no-resize palette handler must reject unexpected growth.");
+
+        Require(
+            invocationException.InnerException?.GetType() == typeof(ArgumentException),
+            "The no-resize handler must throw the vanilla IllegalArgumentException equivalent.");
+        Require(
+            invocationException.InnerException?.Message ==
+                "Unexpected palette resize, bits = 2, added value = sentinel",
+            "The no-resize handler must preserve vanilla's diagnostic message.");
     }
 
     private static void CheckLinearPaletteOverflow()
