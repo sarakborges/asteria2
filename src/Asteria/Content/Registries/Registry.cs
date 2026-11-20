@@ -38,7 +38,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
             throw new ArgumentException("A valid registry location is required.", nameof(location));
 
         Location = location;
-        Key = RegistryKey<Registry<T>>.CreateRegistryKey(location);
+        Key = RegistryKey<T>.CreateRegistryKey(location);
         RegistryLifecycle = initialLifecycle ?? Lifecycle.Stable();
         _unregisteredIntrusiveHolders = allowIntrusiveHolders
             ? new Dictionary<T, Holder<T>.Reference>(ReferenceEqualityComparer.Instance)
