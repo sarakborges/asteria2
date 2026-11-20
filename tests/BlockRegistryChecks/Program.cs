@@ -840,7 +840,7 @@ internal static class Program
             provider.Lookup<Block>(foreignRootProviderKey) is null,
             "HolderLookup.Provider lookup must include the complete registry key identity.");
         RegistryKey<Registry<Block>> missingRegistryKey =
-            RegistryKey<Registry<Block>>.CreateRegistryKey(ResourceLocation.Parse("asteria:provider_missing_registry"));
+            RegistryKey<Block>.CreateRegistryKey(ResourceLocation.Parse("asteria:provider_missing_registry"));
         InvalidOperationException missingProviderRegistry = Capture<InvalidOperationException>(
             () => provider.LookupOrThrow<Block>(missingRegistryKey),
             "HolderLookup.Provider.lookupOrThrow must reject a missing registry.");
