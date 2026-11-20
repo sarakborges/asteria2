@@ -105,6 +105,7 @@ internal static class Program
         CheckIdentityIdMap();
         CheckPaletteExceptions();
         CheckLinearPaletteOverflow();
+        CheckPalettedContainerInvalidIndexOrder();
         CheckPalettedContainer();
         CheckPalettedContainerGrowthAndGlobalMode();
         CheckChunkSection();
@@ -1290,6 +1291,43 @@ internal static class Program
             ReferenceEquals(palette.ValueFor(0), first) &&
             ReferenceEquals(palette.ValueFor(1), second),
             "A failed resize must preserve every existing linear palette entry.");
+    }
+
+    private static void CheckPalettedContainerInvalidIndexOrder()
+    {
+        BlockState placedState = Blocks.TEST_BLOCK.DefaultState;
+
+        var setContainer = CreateBlockStateContainer(Blocks.AIR.DefaultState);
+        bool setFailed = false;
+        try
+        {
+            setContainer.Set(-1, 0, 0, placedState);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            setFailed = true;
+        }
+
+        Require(setFailed, "An invalid Set index must still be rejected by the backing storage.");
+        Require(
+            setContainer.Mode == PaletteMode.Local && setContainer.PaletteSize == 2,
+            "Set must resolve and publish the palette entry before backing storage validates the index, matching vanilla.");
+
+        var getAndSetContainer = CreateBlockStateContainer(Blocks.AIR.DefaultState);
+        bool getAndSetFailed = false;
+        try
+        {
+            getAndSetContainer.GetAndSet(-1, 0, 0, placedState);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            getAndSetFailed = true;
+        }
+
+        Require(getAndSetFailed, "An invalid GetAndSet index must be rejected by the backing storage.");
+        Require(
+            getAndSetContainer.Mode == PaletteMode.Local && getAndSetContainer.PaletteSize == 2,
+            "GetAndSet must resolve and publish the palette entry before backing storage validates the index, matching vanilla.");
     }
 
     private static PalettedContainer<BlockState> CreateBlockStateContainer(BlockState defaultState)
