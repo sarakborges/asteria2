@@ -67,8 +67,8 @@ public readonly record struct ResourceLocation : IComparable<ResourceLocation>
         return WithDefaultNamespace(value);
     }
 
-    public static ResourceLocation? TryParse(string? value) =>
-        value is null ? null : TryBySeparator(value, NamespaceSeparator);
+    public static ResourceLocation? TryParse(string value) =>
+        TryBySeparator(value, NamespaceSeparator);
 
     public static ResourceLocation? TryBySeparator(string value, char separator)
     {
@@ -166,16 +166,10 @@ public readonly record struct ResourceLocation : IComparable<ResourceLocation>
 
     public override string ToString() => $"{Namespace}:{Path}";
 
-    public static ResourceLocation? TryBuild(string? @namespace, string? path)
-    {
-        if (@namespace is null || path is null ||
-            !IsValidNamespace(@namespace) || !IsValidPath(path))
-        {
-            return null;
-        }
-
-        return new ResourceLocation(@namespace, path);
-    }
+    public static ResourceLocation? TryBuild(string @namespace, string path) =>
+        IsValidNamespace(@namespace) && IsValidPath(path)
+            ? new ResourceLocation(@namespace, path)
+            : null;
 
     public static bool IsAllowedInIdentifier(char character) =>
         character is >= '0' and <= '9' ||
