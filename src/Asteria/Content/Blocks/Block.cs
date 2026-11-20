@@ -7,6 +7,9 @@ namespace Asteria.Content.Blocks;
 /// </summary>
 public class Block
 {
+    /// <summary>Global block-state ID map, populated as each state is constructed.</summary>
+    public static BlockStateIdMap BlockStateRegistry { get; } = new();
+
     public BlockProperties Properties { get; }
     public StateDefinition StateDefinition { get; }
     public float ExplosionResistance { get; }
