@@ -519,7 +519,7 @@ internal static class Program
         Block value = new TestBlockDefinition(BlockProperties.Of());
         Holder<Block>.Reference registered = lookup.GetOrThrow(entryKey);
         Require(registry.Count == 2, "Each distinct standalone key must contribute to registry size before registration.");
-        Holder<Block>.Reference entry = registry.Register(entryId, value);
+        Holder<Block>.Reference entry = Registry.RegisterForHolder(registry, entryId, value);
         InvalidOperationException duplicateKeyException = Capture<InvalidOperationException>(
             () => registry.Register(entryKey, new TestBlockDefinition(BlockProperties.Of()), RegistrationInfo.BuiltIn),
             "MappedRegistry.register must reject duplicate identifiers.");
@@ -537,7 +537,7 @@ internal static class Program
         Require(!registered.IsBound, "Standalone holder values are bound during registry freeze.");
 
         Block placeholderValue = new TestBlockDefinition(BlockProperties.Of());
-        Holder<Block>.Reference placeholderEntry = registry.Register(placeholderId, placeholderValue);
+        Holder<Block>.Reference placeholderEntry = Registry.RegisterForHolder(registry, placeholderId, placeholderValue);
         Require(ReferenceEquals(placeholderEntry, placeholder), "Registering a placeholder key must bind the existing holder.");
 
         HolderSet<Block>.Named tag = lookup.GetOrThrow(tagKey);
@@ -716,7 +716,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
         var parallelRegistry = new Registry<Block>(registryId);
         Holder<Block>.Reference parallelReference =
-            parallelRegistry.Register(entryId, new TestBlockDefinition(BlockProperties.Of()));
+            Registry.RegisterForHolder(parallelRegistry, entryId, new TestBlockDefinition(BlockProperties.Of()));
         parallelRegistry.Freeze();
         Require(!registered.Equals(parallelReference), "Reference holders from separate registry instances must retain object identity.");
         Require(registered.Is(parallelReference), "Reference holder matching must follow the resource key, not holder instance identity.");
@@ -873,10 +873,10 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "Holder.Reference.unwrapKey must fail before an intrusive holder has a key.");
 
         RequireThrows<InvalidOperationException>(
-            () => intrusiveRegistry.Register(entryId, new TestBlockDefinition(BlockProperties.Of())),
+            () => Registry.RegisterForHolder(intrusiveRegistry, entryId, new TestBlockDefinition(BlockProperties.Of())),
             "Intrusive registries must reject values without a pre-created intrusive holder.");
 
-        Holder<Block>.Reference registeredIntrusiveHolder = intrusiveRegistry.Register(entryId, intrusiveValue);
+        Holder<Block>.Reference registeredIntrusiveHolder = Registry.RegisterForHolder(intrusiveRegistry, entryId, intrusiveValue);
         Require(ReferenceEquals(registeredIntrusiveHolder, intrusiveHolder), "Intrusive registration must reuse its pre-created holder.");
         Require(intrusiveHolder.Is(intrusiveKey), "An intrusive holder must match its key after registration binds it.");
         Require(intrusiveHolder.Is(entryId), "An intrusive holder must match its identifier after registration binds its key.");
@@ -1044,10 +1044,29 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         var builtInKey = new RegistryKey<Block>(
             builtInRegistry.Location,
             ResourceLocation.Parse("asteria:built_in"));
-        builtInRegistry.Register(builtInKey.Location, new TestBlockDefinition(BlockProperties.Of()));
+        Block builtInValue = new TestBlockDefinition(BlockProperties.Of());
+        Block returnedBuiltInValue =
+            Registry.Register(builtInRegistry, builtInKey.Location, builtInValue);
+        Require(
+            ReferenceEquals(returnedBuiltInValue, builtInValue),
+            "Registry.register must return the supplied value.");
         Require(
             Equals(builtInRegistry.GetRegistrationInfo(builtInKey), RegistrationInfo.BuiltIn),
-            "The ordinary register overload must attach RegistrationInfo.BUILT_IN.");
+            "Registry.register must attach RegistrationInfo.BUILT_IN.");
+
+        var holderRegistrationRegistry =
+            new Registry<Block>(ResourceLocation.Parse("asteria:holder_registration_registry"));
+        ResourceLocation holderRegistrationId = ResourceLocation.Parse("asteria:holder_registration");
+        Block holderRegistrationValue = new TestBlockDefinition(BlockProperties.Of());
+        Holder<Block>.Reference holderFromHelper =
+            Registry.RegisterForHolder(holderRegistrationRegistry, holderRegistrationId, holderRegistrationValue);
+        holderRegistrationRegistry.Freeze();
+        Require(
+            ReferenceEquals(
+                holderFromHelper,
+                holderRegistrationRegistry.GetHolder(holderRegistrationId)) &&
+            ReferenceEquals(holderFromHelper.Value, holderRegistrationValue),
+            "Registry.registerForHolder must return the registered reference holder.");
         Require(ReferenceEquals(builtInRegistry.RegistryLifecycle, Lifecycle.Stable()), "Built-in registration must preserve stable lifecycle.");
 
         var defaultedRegistry = new DefaultedRegistry<Block>(
@@ -1145,7 +1164,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             ResourceLocation.Parse("asteria:defaulted_value_lookup"),
             ResourceLocation.Parse("asteria:air"));
         Block air = new TestBlockDefinition(BlockProperties.Of());
-        defaulted.Register(ResourceLocation.Parse("asteria:air"), air);
+        Registry.Register(defaulted, ResourceLocation.Parse("asteria:air"), air);
         defaulted.Freeze();
         Require(
             ReferenceEquals(defaulted.GetValue(missingId), air),
