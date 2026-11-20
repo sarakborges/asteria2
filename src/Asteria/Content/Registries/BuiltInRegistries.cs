@@ -16,7 +16,7 @@ public static class BuiltInRegistries
     public static Registry<IRegistry> Root { get; } = new(RootLocation);
 
     public static DefaultedRegistry<Block> Block { get; } =
-        RegisterDefaultedWithIntrusiveHolders(
+        RegisterDefaultedWithIntrusiveHolders<Block>(
             ResourceLocation.FromNamespaceAndPath("asteria", "block"),
             ResourceLocation.FromNamespaceAndPath("asteria", "air"),
             static () => Blocks.RegisterAll());
@@ -53,8 +53,8 @@ public static class BuiltInRegistries
 
     internal static void Bootstrap()
     {
-        foreach ((_, Action bootstrap) in Loaders)
-            bootstrap();
+        foreach (var loader in Loaders)
+            loader.Bootstrap();
 
         FreezeAll();
     }
