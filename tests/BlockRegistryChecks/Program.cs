@@ -1080,10 +1080,8 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
         var keyRegistrationRegistry =
             new Registry<Block>(ResourceLocation.Parse("asteria:key_registration_registry"));
-        RegistryKey<Block> keyRegistrationKey = RegistryKey<Block>.CreateRegistryKey(
-            ResourceLocation.Parse("asteria:key_registration_registry"));
-        keyRegistrationKey = RegistryKey<Block>.Create(
-            keyRegistrationKey.GetRegistryKey(),
+        RegistryKey<Block> keyRegistrationKey = RegistryKey<Block>.Create(
+            keyRegistrationRegistry.Key,
             ResourceLocation.Parse("asteria:key_registration"));
         Block keyRegistrationValue = Blocks.TEST_BLOCK;
         Block keyRegistrationResult =
