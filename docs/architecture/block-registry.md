@@ -11,7 +11,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 - `BuiltInRegistries.Root` is the root registry of registries. It owns the `asteria:root` identity; each child registry is registered there under its own identifier.
 - Each built-in registry is registered with an ordered bootstrap loader. Bootstrap executes those loaders in declaration order before freezing the root and its child registries.
 - `Registry<T>` follows `MappedRegistry<T>`: location, registry-key, value-identity, numeric-ID, and holder indexes share stable `Holder.Reference<T>` instances.
-- Built-in values use the vanilla static `Registry.Register` helper overloads; `RegisterForHolder` is used when registration must return the bound registry reference.
+- Built-in values use the vanilla static `Registry.Register` helper overloads. These accept a concrete value subtype of the registry's declared value type; `RegisterForHolder` likewise accepts subtype values and returns the registry's base-typed reference holder.
 - The root registry freezes first. Each child registry then binds all bootstrapped tags to empty, freezes, and validates its default entry when it is a `DefaultedRegistry`.
 - `Count`/registry size includes standalone key placeholders. Numeric ID lookup remains separate from key lookup.
 - `AsHolderIdMap` exposes registry holders through the vanilla `IdMap<Holder<T>>` view defined by the `Registry` interface.
