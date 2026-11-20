@@ -1169,6 +1169,34 @@ internal static class Program
         Require(lit.TryParse("true", out bool parsedTrue) && parsedTrue, "Boolean parsing must accept true.");
         Require(!lit.TryParse("TRUE", out _), "Boolean parsing must be case-sensitive.");
 
+        StatePropertyValue<bool>[] booleanValues = lit.GetAllValues().ToArray();
+        Require(
+            booleanValues.Select(value => value.Value).SequenceEqual(new[] { true, false }) &&
+            booleanValues.Select(value => value.ToString()).SequenceEqual(new[] { "lit=true", "lit=false" }),
+            "Property.getAllValues must expose values in the property's declared order and format them as name=value.");
+        Require(
+            lit.Value(Blocks.TEST_BLOCK.DefaultState).Value == false,
+            "Property.value(StateHolder) must wrap the value currently stored in the state.");
+        Require(
+            lit.Value(true) == booleanValues[0] &&
+            booleanValues[0].ValueName == "true",
+            "Property.Value must retain the owning property, typed value, and serialized value name.");
+
+        IStatePropertyValue[] stateValues = Blocks.TEST_BLOCK.DefaultState.GetValues().ToArray();
+        Require(
+            stateValues.Select(value => value.Property.Name).SequenceEqual(new[] { "powered", "stage" }) &&
+            stateValues.Select(value => value.ValueName).SequenceEqual(new[] { "false", "1" }) &&
+            stateValues.Select(value => value.ToString()).SequenceEqual(new[] { "powered=false", "stage=1" }),
+            "StateHolder.getValues must expose all property values in state-definition order.");
+
+        ArgumentException invalidPropertyValue = Capture<ArgumentException>(
+            () => new StatePropertyValue<int>(Blocks.TEST_STAGE, 9),
+            "Property.Value must reject values outside the property's possible values.");
+        Require(
+            invalidPropertyValue.Message ==
+                $"Value 9 does not belong to property {Blocks.TEST_STAGE}",
+            "Property.Value must use the vanilla invalid-value diagnostic.");
+
         IntegerProperty age = IntegerProperty.Create("age", 2, 4);
         Require(age.Equals(IntegerProperty.Create("age", 2, 4)), "Integer properties must compare by name and possible values.");
         Require(
