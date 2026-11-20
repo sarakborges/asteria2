@@ -35,7 +35,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 - `StateDefinition` sorts property names, materializes the Cartesian product in vanilla order, and links each state to precomputed neighbor states.
 - `BlockState.SetValue`, `TrySetValue`, and `Cycle` resolve through the precomputed neighbor tables.
 - Each `BlockState` caches the currently modeled `BlockStateBase` values (`IsAir`, destroy speed, and correct-tool requirement) at construction. Mutating the retained properties builder does not retroactively change existing states.
-- `BlockStateIdMap` follows `IdMapper`: mutable insertion and explicit ID mapping, sparse slots, nullable reverse lookup, and size based on mapped values. It is not frozen with the block registry.
+- `Block.BLOCK_STATE_REGISTRY` is the global `IdMapper<BlockState>` equivalent. Each state receives its insertion-order ID in its constructor, as soon as `StateDefinition` materializes it; this map is independent of the built-in block registry and is not frozen with it.
 
 ## Paletted storage
 
