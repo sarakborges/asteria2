@@ -66,8 +66,8 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
         base.Equals(other) &&
         _values.SequenceEqual(other._values);
 
-    public override int GetHashCode() =>
-        unchecked(base.GetHashCode() * 31 + GetPossibleValuesHashCode());
+    public override int GenerateHashCode() =>
+        unchecked(base.GenerateHashCode() * 31 + GetPossibleValuesHashCode());
 
     public static EnumProperty<TEnum> Create(string name)
     {

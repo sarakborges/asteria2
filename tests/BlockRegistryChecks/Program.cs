@@ -1567,6 +1567,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
     {
         BooleanProperty lit = BooleanProperty.Create("lit");
         Require(lit.ValueType == typeof(bool), "BooleanProperty must expose its boxed value class.");
+        Require(lit.GenerateHashCode() == lit.GetHashCode(), "Base property hash generation must be public and supply hashCode.");
         Require(lit.PossibleValues.SequenceEqual(new[] { true, false }), "Boolean values must be true then false, matching vanilla.");
         Require(lit.IndexOf(true) == 0 && lit.IndexOf(false) == 1, "BooleanProperty.getInternalIndex must use its fixed true/false indices.");
         Require(lit.TryParse("true", out bool parsedTrue) && parsedTrue, "Boolean parsing must accept true.");
@@ -1612,6 +1613,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
         IntegerProperty age = IntegerProperty.Create("age", 2, 4);
         Require(age.ValueType == typeof(int), "IntegerProperty must expose its value class.");
+        Require(age.GenerateHashCode() == age.GetHashCode(), "IntegerProperty must expose its specialized hash generation.");
         Require(age.Equals(IntegerProperty.Create("age", 2, 4)), "Integer properties must compare by name and possible values.");
         Require(
             age.ToString() ==
@@ -1644,6 +1646,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
         EnumProperty<TestAxis> axis = EnumProperty<TestAxis>.Create("axis", new[] { TestAxis.Z, TestAxis.X }, value => value.ToString().ToLowerInvariant());
         Require(axis.ValueType == typeof(TestAxis), "EnumProperty must expose its enum value class.");
+        Require(axis.GenerateHashCode() == axis.GetHashCode(), "EnumProperty must expose its specialized hash generation.");
         Require(axis.PossibleValues.SequenceEqual(new[] { TestAxis.Z, TestAxis.X }), "Enum properties must preserve the supplied value order.");
         Require(axis.IndexOf(TestAxis.Z) == 0 && axis.IndexOf(TestAxis.X) == 1, "EnumProperty.getInternalIndex must use its precomputed value-to-index mapping.");
         Require(axis.IndexOf(TestAxis.Y) == -1, "EnumProperty.getInternalIndex must reject values excluded from its possible-value list.");

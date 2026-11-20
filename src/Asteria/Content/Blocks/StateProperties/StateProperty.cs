@@ -27,8 +27,11 @@ public abstract class StateProperty
         ValueType == other.ValueType &&
         string.Equals(Name, other.Name, StringComparison.Ordinal);
 
-    public override int GetHashCode() =>
+    public virtual int GenerateHashCode() =>
         HashCode.Combine(ValueType, Name);
+
+    public override int GetHashCode() =>
+        GenerateHashCode();
 
     internal static bool IsValidName(string value)
     {

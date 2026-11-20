@@ -52,8 +52,8 @@ public sealed class IntegerProperty : StateProperty<int>
         base.Equals(other) &&
         _values.SequenceEqual(other._values);
 
-    public override int GetHashCode() =>
-        unchecked(base.GetHashCode() * 31 + GetPossibleValuesHashCode());
+    public override int GenerateHashCode() =>
+        unchecked(base.GenerateHashCode() * 31 + GetPossibleValuesHashCode());
 
     public static IntegerProperty Create(string name, int minimum, int maximum) =>
         new(name, minimum, maximum);
