@@ -11,7 +11,8 @@ public readonly record struct TagKey<T> where T : class
     public ResourceLocation RegistryLocation => Registry.Location;
     public ResourceLocation Location { get; }
 
-    private TagKey(RegistryKey<Registry<T>> registry, ResourceLocation location)
+    [Obsolete("Use TagKey<T>.Create instead.")]
+    public TagKey(RegistryKey<Registry<T>> registry, ResourceLocation location)
     {
         if (!registry.RegistryLocation.IsValid || !registry.Location.IsValid)
         {
@@ -27,10 +28,12 @@ public readonly record struct TagKey<T> where T : class
         Location = location;
     }
 
+#pragma warning disable CS0618
     public static TagKey<T> Create(
         RegistryKey<Registry<T>> registry,
         ResourceLocation location) =>
         new(registry, location);
+#pragma warning restore CS0618
 
     public bool IsFor<TRegistry>(RegistryKey<Registry<TRegistry>> registry)
         where TRegistry : class =>
