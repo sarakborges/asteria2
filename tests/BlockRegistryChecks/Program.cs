@@ -2389,6 +2389,31 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         section.SetBlockState(0, 0, 1, Blocks.AIR.DefaultState);
         section.SetBlockState(0, 1, 0, Blocks.AIR.DefaultState);
 
+        BooleanProperty tickingProperty = BooleanProperty.Create("ticking_variant");
+        var tickingBlock = new TestBlockDefinition(
+            BlockProperties.Of().RandomTicks(),
+            builder => builder.Add(tickingProperty));
+        BlockState tickingOff = tickingBlock.DefaultState;
+        BlockState tickingOn = tickingOff.SetValue(tickingProperty, true);
+        PalettedContainer<BlockState> tickingStates = CreateBlockStateContainer(Blocks.AIR.DefaultState);
+        tickingStates.Set(0, 0, 0, tickingOff);
+        ChunkSection tickingSection = new(tickingStates);
+        Require(
+            tickingSection.TickingBlockCount == 1 && tickingSection.IsRandomlyTickingBlocks && tickingSection.IsRandomlyTicking,
+            "The supplied state container must initialize the section's randomly-ticking block count.");
+        tickingSection.SetBlockState(0, 0, 0, Blocks.AIR.DefaultState);
+        Require(
+            tickingSection.TickingBlockCount == 0 && !tickingSection.IsRandomlyTickingBlocks && !tickingSection.IsRandomlyTicking,
+            "Replacing a randomly-ticking block with air must decrement the ticking count.");
+        tickingSection.SetBlockState(1, 0, 0, tickingOff);
+        Require(tickingSection.TickingBlockCount == 1, "Placing a randomly-ticking block must increment the ticking count.");
+        tickingSection.SetBlockState(1, 0, 0, tickingOn);
+        Require(tickingSection.TickingBlockCount == 1, "Changing properties within a randomly-ticking block must not change the ticking count.");
+        ChunkSection tickingCopy = tickingSection.Copy();
+        Require(tickingCopy.TickingBlockCount == 1 && tickingCopy.IsRandomlyTicking, "Copy must preserve the ticking-block counter.");
+        tickingCopy.SetBlockState(1, 0, 0, Blocks.AIR.DefaultState);
+        Require(tickingCopy.TickingBlockCount == 0 && tickingSection.TickingBlockCount == 1, "A copied section must maintain an independent ticking-block counter.");
+
         BlockState placedState = Blocks.TEST_BLOCK.DefaultState;
         BlockState previous = section.SetBlockState(15, 15, 15, placedState);
         Require(ReferenceEquals(previous, Blocks.AIR.DefaultState), "SetBlockState must return the previous state.");

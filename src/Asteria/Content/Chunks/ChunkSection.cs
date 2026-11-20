@@ -15,9 +15,13 @@ public sealed class ChunkSection
 
     private readonly PalettedContainer<BlockState> _states;
     private short _nonAirBlockCount;
+    private short _tickingBlockCount;
 
     public int NonAirBlockCount => _nonAirBlockCount;
+    public int TickingBlockCount => _tickingBlockCount;
     public bool HasOnlyAir => _nonAirBlockCount == 0;
+    public bool IsRandomlyTickingBlocks => _tickingBlockCount > 0;
+    public bool IsRandomlyTicking => IsRandomlyTickingBlocks;
     public PaletteMode PaletteMode => _states.Mode;
     public int BitsPerEntry => _states.BitsPerEntry;
     public int PaletteSize => _states.PaletteSize;
@@ -28,10 +32,14 @@ public sealed class ChunkSection
         RecalculateBlockCounts();
     }
 
-    private ChunkSection(PalettedContainer<BlockState> states, short nonAirBlockCount)
+    private ChunkSection(
+        PalettedContainer<BlockState> states,
+        short nonAirBlockCount,
+        short tickingBlockCount)
     {
         _states = states;
         _nonAirBlockCount = nonAirBlockCount;
+        _tickingBlockCount = tickingBlockCount;
     }
 
     public BlockState GetBlockState(int x, int y, int z) =>
@@ -58,6 +66,16 @@ public sealed class ChunkSection
             _nonAirBlockCount = unchecked((short)(_nonAirBlockCount + 1));
         }
 
+        if (previous.IsRandomlyTicking)
+        {
+            _tickingBlockCount = unchecked((short)(_tickingBlockCount - 1));
+        }
+
+        if (state.IsRandomlyTicking)
+        {
+            _tickingBlockCount = unchecked((short)(_tickingBlockCount + 1));
+        }
+
         return previous;
     }
 
@@ -75,18 +93,25 @@ public sealed class ChunkSection
     public void RecalculateBlockCounts()
     {
         int nonAirBlockCount = 0;
+        int tickingBlockCount = 0;
         _states.Count((state, count) =>
         {
             if (!state.IsAir)
             {
                 nonAirBlockCount += count;
             }
+
+            if (state.IsRandomlyTicking)
+            {
+                tickingBlockCount += count;
+            }
         });
 
-        _nonAirBlockCount = checked((short)nonAirBlockCount);
+        _nonAirBlockCount = unchecked((short)nonAirBlockCount);
+        _tickingBlockCount = unchecked((short)tickingBlockCount);
     }
 
     public ChunkSection Copy() =>
-        new(_states.Copy(), _nonAirBlockCount);
+        new(_states.Copy(), _nonAirBlockCount, _tickingBlockCount);
 
 }
