@@ -1,7 +1,7 @@
 namespace Asteria.Content.Storage;
 
 /// <summary>
-/// Small local palette backed by the fixed-size array used by Minecraft LinearPalette.
+/// Small local palette backed by a fixed-size array.
 /// </summary>
 internal sealed class LinearPalette<T> : ILocalPalette<T> where T : class
 {

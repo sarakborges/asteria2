@@ -1,8 +1,8 @@
 namespace Asteria.Content.Registries;
 
 /// <summary>
-/// Runtime ID mapping equivalent to Minecraft IdMap. The nullable lookup and throwing
-/// helpers intentionally remain separate, as they are in the reference API.
+/// Runtime ID mapping with distinct nullable lookup and throwing
+/// helpers, following the reference API.
 /// </summary>
 public interface IIdMap<T> : IEnumerable<T> where T : class
 {

@@ -31,7 +31,7 @@ public class Block
         ExplosionResistance = Properties.ExplosionResistanceValue;
         Friction = Properties.FrictionValue;
 
-        // Minecraft creates the intrusive holder as a Block field initializer,
+        // The reference implementation creates the intrusive holder during Block initialization,
         // before the constructor materializes the state definition.
         if (createIntrusiveRegistryHolder)
         {

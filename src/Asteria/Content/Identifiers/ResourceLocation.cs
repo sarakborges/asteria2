@@ -2,12 +2,12 @@ namespace Asteria.Content.Identifiers;
 
 /// <summary>
 /// A stable, namespaced identifier for registry entries.
-/// Examples: "asteria:registry_test", "minecraft:stone".
+/// Examples: "asteria:registry_test", "asteria:stone".
 /// </summary>
 public readonly record struct ResourceLocation : IComparable<ResourceLocation>
 {
     public const char NamespaceSeparator = ':';
-    public const string DefaultNamespace = "minecraft";
+    public const string DefaultNamespace = "asteria";
     public const string RealmsNamespace = "realms";
     public const string AllowedNamespaceCharacters = "[a-z0-9_.-]";
 
@@ -145,7 +145,7 @@ public readonly record struct ResourceLocation : IComparable<ResourceLocation>
         $"{Namespace}.{Path}";
 
     public string ToShortLanguageKey() =>
-        Namespace == "minecraft" ? Path : ToLanguageKey();
+        Namespace == DefaultNamespace ? Path : ToLanguageKey();
 
     public string ToShortString() =>
         Namespace == DefaultNamespace ? Path : ToString();

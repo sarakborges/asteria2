@@ -3,7 +3,7 @@ using Asteria.Content.Registries;
 namespace Asteria.Content.Blocks;
 
 /// <summary>
-/// Block-state runtime ID map equivalent to Minecraft IdMapper.
+/// Block-state runtime ID map following the reference identity-map contract.
 /// Numeric IDs are insertion ordered by default, but explicit sparse mappings are supported.
 /// </summary>
 public sealed class BlockStateIdMap : IReadOnlyCollection<BlockState>, IIdMap<BlockState>

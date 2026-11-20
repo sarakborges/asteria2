@@ -2,7 +2,7 @@ namespace Asteria.Content.Registries;
 
 /// <summary>
 /// Lookup of registry references and named holder sets. Registration lookups may create
-/// stable placeholders, matching Minecraft's HolderGetter contract.
+/// stable placeholders, matching the reference lookup contract.
 /// </summary>
 public interface HolderGetter<T> : HolderOwner<T> where T : class
 {

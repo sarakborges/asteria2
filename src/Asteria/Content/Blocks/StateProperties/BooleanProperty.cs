@@ -1,7 +1,7 @@
 namespace Asteria.Content.Blocks.StateProperties;
 
 /// <summary>
-/// A two-valued property whose possible values follow Minecraft's true, false order.
+/// A two-valued property whose possible values follow the reference true, false order.
 /// </summary>
 public sealed class BooleanProperty : StateProperty<bool>
 {

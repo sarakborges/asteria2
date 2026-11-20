@@ -11,7 +11,7 @@ public interface IStatePropertyValue
 }
 
 /// <summary>
-/// Typed equivalent of Minecraft's Property.Value record.
+/// Typed property/value pair used by block-state definitions.
 /// </summary>
 public readonly record struct StatePropertyValue<T> : IStatePropertyValue
     where T : notnull, IComparable

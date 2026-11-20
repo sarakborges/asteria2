@@ -4,7 +4,7 @@ namespace Asteria.Content.Registries;
 
 /// <summary>
 /// Identifies one value inside a specific registry.
-/// The registry location and entry location are both retained, like Minecraft ResourceKey.
+/// The registry and entry locations are both retained in each key.
 /// </summary>
 public readonly record struct RegistryKey<T> where T : class
 {

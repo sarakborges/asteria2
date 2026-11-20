@@ -6,7 +6,7 @@ namespace Asteria.Content.Storage;
 
 /// <summary>
 /// Identity-keyed incremental value-to-ID map equivalent to
-/// Minecraft's CrudeIncrementalIntIdentityHashBiMap.
+/// the reference incremental identity hash map.
 /// </summary>
 public sealed class CrudeIncrementalIntIdentityHashBiMap<T> : IIdMap<T> where T : class
 {

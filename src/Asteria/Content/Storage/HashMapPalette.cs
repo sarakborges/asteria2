@@ -1,7 +1,7 @@
 namespace Asteria.Content.Storage;
 
 /// <summary>
-/// Larger local palette backed by Minecraft's incremental identity ID map.
+/// Larger local palette backed by the incremental identity ID map.
 /// </summary>
 internal sealed class HashMapPalette<T> : ILocalPalette<T> where T : class
 {

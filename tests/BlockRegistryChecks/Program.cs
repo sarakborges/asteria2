@@ -179,31 +179,31 @@ internal static class Program
     private static void CheckResourceLocations()
     {
         Require(
-            ResourceLocation.Parse("stone") == ResourceLocation.Parse("minecraft:stone"),
-            "Identifier.parse must apply the minecraft default namespace when none is supplied.");
+            ResourceLocation.Parse("stone") == ResourceLocation.Parse("asteria:stone"),
+            "Identifier.parse must apply the default namespace when none is supplied.");
         Require(
-            ResourceLocation.Parse(":stone") == ResourceLocation.Parse("minecraft:stone"),
+            ResourceLocation.Parse(":stone") == ResourceLocation.Parse("asteria:stone"),
             "Identifier.parse must apply the default namespace when the separator is first.");
         Require(
             ResourceLocation.TryParse("stone") is ResourceLocation parsed &&
-            parsed == ResourceLocation.Parse("minecraft:stone"),
+            parsed == ResourceLocation.Parse("asteria:stone"),
             "Identifier.tryParse must accept valid identifiers without an explicit namespace.");
         Require(
-            ResourceLocation.WithDefaultNamespace("stone/slab") == ResourceLocation.Parse("minecraft:stone/slab"),
+            ResourceLocation.WithDefaultNamespace("stone/slab") == ResourceLocation.Parse("asteria:stone/slab"),
             "Identifier.withDefaultNamespace must validate a path and apply the default namespace.");
         Require(
             ResourceLocation.BySeparator("asteria|stone/slab", '|') ==
                 ResourceLocation.FromNamespaceAndPath("asteria", "stone/slab"),
             "Identifier.bySeparator must parse using the supplied separator.");
         Require(
-            ResourceLocation.BySeparator("|stone", '|') == ResourceLocation.Parse("minecraft:stone") &&
-            ResourceLocation.BySeparator("stone", '|') == ResourceLocation.Parse("minecraft:stone"),
+            ResourceLocation.BySeparator("|stone", '|') == ResourceLocation.Parse("asteria:stone") &&
+            ResourceLocation.BySeparator("stone", '|') == ResourceLocation.Parse("asteria:stone"),
             "Identifier.bySeparator must apply the default namespace when no namespace is supplied.");
         Require(
             ResourceLocation.TryBySeparator("asteria|stone", '|') ==
                 ResourceLocation.FromNamespaceAndPath("asteria", "stone") &&
-            ResourceLocation.TryBySeparator("|stone", '|') == ResourceLocation.Parse("minecraft:stone") &&
-            ResourceLocation.TryBySeparator("stone", '|') == ResourceLocation.Parse("minecraft:stone"),
+            ResourceLocation.TryBySeparator("|stone", '|') == ResourceLocation.Parse("asteria:stone") &&
+            ResourceLocation.TryBySeparator("stone", '|') == ResourceLocation.Parse("asteria:stone"),
             "Identifier.tryBySeparator must parse explicit, default, and omitted namespaces.");
         Require(
             ResourceLocation.TryBySeparator("Bad|stone", '|') is null &&
@@ -230,12 +230,12 @@ internal static class Program
                 "Non [a-z0-9/._-] character in path of location: asteria:bad path",
             "Identifier path failures must retain the vanilla diagnostic.");
         Require(
-            ResourceLocation.Parse("").Namespace == "minecraft" &&
+            ResourceLocation.Parse("").Namespace == "asteria" &&
             ResourceLocation.Parse("").Path == "",
             "Identifier.parse must preserve the vanilla-valid empty path.");
         Require(
             ResourceLocation.Parse("asteria:").Path == "" &&
-            ResourceLocation.Parse(":").Namespace == "minecraft",
+            ResourceLocation.Parse(":").Namespace == "asteria",
             "Identifier.parse must accept empty paths with explicit and default namespaces.");
         Require(
             ResourceLocation.TryParse("") is ResourceLocation emptyIdentifier &&
@@ -268,7 +268,7 @@ internal static class Program
             "Identifier.isAllowedInIdentifier must match command token characters.");
         Require(
             ResourceLocation.NamespaceSeparator == ':' &&
-            ResourceLocation.DefaultNamespace == "minecraft" &&
+            ResourceLocation.DefaultNamespace == "asteria" &&
             ResourceLocation.RealmsNamespace == "realms" &&
             ResourceLocation.AllowedNamespaceCharacters == "[a-z0-9_.-]",
             "Identifier public constants must match vanilla.");
@@ -276,11 +276,11 @@ internal static class Program
         Require(languageId.WithPrefix("double_").Path == "double_stone/slab", "Identifier.withPrefix must modify only the path.");
         Require(languageId.WithSuffix("_top").Path == "stone/slab_top", "Identifier.withSuffix must modify only the path.");
         Require(languageId.WithPath(path => $"blocks/{path}").Path == "blocks/stone/slab", "Identifier.withPath must apply a path modifier.");
-        Require(languageId.ToDebugFileName() == "minecraft_stone_slab", "Identifier.toDebugFileName must replace slash and namespace separators.");
-        Require(languageId.ToLanguageKey() == "minecraft.stone/slab", "Identifier.toLanguageKey must include namespace and path.");
+        Require(languageId.ToDebugFileName() == "asteria_stone_slab", "Identifier.toDebugFileName must replace slash and namespace separators.");
+        Require(languageId.ToLanguageKey() == "asteria.stone/slab", "Identifier.toLanguageKey must include namespace and path.");
         Require(languageId.ToShortLanguageKey() == "stone/slab", "Identifier.toShortLanguageKey must omit the default namespace.");
         Require(languageId.ToShortString() == "stone/slab", "Identifier.toShortString must omit the default namespace.");
-        Require(languageId.ToLanguageKey("block", "name") == "block.minecraft.stone/slab.name", "Identifier language-key prefix and suffix overload must match vanilla.");
+        Require(languageId.ToLanguageKey("block", "name") == "block.asteria.stone/slab.name", "Identifier language-key prefix and suffix overload must match vanilla.");
         Require(
             ResourceLocation.Parse("zeta:alpha").CompareTo(ResourceLocation.Parse("alpha:zeta")) < 0,
             "Identifier ordering must compare path before namespace.");
@@ -1276,7 +1276,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "StateDefinition.getProperty must return no result for empty, whitespace, and unknown property names.");
         Require(
             definition.Any().GetValue(Blocks.TEST_POWERED),
-            "The first state must follow Minecraft's BooleanProperty order: true before false.");
+            "The first state must follow vanilla's BooleanProperty order: true before false.");
 
         BlockState defaultState = Blocks.TEST_BLOCK.DefaultState;
         Require(!defaultState.GetValue(Blocks.TEST_POWERED), "powered default must be false.");
@@ -1430,7 +1430,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
     private static void CheckPropertyImplementations()
     {
         BooleanProperty lit = BooleanProperty.Create("lit");
-        Require(lit.PossibleValues.SequenceEqual(new[] { true, false }), "Boolean values must be true then false, matching Minecraft.");
+        Require(lit.PossibleValues.SequenceEqual(new[] { true, false }), "Boolean values must be true then false, matching vanilla.");
         Require(lit.IndexOf(true) == 0 && lit.IndexOf(false) == 1, "BooleanProperty.getInternalIndex must use its fixed true/false indices.");
         Require(lit.TryParse("true", out bool parsedTrue) && parsedTrue, "Boolean parsing must accept true.");
         Require(!lit.TryParse("TRUE", out _), "Boolean parsing must be case-sensitive.");
