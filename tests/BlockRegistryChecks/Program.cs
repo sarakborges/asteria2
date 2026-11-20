@@ -243,7 +243,14 @@ internal static class Program
             missingValueException.Message == $"Missing key in {BuiltInRegistries.Block.Key}: {missingKey}",
             "Defaulted getValueOrThrow(resource key) must preserve the vanilla exact-key diagnostic.");
 
-        Holder<Block>.Reference registered = BuiltInRegistries.Block.GetHolderOrThrow(testKey);
+        InvalidOperationException missingHolderException = Capture<InvalidOperationException>(
+            () => ((HolderGetter<Block>)BuiltInRegistries.Block).GetOrThrow(missingKey),
+            "HolderGetter.getOrThrow(resource key) must reject absent holders.");
+        Require(
+            missingHolderException.Message == $"Missing element {missingKey}",
+            "HolderGetter.getOrThrow(resource key) must use the vanilla missing-element diagnostic.");
+
+        Holder<Block>.Reference registered = ((HolderGetter<Block>)BuiltInRegistries.Block).GetOrThrow(testKey);
         Require(ReferenceEquals(registered, Blocks.TEST_BLOCK.BuiltInRegistryHolder), "Registration must bind the pre-created intrusive holder.");
         Require(registered.IsBound, "The built-in holder must be fully bound after freeze.");
         Require(ReferenceEquals(registered.Value, Blocks.TEST_BLOCK), "The holder must resolve to its registered block.");
