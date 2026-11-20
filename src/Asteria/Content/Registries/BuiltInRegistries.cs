@@ -8,22 +8,55 @@ namespace Asteria.Content.Registries;
 /// </summary>
 public static class BuiltInRegistries
 {
+    private static readonly List<(ResourceLocation Location, Action Bootstrap)> Loaders = new();
+
     public static ResourceLocation RootLocation { get; } =
         ResourceLocation.FromNamespaceAndPath("asteria", "root");
 
     public static Registry<IRegistry> Root { get; } = new(RootLocation);
 
-    public static DefaultedRegistry<Block> Block { get; } = new(
-        ResourceLocation.FromNamespaceAndPath("asteria", "block"),
-        ResourceLocation.FromNamespaceAndPath("asteria", "air"),
-        allowIntrusiveHolders: true);
+    public static DefaultedRegistry<Block> Block { get; } =
+        RegisterDefaultedWithIntrusiveHolders(
+            ResourceLocation.FromNamespaceAndPath("asteria", "block"),
+            ResourceLocation.FromNamespaceAndPath("asteria", "air"),
+            static () => Blocks.RegisterAll());
 
-    static BuiltInRegistries()
+    private static DefaultedRegistry<T> RegisterDefaultedWithIntrusiveHolders<T>(
+        ResourceLocation location,
+        ResourceLocation defaultKey,
+        Action bootstrap)
+        where T : class =>
+        InternalRegister(
+            location,
+            new DefaultedRegistry<T>(
+                location,
+                defaultKey,
+                allowIntrusiveHolders: true),
+            bootstrap);
+
+    private static TRegistry InternalRegister<TRegistry>(
+        ResourceLocation location,
+        TRegistry registry,
+        Action bootstrap)
+        where TRegistry : class, IRegistry
     {
+        ArgumentNullException.ThrowIfNull(bootstrap);
+
+        Loaders.Add((location, bootstrap));
         Root.Register(
-            RegistryKey<IRegistry>.Create(Root.Key, Block.Location),
-            Block,
+            RegistryKey<IRegistry>.Create(Root.Key, location),
+            registry,
             RegistrationInfo.BuiltIn);
+
+        return registry;
+    }
+
+    internal static void Bootstrap()
+    {
+        foreach ((_, Action bootstrap) in Loaders)
+            bootstrap();
+
+        FreezeAll();
     }
 
     public static void FreezeAll()
