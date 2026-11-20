@@ -927,6 +927,7 @@ internal static class Program
             ReferenceEquals(ownerException, contenderException),
             "ThreadingDetector must report concurrent access to both participating threads.");
         Require(
+            ownerException is not null &&
             ownerException.Message.Contains("Thread dumps:", StringComparison.Ordinal) &&
             ownerException.Message.Contains("BlockRegistryChecks contender", StringComparison.Ordinal),
             "The threading exception must include stack dumps for the current and failed-to-acquire threads.");
