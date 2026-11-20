@@ -192,8 +192,22 @@ internal static class Program
         ResourceLocation missingId = ResourceLocation.Parse("asteria:not_registered");
 
         Require(ReferenceEquals(BuiltInRegistries.Block.GetValue(airId), Blocks.AIR), "The air block must be registered.");
-        Require(ReferenceEquals(BuiltInRegistries.Block.GetValue(missingId), Blocks.AIR), "Unknown block keys must resolve to air.");
-        Require(ReferenceEquals(BuiltInRegistries.Block.GetValue(missingId), Blocks.AIR), "Defaulted GetValue lookups must resolve unknown identifiers to air.");
+        Require(
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(missingId), Blocks.AIR),
+            "Defaulted GetValue(identifier) lookups must resolve unknown identifiers to air.");
+
+        RegistryKey<Block> missingKey = new(BuiltInRegistries.Block.Location, missingId);
+        RegistryKey<Block> testKey = new(BuiltInRegistries.Block.Location, testId);
+        Require(
+            BuiltInRegistries.Block.GetValue(missingKey) is null &&
+            BuiltInRegistries.Block.GetOptional(missingKey) is null &&
+            BuiltInRegistries.Block.GetOptional(missingId) is null &&
+            BuiltInRegistries.Block.GetHolder(missingKey) is null,
+            "Defaulted registries must keep resource-key, optional, and holder lookups exact rather than falling back.");
+        Require(
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(testKey), Blocks.TEST_BLOCK) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetOptional(testKey), Blocks.TEST_BLOCK),
+            "Exact resource-key lookups must still return registered values.");
         Require(ReferenceEquals(BuiltInRegistries.Block.GetAny(), Blocks.AIR.BuiltInRegistryHolder), "DefaultedMappedRegistry.getAny must return its default holder.");
         Holder<Block>.Reference? randomDefaultedHolder = BuiltInRegistries.Block.GetRandom(new Random(0));
         Require(
@@ -210,8 +224,14 @@ internal static class Program
             "DefaultedMappedRegistry.get(id) must remain an exact holder lookup for unknown numeric IDs.");
         Require(ReferenceEquals(BuiltInRegistries.Block.ById(999), Blocks.AIR), "DefaultedMappedRegistry.byId must resolve unknown IDs to its default value.");
 
-        Holder<Block>.Reference registered = BuiltInRegistries.Block.GetHolderOrThrow(
-            new RegistryKey<Block>(BuiltInRegistries.Block.Location, testId));
+        ArgumentException missingValueException = Capture<ArgumentException>(
+            () => BuiltInRegistries.Block.GetValueOrThrow(missingKey),
+            "Defaulted getValueOrThrow(resource key) must reject an absent key instead of falling back.");
+        Require(
+            missingValueException.Message == $"Missing key in {BuiltInRegistries.Block.Key}: {missingKey}",
+            "Defaulted getValueOrThrow(resource key) must preserve the vanilla exact-key diagnostic.");
+
+        Holder<Block>.Reference registered = BuiltInRegistries.Block.GetHolderOrThrow(testKey);
         Require(ReferenceEquals(registered, Blocks.TEST_BLOCK.BuiltInRegistryHolder), "Registration must bind the pre-created intrusive holder.");
         Require(registered.IsBound, "The built-in holder must be fully bound after freeze.");
         Require(ReferenceEquals(registered.Value, Blocks.TEST_BLOCK), "The holder must resolve to its registered block.");
