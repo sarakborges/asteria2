@@ -10,14 +10,21 @@ This stage covers only systems already introduced in Asteria: registries and hol
 
 - `Registry<T>` follows `MappedRegistry<T>`: location, registry-key, value-identity, numeric-ID, and holder indexes share stable `Holder.Reference<T>` instances.
 - `Count`/registry size includes standalone key placeholders. Numeric ID lookup remains separate from key lookup.
+- `AsHolderIdMap` exposes registry holders through the vanilla `IdMap<Holder<T>>` view.
 - Registration records `RegistrationInfo` and aggregates `Lifecycle`; ordinary registration uses the built-in stable metadata.
 - Registry freezing binds values, rejects unbound standalone references and unregistered intrusive holders, verifies tag binding, and publishes the bound tag set.
 - Intrusive registries require an intrusive holder before registration. A block creates its intrusive holder before its state definition, as vanilla `Block` does.
 - `Holder<T>` supports direct and reference variants, key/predicate/tag membership, ownership checks, unwrap/unwrap-key, registered names, and bound/unbound tag behavior.
-- `HolderSet<T>` supports direct and named sets, ordered contents, membership, random selection, unwrap/unwrap-key, and serialization ownership.
+- `HolderSet<T>` supports direct and named sets, the vanilla direct-set factories, ordered contents, membership, random selection, unwrap/unwrap-key, and serialization ownership.
 - `HolderGetter<T>` exposes optional and throwing key/tag lookup plus random element selection. Registration lookups create stable standalone placeholders.
+- `HolderLookup<T>` and `RegistryLookup` expose element/tag enumeration, registry key and lifecycle metadata, and vanilla-style element filtering.
 - `DefaultedRegistry<T>` applies fallback semantics only to the vanilla defaulted lookup paths; exact holder and optional lookups remain exact.
-- Tag reload uses a pending replacement snapshot. The complete vanilla tag-loader pipeline and `HolderLookup.Provider` are not yet introduced.
+- Tag reload uses a pending replacement snapshot. The cross-registry `HolderGetter.Provider` / `HolderLookup.Provider`, complete tag-loader pipeline, and serialization context are not yet introduced.
+
+## Identifiers and resource keys
+
+- `ResourceLocation` follows vanilla identifier parsing, validation, ordering, path transformations, and language/debug naming helpers.
+- `RegistryKey<T>` and `TagKey<T>` expose registry matching, typed casts, and dependent resource-key creation.
 
 ## Blocks and block states
 
