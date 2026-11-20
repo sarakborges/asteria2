@@ -7,10 +7,8 @@ namespace Asteria.Content.Registries;
 /// MappedRegistry-style registry. All key, value, location, and numeric-ID indexes point
 /// directly to stable Holder.Reference instances.
 /// </summary>
-public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLookup where T : class
+public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLookup, IRegistry where T : class
 {
-    private static readonly ResourceLocation RootRegistryLocation = ResourceLocation.Parse("root");
-
     private readonly Dictionary<ResourceLocation, Holder<T>.Reference> _byLocation = new();
     private readonly Dictionary<RegistryKey<T>, Holder<T>.Reference> _byKey = new();
     private readonly Dictionary<T, Holder<T>.Reference> _byValue =
@@ -40,7 +38,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
             throw new ArgumentException("A valid registry location is required.", nameof(location));
 
         Location = location;
-        Key = new RegistryKey<Registry<T>>(RootRegistryLocation, location);
+        Key = new RegistryKey<Registry<T>>(BuiltInRegistries.RootLocation, location);
         RegistryLifecycle = initialLifecycle ?? Lifecycle.Stable();
         _unregisteredIntrusiveHolders = allowIntrusiveHolders
             ? new Dictionary<T, Holder<T>.Reference>(ReferenceEqualityComparer.Instance)
@@ -280,6 +278,10 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
 
         foreach (KeyValuePair<TagKey<T>, IEnumerable<Holder<T>>> definition in tagDefinitions)
             GetOrCreateTagForRegistration(definition.Key).Bind(definition.Value);
+    }
+
+    public virtual void Validate()
+    {
     }
 
     public void BindAllTagsToEmpty()
