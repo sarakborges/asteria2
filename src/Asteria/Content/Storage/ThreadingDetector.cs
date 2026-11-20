@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Threading;
 
 namespace Asteria.Content.Storage;
@@ -73,7 +74,7 @@ public sealed class ThreadingDetector
                 string threadName = thread.Name ?? $"Thread {thread.ManagedThreadId}";
                 string stackTrace = ReferenceEquals(thread, Thread.CurrentThread)
                     ? Environment.StackTrace
-                    : thread.StackTrace ?? string.Empty;
+                    : new StackTrace(thread, true).ToString();
                 return $"{threadName}:{Environment.NewLine}" +
                     (string.IsNullOrEmpty(stackTrace)
                         ? "\t<stack trace unavailable>"
