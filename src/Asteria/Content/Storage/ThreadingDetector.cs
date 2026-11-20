@@ -4,7 +4,7 @@ namespace Asteria.Content.Storage;
 
 /// <summary>
 /// Detects concurrent access using the semaphore-based check-and-lock protocol
-/// used by Minecraft's ThreadingDetector.
+/// used by the reference threading detector.
 /// </summary>
 public sealed class ThreadingDetector
 {

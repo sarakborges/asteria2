@@ -73,7 +73,7 @@ public sealed class PalettedContainerStrategy<T> where T : class
 }
 
 /// <summary>
-/// Configuration fields equivalent to Minecraft Configuration: resident memory bits and packed storage bits.
+/// Configuration fields for resident memory bits and packed storage bits.
 /// </summary>
 public readonly record struct PaletteConfiguration(
     PaletteMode Mode,

@@ -3,14 +3,14 @@ using System;
 namespace Asteria.Content.Storage;
 
 /// <summary>
-/// Fixed-width storage matching Minecraft SimpleBitStorage.
+/// Fixed-width packed storage following the reference bit-storage contract.
 /// Entries never straddle 64-bit word boundaries.
 /// </summary>
 public sealed class PackedBitStorage : IBitStorage
 {
     /// <summary>
     /// Thrown when supplied packed data does not have the exact word count required by the storage.
-    /// Corresponds to Minecraft's SimpleBitStorage.InitializationException.
+    /// Reports invalid packed-data length during storage initialization.
     /// </summary>
     public sealed class InitializationException : Exception
     {

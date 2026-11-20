@@ -1,7 +1,7 @@
 namespace Asteria.Content.Storage;
 
 /// <summary>
-/// Zero-width BitStorage used by Minecraft's single-value palette configuration.
+/// Zero-width storage used by the single-value palette configuration.
 /// Every valid entry is zero and no packed words are allocated.
 /// </summary>
 public sealed class ZeroBitStorage : IBitStorage
