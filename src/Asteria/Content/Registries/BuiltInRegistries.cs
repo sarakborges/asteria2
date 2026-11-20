@@ -33,7 +33,8 @@ public static class BuiltInRegistries
         foreach (Holder<IRegistry>.Reference registryHolder in Root.ListElements())
         {
             IRegistry registry = registryHolder.Value;
-            registry.BindAllTagsToEmpty();
+            if (!registry.IsFrozen)
+                registry.BindAllTagsToEmpty();
             registry.Freeze();
         }
 
