@@ -727,7 +727,7 @@ internal static class Program
     {
         BlockState defaultState = Blocks.TEST_BLOCK.DefaultState;
         var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(BuiltInRegistries.BlockStates);
-        var palette = new PalettedContainer<BlockState>(strategy, defaultState);
+        var palette = new PalettedContainer<BlockState>(defaultState, strategy);
         Require(palette.Size == ChunkSection.BlockCount, "Block-state strategy must create 4096 entries.");
         Require(palette.Mode == PaletteMode.SingleValue, "A uniform section must use a single-value palette.");
         Require(palette.BitsPerEntry == 0, "A single-value palette must use zero storage bits.");
@@ -753,7 +753,7 @@ internal static class Program
             ReferenceEquals(presentValues[1], alternate),
             "GetAll must preserve the first-occurrence order of palette IDs.");
 
-        var coordinateContainer = new PalettedContainer<BlockState>(strategy, defaultState);
+        var coordinateContainer = new PalettedContainer<BlockState>(defaultState, strategy);
         coordinateContainer.Set(2, 3, 4, alternate);
         Require(
             ReferenceEquals(coordinateContainer.Get(2, 3, 4), alternate),
@@ -792,7 +792,7 @@ internal static class Program
         foreach (BlockState state in manyStateBlock.StateDefinition.PossibleStates) ids.Register(state);
 
         var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(ids);
-        var container = new PalettedContainer<BlockState>(strategy, manyStateBlock.DefaultState);
+        var container = new PalettedContainer<BlockState>(manyStateBlock.DefaultState, strategy);
         IReadOnlyList<BlockState> states = manyStateBlock.StateDefinition.PossibleStates;
 
         for (int value = 1; value <= 16; value++) SetAt(container, value - 1, states[value]);
@@ -828,7 +828,7 @@ internal static class Program
             ids.Register(state);
 
         var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(ids);
-        var container = new PalettedContainer<BlockState>(strategy, block.DefaultState);
+        var container = new PalettedContainer<BlockState>(block.DefaultState, strategy);
         IReadOnlyList<BlockState> states = block.StateDefinition.PossibleStates;
         for (int value = 1; value <= 256; value++)
             SetAt(container, value - 1, states[value]);

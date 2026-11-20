@@ -38,7 +38,7 @@ public sealed class ChunkSection
             throw new InvalidOperationException("A block-state strategy must create exactly 4096 entries per section.");
         }
 
-        _states = new PalettedContainer<BlockState>(strategy, airState);
+        _states = new PalettedContainer<BlockState>(airState, strategy);
     }
 
     private ChunkSection(PalettedContainer<BlockState> states, ushort nonAirBlockCount)

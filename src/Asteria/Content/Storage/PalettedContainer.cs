@@ -67,10 +67,10 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
             ? Volatile.Read(ref _data).Palette.GetType().Name
             : null;
 
-    public PalettedContainer(PalettedContainerStrategy<T> strategy, T defaultValue)
+    public PalettedContainer(T defaultValue, PalettedContainerStrategy<T> strategy)
     {
-        _strategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
         ArgumentNullException.ThrowIfNull(defaultValue);
+        _strategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
 
         _data = CreateData(_strategy.GetConfigurationForBitCount(0));
         _data.Palette.IdFor(defaultValue, this);
@@ -241,7 +241,7 @@ public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
     public PalettedContainer<T> Recreate()
     {
         Data data = Volatile.Read(ref _data);
-        return new PalettedContainer<T>(_strategy, data.Palette.ValueFor(0));
+        return new PalettedContainer<T>(data.Palette.ValueFor(0), _strategy);
     }
 
     int IPaletteResize<T>.OnResize(int bits, T lastAddedValue) =>
