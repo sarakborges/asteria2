@@ -18,6 +18,13 @@ internal static class Program
         public bool CanSerializeIn(HolderOwner<T> owner) => ReferenceEquals(owner, _acceptedOwner);
     }
 
+    private sealed class CustomHolderSet<T> : HolderSet<T> where T : class
+    {
+        public CustomHolderSet(IEnumerable<Holder<T>> holders) : base(holders)
+        {
+        }
+    }
+
     private sealed class TestBlockDefinition : Block
     {
         private StateDefinitionBuilder? _capturedBuilder;
@@ -585,6 +592,15 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             directFactory.SequenceEqual(new Holder<Block>[] { registered, registered }),
             "HolderSet.direct(varargs) must preserve order and duplicate entries.");
+        Require(
+            directSet.Equals(directFactory) && directSet.GetHashCode() == directFactory.GetHashCode(),
+            "HolderSet.Direct equality must compare the ordered holder list and provide a matching hash code.");
+        var customSet = new CustomHolderSet<Block>(new Holder<Block>[] { registered, registered });
+        Require(
+            !directFactory.Equals(customSet) &&
+            !customSet.Equals(directFactory) &&
+            customSet.Equals(customSet),
+            "HolderSet.Direct must not compare equal to a custom ListBacked set that inherits identity equality.");
         HolderSet<Block> mappedDirectFactory = HolderSet<Block>.Direct(
             static block => Holder<Block>.Direct(block),
             new[] { value, placeholderValue });
