@@ -19,15 +19,15 @@ public sealed class IntegerProperty : StateProperty<int>
         if (minimum < 0)
         {
             throw new ArgumentException(
-                $"Min value of {name} must be 0 or greater.",
-                nameof(minimum));
+                $"Min value of {name} must be 0 or greater",
+                );
         }
 
         if (maximum <= minimum)
         {
             throw new ArgumentException(
-                $"Max value of {name} must be greater than min ({minimum}).",
-                nameof(maximum));
+                $"Max value of {name} must be greater than min ({minimum})",
+                );
         }
 
         long count = (long)maximum - minimum + 1L;
