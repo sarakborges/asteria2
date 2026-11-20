@@ -29,7 +29,7 @@ public sealed class BlockState
         DestroySpeed = properties.DestroyTimeValue;
         RequiresCorrectToolForDrops = properties.RequiresCorrectToolForDropsValue;
 
-        Block.BlockStateRegistry.Add(this);
+        global::Asteria.Content.Blocks.Block.BlockStateRegistry.Add(this);
     }
 
     public T GetValue<T>(StateProperty<T> property) where T : notnull, IComparable
