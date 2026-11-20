@@ -13,10 +13,20 @@ public sealed class BlockState
     public Block Block => Definition.Owner;
     public StateDefinition Definition { get; }
 
+    // BlockStateBase caches these values when each state is constructed.
+    public bool IsAir { get; }
+    public float DestroySpeed { get; }
+    public bool RequiresCorrectToolForDrops { get; }
+
     internal BlockState(StateDefinition definition, object[] values)
     {
         Definition = definition ?? throw new ArgumentNullException(nameof(definition));
         _values = values ?? throw new ArgumentNullException(nameof(values));
+
+        BlockProperties properties = Definition.Owner.Properties;
+        IsAir = properties.IsAir;
+        DestroySpeed = properties.DestroyTimeValue;
+        RequiresCorrectToolForDrops = properties.RequiresCorrectToolForDropsValue;
     }
 
     public T GetValue<T>(StateProperty<T> property) where T : notnull, IComparable

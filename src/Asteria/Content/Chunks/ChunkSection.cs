@@ -57,11 +57,11 @@ public sealed class ChunkSection
 
         if (!ReferenceEquals(previous, state))
         {
-            if (previous.Block.Properties.IsAir && !state.Block.Properties.IsAir)
+            if (previous.IsAir && !state.IsAir)
             {
                 _nonAirBlockCount++;
             }
-            else if (!previous.Block.Properties.IsAir && state.Block.Properties.IsAir)
+            else if (!previous.IsAir && state.IsAir)
             {
                 _nonAirBlockCount--;
             }
@@ -86,7 +86,7 @@ public sealed class ChunkSection
         int nonAirBlockCount = 0;
         _states.Count((state, count) =>
         {
-            if (!state.Block.Properties.IsAir)
+            if (!state.IsAir)
             {
                 nonAirBlockCount += count;
             }

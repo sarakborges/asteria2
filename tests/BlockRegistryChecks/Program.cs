@@ -184,6 +184,25 @@ internal static class Program
         Require(
             semantic.RequiresCorrectToolForDropsValue && semantic.IsAir,
             "Vanilla property flags must be set through the fluent builder.");
+
+        BlockProperties mutableProperties = BlockProperties.Of()
+            .Strength(2.5f, 8.0f)
+            .RequiresCorrectToolForDrops();
+        var snapshotBlock = new TestBlockDefinition(mutableProperties);
+        BlockState snapshotState = snapshotBlock.DefaultState;
+        Require(
+            !snapshotState.IsAir &&
+            snapshotState.DestroySpeed == 2.5f &&
+            snapshotState.RequiresCorrectToolForDrops,
+            "Block states must cache air, destroy speed, and tool requirements at construction.");
+
+        mutableProperties.Air().DestroyTime(9.0f);
+        Require(
+            !snapshotState.IsAir && snapshotState.DestroySpeed == 2.5f,
+            "Mutating BlockBehaviour.Properties after state creation must not alter cached BlockStateBase values.");
+        Require(
+            mutableProperties.IsAir && mutableProperties.DestroyTimeValue == 9.0f,
+            "The BlockBehaviour.Properties builder itself remains mutable after block construction.");
     }
 
     private static void CheckRegistryHoldersAndTags()
@@ -842,7 +861,7 @@ internal static class Program
         Require(palette.BitsPerEntry == 0, "A single-value palette must use zero storage bits.");
         Require(palette.StorageLongCount == 0, "A single-value palette must allocate no packed array.");
         Require(ReferenceEquals(GetAt(palette, 2048), defaultState), "A single-value palette must return its only value for every index.");
-        Require(!palette.MaybeHas(state => state.Block.Properties.IsAir), "Single-value maybeHas must inspect the only value.");
+        Require(!palette.MaybeHas(state => state.IsAir), "Single-value maybeHas must inspect the only value.");
 
         BlockState alternate = defaultState.SetValue(Blocks.TEST_STAGE, 2);
         BlockState previous = GetAndSetAt(palette, 10, alternate);
@@ -851,7 +870,7 @@ internal static class Program
         Require(palette.BitsPerEntry == 4, "Block-state local palettes start at four bits.");
         Require(palette.LocalPaletteImplementation?.StartsWith("LinearPalette", StringComparison.Ordinal) == true, "The four-bit palette must use linear lookup.");
         Require(ReferenceEquals(GetAt(palette, 10), alternate), "Local palette lookup must round-trip.");
-        Require(!palette.MaybeHas(state => state.Block.Properties.IsAir), "Local palette must report absent air.");
+        Require(!palette.MaybeHas(state => state.IsAir), "Local palette must report absent air.");
         Require(palette.MaybeHas(state => ReferenceEquals(state, alternate)), "Local palette must inspect its entries.");
 
         var presentValues = new List<BlockState>();
@@ -987,7 +1006,7 @@ internal static class Program
         section.SetBlockState(15, 15, 15, Blocks.AIR.DefaultState);
         Require(section.NonAirBlockCount == 0, "Replacing non-air with air must decrement the count.");
         Require(section.HasOnlyAir, "The section must become empty after restoring air.");
-        Require(section.MaybeHas(state => !state.Block.Properties.IsAir), "maybeHas may conservatively return true for an unused local entry.");
+        Require(section.MaybeHas(state => !state.IsAir), "maybeHas may conservatively return true for an unused local entry.");
 
         // LevelChunkSection exposes its state container and can rebuild its cached counters.
         section.GetStates().Set(0, 0, 0, placedState);
@@ -1003,7 +1022,7 @@ internal static class Program
         Require(section.NonAirBlockCount == 1, "Mutating a copied section must not affect the original.");
 
         var emptySection = new ChunkSection(CreateBlockStateContainer(Blocks.AIR.DefaultState));
-        Require(!emptySection.MaybeHas(state => !state.Block.Properties.IsAir), "An untouched air-only palette must rule out non-air blocks.");
+        Require(!emptySection.MaybeHas(state => !state.IsAir), "An untouched air-only palette must rule out non-air blocks.");
         Require(
             ReferenceEquals(section.GetBlockState(16, 0, 0), section.GetBlockState(0, 0, 1)),
             "Coordinates are flattened in vanilla X/Z/Y order before the final storage index is validated.");
