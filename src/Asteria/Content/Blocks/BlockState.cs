@@ -117,7 +117,7 @@ public sealed class BlockState
         ArgumentNullException.ThrowIfNull(neighbors);
         if (_neighbors is not null)
         {
-            throw new InvalidOperationException();
+            throw new InvalidOperationException(string.Empty);
         }
 
         _neighbors = neighbors;
