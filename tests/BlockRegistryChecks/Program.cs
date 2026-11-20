@@ -20,7 +20,7 @@ internal static class Program
         ResourceLocation registryLocation)
         where T : class =>
         RegistryKey<Registry<T>>.Create(
-            RegistryKey<Registry<Registry<T>>>.CreateRegistryKey(rootLocation),
+            RegistryKey<Registry<T>>.CreateRegistryKey(rootLocation),
             registryLocation);
 
     private sealed class SelectiveHolderOwner<T> : HolderOwner<T> where T : class
@@ -467,7 +467,7 @@ internal static class Program
 
         var registry = new Registry<Block>(registryId);
         Require(
-            registry.Key == RegistryKey<Registry<Block>>.CreateRegistryKey(registryId),
+            registry.Key == RegistryKey<Block>.CreateRegistryKey(registryId),
             "MappedRegistry.key must identify the registry through the root registry.");
         Require(
             registry.ToString() == $"Registry[{registry.Key} (Stable)]",
@@ -486,35 +486,35 @@ internal static class Program
         Require(entryKey.IsFor(rootRegistryKey), "ResourceKey.isFor must compare its registry identifier.");
         Require(entryKey.GetRegistryKey() == rootRegistryKey, "ResourceKey.registryKey must return the root registry key.");
         RegistryKey<string>? castEntryKey = entryKey.Cast(
-            RegistryKey<Registry<string>>.CreateRegistryKey(registryId));
+            RegistryKey<string>.CreateRegistryKey(registryId));
         Require(
             castEntryKey is RegistryKey<string> castKey && castKey.Location == entryId,
             "ResourceKey.cast must preserve the identifier when the registry matches.");
         Require(
-            entryKey.Cast(RegistryKey<Registry<string>>.CreateRegistryKey(ResourceLocation.Parse("asteria:other_registry"))) is null,
+            entryKey.Cast(RegistryKey<string>.CreateRegistryKey(ResourceLocation.Parse("asteria:other_registry"))) is null,
             "ResourceKey.cast must return an empty result for a different registry.");
         Require(
             entryKey.Dependent(rootRegistryKey, "_metadata").Location == entryId.WithSuffix("_metadata"),
             "ResourceKey.dependent(suffix) must append to its identifier.");
         Require(
             entryKey.Dependent(
-                RegistryKey<Registry<Block>>.CreateRegistryKey(ResourceLocation.Parse("asteria:other_registry")),
+                RegistryKey<Block>.CreateRegistryKey(ResourceLocation.Parse("asteria:other_registry")),
                 path => $"metadata/{path}").Location.Path == "metadata/test_entry",
             "ResourceKey.dependent(decoration) must transform the identifier path.");
         Require(tagKey.IsFor(rootRegistryKey), "TagKey.isFor must compare the full registry key.");
         RegistryKey<Registry<Block>> foreignRootRegistryKey =
-            CreateRegistryKeyIn<Block>(ResourceLocation.Parse("asteria:foreign_root"), registryId);
+            CreateRegistryKeyInRoot<Block>(ResourceLocation.Parse("asteria:foreign_root"), registryId);
         Require(
             !tagKey.IsFor(foreignRootRegistryKey) &&
-            tagKey.Cast(CreateRegistryKeyIn<string>(foreignRootRegistryKey.RegistryLocation, foreignRootRegistryKey.Location)) is null,
+            tagKey.Cast(CreateRegistryKeyInRoot<string>(foreignRootRegistryKey.RegistryLocation, foreignRootRegistryKey.Location)) is null,
             "TagKey.isFor and cast must reject matching registry identifiers under a different root key.");
         TagKey<string>? castTagKey = tagKey.Cast(
-            RegistryKey<Registry<string>>.CreateRegistryKey(registryId));
+            RegistryKey<string>.CreateRegistryKey(registryId));
         Require(
             castTagKey is TagKey<string> castTag && castTag.Location == tagId,
             "TagKey.cast must preserve the tag location when the registry matches.");
         Require(
-            tagKey.Cast(RegistryKey<Registry<string>>.CreateRegistryKey(ResourceLocation.Parse("asteria:other_registry"))) is null,
+            tagKey.Cast(RegistryKey<string>.CreateRegistryKey(ResourceLocation.Parse("asteria:other_registry"))) is null,
             "TagKey.cast must return an empty result for a different registry.");
         HolderGetter<Block> lookup = registry.CreateRegistrationLookup();
 
@@ -625,7 +625,7 @@ internal static class Program
 
         HolderLookup<Block>.RegistryLookup lookupView = registry;
         Require(
-            lookupView.Key == RegistryKey<Registry<Block>>.CreateRegistryKey(registryId),
+            lookupView.Key == RegistryKey<Block>.CreateRegistryKey(registryId),
             "HolderLookup.RegistryLookup.key must expose the root registry key.");
         Require(
             ReferenceEquals(lookupView.RegistryLifecycle, registry.RegistryLifecycle),
