@@ -407,7 +407,7 @@ internal static class Program
         Require(registry.ById(-1) is null, "MappedRegistry.byId must return null for an invalid numeric ID.");
         var entryKey = new RegistryKey<Block>(registryId, entryId);
         var placeholderKey = new RegistryKey<Block>(registryId, placeholderId);
-        var tagKey = new TagKey<Block>(registryId, tagId);
+        var tagKey = TagKey<Block>.Create(registry.Key, tagId);
         var rootRegistryKey = new RegistryKey<Registry<Block>>(BuiltInRegistries.RootLocation, registryId);
         Require(entryKey.IsFor(rootRegistryKey), "ResourceKey.isFor must compare its registry identifier.");
         Require(entryKey.GetRegistryKey() == rootRegistryKey, "ResourceKey.registryKey must return the root registry key.");
@@ -429,7 +429,15 @@ internal static class Program
                 new RegistryKey<Registry<Block>>(BuiltInRegistries.RootLocation, ResourceLocation.Parse("asteria:other_registry")),
                 path => $"metadata/{path}").Location.Path == "metadata/test_entry",
             "ResourceKey.dependent(decoration) must transform the identifier path.");
-        Require(tagKey.IsFor(rootRegistryKey), "TagKey.isFor must compare its registry identifier.");
+        Require(tagKey.IsFor(rootRegistryKey), "TagKey.isFor must compare the full registry key.");
+        RegistryKey<Registry<Block>> foreignRootRegistryKey =
+            new(ResourceLocation.Parse("asteria:foreign_root"), registryId);
+        Require(
+            !tagKey.IsFor(foreignRootRegistryKey) &&
+            tagKey.Cast(new RegistryKey<Registry<string>>(
+                foreignRootRegistryKey.RegistryLocation,
+                foreignRootRegistryKey.Location)) is null,
+            "TagKey.isFor and cast must reject matching registry identifiers under a different root key.");
         TagKey<string>? castTagKey = tagKey.Cast(
             new RegistryKey<Registry<string>>(BuiltInRegistries.RootLocation, registryId));
         Require(
@@ -608,7 +616,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             tag.ToString() == $"NamedSet({tagKey})[[{registered}, {registered}]]",
             "Bound HolderSet.Named.toString must render its contents list.");
-        TagKey<Block> lateTagKey = new(registryId, ResourceLocation.Parse("asteria:late_registration_tag"));
+        TagKey<Block> lateTagKey = new(registry.Key, ResourceLocation.Parse("asteria:late_registration_tag"));
         HolderSet<Block>.Named lateTag = lookup.GetOrThrow(lateTagKey);
         Require(
             !lateTag.IsBound && registry.GetTag(lateTagKey) is null,
@@ -623,7 +631,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(tag.UnwrapKey() == tagKey, "Named HolderSet.unwrapKey must return its tag key.");
         Require(tag.Stream().Count() == 2, "HolderSet.stream must enumerate its bound entries.");
         Require(ReferenceEquals(registry.GetTag(tagKey), tag), "The frozen registry must expose its registered tag set.");
-        Require(registry.GetTagOrEmpty(new TagKey<Block>(registryId, ResourceLocation.Parse("asteria:empty"))).Count == 0, "Missing tags must resolve to an empty holder set.");
+        Require(registry.GetTagOrEmpty(new TagKey<Block>(registry.Key, ResourceLocation.Parse("asteria:empty"))).Count == 0, "Missing tags must resolve to an empty holder set.");
 
         HolderSet<Block> directSet = new(new Holder<Block>[] { registered, registered });
         Require(directSet.Count == 2, "Direct holder sets must preserve order and duplicate entries.");
@@ -698,7 +706,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "Tag reload must reuse a named tag created through the registry's retained registration lookup.");
 
         TagKey<Block> reloadOnlyTagKey = new(
-            registryId,
+            registry.Key,
             ResourceLocation.Parse("asteria:reload_only_tag"));
         KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>[] reloadOnlyDefinition =
         {
@@ -740,7 +748,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
                 foreignPlaceholder),
             "MappedRegistry.register must retain a supplied ResourceKey without revalidating its registry identifier.");
 
-        TagKey<Block> foreignTagKey = new(otherRegistry.Location, ResourceLocation.Parse("asteria:foreign_tag"));
+        TagKey<Block> foreignTagKey = new(otherRegistry.Key, ResourceLocation.Parse("asteria:foreign_tag"));
         HolderSet<Block>.Named foreignTag = crossLookup.GetOrThrow(foreignTagKey);
         crossRegistry.BindTags(new[]
         {
@@ -768,7 +776,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
         var invalidTagRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:invalid_tag_registry"));
         TagKey<Block> invalidTagKey = new(
-            invalidTagRegistry.Location,
+            invalidTagRegistry.Key,
             ResourceLocation.Parse("asteria:invalid"));
         HolderSet<Block>.Named invalidNamedTag =
             invalidTagRegistry.CreateRegistrationLookup().GetOrThrow(invalidTagKey);
@@ -788,7 +796,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
         var unboundTagRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:unbound_tag_registry"));
         TagKey<Block> unboundTagKey = new(
-            unboundTagRegistry.Location,
+            unboundTagRegistry.Key,
             ResourceLocation.Parse("asteria:never_bound"));
         unboundTagRegistry.CreateRegistrationLookup().GetOrThrow(unboundTagKey);
         InvalidOperationException unboundTagsException = Capture<InvalidOperationException>(
@@ -1067,7 +1075,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             missingElementException.Message == $"Missing element {missingKey}",
             "HolderGetter.getOrThrow(element) must use the vanilla missing-element error message.");
-        TagKey<Block> missingTagKey = new(registryId, missingId);
+        TagKey<Block> missingTagKey = new(registry.Key, missingId);
         InvalidOperationException missingTagException = Capture<InvalidOperationException>(
             () => filteredLookup.GetOrThrow(missingTagKey),
             "HolderGetter.getOrThrow must reject a missing tag.");
