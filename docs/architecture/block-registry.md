@@ -58,7 +58,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 
 - `ChunkSection` receives a prebuilt block-state `PalettedContainer` and recalculates its initial non-air count without imposing an additional size check on the supplied container.
 - Block-state access is coordinate-based. The flattening formula remains the vanilla `(y << 8) | (z << 4) | x` through the strategy.
-- The currently applicable cached counters are non-air block count and randomly-ticking block count. `IsRandomlyTickingBlocks` and `IsRandomlyTicking` expose the block portion of the reference section's ticking gate. The section exposes its state container, can recalculate both counts, and copies its state container and cached counters.
+- The currently applicable cached counters are non-air block count and randomly-ticking block count. Both counters include only non-air block states; the ticking counter does not count an air state even if its modeled flags also mark it as randomly ticking. `IsRandomlyTickingBlocks` and `IsRandomlyTicking` expose the block portion of the reference section's ticking gate. The section exposes its state container, can recalculate both counts, and copies its state container and cached counters.
 - Fluid states and their two counters, biome holder storage and resolution, and section serialization are deferred until those matching domain systems and codecs exist.
 
 ## Parity gate

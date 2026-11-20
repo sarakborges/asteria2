@@ -2480,6 +2480,30 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         tickingSection.RecalculateBlockCounts();
         Require(tickingSection.TickingBlockCount == 2, "RecalculateBlockCounts must rebuild the ticking-block count after direct container writes.");
 
+        var tickingAirBlock = new TestBlockDefinition(
+            BlockProperties.Of().Air().RandomTicks());
+        BlockState tickingAirState = tickingAirBlock.DefaultState;
+        Require(
+            tickingAirState.IsAir && tickingAirState.IsRandomlyTicking,
+            "The block-state model must allow the air and random-ticking flags to coexist.");
+        PalettedContainer<BlockState> tickingAirStates = CreateBlockStateContainer(Blocks.AIR.DefaultState);
+        tickingAirStates.Set(0, 0, 0, tickingAirState);
+        ChunkSection tickingAirSection = new(tickingAirStates);
+        Require(
+            tickingAirSection.NonAirBlockCount == 0 && tickingAirSection.TickingBlockCount == 0 &&
+            !tickingAirSection.IsRandomlyTicking,
+            "RecalculateBlockCounts must exclude randomly-ticking states when their block is air.");
+        tickingAirSection.SetBlockState(1, 0, 0, tickingOff);
+        Require(tickingAirSection.TickingBlockCount == 1, "A non-air randomly-ticking block must increment the ticking count.");
+        tickingAirSection.SetBlockState(1, 0, 0, tickingAirState);
+        Require(
+            tickingAirSection.NonAirBlockCount == 0 && tickingAirSection.TickingBlockCount == 0,
+            "Replacing a ticking block with an air state must decrement the count without adding the air state's tick flag.");
+        tickingAirSection.SetBlockState(1, 0, 0, Blocks.AIR.DefaultState);
+        Require(
+            tickingAirSection.TickingBlockCount == 0,
+            "Replacing one air state with another must not decrement or increment the ticking count.");
+
         BlockState placedState = Blocks.TEST_BLOCK.DefaultState;
         BlockState previous = section.SetBlockState(15, 15, 15, placedState);
         Require(ReferenceEquals(previous, Blocks.AIR.DefaultState), "SetBlockState must return the previous state.");

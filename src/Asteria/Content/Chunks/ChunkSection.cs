@@ -59,21 +59,19 @@ public sealed class ChunkSection
         if (!previous.IsAir)
         {
             _nonAirBlockCount = unchecked((short)(_nonAirBlockCount - 1));
+            if (previous.IsRandomlyTicking)
+            {
+                _tickingBlockCount = unchecked((short)(_tickingBlockCount - 1));
+            }
         }
 
         if (!state.IsAir)
         {
             _nonAirBlockCount = unchecked((short)(_nonAirBlockCount + 1));
-        }
-
-        if (previous.IsRandomlyTicking)
-        {
-            _tickingBlockCount = unchecked((short)(_tickingBlockCount - 1));
-        }
-
-        if (state.IsRandomlyTicking)
-        {
-            _tickingBlockCount = unchecked((short)(_tickingBlockCount + 1));
+            if (state.IsRandomlyTicking)
+            {
+                _tickingBlockCount = unchecked((short)(_tickingBlockCount + 1));
+            }
         }
 
         return previous;
@@ -99,11 +97,10 @@ public sealed class ChunkSection
             if (!state.IsAir)
             {
                 nonAirBlockCount += count;
-            }
-
-            if (state.IsRandomlyTicking)
-            {
-                tickingBlockCount += count;
+                if (state.IsRandomlyTicking)
+                {
+                    tickingBlockCount += count;
+                }
             }
         });
 
