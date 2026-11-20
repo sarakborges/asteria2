@@ -636,7 +636,7 @@ internal static class Program
         EnumProperty<TestAxis> invalidSerialized = EnumProperty<TestAxis>.Create(
             "invalid_serialized",
             new[] { TestAxis.Z, TestAxis.X },
-            _ => "Invalid Name");
+            value => value == TestAxis.Z ? "Invalid Name" : "x");
         Require(invalidSerialized.GetName(TestAxis.Z) == "Invalid Name", "EnumProperty construction must retain enum serialized names before state-definition validation.");
         RequireThrows<ArgumentException>(
             () => new TestBlockDefinition(BlockProperties.Of(), builder => builder.Add(invalidSerialized)),
