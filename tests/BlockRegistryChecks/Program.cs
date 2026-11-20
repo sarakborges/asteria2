@@ -359,6 +359,8 @@ internal static class Program
 
         Block value = new TestBlockDefinition(BlockProperties.Of());
         Holder<Block>.Reference registered = lookup.GetOrThrow(entryKey);
+        Require(registry.Count == 2, "Each distinct standalone key must contribute to registry size before registration.");
+        Holder<Block>.Reference entry = registry.Register(entryId, value);
         InvalidOperationException duplicateKeyException = Capture<InvalidOperationException>(
             () => registry.Register(entryKey, new TestBlockDefinition(BlockProperties.Of()), RegistrationInfo.BuiltIn),
             "MappedRegistry.register must reject duplicate identifiers.");
@@ -371,8 +373,6 @@ internal static class Program
         Require(
             duplicateValueException.Message == $"Adding duplicate value '{value}' to registry",
             "MappedRegistry.register must use the vanilla duplicate-value error message.");
-        Require(registry.Count == 2, "Each distinct standalone key must contribute to registry size before registration.");
-        Holder<Block>.Reference entry = registry.Register(entryId, value);
         Require(ReferenceEquals(entry, registered), "Registration must reuse the standalone holder.");
         Require(registry.Count == 2, "Registering a reserved key must not change registry size.");
         Require(!registered.IsBound, "Standalone holder values are bound during registry freeze.");
