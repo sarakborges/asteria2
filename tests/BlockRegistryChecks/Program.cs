@@ -1572,6 +1572,16 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             booleanValues[0].ValueName == "true",
             "Property.Value must retain the owning property, typed value, and serialized value name.");
 
+        StatePropertyValue<bool> litTrue = lit.Value(true);
+        StatePropertyValue<bool> equivalentLitTrue = BooleanProperty.Create("lit").Value(true);
+        Require(
+            litTrue.Equals(equivalentLitTrue) && litTrue == equivalentLitTrue &&
+            litTrue.GetHashCode() == equivalentLitTrue.GetHashCode(),
+            "Property.Value record equality and hashing must compare the property/value components.");
+        Require(
+            litTrue != lit.Value(false),
+            "Property.Value record equality must distinguish different values of the same property.");
+
         IStatePropertyValue[] stateValues = Blocks.TEST_BLOCK.DefaultState.GetValues().ToArray();
         Require(
             stateValues.Select(value => value.Property.Name).SequenceEqual(new[] { "powered", "stage" }) &&
@@ -1595,6 +1605,12 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "IntegerProperty.toString must match the vanilla property diagnostic format.");
         Require(!age.Equals(IntegerProperty.Create("age", 1, 4)), "Integer properties with different ranges must not compare equal.");
         Require(age.GetHashCode() == IntegerProperty.Create("age", 2, 4).GetHashCode(), "Equal integer properties must have equal hash codes.");
+        StatePropertyValue<int> ageValue = age.Value(3);
+        StatePropertyValue<int> equivalentAgeValue = IntegerProperty.Create("age", 2, 4).Value(3);
+        Require(
+            ageValue.Equals(equivalentAgeValue) &&
+            ageValue.GetHashCode() == equivalentAgeValue.GetHashCode(),
+            "Integer property value records must reuse integer-property structural equality.");
         Require(age.PossibleValues.SequenceEqual(new[] { 2, 3, 4 }), "Integer values must be inclusive and ascending.");
         Require(age.IndexOf(2) == 0 && age.IndexOf(4) == 2, "IntegerProperty.getInternalIndex must use min-offset indexing.");
         Require(age.IndexOf(1) == -1 && age.IndexOf(5) == -1, "IntegerProperty.getInternalIndex must reject values outside the range.");
