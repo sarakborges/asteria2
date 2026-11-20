@@ -598,6 +598,44 @@ internal static class Program
         Require(intrusiveHolder.Is(entryId), "An intrusive holder must match its identifier after registration binds its key.");
         Require(intrusiveHolder.Is(key => key.Equals(intrusiveKey)), "An intrusive holder must expose its key to predicates after registration.");
         Require(intrusiveHolder.UnwrapKey() == intrusiveKey, "An intrusive holder must unwrap to its key after registration.");
+
+        Holder<Block>.Reference secondIntrusiveHolder =
+            intrusiveRegistry.CreateIntrusiveHolder(intrusiveValue);
+        Require(
+            !ReferenceEquals(secondIntrusiveHolder, intrusiveHolder),
+            "MappedRegistry.createIntrusiveHolder must create a new holder when the registered value is no longer in the unregistered holder map.");
+        RequireThrows<InvalidOperationException>(
+            intrusiveRegistry.Freeze,
+            "A second intrusive holder created after registration must remain unregistered and prevent freeze.");
+
+        var frozenIntrusiveRegistry = new Registry<Block>(
+            ResourceLocation.Parse("asteria:frozen_intrusive_registry"),
+            allowIntrusiveHolders: true);
+        Block frozenIntrusiveValue = new TestBlockDefinition(BlockProperties.Of());
+        RegistryKey<Block> frozenIntrusiveKey = new(
+            frozenIntrusiveRegistry.Location,
+            ResourceLocation.Parse("asteria:frozen_intrusive_entry"));
+        HolderGetter<Block> staleIntrusiveLookup = frozenIntrusiveRegistry.CreateRegistrationLookup();
+        Holder<Block>.Reference frozenIntrusiveHolder =
+            frozenIntrusiveRegistry.CreateIntrusiveHolder(frozenIntrusiveValue);
+        Require(
+            ReferenceEquals(
+                frozenIntrusiveRegistry.Register(frozenIntrusiveKey, frozenIntrusiveValue, RegistrationInfo.BuiltIn),
+                frozenIntrusiveHolder),
+            "An intrusive registration must bind the pre-created holder.");
+        frozenIntrusiveRegistry.Freeze();
+        Require(
+            ReferenceEquals(staleIntrusiveLookup.Get(frozenIntrusiveKey), frozenIntrusiveHolder),
+            "A stale registration lookup must still return an already registered holder after freeze.");
+        RequireThrows<InvalidOperationException>(
+            () => staleIntrusiveLookup.Get(new RegistryKey<Block>(
+                frozenIntrusiveRegistry.Location,
+                ResourceLocation.Parse("asteria:late_intrusive_entry"))),
+            "A stale registration lookup must not create a new holder after freeze.");
+        RequireThrows<InvalidOperationException>(
+            () => frozenIntrusiveRegistry.CreateIntrusiveHolder(
+                new TestBlockDefinition(BlockProperties.Of())),
+            "MappedRegistry drops its intrusive-holder map after a successful freeze.");
     }
 
     private static void CheckRegistryLifecycleAndRegistrationInfo()

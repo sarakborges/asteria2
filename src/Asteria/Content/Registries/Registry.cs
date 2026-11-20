@@ -20,7 +20,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
     private readonly Dictionary<RegistryKey<T>, RegistrationInfo> _registrationInfos = new();
     private readonly List<Holder<T>.Reference> _byId = new();
     private readonly IReadOnlyList<Holder<T>.Reference> _readOnlyEntries;
-    private readonly Dictionary<T, Holder<T>.Reference>? _unregisteredIntrusiveHolders;
+    private Dictionary<T, Holder<T>.Reference>? _unregisteredIntrusiveHolders;
     private Dictionary<TagKey<T>, HolderSet<T>.Named> _registrationTags = new();
     private IReadOnlyDictionary<TagKey<T>, HolderSet<T>.Named>? _boundTags;
 
@@ -102,13 +102,12 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
 
     public Holder<T>.Reference CreateIntrusiveHolder(T value)
     {
+        if (_unregisteredIntrusiveHolders is null)
+            throw new InvalidOperationException("This registry can't create intrusive holders.");
+
         EnsureWritable();
         ArgumentNullException.ThrowIfNull(value);
 
-        if (_unregisteredIntrusiveHolders is null)
-            throw new InvalidOperationException("This registry can't create intrusive holders.");
-        if (_byValue.ContainsKey(value))
-            throw new InvalidOperationException("The value is already registered in this registry.");
         if (_unregisteredIntrusiveHolders.TryGetValue(value, out Holder<T>.Reference? existing))
             return existing;
 
@@ -358,9 +357,14 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
             throw new InvalidOperationException(
                 $"Unbound values in registry '{Location}': {string.Join(", ", unboundEntries.Select(key => key.Location))}");
 
-        if (_unregisteredIntrusiveHolders is not null && _unregisteredIntrusiveHolders.Count != 0)
-            throw new InvalidOperationException(
-                $"Some intrusive holders were not registered: {_unregisteredIntrusiveHolders.Count}");
+        if (_unregisteredIntrusiveHolders is not null)
+        {
+            if (_unregisteredIntrusiveHolders.Count != 0)
+                throw new InvalidOperationException(
+                    $"Some intrusive holders were not registered: {_unregisteredIntrusiveHolders.Count}");
+
+            _unregisteredIntrusiveHolders = null;
+        }
 
         foreach (HolderSet<T>.Named tag in _registrationTags.Values)
             if (!tag.IsBound)
