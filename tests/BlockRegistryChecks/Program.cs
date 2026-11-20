@@ -1118,6 +1118,13 @@ internal static class Program
             "SimpleBitStorage must pack an initial integer array in logical index order.");
         RequireThrows<ArgumentOutOfRangeException>(() => storage.Set(0, 32), "Storage must reject values that do not fit.");
 
+        PackedBitStorage.InitializationException invalidRawLength = RequireThrows<PackedBitStorage.InitializationException>(
+            () => _ = new PackedBitStorage(5, 13, new ulong[1]),
+            "Raw packed storage must reject a word array with the wrong length using the vanilla initialization exception.");
+        Require(
+            invalidRawLength.Message == "Invalid length given for storage, got: 1 but expected: 2",
+            "SimpleBitStorage initialization failures must preserve the vanilla exception message.");
+
         var thirtyTwoBitStorage = new PackedBitStorage(32, 3);
         Require(thirtyTwoBitStorage.LongCount == 2, "Thirty-two-bit storage must pack two entries per 64-bit word.");
         thirtyTwoBitStorage.Set(0, int.MaxValue);
