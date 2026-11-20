@@ -1093,6 +1093,13 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         RequireThrows<InvalidOperationException>(
             () => missingDefault.GetValue(missingId),
             "A defaulted registry without a default entry must still freeze and fail only when fallback lookup is required.");
+        InvalidOperationException missingDefaultValidation = Capture<InvalidOperationException>(
+            missingDefault.Validate,
+            "BuiltInRegistries validation must reject a defaulted registry whose default entry is missing.");
+        Require(
+            missingDefaultValidation.Message ==
+                $"Missing default of DefaultedMappedRegistry: {missingDefault.DefaultKey}",
+            "Defaulted registry validation must identify the missing default entry.");
 
         var defaulted = new DefaultedRegistry<Block>(
             ResourceLocation.Parse("asteria:defaulted_value_lookup"),
