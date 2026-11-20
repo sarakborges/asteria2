@@ -224,7 +224,7 @@ internal static class Program
             "DefaultedMappedRegistry.get(id) must remain an exact holder lookup for unknown numeric IDs.");
         Require(ReferenceEquals(BuiltInRegistries.Block.ById(999), Blocks.AIR), "DefaultedMappedRegistry.byId must resolve unknown IDs to its default value.");
 
-        ArgumentException missingValueException = Capture<ArgumentException>(
+        InvalidOperationException missingValueException = Capture<InvalidOperationException>(
             () => BuiltInRegistries.Block.GetValueOrThrow(missingKey),
             "Defaulted getValueOrThrow(resource key) must reject an absent key instead of falling back.");
         Require(
