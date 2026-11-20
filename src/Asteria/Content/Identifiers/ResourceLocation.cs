@@ -39,43 +39,69 @@ public readonly record struct ResourceLocation : IComparable<ResourceLocation>
         Path = path;
     }
 
-    public static ResourceLocation Parse(string value)
+    public static ResourceLocation Parse(string value) =>
+        BySeparator(value, NamespaceSeparator);
+
+    public static ResourceLocation WithDefaultNamespace(string path) =>
+        new(DefaultNamespace, path);
+
+    public static ResourceLocation BySeparator(string value, char separator)
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        int separator = value.IndexOf(':');
-        if (separator < 0)
+        int separatorIndex = value.IndexOf(separator);
+        if (separatorIndex >= 0)
         {
-            return new ResourceLocation(DefaultNamespace, value);
+            string path = value[(separatorIndex + 1)..];
+            if (separatorIndex != 0)
+            {
+                string @namespace = value[..separatorIndex];
+                return new ResourceLocation(@namespace, path);
+            }
+
+            return WithDefaultNamespace(path);
         }
 
-        string path = value[(separator + 1)..];
-        string @namespace = separator == 0 ? DefaultNamespace : value[..separator];
-        return new ResourceLocation(@namespace, path);
+        return WithDefaultNamespace(value);
+    }
+
+    public static ResourceLocation? TryParse(string? value) =>
+        value is null ? null : TryBySeparator(value, NamespaceSeparator);
+
+    public static ResourceLocation? TryBySeparator(string value, char separator)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        int separatorIndex = value.IndexOf(separator);
+        if (separatorIndex >= 0)
+        {
+            string path = value[(separatorIndex + 1)..];
+            if (!IsValidPath(path))
+            {
+                return null;
+            }
+
+            if (separatorIndex != 0)
+            {
+                string @namespace = value[..separatorIndex];
+                return IsValidNamespace(@namespace)
+                    ? new ResourceLocation(@namespace, path)
+                    : null;
+            }
+
+            return new ResourceLocation(DefaultNamespace, path);
+        }
+
+        return IsValidPath(value)
+            ? new ResourceLocation(DefaultNamespace, value)
+            : null;
     }
 
     public static bool TryParse(string? value, out ResourceLocation location)
     {
-        location = default;
-
-        if (value is null)
-        {
-            return false;
-        }
-
-        try
-        {
-            location = Parse(value);
-            return true;
-        }
-        catch (ArgumentException)
-        {
-            return false;
-        }
-        catch (FormatException)
-        {
-            return false;
-        }
+        ResourceLocation? parsed = TryParse(value);
+        location = parsed.GetValueOrDefault();
+        return parsed.HasValue;
     }
 
     public static ResourceLocation FromNamespaceAndPath(string @namespace, string path) =>
@@ -95,6 +121,27 @@ public readonly record struct ResourceLocation : IComparable<ResourceLocation>
 
     public ResourceLocation WithSuffix(string suffix) =>
         WithPath(Path + suffix);
+
+    public string ResolveAgainst(string root)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+
+        string resultingPath = System.IO.Path.Combine(root, Namespace, Path);
+        string normalizedPath = System.IO.Path.GetFullPath(resultingPath);
+        string normalizedRoot = System.IO.Path.GetFullPath(root);
+        string relativePath = System.IO.Path.GetRelativePath(normalizedRoot, normalizedPath);
+        string parentPrefix = $"..{System.IO.Path.DirectorySeparatorChar}";
+
+        if (relativePath == ".." ||
+            relativePath.StartsWith(parentPrefix, StringComparison.Ordinal) ||
+            System.IO.Path.IsPathRooted(relativePath))
+        {
+            throw new InvalidOperationException(
+                $"Identifier \"{this}\" tried to access path \"{normalizedPath}\" from root \"{normalizedRoot}\"");
+        }
+
+        return resultingPath;
+    }
 
     public string ToDebugFileName() =>
         ToString().Replace('/', '_').Replace(':', '_');
