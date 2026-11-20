@@ -20,8 +20,7 @@ public static class Blocks
         new BlockProperties(
             destroyTime: 0.0f,
             explosionResistance: 0.0f,
-            isAir: true),
-        createIntrusiveRegistryHolder: true);
+            isAir: true));
 
     public static Block TEST_BLOCK { get; } = CreateTestBlock();
 
@@ -35,8 +34,7 @@ public static class Blocks
             {
                 builder.Add(TEST_POWERED);
                 builder.Add(TEST_STAGE);
-            },
-            createIntrusiveRegistryHolder: true);
+            });
 
         block.RegisterDefaultState(
             block.DefaultState

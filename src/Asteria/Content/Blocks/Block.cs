@@ -15,19 +15,19 @@ public class Block
     public Block(
         BlockProperties properties,
         Action<StateDefinitionBuilder>? configureState = null,
-        bool createIntrusiveRegistryHolder = false)
+        bool createIntrusiveRegistryHolder = true)
     {
         Properties = properties ?? throw new ArgumentNullException(nameof(properties));
-
-        var builder = new StateDefinitionBuilder();
-        configureState?.Invoke(builder);
-        StateDefinition = builder.Build(this);
-        DefaultState = StateDefinition.Any();
 
         if (createIntrusiveRegistryHolder)
         {
             BuiltInRegistryHolder = BuiltInRegistries.Block.CreateIntrusiveHolder(this);
         }
+
+        var builder = new StateDefinitionBuilder();
+        configureState?.Invoke(builder);
+        StateDefinition = builder.Build(this);
+        DefaultState = StateDefinition.Any();
     }
 
     protected internal void RegisterDefaultState(BlockState state)
