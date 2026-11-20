@@ -129,12 +129,22 @@ internal static class Program
         Require(ReferenceEquals(registered, Blocks.TEST_BLOCK.BuiltInRegistryHolder), "Registration must bind the pre-created intrusive holder.");
         Require(registered.IsBound, "The built-in holder must be fully bound after freeze.");
         Require(ReferenceEquals(registered.Value, Blocks.TEST_BLOCK), "The holder must resolve to its registered block.");
+        HolderUnwrap<Block> referenceUnwrap = registered.Unwrap();
+        Require(referenceUnwrap.IsKey && referenceUnwrap.Key == new RegistryKey<Block>(BuiltInRegistries.Block.Location, testId) && referenceUnwrap.Value is null, "Holder.Reference.unwrap must return its registry key.");
+        Require(registered.UnwrapKey() == new RegistryKey<Block>(BuiltInRegistries.Block.Location, testId), "Holder.Reference.unwrapKey must return its registry key.");
+        Require(registered.GetRegisteredNameIfPresent() == testId.ToString(), "Holder.Reference registered name must use its identifier.");
+        Require(registered.GetRegisteredName() == testId.ToString(), "Holder.Reference registered name must be present after binding.");
         Require(registered.CanSerializeIn(BuiltInRegistries.Block), "A reference holder must serialize in its owning registry.");
         Require(ReferenceEquals(BuiltInRegistries.Block.WrapAsHolder(Blocks.TEST_BLOCK), registered), "wrapAsHolder must reuse registered references.");
 
         Block directValue = new TestBlockDefinition(BlockProperties.Of());
         Holder<Block> direct = BuiltInRegistries.Block.WrapAsHolder(directValue);
         Require(direct.Kind == HolderKind.Direct, "Unregistered values must be wrapped as direct holders.");
+        HolderUnwrap<Block> directUnwrap = direct.Unwrap();
+        Require(!directUnwrap.IsKey && ReferenceEquals(directUnwrap.Value, directValue) && directUnwrap.Key is null, "Holder.Direct.unwrap must return the direct value.");
+        Require(direct.UnwrapKey() is null, "Holder.Direct.unwrapKey must be empty.");
+        Require(direct.GetRegisteredNameIfPresent() is null, "Holder.Direct must not have a registered name.");
+        Require(direct.GetRegisteredName() == "[unregistered]", "Holder.Direct registered name fallback must match vanilla.");
         Require(direct.CanSerializeIn(BuiltInRegistries.Block), "Direct holders are serializable in any registry context.");
         Require(direct.Is(Holder<Block>.Direct(directValue)), "Direct holders compare by their wrapped value.");
         Require(direct.Equals(Holder<Block>.Direct(directValue)), "Direct holder record equality compares wrapped values.");
@@ -208,6 +218,9 @@ internal static class Program
         Require(registry.KeySet().Count == 0, "keySet must contain only registered identifier lookups.");
         Require(registry.Count == 1, "Registry size must include standalone key placeholders, matching MappedRegistry.size().");
         Require(!placeholder.IsBound, "A registration lookup creates an unbound standalone holder.");
+        HolderUnwrap<Block> placeholderUnwrap = placeholder.Unwrap();
+        Require(placeholderUnwrap.IsKey && placeholderUnwrap.Key == placeholderKey && placeholderUnwrap.Value is null, "An unbound standalone holder must unwrap to its pre-existing key.");
+        Require(placeholder.GetRegisteredNameIfPresent() == placeholderId.ToString(), "A standalone holder has a registered name before its value is bound.");
         RequireThrows<InvalidOperationException>(() => _ = placeholder.Value, "An unbound holder value must not be readable.");
 
         Block value = new TestBlockDefinition(BlockProperties.Of());
@@ -349,6 +362,12 @@ internal static class Program
         RequireThrows<InvalidOperationException>(
             () => intrusiveHolder.Is(_ => true),
             "Holder.Reference.is(predicate) must fail before an intrusive holder has a key.");
+        RequireThrows<InvalidOperationException>(
+            () => intrusiveHolder.Unwrap(),
+            "Holder.Reference.unwrap must fail before an intrusive holder has a key.");
+        RequireThrows<InvalidOperationException>(
+            () => intrusiveHolder.GetRegisteredNameIfPresent(),
+            "Holder.Reference.unwrapKey must fail before an intrusive holder has a key.");
 
         RequireThrows<InvalidOperationException>(
             () => intrusiveRegistry.Register(entryId, new TestBlockDefinition(BlockProperties.Of())),
@@ -359,6 +378,7 @@ internal static class Program
         Require(intrusiveHolder.Is(intrusiveKey), "An intrusive holder must match its key after registration binds it.");
         Require(intrusiveHolder.Is(entryId), "An intrusive holder must match its identifier after registration binds its key.");
         Require(intrusiveHolder.Is(key => key.Equals(intrusiveKey)), "An intrusive holder must expose its key to predicates after registration.");
+        Require(intrusiveHolder.UnwrapKey() == intrusiveKey, "An intrusive holder must unwrap to its key after registration.");
     }
 
     private static void CheckRegistryLifecycleAndRegistrationInfo()

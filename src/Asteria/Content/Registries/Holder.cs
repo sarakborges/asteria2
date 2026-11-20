@@ -4,6 +4,25 @@ namespace Asteria.Content.Registries;
 
 public enum HolderKind { Direct, Reference }
 
+/// <summary>Represents the two vanilla Holder.unwrap() alternatives.</summary>
+public readonly struct HolderUnwrap<T> where T : class
+{
+    public bool IsKey { get; }
+    public RegistryKey<T>? Key { get; }
+    public T? Value { get; }
+
+    private HolderUnwrap(RegistryKey<T>? key, T? value)
+    {
+        IsKey = key.HasValue;
+        Key = key;
+        Value = value;
+    }
+
+    public static HolderUnwrap<T> FromKey(RegistryKey<T> key) => new(key, null);
+    public static HolderUnwrap<T> FromValue(T value) =>
+        new(null, value ?? throw new ArgumentNullException(nameof(value)));
+}
+
 /// <summary>Registry value reference with direct/reference variants.</summary>
 public abstract class Holder<T> where T : class
 {
@@ -26,6 +45,17 @@ public abstract class Holder<T> where T : class
         ArgumentNullException.ThrowIfNull(predicate);
         return KeyOrNull is RegistryKey<T> key && predicate(key);
     }
+
+    public virtual HolderUnwrap<T> Unwrap() =>
+        HolderUnwrap<T>.FromValue(Value);
+
+    public virtual RegistryKey<T>? UnwrapKey() => KeyOrNull;
+
+    public string? GetRegisteredNameIfPresent() =>
+        UnwrapKey()?.Location.ToString();
+
+    public string GetRegisteredName() =>
+        GetRegisteredNameIfPresent() ?? "[unregistered]";
 
     public virtual bool Is(Holder<T> holder)
     {
@@ -96,6 +126,11 @@ public abstract class Holder<T> where T : class
         public bool IsIntrusive => _intrusive;
         public override IEnumerable<TagKey<T>> Tags =>
             _tags ?? throw new InvalidOperationException("Tags not bound.");
+
+        public override HolderUnwrap<T> Unwrap() =>
+            HolderUnwrap<T>.FromKey(Key);
+
+        public override RegistryKey<T>? UnwrapKey() => Key;
 
         public override bool Is(RegistryKey<T> key) =>
             Key.Equals(key);
