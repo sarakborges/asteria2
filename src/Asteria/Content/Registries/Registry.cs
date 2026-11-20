@@ -46,12 +46,6 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         _readOnlyEntries = _byId.AsReadOnly();
     }
 
-    public virtual Holder<T>.Reference Register(ResourceLocation location, T value) =>
-        Register(
-            RegistryKey<T>.Create(Key, location),
-            value,
-            RegistrationInfo.BuiltIn);
-
     public virtual Holder<T>.Reference Register(
         RegistryKey<T> key,
         T value,
