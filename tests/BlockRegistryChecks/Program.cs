@@ -1525,6 +1525,29 @@ internal static class Program
             map.GetEntries().SequenceEqual(values),
             "The incremental map must enumerate values in numeric ID order.");
 
+        IIdMap<IdentityTestValue> idMap = map;
+        Require(
+            idMap.Count == values.Length &&
+            idMap.GetId(values[3]) == 3 &&
+            ReferenceEquals(idMap.ById(3), values[3]),
+            "CrudeIncrementalIntIdentityHashBiMap must expose the common vanilla IdMap contract.");
+        Require(
+            idMap.ByIdOrThrow(3) == values[3],
+            "IdMap.byIdOrThrow must work through the identity map interface.");
+        ArgumentException missingId = Capture<ArgumentException>(
+            () => idMap.ByIdOrThrow(99),
+            "IdMap.byIdOrThrow must reject missing identity-map IDs.");
+        Require(
+            missingId.Message == "No value with id 99",
+            "Identity-map byIdOrThrow must inherit the vanilla missing-ID message.");
+        IdentityTestValue unknown = new(999);
+        ArgumentException missingValue = Capture<ArgumentException>(
+            () => idMap.GetIdOrThrow(unknown),
+            "IdMap.getIdOrThrow must reject values absent from the identity map.");
+        Require(
+            missingValue.Message == $"Can't find id for '{unknown}' in map {idMap}",
+            "Identity-map getIdOrThrow must inherit the vanilla missing-value message.");
+
         CrudeIncrementalIntIdentityHashBiMap<IdentityTestValue> copy = map.Copy();
         map.Clear();
         Require(map.Count == 0 && map.GetId(values[0]) == -1, "Clear must empty the identity map.");
