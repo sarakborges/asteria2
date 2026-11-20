@@ -16,7 +16,7 @@ public partial class Main : Node3D
         ResourceLocation missingBlockId =
             ResourceLocation.FromNamespaceAndPath("asteria", "missing_test_entry");
 
-        var testBlockKey = new RegistryKey<Block>(BuiltInRegistries.Block.Location, testBlockId);
+        var testBlockKey = RegistryKey<Block>.Create(BuiltInRegistries.Block.Key, testBlockId);
         Holder<Block>.Reference testBlockHolder =
             ((HolderGetter<Block>)BuiltInRegistries.Block).GetOrThrow(testBlockKey);
         BlockState defaultState = Blocks.TEST_BLOCK.DefaultState;
