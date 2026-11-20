@@ -314,7 +314,12 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
             pending.Add(key, (set, definition.Value.ToArray()));
         }
 
-        return new PendingTagReload<T>(() =>
+        var pendingSets = pending.ToDictionary(
+            pair => pair.Key,
+            pair => pair.Value.Set);
+        var pendingLookup = new PendingTagReloadLookup<T>(this, pendingSets);
+
+        return new PendingTagReload<T>(Key, pendingLookup, pending.Count, () =>
         {
             var updated = new Dictionary<TagKey<T>, HolderSet<T>.Named>();
             foreach (var pair in pending)

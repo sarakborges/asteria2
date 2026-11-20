@@ -542,12 +542,20 @@ internal static class Program
             () => registry.BindTags(Array.Empty<KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>>()),
             "Direct tag binding must be rejected after freeze.");
 
-        registry.PrepareTagReload(new[]
+        PendingTagReload<Block> lateTagReload = registry.PrepareTagReload(new[]
         {
             new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
                 lateTagKey,
                 new Holder<Block>[] { registered })
-        }).Apply();
+        });
+        Require(
+            lateTagReload.Key == registry.Key &&
+            lateTagReload.Size == 1 &&
+            ReferenceEquals(lateTagReload.Lookup.Get(lateTagKey), lateTag) &&
+            lateTagReload.Lookup.ListTags().SequenceEqual(new[] { lateTag }),
+            "PendingTags must expose the registry key, size, and a lookup over the pending tag sets.");
+        Require(!lateTag.IsBound, "A newly pending tag must remain unbound until the reload is applied.");
+        lateTagReload.Apply();
         Require(
             ReferenceEquals(registry.GetTag(lateTagKey), lateTag) && lateTag.IsBound,
             "Tag reload must reuse a named tag created through the registry's retained registration lookup.");
@@ -561,13 +569,22 @@ internal static class Program
                 reloadOnlyTagKey,
                 new Holder<Block>[] { registered })
         };
-        registry.PrepareTagReload(reloadOnlyDefinition).Apply();
-        HolderSet<Block>.Named firstReloadOnlyTag = registry.GetTag(reloadOnlyTagKey)!;
-        registry.PrepareTagReload(reloadOnlyDefinition).Apply();
-        HolderSet<Block>.Named secondReloadOnlyTag = registry.GetTag(reloadOnlyTagKey)!;
+        PendingTagReload<Block> firstPendingReload = registry.PrepareTagReload(reloadOnlyDefinition);
+        HolderSet<Block>.Named firstPendingTag = firstPendingReload.Lookup.Get(reloadOnlyTagKey)!;
         Require(
-            !ReferenceEquals(firstReloadOnlyTag, secondReloadOnlyTag),
+            firstPendingReload.Size == 1 && !firstPendingTag.IsBound,
+            "A pending lookup must expose new reload-only tags before their contents are bound.");
+        firstPendingReload.Apply();
+        HolderSet<Block>.Named firstReloadOnlyTag = registry.GetTag(reloadOnlyTagKey)!;
+
+        PendingTagReload<Block> secondPendingReload = registry.PrepareTagReload(reloadOnlyDefinition);
+        HolderSet<Block>.Named secondPendingTag = secondPendingReload.Lookup.Get(reloadOnlyTagKey)!;
+        Require(
+            !ReferenceEquals(firstReloadOnlyTag, secondPendingTag),
             "Tags introduced only by a reload must be recreated on a later reload unless they were registered before freeze.");
+        secondPendingReload.Apply();
+        HolderSet<Block>.Named secondReloadOnlyTag = registry.GetTag(reloadOnlyTagKey)!;
+        Require(ReferenceEquals(secondPendingTag, secondReloadOnlyTag), "Applying a pending reload must publish its lookup's named tag instances.");
 
         registry.PrepareTagReload(Array.Empty<KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>>()).Apply();
         Require(!registered.Is(tagKey), "A tag reload must replace holder tag membership.");
