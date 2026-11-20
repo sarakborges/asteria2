@@ -1,4 +1,4 @@
-using Asteria.Content.Blocks;
+using BuiltInBlocks = Asteria.Content.Blocks.Blocks;
 using Asteria.Content.Identifiers;
 
 namespace Asteria.Content.Registries;
@@ -19,7 +19,7 @@ public static class BuiltInRegistries
         RegisterDefaultedWithIntrusiveHolders<Block>(
             ResourceLocation.FromNamespaceAndPath("asteria", "block"),
             ResourceLocation.FromNamespaceAndPath("asteria", "air"),
-            static () => Blocks.RegisterAll());
+            static () => BuiltInBlocks.RegisterAll());
 
     private static DefaultedRegistry<T> RegisterDefaultedWithIntrusiveHolders<T>(
         ResourceLocation location,
