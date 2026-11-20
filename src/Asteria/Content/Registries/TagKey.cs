@@ -11,7 +11,7 @@ public readonly record struct TagKey<T> where T : class
     public ResourceLocation RegistryLocation => Registry.Location;
     public ResourceLocation Location { get; }
 
-    public TagKey(RegistryKey<Registry<T>> registry, ResourceLocation location)
+    private TagKey(RegistryKey<Registry<T>> registry, ResourceLocation location)
     {
         if (!registry.RegistryLocation.IsValid || !registry.Location.IsValid)
         {
@@ -39,7 +39,7 @@ public readonly record struct TagKey<T> where T : class
 
     public TagKey<TOther>? Cast<TOther>(RegistryKey<Registry<TOther>> registry)
         where TOther : class =>
-        IsFor(registry) ? new TagKey<TOther>(registry, Location) : null;
+        IsFor(registry) ? TagKey<TOther>.Create(registry, Location) : null;
 
     public override string ToString() =>
         $"TagKey[{Registry.Location} / {Location}]";
