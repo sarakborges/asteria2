@@ -40,6 +40,11 @@ internal sealed class PendingTagReloadLookup<T> : HolderLookup<T>.RegistryLookup
     public RegistryKey<Registry<T>> Key => _registry.Key;
     public Lifecycle RegistryLifecycle => _registry.RegistryLifecycle;
 
+    RegistryKey<IRegistry> IRegistryLookup.RegistryKey =>
+        RegistryKey<IRegistry>.Create(
+            RegistryKey<IRegistry>.CreateRegistryKey(Key.RegistryLocation),
+            Key.Location);
+
     public Holder<T>.Reference? Get(RegistryKey<T> key) =>
         ((HolderGetter<T>)_registry).Get(key);
 

@@ -18,7 +18,6 @@ public interface HolderLookup<T> : HolderGetter<T> where T : class
     public interface RegistryLookup : HolderLookup<T>, IRegistryLookup
     {
         RegistryKey<Registry<T>> Key { get; }
-        Lifecycle RegistryLifecycle { get; }
 
         RegistryLookup FilterElements(Predicate<T> filter)
         {
