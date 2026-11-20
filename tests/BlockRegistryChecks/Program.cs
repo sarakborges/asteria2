@@ -191,8 +191,8 @@ internal static class Program
         ResourceLocation testId = ResourceLocation.Parse("asteria:registry_test");
         ResourceLocation missingId = ResourceLocation.Parse("asteria:not_registered");
 
-        Require(ReferenceEquals(BuiltInRegistries.Block.Get(airId), Blocks.AIR), "The air block must be registered.");
-        Require(ReferenceEquals(BuiltInRegistries.Block.Get(missingId), Blocks.AIR), "Unknown block keys must resolve to air.");
+        Require(ReferenceEquals(BuiltInRegistries.Block.GetValue(airId), Blocks.AIR), "The air block must be registered.");
+        Require(ReferenceEquals(BuiltInRegistries.Block.GetValue(missingId), Blocks.AIR), "Unknown block keys must resolve to air.");
         Require(ReferenceEquals(BuiltInRegistries.Block.GetValue(missingId), Blocks.AIR), "Defaulted GetValue lookups must resolve unknown identifiers to air.");
         Require(ReferenceEquals(BuiltInRegistries.Block.GetAny(), Blocks.AIR.BuiltInRegistryHolder), "DefaultedMappedRegistry.getAny must return its default holder.");
         Holder<Block>.Reference? randomDefaultedHolder = BuiltInRegistries.Block.GetRandom(new Random(0));
