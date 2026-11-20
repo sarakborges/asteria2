@@ -4,7 +4,7 @@ namespace Asteria.Content.Identifiers;
 /// A stable, namespaced identifier for registry entries.
 /// Examples: "asteria:registry_test", "minecraft:stone".
 /// </summary>
-public readonly record struct ResourceLocation
+public readonly record struct ResourceLocation : IComparable<ResourceLocation>
 {
     public string Namespace { get; }
     public string Path { get; }
@@ -75,6 +75,47 @@ public readonly record struct ResourceLocation
 
     public static ResourceLocation FromNamespaceAndPath(string @namespace, string path) =>
         new(@namespace, path);
+
+    public ResourceLocation WithPath(string path) =>
+        new(Namespace, path);
+
+    public ResourceLocation WithPath(Func<string, string> modifier)
+    {
+        ArgumentNullException.ThrowIfNull(modifier);
+        return WithPath(modifier(Path));
+    }
+
+    public ResourceLocation WithPrefix(string prefix) =>
+        WithPath(prefix + Path);
+
+    public ResourceLocation WithSuffix(string suffix) =>
+        WithPath(Path + suffix);
+
+    public string ToDebugFileName() =>
+        ToString().Replace('/', '_').Replace(':', '_');
+
+    public string ToLanguageKey() =>
+        $"{Namespace}.{Path}";
+
+    public string ToShortLanguageKey() =>
+        Namespace == "minecraft" ? Path : ToLanguageKey();
+
+    public string ToShortString() =>
+        Namespace == "minecraft" ? Path : ToString();
+
+    public string ToLanguageKey(string prefix) =>
+        $"{prefix}.{ToLanguageKey()}";
+
+    public string ToLanguageKey(string prefix, string suffix) =>
+        $"{prefix}.{ToLanguageKey()}.{suffix}";
+
+    public int CompareTo(ResourceLocation other)
+    {
+        int result = string.Compare(Path, other.Path, StringComparison.Ordinal);
+        return result != 0
+            ? result
+            : string.Compare(Namespace, other.Namespace, StringComparison.Ordinal);
+    }
 
     public override string ToString() => $"{Namespace}:{Path}";
 

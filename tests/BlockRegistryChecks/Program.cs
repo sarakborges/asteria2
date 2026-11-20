@@ -124,6 +124,18 @@ internal static class Program
         Require(
             ResourceLocation.FromNamespaceAndPath("", "").IsValid,
             "Identifier namespace and path validation must permit empty strings when they contain no invalid characters.");
+        ResourceLocation languageId = ResourceLocation.Parse("stone/slab");
+        Require(languageId.WithPrefix("double_").Path == "double_stone/slab", "Identifier.withPrefix must modify only the path.");
+        Require(languageId.WithSuffix("_top").Path == "stone/slab_top", "Identifier.withSuffix must modify only the path.");
+        Require(languageId.WithPath(path => $"blocks/{path}").Path == "blocks/stone/slab", "Identifier.withPath must apply a path modifier.");
+        Require(languageId.ToDebugFileName() == "minecraft_stone_slab", "Identifier.toDebugFileName must replace slash and namespace separators.");
+        Require(languageId.ToLanguageKey() == "minecraft.stone/slab", "Identifier.toLanguageKey must include namespace and path.");
+        Require(languageId.ToShortLanguageKey() == "stone/slab", "Identifier.toShortLanguageKey must omit the default namespace.");
+        Require(languageId.ToShortString() == "stone/slab", "Identifier.toShortString must omit the default namespace.");
+        Require(languageId.ToLanguageKey("block", "name") == "block.minecraft.stone/slab.name", "Identifier language-key prefix and suffix overload must match vanilla.");
+        Require(
+            ResourceLocation.Parse("zeta:alpha").CompareTo(ResourceLocation.Parse("alpha:zeta")) < 0,
+            "Identifier ordering must compare path before namespace.");
     }
 
     private static void CheckDefaultedBlockRegistry()
@@ -257,6 +269,38 @@ internal static class Program
         var entryKey = new RegistryKey<Block>(registryId, entryId);
         var placeholderKey = new RegistryKey<Block>(registryId, placeholderId);
         var tagKey = new TagKey<Block>(registryId, tagId);
+        var rootRegistryKey = new RegistryKey<Registry<Block>>(ResourceLocation.Parse("root"), registryId);
+        Require(entryKey.IsFor(rootRegistryKey), "ResourceKey.isFor must compare its registry identifier.");
+        Require(entryKey.GetRegistryKey() == rootRegistryKey, "ResourceKey.registryKey must return the root registry key.");
+        RegistryKey<string>? castEntryKey = entryKey.Cast(
+            new RegistryKey<Registry<string>>(ResourceLocation.Parse("root"), registryId));
+        Require(
+            castEntryKey is RegistryKey<string> castKey && castKey.Location == entryId,
+            "ResourceKey.cast must preserve the identifier when the registry matches.");
+        Require(
+            entryKey.Cast(new RegistryKey<Registry<string>>(
+                ResourceLocation.Parse("root"),
+                ResourceLocation.Parse("asteria:other_registry"))) is null,
+            "ResourceKey.cast must return an empty result for a different registry.");
+        Require(
+            entryKey.Dependent(rootRegistryKey, "_metadata").Location == entryId.WithSuffix("_metadata"),
+            "ResourceKey.dependent(suffix) must append to its identifier.");
+        Require(
+            entryKey.Dependent(
+                new RegistryKey<Registry<Block>>(ResourceLocation.Parse("root"), ResourceLocation.Parse("asteria:other_registry")),
+                path => $"metadata/{path}").Location.Path == "metadata/test_entry",
+            "ResourceKey.dependent(decoration) must transform the identifier path.");
+        Require(tagKey.IsFor(rootRegistryKey), "TagKey.isFor must compare its registry identifier.");
+        TagKey<string>? castTagKey = tagKey.Cast(
+            new RegistryKey<Registry<string>>(ResourceLocation.Parse("root"), registryId));
+        Require(
+            castTagKey is TagKey<string> castTag && castTag.Location == tagId,
+            "TagKey.cast must preserve the tag location when the registry matches.");
+        Require(
+            tagKey.Cast(new RegistryKey<Registry<string>>(
+                ResourceLocation.Parse("root"),
+                ResourceLocation.Parse("asteria:other_registry"))) is null,
+            "TagKey.cast must return an empty result for a different registry.");
         HolderGetter<Block> lookup = registry.CreateRegistrationLookup();
 
         Holder<Block>.Reference placeholder = lookup.GetOrThrow(placeholderKey);
