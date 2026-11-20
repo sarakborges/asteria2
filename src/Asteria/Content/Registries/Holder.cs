@@ -13,15 +13,15 @@ public abstract class Holder<T> where T : class
     public abstract RegistryKey<T>? KeyOrNull { get; }
     public abstract IEnumerable<TagKey<T>> Tags { get; }
 
-    public bool Is(RegistryKey<T> key) =>
+    public virtual bool Is(RegistryKey<T> key) =>
         KeyOrNull is RegistryKey<T> ownKey && ownKey.Equals(key);
 
-    public bool Is(ResourceLocation location) =>
+    public virtual bool Is(ResourceLocation location) =>
         KeyOrNull is RegistryKey<T> ownKey && ownKey.Location.Equals(location);
 
     public bool Is(TagKey<T> tag) => Tags.Contains(tag);
 
-    public bool Is(Predicate<RegistryKey<T>> predicate)
+    public virtual bool Is(Predicate<RegistryKey<T>> predicate)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         return KeyOrNull is RegistryKey<T> key && predicate(key);
@@ -96,6 +96,18 @@ public abstract class Holder<T> where T : class
         public bool IsIntrusive => _intrusive;
         public override IEnumerable<TagKey<T>> Tags =>
             _tags ?? throw new InvalidOperationException("Tags not bound.");
+
+        public override bool Is(RegistryKey<T> key) =>
+            Key.Equals(key);
+
+        public override bool Is(ResourceLocation location) =>
+            Key.Location.Equals(location);
+
+        public override bool Is(Predicate<RegistryKey<T>> predicate)
+        {
+            ArgumentNullException.ThrowIfNull(predicate);
+            return predicate(Key);
+        }
 
         public override bool Is(Holder<T> holder)
         {

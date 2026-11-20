@@ -337,9 +337,28 @@ internal static class Program
             "MappedRegistry validates direct and foreign holders while refreshing tag membership during freeze.");
 
         var intrusiveRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:intrusive_registry"), allowIntrusiveHolders: true);
+        Block intrusiveValue = new TestBlockDefinition(BlockProperties.Of());
+        Holder<Block>.Reference intrusiveHolder = intrusiveRegistry.CreateIntrusiveHolder(intrusiveValue);
+        RegistryKey<Block> intrusiveKey = new(intrusiveRegistry.Location, entryId);
+        RequireThrows<InvalidOperationException>(
+            () => intrusiveHolder.Is(intrusiveKey),
+            "Holder.Reference.is(resource key) must access the key and fail before an intrusive holder is registered.");
+        RequireThrows<InvalidOperationException>(
+            () => intrusiveHolder.Is(entryId),
+            "Holder.Reference.is(identifier) must fail before an intrusive holder has a key.");
+        RequireThrows<InvalidOperationException>(
+            () => intrusiveHolder.Is(_ => true),
+            "Holder.Reference.is(predicate) must fail before an intrusive holder has a key.");
+
         RequireThrows<InvalidOperationException>(
             () => intrusiveRegistry.Register(entryId, new TestBlockDefinition(BlockProperties.Of())),
             "Intrusive registries must reject values without a pre-created intrusive holder.");
+
+        Holder<Block>.Reference registeredIntrusiveHolder = intrusiveRegistry.Register(entryId, intrusiveValue);
+        Require(ReferenceEquals(registeredIntrusiveHolder, intrusiveHolder), "Intrusive registration must reuse its pre-created holder.");
+        Require(intrusiveHolder.Is(intrusiveKey), "An intrusive holder must match its key after registration binds it.");
+        Require(intrusiveHolder.Is(entryId), "An intrusive holder must match its identifier after registration binds its key.");
+        Require(intrusiveHolder.Is(key => key.Equals(intrusiveKey)), "An intrusive holder must expose its key to predicates after registration.");
     }
 
     private static void CheckRegistryLifecycleAndRegistrationInfo()
