@@ -1906,10 +1906,17 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
     private static void CheckPalettedContainerStrategyConfiguration()
     {
+        var registeredBlockStates = new BlockStateIdMap();
+        foreach (Holder<Block>.Reference blockHolder in BuiltInRegistries.Block.ListElements())
+        {
+            foreach (BlockState state in blockHolder.Value.StateDefinition.PossibleStates)
+                registeredBlockStates.Add(state);
+        }
+
         var blockStrategy =
-            PalettedContainerStrategy<BlockState>.CreateForBlockStates(Block.BlockStateRegistry);
+            PalettedContainerStrategy<BlockState>.CreateForBlockStates(registeredBlockStates);
         var biomeStrategy =
-            PalettedContainerStrategy<BlockState>.CreateForBiomes(Block.BlockStateRegistry);
+            PalettedContainerStrategy<BlockState>.CreateForBiomes(registeredBlockStates);
 
         Require(
             blockStrategy.BitsPerAxis == 4 && blockStrategy.EntryCount == 4096,
