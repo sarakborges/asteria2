@@ -6,6 +6,11 @@ namespace Asteria.Content.Identifiers;
 /// </summary>
 public readonly record struct ResourceLocation : IComparable<ResourceLocation>
 {
+    public const char NamespaceSeparator = ':';
+    public const string DefaultNamespace = "minecraft";
+    public const string RealmsNamespace = "realms";
+    public const string AllowedNamespaceCharacters = "[a-z0-9_.-]";
+
     public string Namespace { get; }
     public string Path { get; }
 
@@ -41,11 +46,11 @@ public readonly record struct ResourceLocation : IComparable<ResourceLocation>
         int separator = value.IndexOf(':');
         if (separator < 0)
         {
-            return new ResourceLocation("minecraft", value);
+            return new ResourceLocation(DefaultNamespace, value);
         }
 
         string path = value[(separator + 1)..];
-        string @namespace = separator == 0 ? "minecraft" : value[..separator];
+        string @namespace = separator == 0 ? DefaultNamespace : value[..separator];
         return new ResourceLocation(@namespace, path);
     }
 
@@ -101,7 +106,7 @@ public readonly record struct ResourceLocation : IComparable<ResourceLocation>
         Namespace == "minecraft" ? Path : ToLanguageKey();
 
     public string ToShortString() =>
-        Namespace == "minecraft" ? Path : ToString();
+        Namespace == DefaultNamespace ? Path : ToString();
 
     public string ToLanguageKey(string prefix) =>
         $"{prefix}.{ToLanguageKey()}";
@@ -119,8 +124,40 @@ public readonly record struct ResourceLocation : IComparable<ResourceLocation>
 
     public override string ToString() => $"{Namespace}:{Path}";
 
-    private static bool IsValidNamespace(string value)
+    public static ResourceLocation? TryBuild(string? @namespace, string? path)
     {
+        if (@namespace is null || path is null ||
+            !IsValidNamespace(@namespace) || !IsValidPath(path))
+        {
+            return null;
+        }
+
+        return new ResourceLocation(@namespace, path);
+    }
+
+    public static bool IsAllowedInIdentifier(char character) =>
+        character is >= '0' and <= '9' ||
+        character is >= 'a' and <= 'z' ||
+        character is '_' or ':' or '/' or '.' or '-';
+
+    public static bool IsValidPath(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        foreach (char character in value)
+        {
+            if (!ValidPathChar(character))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static bool IsValidNamespace(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
         if (value == "..")
         {
             return false;
@@ -128,12 +165,7 @@ public readonly record struct ResourceLocation : IComparable<ResourceLocation>
 
         foreach (char character in value)
         {
-            bool valid =
-                character is >= 'a' and <= 'z' ||
-                character is >= '0' and <= '9' ||
-                character is '_' or '-' or '.';
-
-            if (!valid)
+            if (!ValidNamespaceChar(character))
             {
                 return false;
             }
@@ -142,21 +174,14 @@ public readonly record struct ResourceLocation : IComparable<ResourceLocation>
         return true;
     }
 
-    private static bool IsValidPath(string value)
-    {
-        foreach (char character in value)
-        {
-            bool valid =
-                character is >= 'a' and <= 'z' ||
-                character is >= '0' and <= '9' ||
-                character is '_' or '-' or '.' or '/';
+    public static bool ValidPathChar(char character) =>
+        character is '_' or '-' or '/' ||
+        character is >= 'a' and <= 'z' ||
+        character is >= '0' and <= '9' ||
+        character == '.';
 
-            if (!valid)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
+    private static bool ValidNamespaceChar(char character) =>
+        character is '_' or '-' or '.' ||
+        character is >= 'a' and <= 'z' ||
+        character is >= '0' and <= '9';
 }

@@ -124,6 +124,28 @@ internal static class Program
         Require(
             ResourceLocation.FromNamespaceAndPath("", "").IsValid,
             "Identifier namespace and path validation must permit empty strings when they contain no invalid characters.");
+        Require(
+            ResourceLocation.TryBuild("", "") is ResourceLocation emptyBuilt && emptyBuilt.IsValid,
+            "Identifier.tryBuild must return an identifier for valid empty namespace and path values.");
+        Require(
+            ResourceLocation.TryBuild("..", "stone") is null,
+            "Identifier.tryBuild must return no value for invalid namespaces.");
+        Require(
+            ResourceLocation.IsValidNamespace("") &&
+            ResourceLocation.IsValidPath("") &&
+            !ResourceLocation.IsValidPath(":"),
+            "Identifier public validators must retain vanilla character rules.");
+        Require(
+            ResourceLocation.IsAllowedInIdentifier(':') &&
+            ResourceLocation.IsAllowedInIdentifier('/') &&
+            !ResourceLocation.IsAllowedInIdentifier(' '),
+            "Identifier.isAllowedInIdentifier must match command token characters.");
+        Require(
+            ResourceLocation.NamespaceSeparator == ':' &&
+            ResourceLocation.DefaultNamespace == "minecraft" &&
+            ResourceLocation.RealmsNamespace == "realms" &&
+            ResourceLocation.AllowedNamespaceCharacters == "[a-z0-9_.-]",
+            "Identifier public constants must match vanilla.");
         ResourceLocation languageId = ResourceLocation.Parse("stone/slab");
         Require(languageId.WithPrefix("double_").Path == "double_stone/slab", "Identifier.withPrefix must modify only the path.");
         Require(languageId.WithSuffix("_top").Path == "stone/slab_top", "Identifier.withSuffix must modify only the path.");
