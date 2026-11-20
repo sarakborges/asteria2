@@ -359,6 +359,18 @@ internal static class Program
 
         Block value = new TestBlockDefinition(BlockProperties.Of());
         Holder<Block>.Reference registered = lookup.GetOrThrow(entryKey);
+        InvalidOperationException duplicateKeyException = Capture<InvalidOperationException>(
+            () => registry.Register(entryKey, new TestBlockDefinition(BlockProperties.Of()), RegistrationInfo.BuiltIn),
+            "MappedRegistry.register must reject duplicate identifiers.");
+        Require(
+            duplicateKeyException.Message == $"Adding duplicate key '{entryKey}' to registry",
+            "MappedRegistry.register must use the vanilla duplicate-key error message.");
+        InvalidOperationException duplicateValueException = Capture<InvalidOperationException>(
+            () => registry.Register(new RegistryKey<Block>(registryId, ResourceLocation.Parse("asteria:duplicate_value")), value, RegistrationInfo.BuiltIn),
+            "MappedRegistry.register must reject duplicate values.");
+        Require(
+            duplicateValueException.Message == $"Adding duplicate value '{value}' to registry",
+            "MappedRegistry.register must use the vanilla duplicate-value error message.");
         Require(registry.Count == 2, "Each distinct standalone key must contribute to registry size before registration.");
         Holder<Block>.Reference entry = registry.Register(entryId, value);
         Require(ReferenceEquals(entry, registered), "Registration must reuse the standalone holder.");
@@ -1403,9 +1415,22 @@ internal static class Program
 
     private static void CheckFrozenRegistry()
     {
-        RequireThrows<InvalidOperationException>(
-            () => BuiltInRegistries.Block.Register(ResourceLocation.Parse("asteria:late_block"), new TestBlockDefinition(BlockProperties.Of())),
+        RegistryKey<Block> lateKey = new(
+            BuiltInRegistries.Block.Location,
+            ResourceLocation.Parse("asteria:late_block"));
+        InvalidOperationException frozenRegistrationException = Capture<InvalidOperationException>(
+            () => BuiltInRegistries.Block.Register(lateKey, new TestBlockDefinition(BlockProperties.Of()), RegistrationInfo.BuiltIn),
             "A frozen block registry must reject new entries.");
+        Require(
+            frozenRegistrationException.Message == $"Registry is already frozen (trying to add key {lateKey})",
+            "MappedRegistry.validateWrite(key) must include the attempted key in its frozen-registry error.");
+        InvalidOperationException intrusiveDisabledException = Capture<InvalidOperationException>(
+            () => new Registry<Block>(ResourceLocation.Parse("asteria:no_intrusive_holders"))
+                .CreateIntrusiveHolder(new TestBlockDefinition(BlockProperties.Of())),
+            "A registry without intrusive holders must reject intrusive holder creation.");
+        Require(
+            intrusiveDisabledException.Message == "This registry can't create intrusive holders",
+            "MappedRegistry.createIntrusiveHolder must use the vanilla disabled-registry error message.");
     }
 
     private static void Require(bool condition, string message)

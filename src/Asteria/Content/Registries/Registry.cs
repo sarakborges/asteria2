@@ -59,16 +59,16 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         T value,
         RegistrationInfo registrationInfo)
     {
-        EnsureWritable();
+        EnsureWritable(key);
         ArgumentNullException.ThrowIfNull(value);
         ArgumentNullException.ThrowIfNull(registrationInfo);
 
         if (!key.Location.IsValid)
             throw new ArgumentException("A valid entry location is required.", nameof(key));
         if (_byLocation.ContainsKey(key.Location))
-            throw new InvalidOperationException($"Adding duplicate key '{key}' to registry '{Location}'.");
+            throw new InvalidOperationException($"Adding duplicate key '{key}' to registry");
         if (_byValue.ContainsKey(value))
-            throw new InvalidOperationException($"Adding duplicate value '{value}' to registry '{Location}'.");
+            throw new InvalidOperationException($"Adding duplicate value '{value}' to registry");
 
         Holder<T>.Reference holder;
         if (_unregisteredIntrusiveHolders is not null)
@@ -101,7 +101,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
     public Holder<T>.Reference CreateIntrusiveHolder(T value)
     {
         if (_unregisteredIntrusiveHolders is null)
-            throw new InvalidOperationException("This registry can't create intrusive holders.");
+            throw new InvalidOperationException("This registry can't create intrusive holders");
 
         EnsureWritable();
         ArgumentNullException.ThrowIfNull(value);
@@ -229,7 +229,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         if (_unregisteredIntrusiveHolders is not null)
             throw new InvalidOperationException("This registry can't create new holders without a value.");
 
-        EnsureWritable();
+        EnsureWritable(key);
         Holder<T>.Reference holder = Holder<T>.Reference.CreateStandAlone(this, key);
         _byKey.Add(key, holder);
         return holder;
@@ -408,7 +408,13 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
     protected void EnsureWritable()
     {
         if (IsFrozen)
-            throw new InvalidOperationException($"Registry '{Location}' is frozen; no more entries can be registered.");
+            throw new InvalidOperationException("Registry is already frozen");
+    }
+
+    protected void EnsureWritable(RegistryKey<T> key)
+    {
+        if (IsFrozen)
+            throw new InvalidOperationException($"Registry is already frozen (trying to add key {key})");
     }
 
     private sealed class RegistrationLookup : HolderGetter<T>
