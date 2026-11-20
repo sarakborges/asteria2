@@ -9,6 +9,20 @@ internal static class Program
 {
     private enum TestAxis { X = 0, Y = 1, Z = 2 }
 
+    private static RegistryKey<T> CreateEntryKey<T>(
+        ResourceLocation registryLocation,
+        ResourceLocation location)
+        where T : class =>
+        RegistryKey<T>.Create(RegistryKey<T>.CreateRegistryKey(registryLocation), location);
+
+    private static RegistryKey<Registry<T>> CreateRegistryKeyInRoot<T>(
+        ResourceLocation rootLocation,
+        ResourceLocation registryLocation)
+        where T : class =>
+        RegistryKey<Registry<T>>.Create(
+            RegistryKey<Registry<Registry<T>>>.CreateRegistryKey(rootLocation),
+            registryLocation);
+
     private sealed class SelectiveHolderOwner<T> : HolderOwner<T> where T : class
     {
         private readonly HolderOwner<T> _acceptedOwner;
@@ -104,7 +118,7 @@ internal static class Program
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
-                    new RegistryKey<IRegistry>(BuiltInRegistries.Root.Location, BuiltInRegistries.Block.Location)),
+                    RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Block.Location)),
                 BuiltInRegistries.Block),
             "The root registry must resolve the block registry by its registry key.");
         Require(BuiltInRegistries.Block.Count == 2, "Two Asteria blocks should be registered.");
@@ -362,8 +376,8 @@ internal static class Program
         Require(registered.IsBound, "The built-in holder must be fully bound after freeze.");
         Require(ReferenceEquals(registered.Value, Blocks.TEST_BLOCK), "The holder must resolve to its registered block.");
         HolderUnwrap<Block> referenceUnwrap = registered.Unwrap();
-        Require(referenceUnwrap.IsKey && referenceUnwrap.Key == new RegistryKey<Block>(BuiltInRegistries.Block.Location, testId) && referenceUnwrap.Value is null, "Holder.Reference.unwrap must return its registry key.");
-        Require(registered.UnwrapKey() == new RegistryKey<Block>(BuiltInRegistries.Block.Location, testId), "Holder.Reference.unwrapKey must return its registry key.");
+        Require(referenceUnwrap.IsKey && referenceUnwrap.Key == RegistryKey<Block>.Create(BuiltInRegistries.Block.Key, testId) && referenceUnwrap.Value is null, "Holder.Reference.unwrap must return its registry key.");
+        Require(registered.UnwrapKey() == RegistryKey<Block>.Create(BuiltInRegistries.Block.Key, testId), "Holder.Reference.unwrapKey must return its registry key.");
         Require(registered.GetRegisteredNameIfPresent() == testId.ToString(), "Holder.Reference registered name must use its identifier.");
         Require(registered.GetRegisteredName() == testId.ToString(), "Holder.Reference registered name must be present after binding.");
         Require(registered.CanSerializeIn(BuiltInRegistries.Block), "A reference holder must serialize in its owning registry.");
@@ -453,7 +467,7 @@ internal static class Program
 
         var registry = new Registry<Block>(registryId);
         Require(
-            registry.Key == new RegistryKey<Registry<Block>>(BuiltInRegistries.RootLocation, registryId),
+            registry.Key == RegistryKey<Registry<Block>>.CreateRegistryKey(registryId),
             "MappedRegistry.key must identify the registry through the root registry.");
         Require(
             registry.ToString() == $"Registry[{registry.Key} (Stable)]",
@@ -472,41 +486,35 @@ internal static class Program
         Require(entryKey.IsFor(rootRegistryKey), "ResourceKey.isFor must compare its registry identifier.");
         Require(entryKey.GetRegistryKey() == rootRegistryKey, "ResourceKey.registryKey must return the root registry key.");
         RegistryKey<string>? castEntryKey = entryKey.Cast(
-            new RegistryKey<Registry<string>>(BuiltInRegistries.RootLocation, registryId));
+            RegistryKey<Registry<string>>.CreateRegistryKey(registryId));
         Require(
             castEntryKey is RegistryKey<string> castKey && castKey.Location == entryId,
             "ResourceKey.cast must preserve the identifier when the registry matches.");
         Require(
-            entryKey.Cast(new RegistryKey<Registry<string>>(
-                BuiltInRegistries.RootLocation,
-                ResourceLocation.Parse("asteria:other_registry"))) is null,
+            entryKey.Cast(RegistryKey<Registry<string>>.CreateRegistryKey(ResourceLocation.Parse("asteria:other_registry"))) is null,
             "ResourceKey.cast must return an empty result for a different registry.");
         Require(
             entryKey.Dependent(rootRegistryKey, "_metadata").Location == entryId.WithSuffix("_metadata"),
             "ResourceKey.dependent(suffix) must append to its identifier.");
         Require(
             entryKey.Dependent(
-                new RegistryKey<Registry<Block>>(BuiltInRegistries.RootLocation, ResourceLocation.Parse("asteria:other_registry")),
+                RegistryKey<Registry<Block>>.CreateRegistryKey(ResourceLocation.Parse("asteria:other_registry")),
                 path => $"metadata/{path}").Location.Path == "metadata/test_entry",
             "ResourceKey.dependent(decoration) must transform the identifier path.");
         Require(tagKey.IsFor(rootRegistryKey), "TagKey.isFor must compare the full registry key.");
         RegistryKey<Registry<Block>> foreignRootRegistryKey =
-            new(ResourceLocation.Parse("asteria:foreign_root"), registryId);
+            CreateRegistryKeyIn<Block>(ResourceLocation.Parse("asteria:foreign_root"), registryId);
         Require(
             !tagKey.IsFor(foreignRootRegistryKey) &&
-            tagKey.Cast(new RegistryKey<Registry<string>>(
-                foreignRootRegistryKey.RegistryLocation,
-                foreignRootRegistryKey.Location)) is null,
+            tagKey.Cast(CreateRegistryKeyIn<string>(foreignRootRegistryKey.RegistryLocation, foreignRootRegistryKey.Location)) is null,
             "TagKey.isFor and cast must reject matching registry identifiers under a different root key.");
         TagKey<string>? castTagKey = tagKey.Cast(
-            new RegistryKey<Registry<string>>(BuiltInRegistries.RootLocation, registryId));
+            RegistryKey<Registry<string>>.CreateRegistryKey(registryId));
         Require(
             castTagKey is TagKey<string> castTag && castTag.Location == tagId,
             "TagKey.cast must preserve the tag location when the registry matches.");
         Require(
-            tagKey.Cast(new RegistryKey<Registry<string>>(
-                BuiltInRegistries.RootLocation,
-                ResourceLocation.Parse("asteria:other_registry"))) is null,
+            tagKey.Cast(RegistryKey<Registry<string>>.CreateRegistryKey(ResourceLocation.Parse("asteria:other_registry"))) is null,
             "TagKey.cast must return an empty result for a different registry.");
         HolderGetter<Block> lookup = registry.CreateRegistrationLookup();
 
@@ -547,7 +555,7 @@ internal static class Program
             duplicateKeyException.Message == $"Adding duplicate key '{entryKey}' to registry",
             "MappedRegistry.register must use the vanilla duplicate-key error message.");
         InvalidOperationException duplicateValueException = Capture<InvalidOperationException>(
-            () => registry.Register(new RegistryKey<Block>(registryId, ResourceLocation.Parse("asteria:duplicate_value")), value, RegistrationInfo.BuiltIn),
+            () => registry.Register(CreateEntryKey<Block>(registryId, ResourceLocation.Parse("asteria:duplicate_value")), value, RegistrationInfo.BuiltIn),
             "MappedRegistry.register must reject duplicate values.");
         Require(
             duplicateValueException.Message == $"Adding duplicate value '{value}' to registry",
@@ -617,7 +625,7 @@ internal static class Program
 
         HolderLookup<Block>.RegistryLookup lookupView = registry;
         Require(
-            lookupView.Key == new RegistryKey<Registry<Block>>(BuiltInRegistries.RootLocation, registryId),
+            lookupView.Key == RegistryKey<Registry<Block>>.CreateRegistryKey(registryId),
             "HolderLookup.RegistryLookup.key must expose the root registry key.");
         Require(
             ReferenceEquals(lookupView.RegistryLifecycle, registry.RegistryLifecycle),
@@ -691,7 +699,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(tag.UnwrapKey() == tagKey, "Named HolderSet.unwrapKey must return its tag key.");
         Require(tag.Stream().Count() == 2, "HolderSet.stream must enumerate its bound entries.");
         Require(ReferenceEquals(registry.GetTag(tagKey), tag), "The frozen registry must expose its registered tag set.");
-        Require(registry.GetTagOrEmpty(new TagKey<Block>(registry.Key, ResourceLocation.Parse("asteria:empty"))).Count == 0, "Missing tags must resolve to an empty holder set.");
+        Require(registry.GetTagOrEmpty(TagKey<Block>.Create(registry.Key, ResourceLocation.Parse("asteria:empty"))).Count == 0, "Missing tags must resolve to an empty holder set.");
 
         HolderSet<Block> directSet = new(new Holder<Block>[] { registered, registered });
         Require(directSet.Count == 2, "Direct holder sets must preserve order and duplicate entries.");
@@ -935,7 +943,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             ReferenceEquals(staleIntrusiveLookup.Get(frozenIntrusiveKey), frozenIntrusiveHolder),
             "A stale registration lookup must still return an already registered holder after freeze.");
         RequireThrows<InvalidOperationException>(
-            () => staleIntrusiveLookup.Get(new RegistryKey<Block>(
+            () => staleIntrusiveLookup.Get(CreateEntryKey<Block>(
                 frozenIntrusiveRegistry.Location,
                 ResourceLocation.Parse("asteria:late_intrusive_entry"))),
             "A stale registration lookup must not create a new holder after freeze.");
@@ -1032,12 +1040,12 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
         var registry = new Registry<Block>(registryId);
         Require(ReferenceEquals(registry.RegistryLifecycle, Lifecycle.Stable()), "A mapped registry must start with its supplied stable lifecycle.");
-        Require(registry.GetRegistrationInfo(new RegistryKey<Block>(registryId, firstId)) is null, "Unknown registry keys must not have registration metadata.");
+        Require(registry.GetRegistrationInfo(CreateEntryKey<Block>(registryId, firstId)) is null, "Unknown registry keys must not have registration metadata.");
 
-        var firstKey = new RegistryKey<Block>(registryId, firstId);
-        var secondKey = new RegistryKey<Block>(registryId, secondId);
-        var thirdKey = new RegistryKey<Block>(registryId, thirdId);
-        var fourthKey = new RegistryKey<Block>(registryId, fourthId);
+        var firstKey = CreateEntryKey<Block>(registryId, firstId);
+        var secondKey = CreateEntryKey<Block>(registryId, secondId);
+        var thirdKey = CreateEntryKey<Block>(registryId, thirdId);
+        var fourthKey = CreateEntryKey<Block>(registryId, fourthId);
 
         RegistrationInfo firstInfo = new(Lifecycle.Deprecated(10));
         registry.Register(firstKey, new TestBlockDefinition(BlockProperties.Of()), firstInfo);
@@ -1061,7 +1069,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(ReferenceEquals(registry.RegistryLifecycle, Lifecycle.Experimental()), "An experimental registration must make the aggregate lifecycle experimental.");
 
         var builtInRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:built_in_registration"));
-        var builtInKey = new RegistryKey<Block>(
+        var builtInKey = CreateEntryKey<Block>(
             builtInRegistry.Location,
             ResourceLocation.Parse("asteria:built_in"));
         Block builtInValue = new TestBlockDefinition(BlockProperties.Of());
@@ -1149,7 +1157,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         ResourceLocation missingId = ResourceLocation.Parse("asteria:missing");
         var registry = new Registry<Block>(registryId);
         Block registeredValue = new TestBlockDefinition(BlockProperties.Of());
-        var registeredKey = new RegistryKey<Block>(registryId, entryId);
+        var registeredKey = CreateEntryKey<Block>(registryId, entryId);
         registry.Register(registeredKey, registeredValue, RegistrationInfo.BuiltIn);
 
         Require(
@@ -1169,7 +1177,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "Registry.getOptional(resource key) must return a registered value.");
         Require(
             registry.GetOptional(missingId) is null &&
-            registry.GetOptional(new RegistryKey<Block>(registryId, missingId)) is null,
+            registry.GetOptional(CreateEntryKey<Block>(registryId, missingId)) is null,
             "Optional lookups must preserve missing-entry semantics.");
         Require(
             ReferenceEquals(registry.GetValueOrThrow(registeredKey), registeredValue),
@@ -1229,7 +1237,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             defaulted.GetOptional(missingId) is null,
             "DefaultedMappedRegistry.getOptional(identifier) must remain exact and must not apply the default.");
         Require(
-            defaulted.GetOptional(new RegistryKey<Block>(defaulted.Location, missingId)) is null,
+            defaulted.GetOptional(CreateEntryKey<Block>(defaulted.Location, missingId)) is null,
             "DefaultedMappedRegistry optional resource-key lookup must remain exact.");
     }
 
