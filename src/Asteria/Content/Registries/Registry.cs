@@ -74,7 +74,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         if (_unregisteredIntrusiveHolders is not null)
         {
             if (!_unregisteredIntrusiveHolders.Remove(value, out Holder<T>.Reference? intrusiveHolder))
-                throw new InvalidOperationException($"Missing intrusive holder for {key}:{value}.");
+                throw new InvalidOperationException($"Missing intrusive holder for {key}:{value}");
 
             holder = intrusiveHolder;
             holder.BindKey(key);
@@ -227,7 +227,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
             return registered;
 
         if (_unregisteredIntrusiveHolders is not null)
-            throw new InvalidOperationException("This registry can't create new holders without a value.");
+            throw new InvalidOperationException("This registry can't create new holders without value");
 
         EnsureWritable(key);
         Holder<T>.Reference holder = Holder<T>.Reference.CreateStandAlone(this, key);
