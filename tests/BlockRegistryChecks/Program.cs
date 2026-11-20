@@ -201,6 +201,20 @@ internal static class Program
         Require(
             !ResourceLocation.TryParse("..:stone", out _),
             "Identifier namespaces must reject the reserved '..' namespace.");
+        ArgumentException invalidNamespace = Capture<ArgumentException>(
+            () => ResourceLocation.Parse("Bad:stone"),
+            "Identifier.parse must reject invalid namespace characters.");
+        Require(
+            invalidNamespace.Message ==
+                "Non [a-z0-9_.-] character in namespace of identifier: Bad:stone",
+            "Identifier namespace failures must retain the vanilla diagnostic.");
+        ArgumentException invalidPath = Capture<ArgumentException>(
+            () => ResourceLocation.Parse("asteria:bad path"),
+            "Identifier.parse must reject invalid path characters.");
+        Require(
+            invalidPath.Message ==
+                "Non [a-z0-9/._-] character in path of location: asteria:bad path",
+            "Identifier path failures must retain the vanilla diagnostic.");
         Require(
             ResourceLocation.Parse("").Namespace == "minecraft" &&
             ResourceLocation.Parse("").Path == "",
