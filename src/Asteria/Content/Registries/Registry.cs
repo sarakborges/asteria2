@@ -246,27 +246,6 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         return holders;
     }
 
-    public IIdMap<Holder<T>> AsHolderIdMap() => new HolderIdMap(this);
-
-    private sealed class HolderIdMap : IIdMap<Holder<T>>
-    {
-        private readonly Registry<T> _registry;
-
-        public HolderIdMap(Registry<T> registry) => _registry = registry;
-
-        public int Count => _registry.Count;
-
-        public int GetId(Holder<T>? holder) =>
-            holder is null ? -1 : _registry.GetId(holder.Value);
-
-        public Holder<T>? ById(int id) => _registry.GetHolderById(id);
-
-        public IEnumerator<Holder<T>> GetEnumerator() =>
-            _registry.ListElements().GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-
     public virtual int GetId(T? value) =>
         value is not null && _toId.TryGetValue(value, out int id) ? id : -1;
 
