@@ -145,34 +145,34 @@ internal static class Program
     private static void CheckBlockProperties()
     {
         BlockProperties defaults = BlockProperties.Of();
-        Require(defaults.DestroyTime == 0.0f, "Vanilla block properties default destroy time to zero.");
-        Require(defaults.ExplosionResistance == 0.0f, "Vanilla block properties default explosion resistance to zero.");
-        Require(defaults.Friction == 0.6f, "Vanilla block properties default friction to 0.6.");
-        Require(!defaults.RequiresCorrectToolForDrops && !defaults.IsAir, "Vanilla block properties default tool and air flags to false.");
+        Require(defaults.DestroyTimeValue == 0.0f, "Vanilla block properties default destroy time to zero.");
+        Require(defaults.ExplosionResistanceValue == 0.0f, "Vanilla block properties default explosion resistance to zero.");
+        Require(defaults.FrictionValue == 0.6f, "Vanilla block properties default friction to 0.6.");
+        Require(!defaults.RequiresCorrectToolForDropsValue && !defaults.IsAir, "Vanilla block properties default tool and air flags to false.");
 
         var custom = BlockProperties.Of()
             .DestroyTime(-2.0f)
             .ExplosionResistance(-3.0f)
             .Friction(-0.25f);
-        Require(custom.DestroyTime == -2.0f, "Vanilla destroyTime stores the supplied value without clamping.");
-        Require(custom.ExplosionResistance == 0.0f, "Vanilla explosionResistance clamps negative values to zero.");
-        Require(custom.Friction == -0.25f, "Vanilla friction stores the supplied value without clamping.");
+        Require(custom.DestroyTimeValue == -2.0f, "Vanilla destroyTime stores the supplied value without clamping.");
+        Require(custom.ExplosionResistanceValue == 0.0f, "Vanilla explosionResistance clamps negative values to zero.");
+        Require(custom.FrictionValue == -0.25f, "Vanilla friction stores the supplied value without clamping.");
 
         BlockProperties strength = BlockProperties.Of().Strength(1.5f);
         Require(
-            strength.DestroyTime == 1.5f && strength.ExplosionResistance == 1.5f,
+            strength.DestroyTimeValue == 1.5f && strength.ExplosionResistanceValue == 1.5f,
             "Vanilla strength(float) must assign destroy time and explosion resistance together.");
 
         BlockProperties instant = BlockProperties.Of().Instabreak();
         Require(
-            instant.DestroyTime == 0.0f && instant.ExplosionResistance == 0.0f,
+            instant.DestroyTimeValue == 0.0f && instant.ExplosionResistanceValue == 0.0f,
             "Vanilla instabreak must use strength(0).");
 
         BlockProperties semantic = BlockProperties.Of()
             .RequiresCorrectToolForDrops()
             .Air();
         Require(
-            semantic.RequiresCorrectToolForDrops && semantic.IsAir,
+            semantic.RequiresCorrectToolForDropsValue && semantic.IsAir,
             "Vanilla property flags must be set through the fluent builder.");
     }
 

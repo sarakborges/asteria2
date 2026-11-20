@@ -6,10 +6,10 @@ namespace Asteria.Content.Blocks;
 /// </summary>
 public sealed class BlockProperties
 {
-    public float DestroyTime { get; private set; }
-    public float ExplosionResistance { get; private set; }
-    public bool RequiresCorrectToolForDrops { get; private set; }
-    public float Friction { get; private set; } = 0.6f;
+    public float DestroyTimeValue { get; private set; }
+    public float ExplosionResistanceValue { get; private set; }
+    public bool RequiresCorrectToolForDropsValue { get; private set; }
+    public float FrictionValue { get; private set; } = 0.6f;
     public bool IsAir { get; private set; }
 
     private BlockProperties()
@@ -29,25 +29,25 @@ public sealed class BlockProperties
 
     public BlockProperties DestroyTime(float destroyTime)
     {
-        DestroyTime = destroyTime;
+        DestroyTimeValue = destroyTime;
         return this;
     }
 
     public BlockProperties ExplosionResistance(float explosionResistance)
     {
-        ExplosionResistance = MathF.Max(0.0f, explosionResistance);
+        ExplosionResistanceValue = MathF.Max(0.0f, explosionResistance);
         return this;
     }
 
     public BlockProperties Friction(float friction)
     {
-        Friction = friction;
+        FrictionValue = friction;
         return this;
     }
 
     public BlockProperties RequiresCorrectToolForDrops()
     {
-        RequiresCorrectToolForDrops = true;
+        RequiresCorrectToolForDropsValue = true;
         return this;
     }
 
