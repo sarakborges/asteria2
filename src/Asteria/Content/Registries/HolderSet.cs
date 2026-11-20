@@ -112,6 +112,12 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
     public virtual IEnumerator<Holder<T>> GetEnumerator() => Contents.GetEnumerator();
     System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 
+    public override string ToString() =>
+        $"DirectSet[{FormatContents(Contents)}]";
+
+    protected static string FormatContents(IEnumerable<Holder<T>> holders) =>
+        $"[{string.Join(", ", holders)}]";
+
     public sealed class Named : HolderSet<T>
     {
         private readonly HolderOwner<T> _owner;
@@ -163,6 +169,7 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
             return owner.CanSerializeIn(_owner);
         }
 
-        public override string ToString() => $"NamedSet({Key})[{_boundContents}]";
+        public override string ToString() =>
+            $"NamedSet({Key})[{(_boundContents is null ? "null" : FormatContents(_boundContents))}]";
     }
 }

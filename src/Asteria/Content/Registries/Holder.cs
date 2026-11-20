@@ -183,8 +183,6 @@ public abstract class Holder<T> where T : class
         }
 
         public override string ToString() =>
-            _key is RegistryKey<T> key
-                ? $"Reference{{{key}={_value?.ToString() ?? "unbound"}}}"
-                : $"IntrusiveReference{{{_value?.ToString() ?? "unbound"}}}";
+            $"Reference{{{_key?.ToString() ?? "null"}={_value?.ToString() ?? "null"}}}";
     }
 }

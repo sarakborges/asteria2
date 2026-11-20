@@ -337,6 +337,9 @@ internal static class Program
         Require(registry.KeySet().Count == 0, "keySet must contain only registered identifier lookups.");
         Require(registry.Count == 1, "Registry size must include standalone key placeholders, matching MappedRegistry.size().");
         Require(!placeholder.IsBound, "A registration lookup creates an unbound standalone holder.");
+        Require(
+            placeholder.ToString() == $"Reference{{{placeholderKey}=null}}",
+            "Holder.Reference.toString must print null key/value fields like vanilla.");
         HolderUnwrap<Block> placeholderUnwrap = placeholder.Unwrap();
         Require(placeholderUnwrap.IsKey && placeholderUnwrap.Key == placeholderKey && placeholderUnwrap.Value is null, "An unbound standalone holder must unwrap to its pre-existing key.");
         Require(placeholder.GetRegisteredNameIfPresent() == placeholderId.ToString(), "A standalone holder has a registered name before its value is bound.");
@@ -359,6 +362,9 @@ internal static class Program
             ReferenceEquals(lookup.Get(tagKey), tag),
             "HolderGetter.get(tag) must return the same named placeholder as getOrThrow(tag).");
         Require(!tag.IsBound, "A registration-time tag starts unbound.");
+        Require(
+            tag.ToString() == $"NamedSet({tagKey})[null]",
+            "Unbound HolderSet.Named.toString must print its null contents.");
         RequireThrows<InvalidOperationException>(
             () => registered.Is(tagKey),
             "Holder.Reference tag membership must reject tag queries before tags are bound.");
@@ -409,6 +415,9 @@ internal static class Program
         Require(ReferenceEquals(registered.Value, value), "The frozen holder must resolve to the registered value.");
         Require(registered.Is(tagKey), "Freeze must associate tags with their holders.");
         Require(tag.Contains(registered), "Named holder membership must work after registry freeze binds holder tags.");
+        Require(
+            tag.ToString() == $"NamedSet({tagKey})[[{registered}, {registered}]]",
+            "Bound HolderSet.Named.toString must render its contents list.");
         HolderSetUnwrap<Block> namedUnwrap = tag.Unwrap();
         Require(
             namedUnwrap.IsTag &&
@@ -422,6 +431,9 @@ internal static class Program
 
         HolderSet<Block> directSet = new(new Holder<Block>[] { registered, registered });
         Require(directSet.Count == 2, "Direct holder sets must preserve order and duplicate entries.");
+        Require(
+            directSet.ToString() == $"DirectSet[[{registered}, {registered}]]",
+            "HolderSet.Direct.toString must render its contents list.");
         Require(directSet.CanSerializeIn(registry), "Direct holder sets are serializable regardless of the contained holder owner.");
         Require(directSet.Contains(registered), "Direct holder set membership must use holder equality.");
         HolderSetUnwrap<Block> directUnwrap = directSet.Unwrap();
