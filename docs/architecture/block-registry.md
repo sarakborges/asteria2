@@ -50,7 +50,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 
 ## Chunk sections
 
-- `ChunkSection` receives a prebuilt 16×16×16 block-state `PalettedContainer`, checks the expected size, and recalculates its initial non-air count.
+- `ChunkSection` receives a prebuilt block-state `PalettedContainer` and recalculates its initial non-air count without imposing an additional size check on the supplied container.
 - Block-state access is coordinate-based. The flattening formula remains the vanilla `(y << 8) | (z << 4) | x` through the strategy.
 - The currently applicable cached counter is non-air block count. The section exposes its state container, can recalculate this count, and copies its state container and cached count.
 - Fluid states, fluid/random-tick counters, biome holder storage and resolution, and section serialization are deferred until those matching domain systems and codecs exist.
