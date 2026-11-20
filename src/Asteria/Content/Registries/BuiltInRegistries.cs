@@ -18,8 +18,7 @@ public static class BuiltInRegistries
     public static void FreezeAll()
     {
         Block.Freeze();
-        BlockStates.Freeze();
     }
 
-    public static bool AreFrozen => Block.IsFrozen && BlockStates.IsFrozen;
+    public static bool AreFrozen => Block.IsFrozen;
 }

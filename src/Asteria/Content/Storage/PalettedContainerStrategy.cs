@@ -16,8 +16,6 @@ public sealed class PalettedContainerStrategy<T> where T : class
     private PalettedContainerStrategy(IIdMap<T> globalMap, int bitsPerAxis, StrategyKind kind)
     {
         GlobalMap = globalMap ?? throw new ArgumentNullException(nameof(globalMap));
-        if (!GlobalMap.IsFrozen)
-            throw new InvalidOperationException("The global ID map must be frozen before creating a palette strategy.");
         if (GlobalMap.Count <= 0)
             throw new ArgumentException("The global ID map must contain at least one value.", nameof(globalMap));
         if (bitsPerAxis is < 1 or > 10)

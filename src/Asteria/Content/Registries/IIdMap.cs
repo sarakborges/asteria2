@@ -7,7 +7,6 @@ namespace Asteria.Content.Registries;
 public interface IIdMap<T> : IEnumerable<T> where T : class
 {
     int Count { get; }
-    bool IsFrozen { get; }
     int GetId(T? value);
     T? ById(int id);
 

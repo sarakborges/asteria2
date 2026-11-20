@@ -3,7 +3,7 @@ using Asteria.Content.Registries;
 namespace Asteria.Content.Storage;
 
 /// <summary>
-/// Direct palette backed by the frozen global ID map.
+/// Direct palette backed by the global ID map.
 /// </summary>
 internal sealed class GlobalPalette<T> : IPalette<T> where T : class
 {
@@ -14,10 +14,6 @@ internal sealed class GlobalPalette<T> : IPalette<T> where T : class
     public GlobalPalette(IIdMap<T> idMap)
     {
         _idMap = idMap ?? throw new ArgumentNullException(nameof(idMap));
-        if (!_idMap.IsFrozen)
-        {
-            throw new InvalidOperationException("The global ID map must be frozen before creating a global palette.");
-        }
     }
 
     public int IdFor(T value, IPaletteResize<T> resize)
