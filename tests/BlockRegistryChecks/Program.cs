@@ -195,9 +195,9 @@ internal static class Program
             ResourceLocation.TryBySeparator("Bad|stone", '|') is null &&
             ResourceLocation.TryBySeparator("asteria|bad path", '|') is null,
             "Identifier.tryBySeparator must return no value for an invalid namespace or path.");
-        Require(
-            ResourceLocation.TryParse(null) is null,
-            "Identifier.tryParse must return no value for a null input.");
+        Capture<ArgumentNullException>(
+            () => ResourceLocation.TryParse(null!),
+            "Identifier.tryParse must reject a null input like vanilla.");
         Require(
             ResourceLocation.TryParse("..:stone") is null,
             "Identifier namespaces must reject the reserved '..' namespace.");
@@ -236,6 +236,12 @@ internal static class Program
         Require(
             ResourceLocation.TryBuild("..", "stone") is null,
             "Identifier.tryBuild must return no value for invalid namespaces.");
+        Capture<ArgumentNullException>(
+            () => ResourceLocation.TryBuild(null!, "stone"),
+            "Identifier.tryBuild must reject a null namespace.");
+        Capture<ArgumentNullException>(
+            () => ResourceLocation.TryBuild("asteria", null!),
+            "Identifier.tryBuild must reject a null path.");
         Require(
             ResourceLocation.IsValidNamespace("") &&
             ResourceLocation.IsValidPath("") &&
