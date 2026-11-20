@@ -92,6 +92,7 @@ internal static class Program
             Block.BlockStateRegistry.Count == 7 &&
             !BuiltInRegistries.AreFrozen,
             "Block states must receive IDs during block construction, before registry bootstrap.");
+        CheckBuiltInRegistryRoot();
         RegistryBootstrap.Initialize();
         Require(RegistryBootstrap.IsInitialized, "Bootstrap must complete.");
         Require(BuiltInRegistries.AreFrozen, "Built-in registries must be frozen.");
@@ -106,7 +107,6 @@ internal static class Program
         Require(BuiltInRegistries.Block.Count == 2, "Two Asteria blocks should be registered.");
         Require(Block.BlockStateRegistry.Count == 7, "Expected one air state and six test states.");
 
-        CheckBuiltInRegistryRoot();
         CheckResourceLocations();
         CheckDefaultedBlockRegistry();
         CheckBlockProperties();
