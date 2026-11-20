@@ -281,6 +281,12 @@ internal static class Program
         ResourceLocation tagId = ResourceLocation.Parse("asteria:test_tag");
 
         var registry = new Registry<Block>(registryId);
+        Require(
+            registry.Key == new RegistryKey<Registry<Block>>(ResourceLocation.Parse("root"), registryId),
+            "MappedRegistry.key must identify the registry through the root registry.");
+        Require(
+            registry.ToString() == $"Registry[{registry.Key} (Stable)]",
+            "MappedRegistry.toString must include its key and lifecycle.");
         Require(registry.IsEmpty(), "A registry with no keys must be empty.");
         Require(registry.GetAny() is null, "MappedRegistry.getAny must be empty before its first registered value.");
         Require(registry.GetRandom(new Random(0)) is null, "MappedRegistry.getRandom must be empty when no values are registered.");
@@ -337,6 +343,12 @@ internal static class Program
         Require(registry.KeySet().Count == 0, "keySet must contain only registered identifier lookups.");
         Require(registry.Count == 1, "Registry size must include standalone key placeholders, matching MappedRegistry.size().");
         Require(!placeholder.IsBound, "A registration lookup creates an unbound standalone holder.");
+        InvalidOperationException unboundValueException = RequireThrows<InvalidOperationException>(
+            () => _ = placeholder.Value,
+            "An unbound standalone holder must reject value access.");
+        Require(
+            unboundValueException.Message == $"Trying to access unbound value '{placeholderKey}' from registry {registry}",
+            "Holder.Reference.value must include its key and owner in the vanilla error message.");
         Require(
             placeholder.ToString() == $"Reference{{{placeholderKey}=null}}",
             "Holder.Reference.toString must print null key/value fields like vanilla.");
@@ -365,6 +377,12 @@ internal static class Program
         Require(
             tag.ToString() == $"NamedSet({tagKey})[null]",
             "Unbound HolderSet.Named.toString must print its null contents.");
+        InvalidOperationException unboundTagException = RequireThrows<InvalidOperationException>(
+            () => _ = tag.Contents,
+            "An unbound named holder set must reject content access.");
+        Require(
+            unboundTagException.Message == $"Trying to access unbound tag '{tagKey}' from registry {registry}",
+            "HolderSet.Named.contents must include its owner in the vanilla error message.");
         RequireThrows<InvalidOperationException>(
             () => registered.Is(tagKey),
             "Holder.Reference tag membership must reject tag queries before tags are bound.");
@@ -490,6 +508,12 @@ internal static class Program
         var intrusiveRegistry = new Registry<Block>(ResourceLocation.Parse("asteria:intrusive_registry"), allowIntrusiveHolders: true);
         Block intrusiveValue = new TestBlockDefinition(BlockProperties.Of());
         Holder<Block>.Reference intrusiveHolder = intrusiveRegistry.CreateIntrusiveHolder(intrusiveValue);
+        InvalidOperationException unboundKeyException = RequireThrows<InvalidOperationException>(
+            () => _ = intrusiveHolder.Key,
+            "An intrusive holder without a registry key must reject key access.");
+        Require(
+            unboundKeyException.Message == $"Trying to access unbound value '{intrusiveValue}' from registry {intrusiveRegistry}",
+            "Holder.Reference.key must include its value and owner in the vanilla error message.");
         RegistryKey<Block> intrusiveKey = new(intrusiveRegistry.Location, entryId);
         RequireThrows<InvalidOperationException>(
             () => intrusiveHolder.Is(intrusiveKey),
@@ -1202,10 +1226,10 @@ internal static class Program
         throw new InvalidOperationException(message);
     }
 
-    private static void RequireThrows<TException>(Action action, string message) where TException : Exception
+    private static TException RequireThrows<TException>(Action action, string message) where TException : Exception
     {
         try { action(); }
-        catch (TException) { return; }
+        catch (TException exception) { return exception; }
         throw new InvalidOperationException(message);
     }
 }

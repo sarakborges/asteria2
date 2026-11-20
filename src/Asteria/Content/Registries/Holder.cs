@@ -118,14 +118,16 @@ public abstract class Holder<T> where T : class
         }
 
         public override T Value =>
-            _value ?? throw new InvalidOperationException("Trying to access an unbound value from its registry.");
+            _value ?? throw new InvalidOperationException(
+                $"Trying to access unbound value '{_key?.ToString() ?? "null"}' from registry {_owner}.");
         public override HolderKind Kind => HolderKind.Reference;
         public override bool IsBound => _key.HasValue && _value is not null;
         public override RegistryKey<T>? KeyOrNull => _key;
-        public RegistryKey<T> Key => _key ?? throw new InvalidOperationException("The holder key has not been bound.");
+        public RegistryKey<T> Key => _key ?? throw new InvalidOperationException(
+            $"Trying to access unbound value '{_value?.ToString() ?? "null"}' from registry {_owner}");
         public bool IsIntrusive => _intrusive;
         public override IEnumerable<TagKey<T>> Tags =>
-            _tags ?? throw new InvalidOperationException("Tags not bound.");
+            _tags ?? throw new InvalidOperationException("Tags not bound");
 
         public override HolderUnwrap<T> Unwrap() =>
             HolderUnwrap<T>.FromKey(Key);

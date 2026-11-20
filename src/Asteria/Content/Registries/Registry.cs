@@ -9,6 +9,8 @@ namespace Asteria.Content.Registries;
 /// </summary>
 public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : class
 {
+    private static readonly ResourceLocation RootRegistryLocation = ResourceLocation.Parse("root");
+
     private readonly Dictionary<ResourceLocation, Holder<T>.Reference> _byLocation = new();
     private readonly Dictionary<RegistryKey<T>, Holder<T>.Reference> _byKey = new();
     private readonly Dictionary<T, Holder<T>.Reference> _byValue =
@@ -23,6 +25,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
     private IReadOnlyDictionary<TagKey<T>, HolderSet<T>.Named>? _boundTags;
 
     public ResourceLocation Location { get; }
+    public RegistryKey<Registry<T>> Key { get; }
     public int Count => _byKey.Count;
     public bool IsFrozen { get; protected set; }
     public Lifecycle RegistryLifecycle { get; private set; }
@@ -37,6 +40,7 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
             throw new ArgumentException("A valid registry location is required.", nameof(location));
 
         Location = location;
+        Key = new RegistryKey<Registry<T>>(RootRegistryLocation, location);
         RegistryLifecycle = initialLifecycle ?? Lifecycle.Stable();
         _unregisteredIntrusiveHolders = allowIntrusiveHolders
             ? new Dictionary<T, Holder<T>.Reference>(ReferenceEqualityComparer.Instance)
@@ -366,6 +370,8 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderOwner<T> where T : c
     }
 
     public bool CanSerializeIn(HolderOwner<T> owner) => ReferenceEquals(this, owner);
+
+    public override string ToString() => $"Registry[{Key} ({RegistryLifecycle})]";
 
     public IEnumerator<T> GetEnumerator()
     {

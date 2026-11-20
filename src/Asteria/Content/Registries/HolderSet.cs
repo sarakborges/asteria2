@@ -128,7 +128,7 @@ public class HolderSet<T> : IReadOnlyList<Holder<T>> where T : class
         public override int Count => Contents.Count;
         public override Holder<T> this[int index] => Contents[index];
         public override IReadOnlyList<Holder<T>> Contents =>
-            _boundContents ?? throw new InvalidOperationException($"Trying to access unbound tag '{Key}' from its registry.");
+            _boundContents ?? throw new InvalidOperationException($"Trying to access unbound tag '{Key}' from registry {_owner}");
 
         internal Named(HolderOwner<T> owner, TagKey<T> key)
         {

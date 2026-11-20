@@ -5,8 +5,15 @@ namespace Asteria.Content.Registries;
 /// </summary>
 public abstract class Lifecycle
 {
-    private sealed class StableLifecycle : Lifecycle;
-    private sealed class ExperimentalLifecycle : Lifecycle;
+    private sealed class StableLifecycle : Lifecycle
+    {
+        public override string ToString() => "Stable";
+    }
+
+    private sealed class ExperimentalLifecycle : Lifecycle
+    {
+        public override string ToString() => "Experimental";
+    }
 
     private static readonly Lifecycle StableValue = new StableLifecycle();
     private static readonly Lifecycle ExperimentalValue = new ExperimentalLifecycle();
