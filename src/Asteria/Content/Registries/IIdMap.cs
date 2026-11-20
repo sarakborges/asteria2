@@ -11,14 +11,14 @@ public interface IIdMap<T> : IEnumerable<T> where T : class
     T? ById(int id);
 
     T ByIdOrThrow(int id) =>
-        ById(id) ?? throw new ArgumentException($"No value with id {id}.");
+        ById(id) ?? throw new ArgumentException($"No value with id {id}");
 
     int GetIdOrThrow(T? value)
     {
         int id = GetId(value);
         if (id == -1)
         {
-            throw new ArgumentException($"Can't find an ID for '{value}' in this map.");
+            throw new ArgumentException($"Can't find id for '{value}' in map {this}");
         }
 
         return id;

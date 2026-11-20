@@ -917,7 +917,18 @@ internal static class Program
         Require(ids.ById(-1) is null, "Nullable ID lookup must return null for invalid global state IDs.");
         Require(!ids.TryGetById(-1, out _), "TryGetById must report invalid global state IDs as missing.");
         RequireThrows<ArgumentOutOfRangeException>(() => ids.GetById(-1), "Strict state ID lookup must reject invalid IDs.");
-        RequireThrows<ArgumentException>(() => ((IIdMap<BlockState>)ids).ByIdOrThrow(-1), "IdMap.byIdOrThrow must reject invalid global state IDs.");
+        ArgumentException missingState = Capture<ArgumentException>(
+            () => ((IIdMap<BlockState>)ids).ByIdOrThrow(-1),
+            "IdMap.byIdOrThrow must reject invalid global state IDs.");
+        Require(
+            missingState.Message == "No value with id -1",
+            "IdMap.byIdOrThrow must use the vanilla missing-ID error message.");
+        ArgumentException missingId = Capture<ArgumentException>(
+            () => ((IIdMap<BlockState>)ids).GetIdOrThrow(null),
+            "IdMap.getIdOrThrow must reject values absent from the ID map.");
+        Require(
+            missingId.Message == $"Can't find id for '' in map {ids}",
+            "IdMap.getIdOrThrow must use the vanilla missing-value error message.");
     }
 
     private static void CheckPropertyImplementations()
@@ -1380,6 +1391,24 @@ internal static class Program
     private static void Require(bool condition, string message)
     {
         if (!condition) throw new InvalidOperationException(message);
+    }
+
+    private static TException Capture<TException>(Action action, string message) where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException(message, exception);
+        }
+
+        throw new InvalidOperationException(message);
     }
 
     private static void RequireThrowsExact<TException>(Action action, string message) where TException : Exception
