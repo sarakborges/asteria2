@@ -14,7 +14,7 @@ public sealed class PackedBitStorage : IBitStorage
     /// </summary>
     public sealed class InitializationException : Exception
     {
-        private InitializationException(string message)
+        internal InitializationException(string message)
             : base(message)
         {
         }
