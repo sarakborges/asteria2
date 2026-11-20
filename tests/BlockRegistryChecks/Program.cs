@@ -1454,6 +1454,28 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(Blocks.TEST_POWERED.GetHashCode() == foreignPowered.GetHashCode(), "Equal Boolean properties must have equal hash codes.");
         Require(ReferenceEquals(changedState, changedState.TrySetValue(foreignPowered, false)), "trySetValue with a foreign property instance must preserve the current state.");
         Require(!changedState.TryGetValue(foreignPowered, out _), "A separate property instance must not be accepted by name alone.");
+
+        Require(!changedState.HasProperty(null!), "hasProperty(null) must return false.");
+        Require(!changedState.TryGetValue<bool>(null!, out _), "Optional property lookup with null must return no value.");
+        Require(
+            changedState.GetValueOrElse<bool>(null!, true),
+            "getValueOrElse must use its fallback when the property argument is null.");
+        Require(
+            ReferenceEquals(changedState, changedState.TrySetValue<bool>(null!, false)),
+            "trySetValue(null, value) must preserve the original state.");
+
+        ArgumentException nullGetProperty = Capture<ArgumentException>(
+            () => changedState.GetValue<bool>(null!),
+            "getValue(null) must report the missing property rather than failing in the lookup map.");
+        Require(
+            nullGetProperty.Message == $"Cannot get property null as it does not exist in {changedState.Block}",
+            "getValue(null) must preserve the source diagnostic text.");
+        ArgumentException nullSetProperty = Capture<ArgumentException>(
+            () => changedState.SetValue<bool>(null!, false),
+            "setValue(null, value) must report the missing property rather than failing in the lookup map.");
+        Require(
+            nullSetProperty.Message == $"Cannot set property null as it does not exist in {changedState.Block}",
+            "setValue(null, value) must preserve the source diagnostic text.");
         Require(
             foreignPowered.ToString() ==
                 "BooleanProperty{name=powered, clazz=class java.lang.Boolean, values=[true, false]}",

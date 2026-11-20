@@ -106,8 +106,14 @@ public sealed class StateDefinition
             nameof(property));
     }
 
-    internal bool TryGetPropertyIndex(StateProperty property, out int index) =>
-        _propertyIndices.TryGetValue(property, out index);
+    internal bool TryGetPropertyIndex(StateProperty? property, out int index)
+    {
+        if (property is not null && _propertyIndices.TryGetValue(property, out index))
+            return true;
+
+        index = -1;
+        return false;
+    }
 
     private void InitializeNeighbors(Dictionary<object[], BlockState> statesByValues)
     {

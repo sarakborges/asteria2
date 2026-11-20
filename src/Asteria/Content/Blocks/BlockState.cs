@@ -49,7 +49,7 @@ public sealed class BlockState
         if (!Definition.TryGetPropertyIndex(property, out int propertyIndex))
         {
             throw new ArgumentException(
-                $"Cannot get property {property} as it does not exist in {Block}");
+                $"Cannot get property {property?.ToString() ?? "null"} as it does not exist in {Block}");
         }
 
         return (T)_values[propertyIndex];
@@ -87,7 +87,7 @@ public sealed class BlockState
         if (!Definition.TryGetPropertyIndex(property, out int propertyIndex))
         {
             throw new ArgumentException(
-                $"Cannot set property {property} as it does not exist in {Block}");
+                $"Cannot set property {property?.ToString() ?? "null"} as it does not exist in {Block}");
         }
 
         return SetValueInternal(property, propertyIndex, value);
