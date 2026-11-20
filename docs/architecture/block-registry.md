@@ -29,7 +29,8 @@ This stage covers only systems already introduced in Asteria: registries and hol
 
 - `BlockProperties` is a mutable fluent builder for the properties represented so far. Defaults and setter behavior follow `BlockBehaviour.Properties`.
 - `Block` creates its intrusive holder before building states and calls the virtual `CreateBlockStateDefinition` extension point.
-- `StateProperty<T>` exposes a name, value type, ordered possible values, parsing, and serialization. Equality follows vanilla property type/name/value contracts.
+- `StateProperty<T>` exposes a name, value type, ordered possible values, parsing, serialization, typed `Property.Value` wrappers, and `GetAllValues`. Equality follows vanilla property type/name contracts.
+- `BlockState.GetValues` enumerates typed property/value pairs in the sorted state-definition order, matching `StateHolder.getValues`.
 - `StateDefinition` sorts property names, materializes the Cartesian product in vanilla order, and links each state to precomputed neighbor states.
 - `BlockState.SetValue`, `TrySetValue`, and `Cycle` resolve through the precomputed neighbor tables.
 - Each `BlockState` caches the currently modeled `BlockStateBase` values (`IsAir`, destroy speed, and correct-tool requirement) at construction. Mutating the retained properties builder does not retroactively change existing states.
