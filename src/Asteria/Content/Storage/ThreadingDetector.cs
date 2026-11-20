@@ -9,7 +9,7 @@ namespace Asteria.Content.Storage;
 public sealed class ThreadingDetector
 {
     private readonly string _name;
-    private readonly SemaphoreSlim _lock = new(1, 1);
+    private readonly SemaphoreSlim _lock = new(1);
     private readonly object _stackTraceLock = new();
     private Thread? _threadThatFailedToAcquire;
     private string? _stackTraceOfThreadThatFailedToAcquire;

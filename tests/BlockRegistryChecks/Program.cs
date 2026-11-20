@@ -897,6 +897,10 @@ internal static class Program
         Require(
             ownerException.InnerException?.Message == "Accessing BlockRegistryChecks from multiple threads",
             "The threading exception must retain the vanilla report's underlying concurrency error.");
+
+        var unboundedReleaseDetector = new ThreadingDetector("UnboundedSemaphore");
+        unboundedReleaseDetector.CheckAndUnlock();
+        unboundedReleaseDetector.CheckAndUnlock();
     }
 
     private static void CheckIdentityIdMap()
