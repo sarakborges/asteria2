@@ -936,6 +936,10 @@ internal static class Program
             "State properties must be sorted by name.");
         Require(ReferenceEquals(definition.GetProperty("powered"), Blocks.TEST_POWERED), "Property lookup must return the declared property.");
         Require(
+            definition.GetProperty("") is null && definition.GetProperty(" ") is null &&
+            definition.GetProperty("missing") is null,
+            "StateDefinition.getProperty must return no result for empty, whitespace, and unknown property names.");
+        Require(
             definition.Any().GetValue(Blocks.TEST_POWERED),
             "The first state must follow Minecraft's BooleanProperty order: true before false.");
 

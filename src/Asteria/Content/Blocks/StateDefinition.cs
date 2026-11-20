@@ -81,7 +81,7 @@ public sealed class StateDefinition
 
     public StateProperty? GetProperty(string name)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(name);
         return _properties.FirstOrDefault(
             property => string.Equals(property.Name, name, StringComparison.Ordinal));
     }
