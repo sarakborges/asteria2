@@ -119,7 +119,7 @@ public abstract class Holder<T> where T : class
 
         public override T Value =>
             _value ?? throw new InvalidOperationException(
-                $"Trying to access unbound value '{_key?.ToString() ?? "null"}' from registry {_owner}.");
+                $"Trying to access unbound value '{_key?.ToString() ?? "null"}' from registry {_owner}");
         public override HolderKind Kind => HolderKind.Reference;
         public override bool IsBound => _key.HasValue && _value is not null;
         public override RegistryKey<T>? KeyOrNull => _key;
