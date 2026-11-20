@@ -988,9 +988,42 @@ internal static class Program
         Require(Blocks.TEST_POWERED.GetHashCode() == foreignPowered.GetHashCode(), "Equal Boolean properties must have equal hash codes.");
         Require(ReferenceEquals(changedState, changedState.TrySetValue(foreignPowered, false)), "trySetValue with a foreign property instance must preserve the current state.");
         Require(!changedState.TryGetValue(foreignPowered, out _), "A separate property instance must not be accepted by name alone.");
-        RequireThrows<ArgumentException>(() => changedState.SetValue(foreignPowered, false), "SetValue must reject a property not owned by the block definition.");
-        RequireThrowsExact<ArgumentException>(() => changedState.SetValue(Blocks.TEST_STAGE, 9), "setValue must throw IllegalArgumentException for values outside the property's allowed set.");
-        RequireThrowsExact<ArgumentException>(() => changedState.TrySetValue(Blocks.TEST_STAGE, 9), "trySetValue must throw IllegalArgumentException for values outside the property's allowed set.");
+        Require(
+            foreignPowered.ToString() ==
+                "BooleanProperty{name=powered, clazz=class java.lang.Boolean, values=[true, false]}",
+            "Property.toString must expose the concrete type, boxed Java value class, name, and ordered values.");
+
+        ArgumentException missingGetProperty = Capture<ArgumentException>(
+            () => changedState.GetValue(foreignPowered),
+            "getValue must reject a property not owned by the block definition.");
+        Require(
+            missingGetProperty.Message ==
+                $"Cannot get property {foreignPowered} as it does not exist in {changedState.Block}",
+            "getValue must use the vanilla missing-property diagnostic.");
+
+        ArgumentException missingSetProperty = Capture<ArgumentException>(
+            () => changedState.SetValue(foreignPowered, false),
+            "setValue must reject a property not owned by the block definition.");
+        Require(
+            missingSetProperty.Message ==
+                $"Cannot set property {foreignPowered} as it does not exist in {changedState.Block}",
+            "setValue must use the vanilla missing-property diagnostic.");
+
+        ArgumentException invalidSetValue = Capture<ArgumentException>(
+            () => changedState.SetValue(Blocks.TEST_STAGE, 9),
+            "setValue must throw IllegalArgumentException for values outside the property's allowed set.");
+        string invalidSetMessage =
+            $"Cannot set property {Blocks.TEST_STAGE} to 9 on {changedState.Block}, it is not an allowed value";
+        Require(
+            invalidSetValue.Message == invalidSetMessage,
+            "setValue must use the vanilla invalid-value diagnostic without a parameter-name suffix.");
+
+        ArgumentException invalidTrySetValue = Capture<ArgumentException>(
+            () => changedState.TrySetValue(Blocks.TEST_STAGE, 9),
+            "trySetValue must throw IllegalArgumentException for values outside the property's allowed set.");
+        Require(
+            invalidTrySetValue.Message == invalidSetMessage,
+            "trySetValue must use the same vanilla invalid-value diagnostic as setValue.");
 
         RequireThrowsExact<ArgumentException>(
             () => IntegerProperty.Create("only", 0, 0),
@@ -1044,6 +1077,10 @@ internal static class Program
 
         IntegerProperty age = IntegerProperty.Create("age", 2, 4);
         Require(age.Equals(IntegerProperty.Create("age", 2, 4)), "Integer properties must compare by name and possible values.");
+        Require(
+            age.ToString() ==
+                "IntegerProperty{name=age, clazz=class java.lang.Integer, values=[2, 3, 4]}",
+            "IntegerProperty.toString must match the vanilla property diagnostic format.");
         Require(!age.Equals(IntegerProperty.Create("age", 1, 4)), "Integer properties with different ranges must not compare equal.");
         Require(age.GetHashCode() == IntegerProperty.Create("age", 2, 4).GetHashCode(), "Equal integer properties must have equal hash codes.");
         Require(age.PossibleValues.SequenceEqual(new[] { 2, 3, 4 }), "Integer values must be inclusive and ascending.");
@@ -1059,6 +1096,10 @@ internal static class Program
         Require(axis.IndexOf(TestAxis.Z) == 0 && axis.IndexOf(TestAxis.X) == 1, "EnumProperty.getInternalIndex must use its precomputed value-to-index mapping.");
         Require(axis.IndexOf(TestAxis.Y) == -1, "EnumProperty.getInternalIndex must reject values excluded from its possible-value list.");
         Require(axis.TryParse("z", out TestAxis parsedAxis) && parsedAxis == TestAxis.Z, "Enum parsing must use the configured name.");
+        Require(
+            axis.ToString() ==
+                "EnumProperty{name=axis, clazz=class Program$TestAxis, values=[Z, X]}",
+            "EnumProperty.toString must retain the enum's Java binary class name and declared values.");
         Require(axis.GetName(TestAxis.Y) == "y", "EnumProperty.getName must serialize enum constants outside the filtered possible-value set.");
         Require(!axis.TryParse("y", out _), "EnumProperty parsing must still reject values outside its possible-value set.");
 
