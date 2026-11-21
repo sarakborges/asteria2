@@ -172,14 +172,30 @@ internal static class AttributeValueCodecChecks
             value >= 0
                 ? DataResult<int>.Success(value)
                 : DataResult<int>.Error("negative", 5));
-        Codec<string> alternative = Codecs.INT.XMap(
+
+        Codec<string> successfulAlternative = Codecs.INT.XMap(
             static value => value.ToString(System.Globalization.CultureInfo.InvariantCulture),
             static value => int.Parse(value, System.Globalization.CultureInfo.InvariantCulture));
-        Codec<int> combined = primary.WithAlternative(alternative, static value => value.Length);
+        Codec<int> withSuccessfulAlternative =
+            primary.WithAlternative(successfulAlternative, static value => value.Length);
 
-        DataResult<int> result = combined.Parse(ops, ops.CreateInt(-1));
-        Require(result.IsError && result.TryGetPartial(out int partial) && partial == 5,
-            "An errored primary branch carrying a partial value must take precedence over a successful alternative.");
+        DataResult<int> successfulResult =
+            withSuccessfulAlternative.Parse(ops, ops.CreateInt(-1));
+        Require(successfulResult.IsSuccess && successfulResult.GetOrThrow() == 2,
+            "A successful alternative must take precedence over a partial error from the primary codec.");
+
+        Codec<int> partialAlternative = Codecs.INT.Validate(_ =>
+            DataResult<int>.Error("alternative", 9));
+        Codec<int> withTwoPartialErrors =
+            primary.WithAlternative(partialAlternative, static value => value);
+
+        DataResult<int> partialResult =
+            withTwoPartialErrors.Parse(ops, ops.CreateInt(-1));
+        Require(partialResult.IsError &&
+                partialResult.TryGetPartial(out int partial) &&
+                partial == 5 &&
+                partialResult.ErrorMessage == "negative",
+            "When both alternatives fail with partial values, the first codec's partial result must win.");
     }
 
     private static void Require(bool condition, string message)

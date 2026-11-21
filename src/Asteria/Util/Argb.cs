@@ -53,7 +53,11 @@ public static class Argb
         From8BitChannel(color & 0xFF);
 
     public static int Color(int alpha, int red, int green, int blue) =>
-        unchecked((alpha << 24) | (red << 16) | (green << 8) | blue);
+        unchecked(
+            ((alpha & 0xFF) << 24) |
+            ((red & 0xFF) << 16) |
+            ((green & 0xFF) << 8) |
+            (blue & 0xFF));
 
     private static float From8BitChannel(int value) =>
         value / 255.0F;
