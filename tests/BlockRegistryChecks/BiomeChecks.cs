@@ -14,7 +14,7 @@ internal static class BiomeChecks
     {
         Require(BuiltInRegistries.Biome.Count == 2,
             "The initial local biome registry must contain plains and desert.");
-        Require(BuiltInRegistries.Biome.DefaultKey.Location == Asteria.Content.Identifiers.ResourceLocation.Parse("asteria:plains"),
+        Require(BuiltInRegistries.Biome.DefaultKey == Asteria.Content.Identifiers.ResourceLocation.Parse("asteria:plains"),
             "The biome registry must default to plains.");
         Require(
             ReferenceEquals(

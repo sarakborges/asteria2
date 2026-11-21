@@ -1,4 +1,5 @@
 using Asteria.Content.Biomes;
+using BuiltInBiomes = Asteria.Content.Biomes.Biomes;
 using Asteria.Content.Registries;
 using Asteria.Content.Storage;
 
@@ -30,7 +31,7 @@ public sealed class BiomeContainerFactory
 
         return new BiomeContainerFactory(
             BuiltInRegistries.Biome.AsHolderIdMap(),
-            Biomes.PLAINS.BuiltInRegistryHolder);
+            BuiltInBiomes.PLAINS.BuiltInRegistryHolder);
     }
 
     public PalettedContainer<Holder<Biome>> CreateForBiomes() =>
