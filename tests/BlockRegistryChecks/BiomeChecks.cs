@@ -71,7 +71,7 @@ internal static class BiomeChecks
 
         BiomeSpecialEffects darkForest = new BiomeSpecialEffects.Builder().WaterColor(1)
             .GrassColorModifier(BiomeSpecialEffects.GrassColorModifier.DARK_FOREST).Build();
-        Require(darkForest.GetGrassColor(0, 0, unchecked((int)0xFF55AA33)) == unchecked((int)0xFF3E741E),
+        Require(darkForest.GetGrassColor(0, 0, unchecked((int)0xFF55AA33)) == unchecked((int)0xFF3E6F1E),
             "Dark-forest grass modification must preserve reference integer arithmetic and opaque alpha.");
 
         BiomeSpecialEffects swamp = new BiomeSpecialEffects.Builder().WaterColor(1)

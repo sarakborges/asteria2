@@ -10,7 +10,7 @@ public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverri
     {
         if (GrassColorOverride is int overrideColor)
             return overrideColor;
-        return GrassColorModifier.ModifyColor(x, z, defaultColor, biomeInfoNoise);
+        return ModifyGrassColor(GrassColorModifier, x, z, defaultColor, biomeInfoNoise);
     }
 
     public sealed class Builder
@@ -42,7 +42,7 @@ public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverri
 
     private static int Opaque(int color) => color | unchecked((int)0xFF000000);
 
-    private static int ModifyColor(this GrassColorModifier modifier, double x, double z, int baseColor, Func<double, double, double>? biomeInfoNoise) => modifier switch
+    private static int ModifyGrassColor(GrassColorModifier modifier, double x, double z, int baseColor, Func<double, double, double>? biomeInfoNoise) => modifier switch
     {
         GrassColorModifier.NONE => baseColor,
         GrassColorModifier.DARK_FOREST => Opaque(unchecked(((baseColor & 16711422) + 2634762) >> 1)),
