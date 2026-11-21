@@ -25,12 +25,14 @@ public static class ParticleTypes
     public static readonly SimpleParticleType LANDING_LAVA = Register("landing_lava", false);
     public static readonly SimpleParticleType DRIPPING_WATER = Register("dripping_water", false);
     public static readonly SimpleParticleType FALLING_WATER = Register("falling_water", false);
+    public static readonly ParticleType<SpellParticleOption> EFFECT =
+        RegisterConfigured<SpellParticleOption>("effect", false, SpellParticleOption.CreateCodec);
     public static readonly SimpleParticleType ELDER_GUARDIAN = Register("elder_guardian", true);
     public static readonly SimpleParticleType ENCHANTED_HIT = Register("enchanted_hit", false);
     public static readonly SimpleParticleType ENCHANT = Register("enchant", false);
     public static readonly SimpleParticleType END_ROD = Register("end_rod", false);
     public static readonly ParticleType<ColorParticleOption> ENTITY_EFFECT =
-        RegisterColor<ColorParticleOption>("entity_effect", false, ColorParticleOption.CreateCodec);
+        RegisterConfigured<ColorParticleOption>("entity_effect", false, ColorParticleOption.CreateCodec);
     public static readonly SimpleParticleType EXPLOSION_EMITTER = Register("explosion_emitter", true);
     public static readonly SimpleParticleType EXPLOSION = Register("explosion", true);
     public static readonly SimpleParticleType GUST = Register("gust", true);
@@ -48,16 +50,18 @@ public static class ParticleTypes
     public static readonly SimpleParticleType ORANGE_POPLAR_LEAVES = Register("orange_poplar_leaves", false);
     public static readonly SimpleParticleType YELLOW_POPLAR_LEAVES = Register("yellow_poplar_leaves", false);
     public static readonly ParticleType<ColorParticleOption> TINTED_LEAVES =
-        RegisterColor<ColorParticleOption>("tinted_leaves", false, ColorParticleOption.CreateCodec);
+        RegisterConfigured<ColorParticleOption>("tinted_leaves", false, ColorParticleOption.CreateCodec);
     public static readonly SimpleParticleType SCULK_SOUL = Register("sculk_soul", false);
     public static readonly SimpleParticleType SCULK_CHARGE_POP = Register("sculk_charge_pop", true);
     public static readonly SimpleParticleType SOUL_FIRE_FLAME = Register("soul_fire_flame", false);
     public static readonly SimpleParticleType SOUL = Register("soul", false);
     public static readonly ParticleType<ColorParticleOption> FLASH =
-        RegisterColor<ColorParticleOption>("flash", false, ColorParticleOption.CreateCodec);
+        RegisterConfigured<ColorParticleOption>("flash", false, ColorParticleOption.CreateCodec);
     public static readonly SimpleParticleType HAPPY_VILLAGER = Register("happy_villager", false);
     public static readonly SimpleParticleType COMPOSTER = Register("composter", false);
     public static readonly SimpleParticleType HEART = Register("heart", false);
+    public static readonly ParticleType<SpellParticleOption> INSTANT_EFFECT =
+        RegisterConfigured<SpellParticleOption>("instant_effect", false, SpellParticleOption.CreateCodec);
     public static readonly SimpleParticleType PAUSE_MOB_GROWTH = Register("pause_mob_growth", false);
     public static readonly SimpleParticleType RESET_MOB_GROWTH = Register("reset_mob_growth", false);
     public static readonly SimpleParticleType ITEM_SLIME = Register("item_slime", false);
@@ -126,7 +130,9 @@ public static class ParticleTypes
 
     public const int SimpleTypeCount = 106;
     public const int ColorTypeCount = 3;
-    public const int RegisteredTypeCount = SimpleTypeCount + ColorTypeCount;
+    public const int SpellOptionCount = 2;
+    public const int RegisteredTypeCount =
+        SimpleTypeCount + ColorTypeCount + SpellOptionCount;
 
     public static Codec<IParticleOptions> CODEC { get; } =
         MapCodec<IParticleOptions>.Dispatch(
@@ -135,7 +141,7 @@ public static class ParticleTypes
             static type => DataResult<MapCodec<IParticleOptions>>.Success(type.OptionsCodec))
         .Codec();
 
-    private static ParticleType<TOptions> RegisterColor<TOptions>(
+    private static ParticleType<TOptions> RegisterConfigured<TOptions>(
         string name,
         bool overrideLimiter,
         Func<ParticleType<TOptions>, MapCodec<TOptions>> codecFactory)

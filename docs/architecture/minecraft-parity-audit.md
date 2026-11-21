@@ -245,3 +245,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O codec usa o campo obrigatório `color`: inteiro ARGB como forma principal e vetor RGBA de quatro floats como alternativa. A codificação usa sempre o formato inteiro principal.
 - Registrados `entity_effect`, `tinted_leaves` e `flash` nas posições relativas da declaração 26.3, todos com `overrideLimiter=false`.
 - Contagem local: 106 tipos sem payload + 3 tipos com opção colorida. Tipos especializados restantes continuam pendentes de seus modelos próprios; os IDs numéricos ainda não têm paridade com o registro completo.
+
+
+## Incremento — SpellParticleOption (21/11/2026)
+
+- Portado `SpellParticleOption` para `effect` e `instant_effect`, com `ParticleType`, cor RGB empacotada e `power`.
+- Codec de registro mantém defaults da referência: `color=-1` e `power=1.0`. Campos ausentes recebem defaults; ao codificar, valores iguais aos defaults são omitidos. Campo presente inválido não cai silenciosamente no default.
+- `RGB_COLOR_CODEC` usa inteiro como representação primária e vetor RGB de três floats como alternativa. Os getters de canal retornam componentes RGB normalizados.
+- Os dois tipos estão registrados nas posições relativas da declaração 26.3, com `overrideLimiter=false`. Contagem atual: 106 simples + 3 coloridos + 2 spell.
