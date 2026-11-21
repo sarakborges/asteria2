@@ -1,6 +1,5 @@
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
-using Asteria.Core;
 using Asteria.World.Attributes.Modifiers;
 
 namespace Asteria.World.Attributes;
@@ -10,9 +9,6 @@ public static class AttributeTypes
 {
     public static readonly AttributeType<bool> BOOLEAN =
         AttributeType<bool>.OfNotInterpolated(BooleanModifier.LIBRARY);
-
-    public static readonly AttributeType<TriState> TRI_STATE =
-        AttributeType<TriState>.OfNotInterpolated();
 
     public static readonly AttributeType<float> FLOAT =
         AttributeType<float>.OfInterpolated(
@@ -30,7 +26,6 @@ public static class AttributeTypes
     internal static void RegisterAll()
     {
         Register("boolean", BOOLEAN);
-        Register("tri_state", TRI_STATE);
         Register("float", FLOAT);
         Register("angle_degrees", ANGLE_DEGREES);
     }
