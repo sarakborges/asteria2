@@ -4,6 +4,8 @@ using Asteria.Content.Particles;
 using Asteria.Content.Registries;
 using Asteria.Serialization;
 using Asteria.Util;
+using Asteria.Core;
+using System.Numerics;
 
 internal static class ParticleChecks
 {
@@ -16,6 +18,7 @@ internal static class ParticleChecks
         CheckPowerParticleOptionCodec();
         CheckSculkChargeParticleOptionsCodec();
         CheckShriekParticleOptionCodec();
+        CheckTrailParticleOptionCodec();
         CheckByNameCodecFailures();
     }
 
@@ -25,8 +28,8 @@ internal static class ParticleChecks
 
         Require(registry.IsFrozen,
             "The particle type registry must be frozen after built-in bootstrap.");
-        Require(ParticleTypes.RegisteredTypeCount == 114,
-            "The local particle registry must include 106 simple, three color, two spell and three numeric option types.");
+        Require(ParticleTypes.RegisteredTypeCount == 115,
+            "The local particle registry must include 106 simple, three color, two spell, three numeric and one record option type.");
         Require(registry.Count == ParticleTypes.RegisteredTypeCount,
             "Every implemented simple particle type must be registered.");
         Require(ReferenceEquals(
@@ -48,6 +51,9 @@ internal static class ParticleChecks
         Require(registry.GetId(ParticleTypes.SCRAPE) < registry.GetId(ParticleTypes.SHRIEK) &&
                 registry.GetId(ParticleTypes.SHRIEK) < registry.GetId(ParticleTypes.EGG_CRACK),
             "Shriek must occupy its source declaration position.");
+        Require(registry.GetId(ParticleTypes.INSTANT_EFFECT) < registry.GetId(ParticleTypes.TRAIL) &&
+                registry.GetId(ParticleTypes.TRAIL) < registry.GetId(ParticleTypes.PAUSE_MOB_GROWTH),
+            "Trail must remain between instant_effect and pause_mob_growth while item and vibration types are still absent.");
 
         Require(ParticleTypes.DAMAGE_INDICATOR.OverrideLimiter &&
                 ParticleTypes.EXPLOSION.OverrideLimiter &&
@@ -372,6 +378,144 @@ internal static class ParticleChecks
 
         Require(!ParticleTypes.SHRIEK.OverrideLimiter,
             "Shriek particle type must retain overrideLimiter=false.");
+    }
+
+
+    private static void CheckTrailParticleOptionCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        var target = new Vec3(1.25, -2.5, 3.75);
+        int rgb = Argb.Color(255, 128, 64, 32);
+        var source = new TrailParticleOption(target, rgb, 24);
+
+        JsonElement encoded = ParticleTypes.CODEC.EncodeStart(ops, source).GetOrThrow();
+        Require(ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:trail",
+            "Trail particle codec must encode its registered discriminator.");
+
+        IReadOnlyList<JsonElement> targetComponents =
+            ops.GetList(ops.Get(encoded, "target").GetOrThrow()).GetOrThrow();
+        Require(targetComponents.Count == 3 &&
+                targetComponents[0].GetDouble() == 1.25 &&
+                targetComponents[1].GetDouble() == -2.5 &&
+                targetComponents[2].GetDouble() == 3.75,
+            "Trail particle target must use Vec3's three-double list representation.");
+        Require(ops.Get(encoded, "color").GetOrThrow().GetInt32() == rgb &&
+                ops.Get(encoded, "duration").GetOrThrow().GetInt32() == 24,
+            "Trail particle codec must write packed RGB and positive integer duration.");
+
+        TrailParticleOption decoded =
+            (TrailParticleOption)ParticleTypes.CODEC.Parse(ops, encoded).GetOrThrow();
+        Require(decoded == source &&
+                ReferenceEquals(decoded.GetParticleType(), ParticleTypes.TRAIL),
+            "Trail particle options must round-trip all three fields and resolve their type.");
+
+        JsonElement vectorColorInput = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("type"), ops.CreateString("asteria:trail")),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("target"),
+                ops.CreateList(new[]
+                {
+                    ops.CreateDouble(0.5),
+                    ops.CreateDouble(1.0),
+                    ops.CreateDouble(-2.0)
+                })),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("color"),
+                ops.CreateList(new[]
+                {
+                    ops.CreateFloat(0.5F),
+                    ops.CreateFloat(0.25F),
+                    ops.CreateFloat(0.75F)
+                })),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("duration"), ops.CreateInt(1))
+        });
+        TrailParticleOption vectorDecoded =
+            (TrailParticleOption)ParticleTypes.CODEC.Parse(ops, vectorColorInput).GetOrThrow();
+        Require(vectorDecoded.Color == Argb.ColorFromVector3(new Vector3(0.5F, 0.25F, 0.75F)) &&
+                vectorDecoded.Duration == 1,
+            "Trail particle codec must accept an RGB vector alternative and the minimum valid duration.");
+
+        foreach (int invalidDuration in new[] { 0, -1, int.MinValue })
+        {
+            JsonElement invalidDurationInput = ops.CreateMap(new[]
+            {
+                new KeyValuePair<JsonElement, JsonElement>(
+                    ops.CreateString("type"), ops.CreateString("asteria:trail")),
+                new KeyValuePair<JsonElement, JsonElement>(
+                    ops.CreateString("target"),
+                    ops.CreateList(new[]
+                    {
+                        ops.CreateDouble(1.0), ops.CreateDouble(2.0), ops.CreateDouble(3.0)
+                    })),
+                new KeyValuePair<JsonElement, JsonElement>(
+                    ops.CreateString("color"), ops.CreateInt(rgb)),
+                new KeyValuePair<JsonElement, JsonElement>(
+                    ops.CreateString("duration"), ops.CreateInt(invalidDuration))
+            });
+            Require(ParticleTypes.CODEC.Parse(ops, invalidDurationInput).IsError,
+                "Trail particle codec must reject non-positive duration values.");
+        }
+
+        JsonElement missingDuration = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("type"), ops.CreateString("asteria:trail")),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("target"),
+                ops.CreateList(new[]
+                {
+                    ops.CreateDouble(1.0), ops.CreateDouble(2.0), ops.CreateDouble(3.0)
+                })),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("color"), ops.CreateInt(rgb))
+        });
+        Require(ParticleTypes.CODEC.Parse(ops, missingDuration).IsError,
+            "Trail particle codec must reject a missing required duration field.");
+
+        JsonElement shortTarget = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("type"), ops.CreateString("asteria:trail")),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("target"),
+                ops.CreateList(new[] { ops.CreateDouble(1.0), ops.CreateDouble(2.0) })),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("color"), ops.CreateInt(rgb)),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("duration"), ops.CreateInt(10))
+        });
+        Require(ParticleTypes.CODEC.Parse(ops, shortTarget).IsError,
+            "Trail particle codec must reject a target list shorter than three doubles.");
+
+        JsonElement longTarget = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("type"), ops.CreateString("asteria:trail")),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("target"),
+                ops.CreateList(new[]
+                {
+                    ops.CreateDouble(1.0), ops.CreateDouble(2.0),
+                    ops.CreateDouble(3.0), ops.CreateDouble(4.0)
+                })),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("color"), ops.CreateInt(rgb)),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("duration"), ops.CreateInt(10))
+        });
+        DataResult<IParticleOptions> oversized =
+            ParticleTypes.CODEC.Parse(ops, longTarget);
+        Require(oversized.IsError &&
+                oversized.TryGetPartial(out IParticleOptions partial) &&
+                partial is TrailParticleOption partialTrail &&
+                partialTrail.Target.Equals(new Vec3(1.0, 2.0, 3.0)),
+            "Trail particle codec must retain a partial target from an oversized coordinate list.");
+
+        Require(!ParticleTypes.TRAIL.OverrideLimiter,
+            "Trail particle type must retain overrideLimiter=false.");
     }
 
     private static void CheckByNameCodecFailures()

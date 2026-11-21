@@ -269,3 +269,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O codec rejeita campo ausente ou não inteiro e preserva valores assinados sem impor limites extras.
 - Registrado `shriek` imediatamente após `scrape` e antes de `egg_crack`, com `overrideLimiter=false`, conforme a ordem de declaração 26.3.
 - Contagem atual do registry local: 114 tipos (106 simples, 3 coloridos, 2 spell e 3 opções numéricas). O stream codec VarInt permanece excluído por escopo offline.
+
+
+## Incremento — TrailParticleOption e codecs vetoriais de três campos (21/11/2026)
+
+- Portado `RecordCodecBuilder.Group3`, mantendo a composição dos três resultados de campo e a acumulação de erros/parciais.
+- `Vec3.CODEC` usa exatamente uma lista de três `double` em ordem X/Y/Z. Listas curtas falham sem parcial; listas longas falham carregando os três primeiros componentes como resultado parcial.
+- Adicionado `ExtraCodecs.POSITIVE_INT`, que aceita somente o intervalo Int32 de 1 a `int.MaxValue` e preserva a mensagem de erro da referência.
+- Portado `TrailParticleOption(target, color, duration)`: campos obrigatórios `target` (Vec3), `color` (RGB inteiro, com vetor RGB como alternativa) e `duration` (inteiro positivo).
+- Registrado `trail` com `overrideLimiter=false`. A ordem local mantém `instant_effect < trail < pause_mob_growth`; os tipos de payload `item` e `vibration`, que antecedem `trail` na referência, ainda não foram portados. Portanto, os IDs numéricos do registro continuam sem paridade completa.
+- O stream codec de `Vec3` e o stream codec de `TrailParticleOption` permanecem fora do escopo single-player/offline.
