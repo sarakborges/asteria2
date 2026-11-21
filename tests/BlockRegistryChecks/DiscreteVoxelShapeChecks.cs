@@ -179,9 +179,17 @@ internal static class DiscreteVoxelShapeChecks
         var prismFaces = new List<Direction>();
         prism.ForAllFaces((direction, _, _, _) => prismFaces.Add(direction));
         Require(
-            prismFaces.Count == 6 &&
+            prismFaces.Count == 10 &&
             prismFaces.Distinct(ReferenceEqualityComparer.Instance).Count() == 6,
-            "A solid 1x1x2 prism must expose exactly six boundary faces.");
+            "A solid 1x1x2 prism must emit ten cell-sized boundary faces across six directions.");
+        Require(
+            prismFaces.Count(direction => ReferenceEquals(direction, Direction.WEST)) == 2 &&
+            prismFaces.Count(direction => ReferenceEquals(direction, Direction.EAST)) == 2 &&
+            prismFaces.Count(direction => ReferenceEquals(direction, Direction.DOWN)) == 2 &&
+            prismFaces.Count(direction => ReferenceEquals(direction, Direction.UP)) == 2 &&
+            prismFaces.Count(direction => ReferenceEquals(direction, Direction.NORTH)) == 1 &&
+            prismFaces.Count(direction => ReferenceEquals(direction, Direction.SOUTH)) == 1,
+            "Prism face enumeration must preserve two side faces on each X/Y direction and one on each Z end.");
 
         var empty = new BitSetDiscreteVoxelShape(2, 2, 2);
         int emptyEdges = 0;
