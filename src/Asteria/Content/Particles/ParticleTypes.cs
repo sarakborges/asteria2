@@ -30,7 +30,7 @@ public static class ParticleTypes
     public static readonly SimpleParticleType ENCHANT = Register("enchant", false);
     public static readonly SimpleParticleType END_ROD = Register("end_rod", false);
     public static readonly ParticleType<ColorParticleOption> ENTITY_EFFECT =
-        RegisterColor("entity_effect", false, ColorParticleOption.CreateCodec);
+        RegisterColor<ColorParticleOption>("entity_effect", false, ColorParticleOption.CreateCodec);
     public static readonly SimpleParticleType EXPLOSION_EMITTER = Register("explosion_emitter", true);
     public static readonly SimpleParticleType EXPLOSION = Register("explosion", true);
     public static readonly SimpleParticleType GUST = Register("gust", true);
@@ -48,13 +48,13 @@ public static class ParticleTypes
     public static readonly SimpleParticleType ORANGE_POPLAR_LEAVES = Register("orange_poplar_leaves", false);
     public static readonly SimpleParticleType YELLOW_POPLAR_LEAVES = Register("yellow_poplar_leaves", false);
     public static readonly ParticleType<ColorParticleOption> TINTED_LEAVES =
-        RegisterColor("tinted_leaves", false, ColorParticleOption.CreateCodec);
+        RegisterColor<ColorParticleOption>("tinted_leaves", false, ColorParticleOption.CreateCodec);
     public static readonly SimpleParticleType SCULK_SOUL = Register("sculk_soul", false);
     public static readonly SimpleParticleType SCULK_CHARGE_POP = Register("sculk_charge_pop", true);
     public static readonly SimpleParticleType SOUL_FIRE_FLAME = Register("soul_fire_flame", false);
     public static readonly SimpleParticleType SOUL = Register("soul", false);
     public static readonly ParticleType<ColorParticleOption> FLASH =
-        RegisterColor("flash", false, ColorParticleOption.CreateCodec);
+        RegisterColor<ColorParticleOption>("flash", false, ColorParticleOption.CreateCodec);
     public static readonly SimpleParticleType HAPPY_VILLAGER = Register("happy_villager", false);
     public static readonly SimpleParticleType COMPOSTER = Register("composter", false);
     public static readonly SimpleParticleType HEART = Register("heart", false);

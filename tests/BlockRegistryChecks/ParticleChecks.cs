@@ -74,8 +74,8 @@ internal static class ParticleChecks
             "Color particle options must serialize their registered discriminator and packed ARGB integer.");
 
         IParticleOptions decodedOptions = ParticleTypes.CODEC.Parse(ops, encoded).GetOrThrow();
-        Require(decodedOptions is ColorParticleOption decoded &&
-                ReferenceEquals(decoded.Type, ParticleTypes.ENTITY_EFFECT) &&
+        ColorParticleOption decoded = (ColorParticleOption)decodedOptions;
+        Require(ReferenceEquals(decoded.Type, ParticleTypes.ENTITY_EFFECT) &&
                 decoded.Color == packedColor,
             "Color particle options must round-trip to their concrete registered type.");
 
