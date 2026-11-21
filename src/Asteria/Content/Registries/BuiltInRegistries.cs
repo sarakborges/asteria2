@@ -7,6 +7,7 @@ using BuiltInAttributeTypes = Asteria.World.Attributes.AttributeTypes;
 using Asteria.Content.Fluids;
 using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Content.Identifiers;
+using Asteria.World.Attributes;
 
 namespace Asteria.Content.Registries;
 
