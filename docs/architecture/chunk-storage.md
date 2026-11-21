@@ -39,3 +39,11 @@ The block-state-only factory intentionally does not manufacture a biome holder o
 - [Heightmap — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/heightmap/)
 - [LevelHeightAccessor — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelheightaccessor/)
 - [LevelChunkSection — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/levelchunksection/)
+
+## Heightmap raw-data loading
+
+- `Chunk.SetHeightmap(type, data)` creates or reuses the map and delegates to `Heightmap.SetRawData`.
+- When the supplied word count matches the map's backing storage, all words are copied into the existing backing array. The caller's array is not retained.
+- When the word count differs, the serialized data is discarded and that heightmap type is primed again from the owning chunk, as in Minecraft 26.3. No partial copy is performed.
+- The backing array returned by `GetRawData()` intentionally remains mutable, matching the reference storage accessor.
+

@@ -130,6 +130,16 @@ public sealed class Chunk : LevelHeightAccessor
     public IReadOnlyDictionary<HeightmapType, Heightmap> GetHeightmaps() => _heightmapsView;
 
     /// <summary>
+    /// Loads serialized heightmap words. An incompatible word count falls back to a fresh
+    /// priming pass, matching ChunkAccess.setHeightmap and Heightmap.setRawData.
+    /// </summary>
+    public void SetHeightmap(HeightmapType type, ulong[] data)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        GetOrCreateHeightmapUnprimed(type).SetRawData(this, type, data);
+    }
+
+    /// <summary>
     /// Gets an existing heightmap or creates an unprimed one, matching ChunkAccess.
     /// </summary>
     public Heightmap GetOrCreateHeightmapUnprimed(HeightmapType type)

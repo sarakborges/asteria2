@@ -15,6 +15,7 @@ internal static class ChunkChecks
         CheckMismatchedSectionArray();
         CheckWorldSurfaceHeightmap(nonAirState);
         CheckHeightmapOwnershipAndBatchPriming(nonAirState);
+        CheckHeightmapRawData(nonAirState);
     }
 
     private static void CheckHeightAccessor()
@@ -227,6 +228,40 @@ internal static class ChunkChecks
             lazyChunk.GetHeight(HeightmapType.WorldSurface, position.GetMinBlockX() + 1, position.GetMinBlockZ() + 3) == 23,
             "GetHeight must lazily create and prime a missing heightmap.");
         Require(lazyChunk.HasPrimedHeightmap(HeightmapType.WorldSurface), "Lazy height lookup must retain the created heightmap.");
+    }
+
+    private static void CheckHeightmapRawData(BlockState nonAirState)
+    {
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
+        var position = new ChunkPos(-4, 6);
+
+        var loadedChunk = new Chunk(position, height, factory);
+        var sourceStorage = new PackedBitStorage(9, Heightmap.ColumnCount);
+        sourceStorage.Set(3 + 5 * 16, 75);
+        ulong[] sourceData = sourceStorage.GetRawCopy();
+
+        loadedChunk.SetHeightmap(HeightmapType.WorldSurface, sourceData);
+        Heightmap loaded = loadedChunk.GetOrCreateHeightmapUnprimed(HeightmapType.WorldSurface);
+        Require(
+            loaded.GetFirstAvailable(3, 5) == 11,
+            "Matching raw heightmap data must be copied into the owned map.");
+        sourceStorage.Set(3 + 5 * 16, 1);
+        Require(
+            loaded.GetFirstAvailable(3, 5) == 11,
+            "Loading heightmap data must copy words rather than retain the caller's array.");
+
+        var fallbackChunk = new Chunk(position, height, factory);
+        fallbackChunk.GetSection(fallbackChunk.GetSectionIndex(42))
+            .SetBlockState(2, 42 & 15, 4, nonAirState);
+        fallbackChunk.SetHeightmap(HeightmapType.WorldSurface, Array.Empty<ulong>());
+
+        Require(
+            fallbackChunk.GetHeight(HeightmapType.WorldSurface, position.GetMinBlockX() + 2, position.GetMinBlockZ() + 4) == 42,
+            "Mismatched raw heightmap data must be ignored and recomputed from chunk contents.");
+        Require(
+            fallbackChunk.GetHeightmaps().Count == 1,
+            "Raw-data fallback must reuse the heightmap created by SetHeightmap.");
     }
 
     private static void Require(bool condition, string message)

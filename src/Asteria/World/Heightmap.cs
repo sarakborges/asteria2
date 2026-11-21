@@ -185,6 +185,25 @@ public sealed class Heightmap
     public int GetHighestTaken(int localX, int localZ) =>
         unchecked(GetFirstAvailable(localX, localZ) - 1);
 
+    /// <summary>
+    /// Loads packed data when its word count matches this heightmap. Incompatible data is
+    /// discarded and this map is recomputed from the owning chunk, matching 26.3.
+    /// </summary>
+    public void SetRawData(Chunk chunk, HeightmapType type, ulong[] data)
+    {
+        ArgumentNullException.ThrowIfNull(chunk);
+        ArgumentNullException.ThrowIfNull(data);
+
+        ulong[] rawData = _data.GetRaw();
+        if (rawData.Length == data.Length)
+        {
+            Array.Copy(data, rawData, data.Length);
+            return;
+        }
+
+        PrimeAll(new[] { chunk.GetOrCreateHeightmapUnprimed(type) });
+    }
+
     /// <summary>Returns the backing packed words, matching Heightmap.getRawData().</summary>
     public ulong[] GetRawData() => _data.GetRaw();
 
