@@ -166,6 +166,7 @@ internal static class Program
 
     private static void RunChecks()
     {
+        CoordinatePositionChecks.Run();
         _ = TestBlocks.TEST_BLOCK;
 
         Require(

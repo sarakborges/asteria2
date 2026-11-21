@@ -9,5 +9,9 @@
   <ItemGroup>
     <Compile Include="../../src/Asteria/Content/**/*.cs"
              Link="Content/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../../src/Asteria/Core/**/*.cs"
+             Link="Core/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../../src/Asteria/World/**/*.cs"
+             Link="World/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
