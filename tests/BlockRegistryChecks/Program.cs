@@ -155,7 +155,7 @@ internal static class Program
         try
         {
             RunChecks();
-            Console.WriteLine("Block and fluid registries, holder, tag, state, palette, chunk-section, coordinate, heightmap, and chunk-storage checks passed.");
+            Console.WriteLine("Block and fluid registries, state holders, directions, math primitives, palettes, chunk sections, coordinates, heightmaps, and chunk storage checks passed.");
             return 0;
         }
         catch (Exception exception)

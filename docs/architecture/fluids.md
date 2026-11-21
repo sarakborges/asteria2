@@ -20,7 +20,7 @@ This is not full fluid parity. The following reference behavior still requires d
 - `FlowingFluid` update ordering, source conversion, neighbor inspection, slope-distance search, spread maps, scheduled updates and tick delays.
 - Water/lava source and flowing variants, their state definitions, block conversion and their environment-specific behavior.
 - World interfaces (`BlockGetter`, `LevelReader`, `Level`, server level) and scheduled tick containers.
-- Directional flow vectors, `Direction`, `Vec3`, voxel shapes, AABB and collision/renderer geometry.
+- Directional flow vectors in `Vec3`, voxel shapes, AABB and collision/renderer geometry. The six discrete directions, axes, planes and orthogonal rotations are now present.
 - Legacy-block conversion for all fluid types, buckets/items, particles, sounds, entities and block effects.
 - Fluid tags and serialization codecs.
 - Fluid-aware heightmap predicates.
