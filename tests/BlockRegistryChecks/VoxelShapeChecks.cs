@@ -1,4 +1,5 @@
 using Asteria.Core;
+using Asteria.Core.Mathematics;
 using Asteria.Core.Shapes;
 
 internal static class VoxelShapeChecks
