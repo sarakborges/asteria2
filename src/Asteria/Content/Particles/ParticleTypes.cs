@@ -122,6 +122,9 @@ public static class ParticleTypes
     public static readonly SimpleParticleType WAX_OFF = Register("wax_off", true);
     public static readonly SimpleParticleType ELECTRIC_SPARK = Register("electric_spark", true);
     public static readonly SimpleParticleType SCRAPE = Register("scrape", true);
+    public static readonly ParticleType<ShriekParticleOption> SHRIEK =
+        RegisterConfigured<ShriekParticleOption>(
+            "shriek", false, static _ => ShriekParticleOption.CODEC);
     public static readonly SimpleParticleType EGG_CRACK = Register("egg_crack", false);
     public static readonly SimpleParticleType DUST_PLUME = Register("dust_plume", false);
     public static readonly SimpleParticleType TRIAL_SPAWNER_DETECTED_PLAYER = Register("trial_spawner_detection", true);
@@ -136,7 +139,7 @@ public static class ParticleTypes
     public const int SimpleTypeCount = 106;
     public const int ColorTypeCount = 3;
     public const int SpellOptionCount = 2;
-    public const int NumericOptionCount = 2;
+    public const int NumericOptionCount = 3;
     public const int RegisteredTypeCount =
         SimpleTypeCount + ColorTypeCount + SpellOptionCount + NumericOptionCount;
 

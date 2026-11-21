@@ -261,3 +261,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Portado `SculkChargeParticleOptions` como record com campo obrigatório `roll`; o tipo associado é o singleton registrado `sculk_charge`, com `overrideLimiter=true`.
 - Os dois registros ocupam suas posições relativas na ordem built-in 26.3. Contagem de tipos agora é 113: 106 simples, 3 coloridos, 2 spell e 2 opções numéricas.
 - Os contratos de buffer e stream codecs permanecem excluídos por escopo offline.
+
+
+## Incremento — ShriekParticleOption (21/11/2026)
+
+- Portado `ShriekParticleOption` com o único campo obrigatório `delay`, tipado como Int32; a representação do record é o mapa `{delay: integer}`.
+- O codec rejeita campo ausente ou não inteiro e preserva valores assinados sem impor limites extras.
+- Registrado `shriek` imediatamente após `scrape` e antes de `egg_crack`, com `overrideLimiter=false`, conforme a ordem de declaração 26.3.
+- Contagem atual do registry local: 114 tipos (106 simples, 3 coloridos, 2 spell e 3 opções numéricas). O stream codec VarInt permanece excluído por escopo offline.

@@ -15,6 +15,7 @@ internal static class ParticleChecks
         CheckSpellParticleOptionsCodec();
         CheckPowerParticleOptionCodec();
         CheckSculkChargeParticleOptionsCodec();
+        CheckShriekParticleOptionCodec();
         CheckByNameCodecFailures();
     }
 
@@ -24,8 +25,8 @@ internal static class ParticleChecks
 
         Require(registry.IsFrozen,
             "The particle type registry must be frozen after built-in bootstrap.");
-        Require(ParticleTypes.RegisteredTypeCount == 113,
-            "The local particle registry must include 106 simple, three color, two spell and two numeric option types.");
+        Require(ParticleTypes.RegisteredTypeCount == 114,
+            "The local particle registry must include 106 simple, three color, two spell and three numeric option types.");
         Require(registry.Count == ParticleTypes.RegisteredTypeCount,
             "Every implemented simple particle type must be registered.");
         Require(ReferenceEquals(
@@ -44,6 +45,9 @@ internal static class ParticleChecks
         Require(registry.GetId(ParticleTypes.SCULK_SOUL) < registry.GetId(ParticleTypes.SCULK_CHARGE) &&
                 registry.GetId(ParticleTypes.SCULK_CHARGE) < registry.GetId(ParticleTypes.SCULK_CHARGE_POP),
             "Sculk charge must occupy its source declaration position.");
+        Require(registry.GetId(ParticleTypes.SCRAPE) < registry.GetId(ParticleTypes.SHRIEK) &&
+                registry.GetId(ParticleTypes.SHRIEK) < registry.GetId(ParticleTypes.EGG_CRACK),
+            "Shriek must occupy its source declaration position.");
 
         Require(ParticleTypes.DAMAGE_INDICATOR.OverrideLimiter &&
                 ParticleTypes.EXPLOSION.OverrideLimiter &&
@@ -322,6 +326,52 @@ internal static class ParticleChecks
 
         Require(ParticleTypes.SCULK_CHARGE.OverrideLimiter,
             "Sculk charge must retain overrideLimiter=true.");
+    }
+
+
+    private static void CheckShriekParticleOptionCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        var source = new ShriekParticleOption(37);
+
+        JsonElement encoded = ParticleTypes.CODEC.EncodeStart(ops, source).GetOrThrow();
+        Require(ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:shriek" &&
+                ops.Get(encoded, "delay").GetOrThrow().GetInt32() == 37,
+            "Shriek particle options must encode their discriminator and required integer delay.");
+
+        ShriekParticleOption decoded =
+            (ShriekParticleOption)ParticleTypes.CODEC.Parse(ops, encoded).GetOrThrow();
+        Require(decoded.GetDelay() == 37 &&
+                ReferenceEquals(decoded.GetParticleType(), ParticleTypes.SHRIEK),
+            "Shriek particle options must round-trip delay and resolve the registered type.");
+
+        var negativeDelay = new ShriekParticleOption(-17);
+        JsonElement negativeEncoded = ParticleTypes.CODEC.EncodeStart(ops, negativeDelay).GetOrThrow();
+        ShriekParticleOption negativeDecoded =
+            (ShriekParticleOption)ParticleTypes.CODEC.Parse(ops, negativeEncoded).GetOrThrow();
+        Require(negativeDecoded.GetDelay() == -17,
+            "Shriek delay must preserve signed integer values without added range restrictions.");
+
+        JsonElement missingDelay = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("type"), ops.CreateString("asteria:shriek"))
+        });
+        Require(ParticleTypes.CODEC.Parse(ops, missingDelay).IsError,
+            "Shriek particle codec must reject a missing required delay field.");
+
+        JsonElement invalidDelay = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("type"), ops.CreateString("asteria:shriek")),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("delay"), ops.CreateString("not_an_integer"))
+        });
+        Require(ParticleTypes.CODEC.Parse(ops, invalidDelay).IsError,
+            "Shriek particle codec must reject a non-integer delay.");
+
+        Require(!ParticleTypes.SHRIEK.OverrideLimiter,
+            "Shriek particle type must retain overrideLimiter=false.");
     }
 
     private static void CheckByNameCodecFailures()
