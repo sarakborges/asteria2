@@ -226,3 +226,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `ListModifier<T>.APPEND` reproduz os casos de identidade e concatenação do `ListModifier.append` de 26.3, preservando a ordem subject → argumento.
 - O catálogo de modificadores de lista contém exclusivamente `append`.
 - Não registra ainda `AMBIENT_PARTICLES`: o tipo depende do domínio de partículas e dos codecs, que não foram simulados com placeholders.
+
+
+## Incremento — AmbientParticle e codecs de atributo (21/11/2026)
+
+- `AttributeType<T>` passou a armazenar `ValueCodec` opcional. Os tipos `particle` e `ambient_particles` possuem codecs concretos; os demais tipos de valor ainda requerem codecs específicos.
+- Portado o modelo `AmbientParticle(particle, probability)`, com codec por record fields obrigatórios e range inclusivo [0, 1].
+- `CanSpawn` consome uma amostra float de 24 bits e usa comparação inclusiva `<=`; testes cobrem a igualdade exata no limite, probabilidade zero/um e número de chamadas.
+- `AMBIENT_PARTICLES` usa listas cross-fade escalando somente a probabilidade e o modifier `append`; o atributo genérico `visual/ambient_particles` está registrado com default vazio e é syncable.
+- O registry `attribute_type` agora contém nove tipos no escopo: os sete anteriores, `particle` e `ambient_particles`.
+- O registry `particle_type` contém 106 tipos simples com identificadores, ordem relativa e `overrideLimiter` conferidos. Tipos com opções especializadas seguem pendentes até seus modelos/codecs próprios; IDs numéricos não têm paridade enquanto essas entradas estiverem ausentes.
+- Atributos específicos de blocos/objetos, áudio e regras de cama continuam excluídos. Stream codecs, buffers de pacote e multiplayer continuam excluídos pelo escopo offline.

@@ -57,3 +57,13 @@ Base de comparação: Minecraft Java 26.3.
 - Portado `ListModifier.append` de 26.3: argumento vazio devolve a lista subject original; subject vazio devolve o argumento original; duas listas não vazias produzem uma nova lista concatenada em ordem subject → argumento.
 - A biblioteca genérica de listas expõe somente `append`, com o identificador serializado `append`.
 - A infraestrutura está pronta para `AMBIENT_PARTICLES`, mas o tipo ainda não foi registrado: `ParticleOptions`, `ParticleTypes.CODEC` e o pipeline local de codecs continuam ausentes.
+
+
+## Incremento — AmbientParticle e codecs de atributo (21/11/2026)
+
+- `AttributeType<T>` agora expõe `ValueCodec` opcional. Nesta etapa os tipos `PARTICLE` e `AMBIENT_PARTICLES` têm codecs; não se afirma que os codecs dos demais tipos built-in já estejam portados.
+- `AmbientParticle` tem os campos obrigatórios `particle` e `probability`; o segundo usa validação inclusiva [0, 1].
+- `CanSpawn` consome um `NextFloat` e retorna `random.NextFloat() <= probability`. `LegacyRandomSource` e `WorldgenRandom` produzem o float com 24 bits da referência.
+- O tipo `AMBIENT_PARTICLES` usa `AmbientParticle.CODEC.listOf()`, cross-fade de listas que escala apenas a probabilidade e o modificador `append`.
+- Registrado `visual/ambient_particles` com lista vazia e flag `syncable`.
+- Atributos de partícula ligados a blocos (como o default dripstone particle) permanecem fora do escopo.
