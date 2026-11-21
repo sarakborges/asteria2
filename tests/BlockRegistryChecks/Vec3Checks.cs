@@ -60,7 +60,7 @@ internal static class Vec3Checks
         Require(origin.DistanceToSquared(other) == 50.0, "DistanceToSquared must return the sum of squared deltas.");
         Require(origin.DistanceToSquared(4.0, 6.0, 8.0) == 50.0, "Coordinate distance overload must match vector distance.");
         Require(origin.CloserThan(other, 9.0), "CloserThan(Position) must compare squared distance against the squared limit.");
-        Require(!origin.CloserThan(other, Math.Sqrt(50.0)), "CloserThan(Position) must use a strict inequality at the boundary.");
+        Require(!origin.CloserThan(new Vec3(3.0, 2.0, 3.0), 2.0), "CloserThan(Position) must use a strict inequality at an exactly representable boundary.");
         Require(origin.CloserThan(new Vec3(2.5, 2.0, 3.0), 2.0, 1.0), "Planar CloserThan must test horizontal distance and vertical delta independently.");
         Require(!origin.CloserThan(new Vec3(3.0, 2.0, 3.0), 2.0, 1.0), "Planar CloserThan must use a strict horizontal inequality.");
         Require(!origin.CloserThan(new Vec3(2.5, 3.0, 3.0), 2.0, 1.0), "Planar CloserThan must use a strict vertical inequality.");
