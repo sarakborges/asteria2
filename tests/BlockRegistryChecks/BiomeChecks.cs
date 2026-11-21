@@ -66,8 +66,8 @@ internal static class BiomeChecks
         Require(effects.WaterColor == 123456 && effects.GetFoliageColor(1) == 0x00112233 &&
                 effects.GetDryFoliageColor(2) == 0x00445566,
             "Biome special effects must retain water, foliage and dry-foliage colors.");
-        Require(effects.GetGrassColor(4, 8, 3) == 0x00778899,
-            "An explicit grass color override must take precedence over the grass modifier.");
+        Require(effects.GetGrassColor(4, 8, 3, (x, z) => -0.2) == -11766212,
+            "The grass override must be selected as the base color before applying the grass modifier.");
 
         BiomeSpecialEffects darkForest = new BiomeSpecialEffects.Builder().WaterColor(1)
             .GrassColorModifierType(BiomeSpecialEffects.GrassColorModifierType.DARK_FOREST).Build();
