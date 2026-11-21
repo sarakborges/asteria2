@@ -12,6 +12,7 @@ internal static class VoxelShapeChecks
         CheckBooleanJoinOperations();
         CheckJoinShortcutsAndNonEmptyQueries();
         CheckFaceShapesAndSlices();
+        CheckContinuousEdgesAndCollision();
         CheckAxisCycleAndDiscreteAxisQueries();
     }
 
@@ -303,6 +304,92 @@ internal static class VoxelShapeChecks
         RequireThrows<ArgumentException>(
             () => Shapes.JoinIsNotEmpty(first, second, BooleanOp.TRUE),
             "JoinIsNotEmpty must reject BooleanOps that return true for empty/empty.");
+    }
+
+    private static void CheckFaceShapesAndSlices()
+    {
+        VoxelShape block = Shapes.Block();
+        VoxelShape empty = Shapes.Empty();
+
+        Require(ReferenceEquals(block.GetFaceShape(Direction.NORTH), block),
+            "The canonical block shape must return itself for every face.");
+        Require(ReferenceEquals(empty.GetFaceShape(Direction.UP), empty),
+            "The empty shape must return itself for every face.");
+
+        VoxelShape halfHeight = Shapes.Box(0, 0, 0, 1, 0.5, 1);
+        Require(
+            ReferenceEquals(halfHeight.GetFaceShape(Direction.DOWN), Shapes.Block()),
+            "The filled bottom slice of a half-height box must canonicalize to the block shape.");
+        Require(
+            ReferenceEquals(halfHeight.GetFaceShape(Direction.UP), Shapes.Empty()),
+            "The unoccupied top slice of a half-height box must canonicalize to the empty shape.");
+
+        VoxelShape edgeBox = Shapes.Box(0.0, 0.0, 0.25, 0.5, 1.0, 0.75);
+        VoxelShape westFace = edgeBox.GetFaceShape(Direction.WEST);
+        Require(!ReferenceEquals(westFace, edgeBox) && !westFace.IsEmpty(),
+            "A non-cube boundary face must materialize a non-empty SliceShape.");
+        Require(
+            CoordinatesEqual(westFace.GetCoords(Direction.Axis.X), 0.0, 1.0) &&
+            CoordinatesEqual(westFace.GetCoords(Direction.Axis.Y), 0.0, 1.0) &&
+            CoordinatesEqual(westFace.GetCoords(Direction.Axis.Z), 0.0, 0.25, 0.5, 0.75, 1.0),
+            "A slice must use unit coordinates along its normal and delegate the other coordinate lists.");
+        Require(ReferenceEquals(edgeBox.GetFaceShape(Direction.WEST), westFace),
+            "Face shapes must be cached per direction.");
+        Require(westFace.ToAabbs().Count > 0,
+            "Sliced face occupancy must remain usable by the existing box enumeration.");
+    }
+
+    private static bool CoordinatesEqual(DoubleList coordinates, params double[] expected)
+    {
+        if (coordinates.Count != expected.Length)
+            return false;
+
+        for (int index = 0; index < expected.Length; index++)
+        {
+            if (Math.Abs(coordinates.GetDouble(index) - expected[index]) > 1.0E-7)
+                return false;
+        }
+
+        return true;
+    }
+
+    private static void CheckContinuousEdgesAndCollision()
+    {
+        VoxelShape block = Shapes.Block();
+
+        var edges = new List<(double X1, double Y1, double Z1, double X2, double Y2, double Z2)>();
+        block.ForAllEdges((x1, y1, z1, x2, y2, z2) =>
+            edges.Add((x1, y1, z1, x2, y2, z2)));
+        Require(edges.Count == 12, "A unit block shape must expose twelve merged continuous edges.");
+        Require(
+            edges.All(edge =>
+                Math.Abs(edge.X2 - edge.X1) +
+                Math.Abs(edge.Y2 - edge.Y1) +
+                Math.Abs(edge.Z2 - edge.Z1) == 1.0),
+            "Every unit-block continuous edge must have unit length.");
+
+        Require(
+            Math.Abs(block.Collide(Direction.Axis.X, new AABB(-2, 0.2, 0.2, -1, 0.8, 0.8), 5.0) - 1.0) < 1.0E-7,
+            "Positive X movement must stop at the block's west boundary.");
+        Require(
+            Math.Abs(block.Collide(Direction.Axis.X, new AABB(2, 0.2, 0.2, 3, 0.8, 0.8), -5.0) + 1.0) < 1.0E-7,
+            "Negative X movement must stop at the block's east boundary.");
+        Require(
+            Math.Abs(block.Collide(Direction.Axis.Y, new AABB(0.2, -2, 0.2, 0.8, -1, 0.8), 5.0) - 1.0) < 1.0E-7,
+            "Positive Y movement must use the axis-cycle transform.");
+        Require(
+            Math.Abs(block.Collide(Direction.Axis.Z, new AABB(0.2, 0.2, 2, 0.8, 0.8, 3), -5.0) + 1.0) < 1.0E-7,
+            "Negative Z movement must use the inverse axis-cycle transform.");
+
+        Require(
+            block.Collide(Direction.Axis.X, new AABB(-2, 2, 2, -1, 3, 3), 5.0) == 5.0,
+            "Movement outside the shape's transverse bounds must remain unrestricted.");
+        Require(
+            Shapes.Empty().Collide(Direction.Axis.X, new AABB(-2, 0, 0, -1, 1, 1), 5.0) == 5.0,
+            "An empty shape must not restrict movement.");
+        Require(
+            block.Collide(Direction.Axis.X, new AABB(-2, 0, 0, -1, 1, 1), 1.0E-8) == 0.0,
+            "Movement smaller than the collision epsilon must resolve to zero.");
     }
 
     private static void CheckAxisCycleAndDiscreteAxisQueries()

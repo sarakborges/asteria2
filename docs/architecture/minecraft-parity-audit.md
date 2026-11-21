@@ -4,17 +4,17 @@
 
 - Repositório: `sarakborges/asteria2`
 - Branch auditada: `feature/block-registry`
-- Commit-base: `968aa709c4c20e440b5af246044056b0c0d3a822`
-- Inventário: 71 arquivos versionados, incluindo 50 arquivos C# de produção e um arquivo C# de testes.
+- Commit-base auditado: `b3801aecb7577da2e7afea9c8993b23e8f15c2f5`
+- Inventário do HEAD: 130 arquivos versionados: 90 arquivos C# em `src/Asteria`, 12 arquivos C# no harness de testes e 1 arquivo C# de bootstrap em `scripts`.
 - Referência: Minecraft Java Edition 26.3, usando o código-fonte decompilado e os contratos observáveis das classes equivalentes.
 
 Esta auditoria cobre todo o conteúdo atualmente existente no repositório. “Paridade confirmada” significa que o comportamento que Asteria implementa foi comparado com o membro correspondente da referência; não significa que Asteria já implemente o jogo inteiro.
 
 ## Resultado executivo
 
-Os algoritmos centrais já portados — identificadores, registries, holders, estados genéricos, estados de bloco e fluido, mapas de IDs, paletas e armazenamento compactado — correspondem ao comportamento observado no Minecraft 26.3 no escopo atualmente modelado. Os domínios de fluido e seção de chunk ainda são parciais; os limites estão descritos abaixo.
+Os subsistemas de conteúdo e armazenamento — identificadores, registries, holders, estados genéricos, estados de bloco, mapas de IDs, paletas e armazenamento compactado — têm paridade comportamental confirmada no escopo que foi portado e testado. A geometria discreta já contém as 48 transformações octaédricas, rotação de ocupação, enumeração de caixas/arestas/faces e as consultas geométricas fundamentais. `VoxelShape` também contém recortes de faces, arestas contínuas e colisão por eixo; o último incremento precisa passar novamente pelo harness e pelo build.
 
-A principal lacuna deixou de ser a ausência total de fluidos: o núcleo de `Fluid`/`FluidState` e os contadores de seção já existem. Ainda faltam simulação, mundo, biomas, geração, iluminação, rendering, física, entidades, rede e persistência.
+Asteria ainda não é um jogo funcional completo: mundo, chunks completos, geração, biomas, iluminação, simulação de fluidos, entidades, rendering, rede e persistência continuam ausentes ou parciais.
 
 ## Matriz por subsistema
 
@@ -38,16 +38,18 @@ A principal lacuna deixou de ser a ausência total de fluidos: o núcleo de `Flu
 | `ThreadingDetector` | `ThreadingDetector` | Protocolo de exclusão de escritor e detecção de concorrência equivalentes. A representação do erro é adaptada: Asteria lança `InvalidOperationException`; o jogo usa `ReportedException` com `CrashReport` e logging. |
 | `StateHolder<TOwner, TState>` / `StateDefinition<TOwner, TState>` | `StateHolder` / `StateDefinition` | Lookup por identidade, array de valores, produto cartesiano, vizinhos pré-computados e builder são genéricos e compartilhados por `BlockState` e `FluidState`. |
 | `Fluid` / `FluidState` | `Fluid` / `FluidState` | Parcial: registry, holder intrusivo, definição/estado padrão, estado vazio, ID map, source/empty/amount/own-height/random-ticking e `BlockState.GetFluidState`. `FlowingFluid`, água/lava, consultas de mundo, formas, fluxo, ticks e interação ainda não foram portados. |
-| `Direction` / `Direction.Axis` / `Plane` | `Direction` | Parcial: seis direções, vetores inteiros, IDs 2D/3D, eixo, plano, enumeração, conversão de yaw, rotações ortogonais e nearest-direction. APIs que dependem de entidade, matriz, RNG, vetor real e codecs permanecem pendentes. O modelo C# usa objetos singleton por identidade em vez de enum, para preservar os membros com dados. |
+| `Direction` / `Direction.Axis` / `Plane` / `FrontAndTop` | `Direction` / `FrontAndTop` | Parcial: seis direções, vetores, IDs, eixo, plano, yaw, nearest-direction e rotações discretas; `FrontAndTop` e as 48 transformações de `OctahedralGroup` estão portados. APIs dependentes de entidade, RNG, codecs e integração com renderer permanecem pendentes. O modelo C# usa objetos singleton por identidade. |
 | `Position` / `Vec3` | `Position` / `Vec3` | Parcial: factories por `Vec3i`, aritmética, produto escalar/vetorial, distância, normalização, rotações com tabela Mth, alinhamento, projeção, igualdade/hash e finitude. Codec, rede, RNG, `Vec2` e JOML permanecem pendentes; `Position` tem nomes de acesso adaptados ao C#. |
 | `AABB` | `AABB` | Parcial: normalização de limites, factories por posição/vetor, contração/expansão, inflate/deflate, união/interseção, movimento, intervalos de interseção, contenção half-open, clipping de segmento com tolerância `1e-7`, colisão ao longo de vetor, distância, medidas, next-deflated, igualdade/hash/NaN e builder. Sobrecargas de JOML foram adaptadas para `System.Numerics.Vector3`; integração `BoundingBox`/`BlockHitResult` ainda depende dos domínios de estrutura e hit-result. |
-| `DiscreteVoxelShape` / `BitSetDiscreteVoxelShape` | Shapes homônimas | Parcial: grade de células, armazenamento bitset X/Y/Z, bounds em cache, consultas `isFullWide`, `firstFull`/`lastFull`, cópia, região preenchida, detecção de interior e enumeração de caixas com mesclagem greedy. Rotação octaédrica, faces/edges e remaining geometry operations ainda pendentes. |
-| `VoxelShape` / `CubeVoxelShape` / `ArrayVoxelShape` / `SliceShape` | Tipos homônimos | Parcial: grade contínua, coordenadas uniformes/explicitas, min/max, bounds, move, optimize, boxes/AABBs, closest-point, queries por coordenadas transversais e cache de face shapes por direção. `SliceShape` usa `SubShape` e canonicaliza faces vazias/cúbicas. Clipping e colisão ainda dependem de hit-result e contextos. |
-| `Shapes` | `Shapes` | Parcial: canonical EMPTY/BLOCK/INFINITY, box/create/findBits, join, joinUnoptimized, joinIsNotEmpty, OR e seleção sequencial de mergers com BooleanOp. VoxelShape rotations, face occlusion and axis transforms remain deferred. |
+| `DiscreteVoxelShape` / `BitSetDiscreteVoxelShape` | Shapes homônimas | Parcial: grade/bitset X/Y/Z, bounds em cache, `isFullWide`, `firstFull`/`lastFull`, cópia, região preenchida, interior, rotação por `OctahedralGroup`, enumeração greedy de caixas, arestas com mesclagem e faces por transição de ocupação. A API discreta central está portada; ainda faltam integrações de clipping, occlusion e shape slicing avançado. |
+| `VoxelShape` / `CubeVoxelShape` / `ArrayVoxelShape` / `SliceShape` / `SubShape` | Tipos homônimos | Parcial: coordenadas uniformes/explicitas, min/max, bounds, move, optimize, caixas/AABBs, arestas contínuas, closest-point, queries transversais, cache das seis faces, slices/subshapes e colisão de AABB por eixo. `clip` ainda depende de `BlockHitResult`; igualdade estrutural e integrações de occlusion/contexto continuam pendentes. |
+| `Shapes` | `Shapes` | Parcial: EMPTY/BLOCK/INFINITY, box/create/findBits, join, joinUnoptimized, joinIsNotEmpty, OR e seleção sequencial de mergers com `BooleanOp`. `blockOccludes`, occlusion-context integration and higher-level collision shortcuts remain pending. |
 | `BooleanOp` / `IndexMerger` | Tipos homônimos | As 16 funções booleanas e os quatro mergers foram portados: identical, non-overlapping, indirect e discrete-cube. Seleção com tolerância `1e-7` e teto de custo 256 preservada. |
 
 
 | `Mth` | `Mth` | Parcial: tabela trigonométrica SIN de 65536 entradas, `Sin`, `Cos`, `Floor`, `Lerp`, `Square`, `LengthSquared` e `Length`, cobrindo a dependência portável de `Direction`/`Vec3`. O restante da utilitária numérica não foi introduzido. |
+| `Heightmap` / `HeightmapType` | `Heightmap` / `Heightmap.Types` | Seis variantes com IDs, nomes serializados, envio ao cliente, retenção após worldgen e predicados por tags/fluidos; priming compartilhado, atualização incremental e fallback para dados incompatíveis. Persistência por codecs ainda ausente. |
+| `Chunk` | `ChunkAccess` / `ProtoChunk` / `LevelChunk` | Parcial: posições, seções, lookup de blocos e heightmaps. Ainda não há base abstrata `ChunkAccess`, subclasses com lifecycle separado, block entities, estruturas, biomas, ticks, iluminação ou serialização. |
 | `ChunkSection` | `LevelChunkSection` | Parcial: estados de bloco, contagem non-air, `FluidCount`, `TickingFluidCount`, `HasFluid`, lookup de fluido, ticking agregado, cópia e recálculo. Biomas e codecs de seção ainda ausentes. |
 | `Main.cs`, cena e configuração Godot | Host de execução do jogo | Não há equivalente de gameplay direto. É atualmente um bootstrap/smoke test sobre uma cena Node3D vazia, não um loop de jogo. |
 
@@ -90,9 +92,9 @@ O `ChunkSection` já possui os contadores de fluido correspondentes à referênc
 
 ## Validação desta baseline
 
-- Workflow [Block registry — run 44907097382](https://github.com/sarakborges/asteria2/actions/runs/44907097382): concluído com sucesso.
-- Etapas: testes do registro de blocos e build do projeto Godot.
-- Não houve merge para `main` nem deploy.
+- Última baseline totalmente validada antes do incremento atual: workflow [Block registry — run #375](https://github.com/sarakborges/asteria2/actions/runs/44931929483), commit `6676917`; harness e build Godot aprovados.
+- O incremento de faces/slices no commit `b3801ae` falhou no harness por uma chamada de teste sem implementação correspondente. Essa integração está sendo corrigida; não é registrada como aprovada até novo workflow verde.
+- Nenhum merge para `main` ou deploy foi realizado.
 
 ## Fontes de referência consultadas
 
@@ -115,6 +117,14 @@ O `ChunkSection` já possui os contadores de fluido correspondentes à referênc
 - [SimpleBitStorage](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/SimpleBitStorage/)
 - [ZeroBitStorage](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/zerobitstorage/)
 - [LevelChunkSection](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/LevelChunkSection/)
+- [ChunkAccess](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/ChunkAccess/)
+- [Heightmap](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/Heightmap/)
+- [OctahedralGroup](https://mc-packet-reference.netlify.app/26.x/source/com/mojang/math/OctahedralGroup/)
+- [SymmetricGroup3](https://mc-packet-reference.netlify.app/26.x/source/com/mojang/math/SymmetricGroup3/)
+- [FrontAndTop](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/FrontAndTop/)
+- [VoxelShape](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/VoxelShape/)
+- [SubShape](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/SubShape/)
+- [SliceShape](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/SliceShape/)
 - [StateHolder](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/block/state/StateHolder/)
 - [FluidState](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/material/FluidState/)
 - [Fluids](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/material/Fluids/)

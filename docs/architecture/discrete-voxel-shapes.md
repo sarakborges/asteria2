@@ -21,8 +21,9 @@ The first discrete storage increment ports the occupancy substrate of the shape 
 
 ## Continuous shapes and Boolean joins
 
-- `VoxelShape` now provides bounds, per-axis min/max, coordinate-aware min/max, move, optimize, merged box traversal, AABB materialization, closest-point lookup, and cached face extraction.
+- `VoxelShape` provides bounds, per-axis min/max, coordinate-aware min/max, move, optimize, merged box and edge traversal, AABB materialization, closest-point lookup, cached face extraction, and per-axis AABB collision clipping.
 - `SliceShape` uses `SubShape` to restrict occupancy to a one-cell-thick plane while retaining the original in-plane coordinate lists. Empty and full-cube results canonicalize to `Shapes.Empty()` and `Shapes.Block()`.
+- `VoxelShape.ForAllEdges` maps the discrete edge traversal back to the continuous axis coordinate lists. `VoxelShape.Collide` ports the reference swept-AABB axis scan, including transverse-range clipping, axis-cycle transforms and the `1e-7` contact epsilon.
 - `CubeVoxelShape` uses uniform `CubePointRange` coordinates and the exact clamped floor-based coordinate-to-cell mapping. `ArrayVoxelShape` preserves explicit lists and validates that every axis has exactly dimension-plus-one coordinates.
 - `Shapes` provides canonical empty/block shapes, `box`/`create` factories, the 1/2/4/8-part grid-fit test, `INFINITY`, `join`, `joinUnoptimized`, `joinIsNotEmpty`, and variadic OR.
 - `joinUnoptimized` builds X/Y/Z mergers in sequence, fills the output grid via `BooleanOp`, and selects cube storage only when all three mergers are discrete-cube mergers. `join` then optimizes by rebuilding from merged boxes.
