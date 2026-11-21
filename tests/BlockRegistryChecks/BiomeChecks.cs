@@ -167,6 +167,12 @@ internal static class BiomeChecks
         public Holder<Biome> GetNoiseBiome(int quartX, int quartY, int quartZ) => _biome;
     }
 
+    private static void RequireThrows<TException>(Action action, string message) where TException : Exception
+    {
+        try { action(); }
+        catch (TException) { return; }
+        throw new InvalidOperationException(message);
+    }
     private static void Require(bool condition, string message)
     {
         if (!condition)

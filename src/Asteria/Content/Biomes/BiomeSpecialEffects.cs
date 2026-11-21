@@ -20,7 +20,7 @@ public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverri
         private int? _foliageColorOverride;
         private int? _dryFoliageColorOverride;
         private int? _grassColorOverride;
-        private GrassColorModifier _grassColorModifier = GrassColorModifier.NONE;
+        private GrassColorModifier _grassColorModifier = Asteria.Content.Biomes.GrassColorModifier.NONE;
         public Builder WaterColor(int value) { _waterColor = value; return this; }
         public Builder FoliageColorOverride(int value) { _foliageColorOverride = value; return this; }
         public Builder DryFoliageColorOverride(int value) { _dryFoliageColorOverride = value; return this; }
