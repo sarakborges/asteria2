@@ -14,6 +14,10 @@ public sealed class Biome
 
     private static readonly NoiseStack FrozenTemperatureNoise = CreateFrozenTemperatureNoise();
 
+    private const int TemperatureCacheSize = 1024;
+    private readonly ThreadLocal<TemperatureCache> _temperatureCache =
+        new(() => new TemperatureCache(TemperatureCacheSize));
+
     internal static float GetFrozenTemperatureNoise(double x, double z) => FrozenTemperatureNoise.Get(x, z);
 
     private static NoiseStack CreateFrozenTemperatureNoise()
@@ -58,20 +62,61 @@ public sealed class Biome
             : Precipitation.SNOW;
     }
 
+    private float GetTemperature(BlockPos position, int seaLevel)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        TemperatureCache cache = _temperatureCache.Value!;
+        long key = position.AsLong();
+        if (cache.TryGet(key, out float cached))
+            return cached;
+
+        float temperature = GetHeightAdjustedTemperature(position, seaLevel);
+        cache.Add(key, temperature);
+        return temperature;
+    }
+
     public bool WarmEnoughToRain(BlockPos position, int seaLevel) =>
-        GetHeightAdjustedTemperature(position, seaLevel) >= 0.15F;
+        GetTemperature(position, seaLevel) >= 0.15F;
 
     public bool ColdEnoughToSnow(BlockPos position, int seaLevel) =>
         !WarmEnoughToRain(position, seaLevel);
 
     public bool ShouldMeltFrozenOceanIcebergSlightly(BlockPos position, int seaLevel) =>
-        GetHeightAdjustedTemperature(position, seaLevel) > 0.1F;
+        GetTemperature(position, seaLevel) > 0.1F;
 
     public Biome(ClimateSettings climate, BiomeSpecialEffects specialEffects)
     {
         Climate = climate;
         SpecialEffects = specialEffects ?? throw new ArgumentNullException(nameof(specialEffects));
         BuiltInRegistryHolder = BuiltInRegistries.Biome.CreateIntrusiveHolder(this);
+    }
+
+    private sealed class TemperatureCache
+    {
+        private readonly int _capacity;
+        private readonly Dictionary<long, float> _values;
+        private readonly Queue<long> _insertionOrder;
+
+        public TemperatureCache(int capacity)
+        {
+            _capacity = capacity;
+            _values = new Dictionary<long, float>(capacity);
+            _insertionOrder = new Queue<long>(capacity);
+        }
+
+        public bool TryGet(long key, out float value) => _values.TryGetValue(key, out value);
+
+        public void Add(long key, float value)
+        {
+            if (_values.ContainsKey(key))
+                return;
+
+            if (_values.Count == _capacity)
+                _values.Remove(_insertionOrder.Dequeue());
+
+            _values.Add(key, value);
+            _insertionOrder.Enqueue(key);
+        }
     }
 
     public readonly record struct ClimateSettings(bool HasPrecipitation, float Temperature, TemperatureModifier TemperatureModifier, float Downfall);

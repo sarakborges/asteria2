@@ -182,4 +182,4 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Implementado o modificador FROZEN com três SimplexNoise sequenciais a partir da seed 3456, combinado com BIOME_INFO_NOISE nas escalas 0.2 e 0.09.
 - Implementada a correção de temperatura por altitude com SimplexNoise seed 1234 acima de seaLevel + 17.
 - Implementados os predicados de chuva/neve e o limiar de derretimento de iceberg.
-- Cache térmico de 1024 posições por thread e verificações dependentes de nível/iluminação permanecem pendentes.
+- Cache térmico FIFO de 1024 posições por thread, indexado pela posição compactada, está implementado. Verificações dependentes de nível/iluminação permanecem pendentes.

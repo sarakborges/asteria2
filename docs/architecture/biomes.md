@@ -37,4 +37,5 @@ Network packet codecs are out of scope. Local disk persistence remains in scope.
 - The `FROZEN` temperature modifier combines the three-layer frozen-temperature noise (seed 3456) with the biome-info noise at the reference scales and thresholds.
 - The altitude correction uses the separate temperature noise (seed 1234) above `seaLevel + 17`.
 - `GetHeightAdjustedTemperature`, rain/snow selection, warm-enough-to-rain, cold-enough-to-snow and frozen-ocean iceberg melt threshold are implemented.
-- The reference's per-thread 1024-entry temperature cache and the remaining level-dependent freeze/snow checks are not part of this increment.
+- The 1024-entry per-thread temperature cache is implemented with packed block-position keys and FIFO eviction. As in the reference, sea level is not part of the cache key; callers must treat a biome cache as scoped to a stable level configuration.
+- Level-dependent freeze/snow checks remain pending because they require a real level reader, block/fluid state queries, light access and snow survival behavior.
