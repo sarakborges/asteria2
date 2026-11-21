@@ -199,10 +199,19 @@ internal static class CoordinatePositionChecks
             }),
             "SectionPos closed-box traversal must advance X first, then Y, then Z.");
 
-        var blocks = SectionPos.Of(0, 0, 0).BlocksInside().ToArray();
+        var blocks = SectionPos.Of(0, 0, 0).BlocksInside()
+            .Select(position => position.Immutable())
+            .ToArray();
         Require(blocks.Length == SectionPos.SectionBlockCount, "SectionPos blocksInside must enumerate all 4096 positions.");
         Require(blocks[0].Equals(new BlockPos(0, 0, 0)), "SectionPos blocksInside must start at the section origin.");
         Require(blocks[^1].Equals(new BlockPos(15, 15, 15)), "SectionPos blocksInside must finish at the maximum block corner.");
+        using (IEnumerator<BlockPos> cursor = SectionPos.Of(0, 0, 0).BlocksInside().GetEnumerator())
+        {
+            Require(cursor.MoveNext(), "SectionPos blocksInside must start an iterator.");
+            BlockPos reusedCursor = cursor.Current;
+            Require(cursor.MoveNext() && ReferenceEquals(reusedCursor, cursor.Current),
+                "SectionPos blocksInside must preserve the mutable cursor reuse contract.");
+        }
 
         var surrounding = new List<long>();
         SectionPos.AroundAndAtBlockPos(new BlockPos(15, 15, -1), surrounding.Add);
@@ -210,10 +219,10 @@ internal static class CoordinatePositionChecks
         Require(
             surrounding.SequenceEqual(new[]
             {
-                SectionPos.AsLong(0, 0, -1), SectionPos.AsLong(0, 1, -1),
-                SectionPos.AsLong(0, 0, 0), SectionPos.AsLong(0, 1, 0),
-                SectionPos.AsLong(1, 0, -1), SectionPos.AsLong(1, 1, -1),
-                SectionPos.AsLong(1, 0, 0), SectionPos.AsLong(1, 1, 0)
+                SectionPos.AsLong(0, 0, -1), SectionPos.AsLong(0, 0, 0),
+                SectionPos.AsLong(0, 1, -1), SectionPos.AsLong(0, 1, 0),
+                SectionPos.AsLong(1, 0, -1), SectionPos.AsLong(1, 0, 0),
+                SectionPos.AsLong(1, 1, -1), SectionPos.AsLong(1, 1, 0)
             }),
             "AroundAndAtBlockPos must preserve X/Y/Z nested-loop order.");
         var single = new List<long>();
