@@ -1,50 +1,41 @@
-# Chunk storage, height access, and heightmaps
+# Chunk storage and heightmaps
 
 ## Minecraft 26.3 reference
 
-This increment follows the storage-related portion of `ChunkAccess`, the complete `LevelHeightAccessor` contract, the ordinary block-state read path from `LevelChunk.getBlockState`, and the non-air world-surface heightmap algorithm. Missing game domains remain out of Asteria.
+This increment follows the storage-related portion of `ChunkAccess`, the `LevelHeightAccessor` contract, the ordinary block-state read path from `LevelChunk.getBlockState`, and the heightmap lifecycle.
 
 - `LevelHeightAccessor` defines inclusive build-height bounds, vertical section bounds, and block/section-to-array-index conversion.
 - `Chunk` retains a `ChunkPos`, a height accessor, and a vertical array of `ChunkSection` instances.
-- `BlockStateContainerFactory` is the block-state-only part of the palette factory. It supplies the default block state and palette strategy used to create missing empty sections.
-- `Heightmap` stores 256 first-available Y values in packed storage, with a caller-supplied block-state predicate.
-
-## Ported behavior
-
-- The section array length is computed from `GetSectionsCount()`.
-- A supplied section array is copied only when its length exactly matches the required length. On a mismatch, the input is ignored and the chunk is initialized with empty sections. Vanilla logs a warning for this case; Asteria has no logging abstraction in the content layer yet.
-- Every missing section is created independently, with the default air state in a zero-bit palette.
-- `GetSections()` exposes the backing array, matching `ChunkAccess.getSections()`; callers must not insert null entries.
-- `GetSection(index)` uses direct section-array indexing.
+- Supplied section arrays are copied only when their length matches the section count; missing entries become distinct empty sections.
 - `GetHighestFilledSectionIndex()` scans from the top of the array and returns `-1` when every section contains only air.
 - `GetHighestSectionPosition()` retains the deprecated vanilla fallback: minimum build Y for an all-air chunk, otherwise the world block Y at the highest non-air section.
 - `IsYSpaceEmpty(start, end)` clamps to build bounds and checks sections in 16-block increments.
-- `GetBlockState(BlockPos)` maps Y to a section-array index, returns the factory's default state when the index is outside the array or the section contains only air, and otherwise reads the section using `x & 15`, `y & 15`, and `z & 15`.
-- `Heightmap.CreateWorldSurface` uses the reference `!state.isAir()` predicate. `Heightmap.CreateOceanFloor` uses the registered `blocks_motion_in_heightmap` block tag. Their priming pass scans each local X/Z column downward from the highest non-empty section; incremental updates advance new top blocks and rescan a column when its current top block is removed.
-- `BlockState.Is(tag)` delegates membership to the owning registered block holder. Heightmap-related block tags use Asteria's namespace and are populated through the existing post-freeze tag-reload mechanism.
-- Height values store the first available Y (one above the highest occupied block) relative to minimum build Y. With height 384, each entry uses 9 bits and all 256 columns occupy 37 packed 64-bit words.
-- Heightmap packed storage reuses Asteria's non-straddling fixed-width storage, matching the reference SimpleBitStorage packing layout.
-
-## Predicate boundary
-
-Minecraft 26.3 defines six heightmap types. Both world-surface variants use the non-air predicate; both ocean-floor variants use the `blocks_motion_in_heightmap` block tag. Those four block-only predicates are now representable. The two motion-blocking variants additionally include non-empty fluid state, so their full behavior remains deferred until Asteria has a `FluidState` model. They are deliberately not approximated with collision or occlusion flags.
-
-The heightmap is currently a standalone chunk-bound storage object. Chunk ownership, the vanilla heightmap type map, lazy priming, and serialized-data recovery will be added when the world/chunk lifecycle exists. `ChunkSection.SetBlockState` remains a low-level storage operation; it does not automatically notify a heightmap.
+- `GetBlockState(BlockPos)` maps Y to a section-array index, returns the factory's default state when the index is outside the array or the section contains only air, and otherwise reads the section using `x & 15`, `y & 15`, and `z & 15`. Like `LevelChunk.getBlockState`, this storage lookup does not validate that X/Z belong to the chunk.
+- `HeightmapType` currently models the four block-state/block-tag-only reference variants: world surface and ocean floor, including their world-generation variants. Fluid-dependent heightmap types are deferred until `FluidState` exists.
+- `Chunk` owns heightmaps by type. `GetOrCreateHeightmapUnprimed`, `HasPrimedHeightmap`, and `GetHeight` follow `ChunkAccess` map-presence and lazy-priming behavior.
+- `PrimeHeightmaps(types)` creates requested maps and invokes one shared top-down scan, matching `Heightmap.primeHeightmaps` rather than rescanning each column separately for every map.
+- Heightmap type IDs, serialization names, client visibility, and post-world-generation retention flags follow the reference metadata for the supported variants.
 
 ## Mutation boundary
 
-The chunk-level `setBlockState` method is deliberately not exposed yet. In Minecraft 26.3, `LevelChunk.setBlockState` also updates heightmaps, light-engine section status, sky-light sources, block entities, and world neighbor/place effects. Asteria currently has no complete Level/world, lighting, or block-entity models to support those side effects.
+The chunk-level `setBlockState` method is deliberately not exposed yet. In Minecraft 26.3, `LevelChunk.setBlockState` also updates the four live heightmaps, light-engine section status, sky-light sources, block entities, and world neighbor/place effects. Asteria currently has no complete Level/world, lighting, fluid, or block-entity models to support those side effects. `ChunkSection.SetBlockState` remains the lower-level section-storage primitive; it is not presented as a complete chunk mutation operation.
+
+The read path also omits Minecraft's debug-level override and crash-report wrapping because Asteria's `Chunk` has no `Level` or crash-reporting context.
 
 ## Explicitly deferred
 
-This is not yet a full `ChunkAccess`, `ProtoChunk`, or `LevelChunk` implementation. It does not add block entities, entities, heightmap type tags, structures, post-processing, inhabited time, saved/unsaved lifecycle, chunk status, ticks, light sources, fluid state, biome storage, codecs, NBT, or networking. Those types and systems are deferred until their domain models exist.
+- Fluid state, fluid palettes/counts and fluid-sensitive heightmap variants.
+- Biome model and biome storage in chunk sections.
+- Complete level lifecycle, chunk source, lighting engine, sky-light sources and block entities.
+- Heightmap raw-data deserialization fallback and persistence codecs.
+- Full `ProtoChunk` and `LevelChunk` behavior.
 
-The block-state-only factory intentionally does not manufacture a biome holder or a dummy biome palette.
+The block-state-only factory intentionally does not manufacture a biome holder or a fluid state. These domains must be introduced before the corresponding section and chunk APIs are ported.
 
 ## Reference source
 
-- [Heightmap — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/heightmap/)
 - [LevelChunk — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/levelchunk/)
 - [ChunkAccess — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/chunkaccess/)
+- [Heightmap — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/heightmap/)
 - [LevelHeightAccessor — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelheightaccessor/)
 - [LevelChunkSection — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/levelchunksection/)

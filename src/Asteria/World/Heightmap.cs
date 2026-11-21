@@ -7,8 +7,6 @@ namespace Asteria.World;
 
 /// <summary>
 /// Stores the first available world Y for each of a chunk's 16x16 columns.
-/// The predicate is supplied by the heightmap type; world-surface and ocean-floor predicates
-/// are representable by Asteria's current block-state and block-tag domains.
 /// </summary>
 public sealed class Heightmap
 {
@@ -18,13 +16,25 @@ public sealed class Heightmap
     private readonly Func<BlockState, bool> _isOpaque;
     private readonly PackedBitStorage _data;
 
+    public HeightmapType? Type { get; }
     public int BitsPerEntry => _data.BitsPerEntry;
     public int StorageLongCount => _data.LongCount;
 
     public Heightmap(Chunk chunk, Func<BlockState, bool> isOpaque)
+        : this(chunk, isOpaque, null)
+    {
+    }
+
+    public Heightmap(Chunk chunk, HeightmapType type)
+        : this(chunk, GetPredicate(type), type)
+    {
+    }
+
+    private Heightmap(Chunk chunk, Func<BlockState, bool> isOpaque, HeightmapType? type)
     {
         _chunk = chunk ?? throw new ArgumentNullException(nameof(chunk));
         _isOpaque = isOpaque ?? throw new ArgumentNullException(nameof(isOpaque));
+        Type = type;
 
         int height = _chunk.GetHeight();
         if (height <= 0)
@@ -37,50 +47,93 @@ public sealed class Heightmap
         _data = new PackedBitStorage(bitsPerEntry, ColumnCount);
     }
 
-    /// <summary>
-    /// Creates the world-surface variant, whose reference predicate is simply non-air.
-    /// The world-generation and live-world variants share this predicate in the reference.
-    /// </summary>
+    private static Func<BlockState, bool> GetPredicate(HeightmapType type) =>
+        type switch
+        {
+            HeightmapType.WorldSurfaceWorldgen or HeightmapType.WorldSurface =>
+                static state => !state.IsAir,
+            HeightmapType.OceanFloorWorldgen or HeightmapType.OceanFloor =>
+                static state => state.Is(BlockTags.BlocksMotionInHeightmap),
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown heightmap type.")
+        };
+
     public static Heightmap CreateWorldSurface(Chunk chunk) =>
-        new(chunk, static state => !state.IsAir);
+        new(chunk, HeightmapType.WorldSurface);
 
-    /// <summary>
-    /// Creates the ocean-floor variant, using the current block-tag snapshot.
-    /// </summary>
     public static Heightmap CreateOceanFloor(Chunk chunk) =>
-        new(chunk, static state => state.Is(BlockTags.BlocksMotionInHeightmap));
+        new(chunk, HeightmapType.OceanFloor);
 
     /// <summary>
-    /// Scans each column downward from the highest non-empty section and primes its first available Y.
-    /// The caller should prime a newly created map before relying on its values.
+    /// Primes several heightmaps together so each block column is scanned only once.
+    /// All maps must belong to the same chunk, matching Heightmap.primeHeightmaps.
     /// </summary>
-    public void Prime()
+    public static void PrimeAll(IEnumerable<Heightmap> heightmaps)
     {
+        ArgumentNullException.ThrowIfNull(heightmaps);
+
+        Heightmap[] allHeightmaps = heightmaps.ToArray();
+        if (allHeightmaps.Length == 0)
+            return;
+
+        Heightmap firstHeightmap = allHeightmaps[0]
+            ?? throw new ArgumentException("Heightmap collection cannot contain null entries.", nameof(heightmaps));
+        Chunk chunk = firstHeightmap._chunk;
+
+        foreach (Heightmap? heightmap in allHeightmaps)
+        {
+            ArgumentNullException.ThrowIfNull(heightmap);
+            if (!ReferenceEquals(heightmap._chunk, chunk))
+            {
+                throw new ArgumentException(
+                    "All heightmaps in a priming pass must belong to the same chunk.",
+                    nameof(heightmaps));
+            }
+        }
+
         int highestSectionPosition;
 #pragma warning disable CS0618
-        highestSectionPosition = _chunk.GetHighestSectionPosition() + 16;
+        highestSectionPosition = chunk.GetHighestSectionPosition() + 16;
 #pragma warning restore CS0618
 
         var position = new BlockPos.MutableBlockPos();
-        int minY = _chunk.GetMinY();
+        var remainingHeightmaps = new List<Heightmap>(allHeightmaps.Length);
+        int minY = chunk.GetMinY();
 
         for (int x = 0; x < 16; x++)
         {
             for (int z = 0; z < 16; z++)
             {
+                remainingHeightmaps.Clear();
+                remainingHeightmaps.AddRange(allHeightmaps);
+
                 for (int y = highestSectionPosition - 1; y >= minY; y--)
                 {
                     position.Set(x, y, z);
-                    BlockState state = _chunk.GetBlockState(position);
-                    if (!state.IsAir && _isOpaque(state))
+                    BlockState state = chunk.GetBlockState(position);
+
+                    if (!state.IsAir)
                     {
-                        SetHeight(x, z, unchecked(y + 1));
-                        break;
+                        for (int index = 0; index < remainingHeightmaps.Count; index++)
+                        {
+                            Heightmap heightmap = remainingHeightmaps[index];
+                            if (!heightmap._isOpaque(state))
+                                continue;
+
+                            heightmap.SetHeight(x, z, unchecked(y + 1));
+                            remainingHeightmaps.RemoveAt(index);
+                            index--;
+                        }
                     }
+
+                    if (remainingHeightmaps.Count == 0)
+                        break;
                 }
             }
         }
     }
+
+    /// <summary>Primes this heightmap using the shared multi-map scan.</summary>
+    public void Prime() => PrimeAll(new[] { this });
 
     /// <summary>
     /// Applies one block-state change to a column. blockY is world Y; X and Z are section-local.

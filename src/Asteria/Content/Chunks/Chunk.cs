@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Asteria.Content.Blocks;
 using Asteria.Core;
 using Asteria.World;
@@ -15,6 +16,8 @@ public sealed class Chunk : LevelHeightAccessor
     private readonly LevelHeightAccessor _levelHeightAccessor;
     private readonly BlockState _defaultBlockState;
     private readonly ChunkSection[] _sections;
+    private readonly Dictionary<HeightmapType, Heightmap> _heightmaps = new();
+    private readonly ReadOnlyDictionary<HeightmapType, Heightmap> _heightmapsView;
 
     public Chunk(
         ChunkPos chunkPos,
@@ -29,6 +32,7 @@ public sealed class Chunk : LevelHeightAccessor
         _levelHeightAccessor = levelHeightAccessor;
         _defaultBlockState = containerFactory.DefaultBlockState;
         _sections = new ChunkSection[levelHeightAccessor.GetSectionsCount()];
+        _heightmapsView = new ReadOnlyDictionary<HeightmapType, Heightmap>(_heightmaps);
 
         if (sections is not null && _sections.Length == sections.Length)
             Array.Copy(sections, _sections, _sections.Length);
@@ -120,6 +124,63 @@ public sealed class Chunk : LevelHeightAccessor
         }
 
         return true;
+    }
+
+    /// <summary>Returns a read-only view of the heightmaps currently owned by this chunk.</summary>
+    public IReadOnlyDictionary<HeightmapType, Heightmap> GetHeightmaps() => _heightmapsView;
+
+    /// <summary>
+    /// Gets an existing heightmap or creates an unprimed one, matching ChunkAccess.
+    /// </summary>
+    public Heightmap GetOrCreateHeightmapUnprimed(HeightmapType type)
+    {
+        if (_heightmaps.TryGetValue(type, out Heightmap? heightmap))
+            return heightmap;
+
+        heightmap = new Heightmap(this, type);
+        _heightmaps.Add(type, heightmap);
+        return heightmap;
+    }
+
+    /// <summary>
+    /// Reports whether a heightmap entry exists, matching the reference method's map-presence semantics.
+    /// An explicitly created unprimed map also counts as present.
+    /// </summary>
+    public bool HasPrimedHeightmap(HeightmapType type) =>
+        _heightmaps.ContainsKey(type);
+
+    /// <summary>
+    /// Creates and primes all requested heightmaps in one shared top-down scan.
+    /// </summary>
+    public void PrimeHeightmaps(IEnumerable<HeightmapType> types)
+    {
+        ArgumentNullException.ThrowIfNull(types);
+
+        var requested = new List<Heightmap>();
+        var seen = new HashSet<HeightmapType>();
+        foreach (HeightmapType type in types)
+        {
+            if (seen.Add(type))
+                requested.Add(GetOrCreateHeightmapUnprimed(type));
+        }
+
+        Heightmap.PrimeAll(requested);
+    }
+
+    /// <summary>
+    /// Returns the highest occupied Y for a column. If the heightmap does not exist,
+    /// it is created and primed lazily, matching ChunkAccess.getHeight.
+    /// X and Z are world coordinates; their low four bits select the local column.
+    /// </summary>
+    public int GetHeight(HeightmapType type, int x, int z)
+    {
+        if (!_heightmaps.TryGetValue(type, out Heightmap? heightmap))
+        {
+            PrimeHeightmaps(new[] { type });
+            heightmap = _heightmaps[type];
+        }
+
+        return heightmap.GetFirstAvailable(x & SectionPos.SectionMask, z & SectionPos.SectionMask) - 1;
     }
 
     public int GetHeight() => _levelHeightAccessor.GetHeight();

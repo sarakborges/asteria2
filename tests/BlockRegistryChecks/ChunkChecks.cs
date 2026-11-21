@@ -14,6 +14,7 @@ internal static class ChunkChecks
         CheckChunkConstructionAndSections(nonAirState);
         CheckMismatchedSectionArray();
         CheckWorldSurfaceHeightmap(nonAirState);
+        CheckHeightmapOwnershipAndBatchPriming(nonAirState);
     }
 
     private static void CheckHeightAccessor()
@@ -138,23 +139,19 @@ internal static class ChunkChecks
         Require(heightmap.GetFirstAvailable(3, 5) == -64, "An unprimed heightmap column starts at minimum build Y.");
         Require(heightmap.GetHighestTaken(3, 5) == -65, "An empty unprimed column has no occupied block above its first available Y.");
 
-        // Seed a surface block before priming: the first available Y is one above the highest block.
-        chunk.GetSection(chunk.GetSectionIndex(10)).SetBlockState(3, 10, 5, nonAirState);
+        chunk.GetSection(chunk.GetSectionIndex(10)).SetBlockState(3, 10 & 15, 5, nonAirState);
         heightmap.Prime();
         Require(heightmap.GetFirstAvailable(3, 5) == 11, "Priming must find the highest non-air block in the column.");
         Require(heightmap.GetHighestTaken(3, 5) == 10, "Highest taken Y must be first available Y minus one.");
         Require(heightmap.GetFirstAvailable(4, 5) == -64, "Priming one column must not change adjacent column heights.");
 
-        // Adding a new top block advances the first-available height.
         chunk.GetSection(chunk.GetSectionIndex(20)).SetBlockState(3, 20 & 15, 5, nonAirState);
         Require(heightmap.Update(3, 20, 5, nonAirState), "Adding a block above the current surface must update its height.");
         Require(heightmap.GetFirstAvailable(3, 5) == 21, "A new top block must set first available Y to block Y plus one.");
 
-        // A block below the current surface does not change the stored height.
         chunk.GetSection(chunk.GetSectionIndex(12)).SetBlockState(3, 12, 5, nonAirState);
         Require(!heightmap.Update(3, 12, 5, nonAirState), "Adding a block sufficiently below the surface must not update the heightmap.");
 
-        // Removing the top block rescans downward and finds the next highest block.
         BlockState air = Blocks.AIR.DefaultState;
         chunk.GetSection(chunk.GetSectionIndex(20)).SetBlockState(3, 20 & 15, 5, air);
         Require(heightmap.Update(3, 20, 5, air), "Removing the surface block must trigger a downward rescan.");
@@ -164,15 +161,72 @@ internal static class ChunkChecks
         Require(heightmap.Update(3, 12, 5, air), "Removing the next surface block must trigger another downward rescan.");
         Require(heightmap.GetFirstAvailable(3, 5) == 11, "Downward rescan must find the original lower block.");
 
-        chunk.GetSection(chunk.GetSectionIndex(10)).SetBlockState(3, 10, 5, air);
+        chunk.GetSection(chunk.GetSectionIndex(10)).SetBlockState(3, 10 & 15, 5, air);
         Require(heightmap.Update(3, 10, 5, air), "Removing the final column block must reset its height to minimum build Y.");
         Require(heightmap.GetFirstAvailable(3, 5) == -64, "An empty column must return to minimum build Y.");
 
-        // A second column remains independent and uses the same packed storage.
         chunk.GetSection(chunk.GetSectionIndex(0)).SetBlockState(4, 0, 2, nonAirState);
         Require(heightmap.Update(4, 0, 2, nonAirState), "A new block in another column must update independently.");
         Require(heightmap.GetFirstAvailable(4, 2) == 1, "The second column must store its own first available Y.");
         Require(heightmap.GetFirstAvailable(3, 5) == -64, "Updating a neighboring column must not alter the first column.");
+    }
+
+    private static void CheckHeightmapOwnershipAndBatchPriming(BlockState nonAirState)
+    {
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
+        var position = new ChunkPos(-2, 3);
+        var chunk = new Chunk(position, height, factory);
+
+        Require(chunk.GetHeightmaps().Count == 0, "A new chunk must not eagerly allocate heightmaps.");
+        Require(!chunk.HasPrimedHeightmap(HeightmapType.WorldSurface), "A missing heightmap must not be reported as present.");
+
+        chunk.GetSection(chunk.GetSectionIndex(17)).SetBlockState(2, 1, 4, nonAirState);
+        chunk.GetSection(chunk.GetSectionIndex(8)).SetBlockState(2, 8, 4, nonAirState);
+
+        Heightmap unprimed = chunk.GetOrCreateHeightmapUnprimed(HeightmapType.WorldSurface);
+        Require(chunk.HasPrimedHeightmap(HeightmapType.WorldSurface), "Heightmap presence must follow the reference map-presence semantics.");
+        Require(ReferenceEquals(unprimed, chunk.GetOrCreateHeightmapUnprimed(HeightmapType.WorldSurface)), "Creating an existing heightmap type must preserve its instance.");
+        Require(chunk.GetHeightmaps().Count == 1, "Chunk heightmap ownership must retain one entry per type.");
+
+        chunk.PrimeHeightmaps(new[]
+        {
+            HeightmapType.WorldSurfaceWorldgen,
+            HeightmapType.WorldSurface,
+            HeightmapType.OceanFloorWorldgen,
+            HeightmapType.OceanFloor,
+            HeightmapType.WorldSurface
+        });
+
+        Require(chunk.GetHeightmaps().Count == 4, "Batch priming must create each requested type once.");
+        Require(
+            chunk.GetHeight(HeightmapType.WorldSurfaceWorldgen, position.GetMinBlockX() + 2, position.GetMinBlockZ() + 4) == 17,
+            "World-surface worldgen height must select the highest non-air block using world coordinates.");
+        Require(
+            chunk.GetHeight(HeightmapType.WorldSurface, position.GetMinBlockX() + 2, position.GetMinBlockZ() + 4) == 17,
+            "World-surface height variants must share the non-air predicate.");
+        Require(
+            HeightmapType.WorldSurfaceWorldgen.GetSerializationKey() == "WORLD_SURFACE_WG" &&
+            !HeightmapType.WorldSurfaceWorldgen.SendToClient() &&
+            !HeightmapType.WorldSurfaceWorldgen.KeepAfterWorldgen(),
+            "Worldgen heightmap metadata must preserve the reference identifier and usage flags.");
+        Require(
+            HeightmapType.WorldSurface.GetSerializationKey() == "WORLD_SURFACE" &&
+            HeightmapType.WorldSurface.SendToClient() &&
+            HeightmapType.WorldSurface.KeepAfterWorldgen(),
+            "Client heightmap metadata must preserve the reference identifier and usage flags.");
+        Require(
+            HeightmapType.OceanFloor.GetSerializationKey() == "OCEAN_FLOOR" &&
+            !HeightmapType.OceanFloor.SendToClient() &&
+            HeightmapType.OceanFloor.KeepAfterWorldgen(),
+            "Live-world heightmap metadata must preserve the reference identifier and usage flags.");
+
+        var lazyChunk = new Chunk(position, height, factory);
+        lazyChunk.GetSection(lazyChunk.GetSectionIndex(23)).SetBlockState(1, 7, 3, nonAirState);
+        Require(
+            lazyChunk.GetHeight(HeightmapType.WorldSurface, position.GetMinBlockX() + 1, position.GetMinBlockZ() + 3) == 23,
+            "GetHeight must lazily create and prime a missing heightmap.");
+        Require(lazyChunk.HasPrimedHeightmap(HeightmapType.WorldSurface), "Lazy height lookup must retain the created heightmap.");
     }
 
     private static void Require(bool condition, string message)
