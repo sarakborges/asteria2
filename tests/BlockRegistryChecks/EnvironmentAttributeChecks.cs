@@ -11,7 +11,7 @@ internal static class EnvironmentAttributeChecks
         CheckBuiltInAttributeTypeRegistry();
         CheckBuiltInEnvironmentAttributeRegistry();
         CheckAngleInterpolation();
-        CheckColorAttributeTypes();
+        CheckColorAttributeTypes();\n        CheckIntegerAttributeType();
         CheckAttributeDefinitionAndRange();
         CheckTypeInterpolationAndNumericProjection();
         CheckTypedModifierLibraries();
@@ -37,12 +37,12 @@ internal static class EnvironmentAttributeChecks
                 AttributeTypes.FLOAT.ValueType == typeof(float) &&
                 AttributeTypes.ANGLE_DEGREES.ValueType == typeof(float) &&
                 AttributeTypes.RGB_COLOR.ValueType == typeof(Vector3) &&
-                AttributeTypes.ARGB_COLOR.ValueType == typeof(Vector4),
+                AttributeTypes.ARGB_COLOR.ValueType == typeof(Vector4) &&\n                AttributeTypes.INTEGER.ValueType == typeof(int),
             "The type-erased registry boundary must preserve the runtime value type.");
         Require(BuiltInRegistries.AttributeType.AsHolderIdMap().ById(0) is not null &&
                 BuiltInRegistries.AttributeType.AsHolderIdMap().ById(1) is not null &&
                 BuiltInRegistries.AttributeType.AsHolderIdMap().ById(2) is not null &&
-                BuiltInRegistries.AttributeType.Count == 5,
+                BuiltInRegistries.AttributeType.Count == 6,
             "Attribute type registry IDs must expose both registered values.");
     }
 
@@ -292,6 +292,42 @@ internal static class EnvironmentAttributeChecks
         Require(AttributeTypes.RGB_COLOR.ModifierLibrary.Count == 5 &&
                 AttributeTypes.ARGB_COLOR.ModifierLibrary.Count == 5,
             "RGB and ARGB types must expose the five reference color modifier operations.");
+    }
+
+
+    private static void CheckIntegerAttributeType()
+    {
+        Require(ReferenceEquals(
+                    BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:integer")),
+                    AttributeTypes.INTEGER),
+            "The integer attribute type must be registered under asteria:integer.");
+        Require(AttributeTypes.INTEGER.ToFloat(16777217) == (float)16777217 &&
+                AttributeTypes.INTEGER.ToInt(16777217) == 16777217,
+            "Integer attribute values must expose their float and integer projections.");
+
+        LerpFunction<int> lerp = LerpFunction<int>.OfInteger();
+        Require(lerp.Apply(0.5F, 0, 5) == 2 &&
+                lerp.Apply(0.5F, 5, 0) == 2 &&
+                lerp.Apply(0.5F, 0, -5) == -3 &&
+                lerp.Apply(0.5F, -5, 0) == -3,
+            "Integer keyframes must use floor(alpha * (to - from)) before adding the source value.");
+        Require(lerp.Apply(0.5F, int.MinValue, int.MaxValue) == int.MaxValue &&
+                lerp.Apply(1.0F, 0, 5) == 5,
+            "Integer interpolation must preserve Java 32-bit delta overflow and endpoint behavior.");
+
+        Require(IntegerModifier.ADD.Apply(12, 7) == 19 &&
+                IntegerModifier.SUBTRACT.Apply(12, 7) == 5 &&
+                IntegerModifier.MULTIPLY.Apply(12, 7) == 84 &&
+                IntegerModifier.MINIMUM.Apply(12, 7) == 7 &&
+                IntegerModifier.MAXIMUM.Apply(12, 7) == 12,
+            "Integer modifier operations must match the five reference operations.");
+        Require(IntegerModifier.ADD.Apply(int.MaxValue, 1) == int.MinValue &&
+                IntegerModifier.SUBTRACT.Apply(int.MinValue, 1) == int.MaxValue &&
+                IntegerModifier.MULTIPLY.Apply(int.MaxValue, 2) == -2,
+            "Integer modifier arithmetic must wrap as Java 32-bit signed integer arithmetic.");
+
+        Require(AttributeTypes.INTEGER.ModifierLibrary.Count == 5,
+            "The integer attribute type must expose exactly five modifier operations.");
     }
 
     private static void CheckAngleInterpolation()

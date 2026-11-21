@@ -15,6 +15,17 @@ public sealed class LerpFunction<T>
     public static LerpFunction<float> OfFloat() =>
         new(static (alpha, from, to) => from + (to - from) * alpha);
 
+    public static LerpFunction<int> OfInteger() =>
+        new(static (alpha, from, to) =>
+        {
+            int delta = unchecked(to - from);
+            float scaled = MathF.Floor(alpha * delta);
+            int step = float.IsNaN(scaled) ? 0 :
+                scaled >= int.MaxValue ? int.MaxValue :
+                scaled <= int.MinValue ? int.MinValue : (int)scaled;
+            return unchecked(from + step);
+        });
+
     public static LerpFunction<Vector3> OfColorVec3() =>
         new(static (alpha, from, to) => Vector3.Lerp(from, to, alpha));
 

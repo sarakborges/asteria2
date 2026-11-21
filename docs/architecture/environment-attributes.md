@@ -23,13 +23,13 @@ Base de comparação: Minecraft Java 26.3.
 - AttributeType<T> contém as bibliotecas de operações permitidas, políticas de keyframe/state/spatial/partial-tick interpolation e conversões numéricas opcionais.
 - EnvironmentAttribute<T> mantém tipo, default, range e as flags syncable, positional, spatiallyInterpolated e fullResolutionBiomes.
 - EnvironmentAttributeMap mantém entradas tipadas por atributo, aplica o modificador sobre o valor recebido, usa override para Set e substitui entradas anteriores por entradas posteriores em PutAll.
-- BooleanModifier, FloatModifier e ColorModifier foram portados com suas operações e ordem de operandos. As cores usam interpolação vetorial direta por canal, conforme ARGB.srgbLerp(Vector3fc/Vector4fc) em 26.3.
+- BooleanModifier, FloatModifier, IntegerModifier e ColorModifier foram portados com suas operações e ordem de operandos. As cores usam interpolação vetorial direta por canal, conforme ARGB.srgbLerp(Vector3fc/Vector4fc) em 26.3.
 - Mapas construídos são snapshots imutáveis; alterações posteriores no builder não alteram o mapa já criado.
 
 ## Limites deste incremento
 
 - O projeto ainda não possui infraestrutura de codecs. Os codecs de valor e modificador, CODEC, NETWORK_CODEC e CODEC_ONLY_POSITIONAL não foram simulados; serão portados junto ao pipeline de dados/save-load local.
-- AttributeTypes contém boolean, float, angle_degrees, rgb_color e argb_color. RGB/ARGB usam System.Numerics.Vector3/Vector4 e as cinco operações de modificador da referência. Inteiro, moon phase, partículas, listas e activities dependem de domínios de valor ainda não portados. Áudio, bed rules e atributos vinculados a blocos/entidades específicos estão fora do escopo, não são pendências.
+- AttributeTypes contém boolean, float, angle_degrees, rgb_color, argb_color e integer. RGB/ARGB usam System.Numerics.Vector3/Vector4 e as cinco operações de modificador da referência. INTEGER usa Int32, interpolação por piso e as cinco operações aritméticas da referência. Moon phase, partículas, listas e activities dependem de domínios de valor ainda não portados. Áudio, bed rules e atributos vinculados a blocos/entidades específicos estão fora do escopo, não são pendências.
 - Os registries built-in environment_attribute e attribute_type foram ligados ao root e ao bootstrap. As 21 definições ambientais genéricas dentro do escopo foram registradas por chave. Atributos de áudio, regras de cama e atributos de blocos/entidades específicos não são requisitos; outros tipos ainda não implementados foram omitidos, portanto não se afirma paridade dos IDs numéricos.
 - Biome ainda não armazena nem resolve EnvironmentAttributeMap; a integração com fontes de ambiente e resolução espacial será outro incremento.
 - Camadas de dimensão, timeline, clima e resolução de ambiente por posição/tempo continuam pendentes.
@@ -38,8 +38,8 @@ Base de comparação: Minecraft Java 26.3.
 
 ## Incremento — tipos e definições ambientais built-in
 
-- AttributeTypes agora registra boolean, float, angle_degrees, rgb_color e argb_color na ordem relativa dos tipos mantidos no escopo.
+- AttributeTypes agora registra boolean, float, angle_degrees, rgb_color, argb_color e integer na ordem relativa dos tipos mantidos no escopo.
 - LerpFunction.OfDegrees reproduz o wrap angular e o limite de 90 graus da interpolação de partial tick.
 - Registradas 21 definições EnvironmentAttributes genéricas; defaults, ranges, syncability, positional e spatial interpolation foram copiados da tabela 26.3.
-- RGB/ARGB agora usam vetores System.Numerics, interpolação por canal e bibliotecas de modificadores portadas. Inteiro, moon phase, partículas, listas e activities permanecem pendentes. Áudio, bed rules e atributos de blocos/entidades específicos foram excluídos do produto. Não há claim de equivalência dos IDs numéricos das definições após entradas omitidas.
+- RGB/ARGB agora usam vetores System.Numerics, interpolação por canal e bibliotecas de modificadores portadas. Moon phase, partículas, listas e activities permanecem pendentes. Áudio, bed rules e atributos de blocos/entidades específicos foram excluídos do produto. Não há claim de equivalência dos IDs numéricos das definições após entradas omitidas.
 - EnvironmentAttributeMap ainda não está integrado ao Biome. Os codecs locais seguem pendentes; codecs de rede e multiplayer estão fora do escopo.

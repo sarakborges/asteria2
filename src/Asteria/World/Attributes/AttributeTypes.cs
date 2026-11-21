@@ -24,6 +24,13 @@ public static class AttributeTypes
             LerpFunction<float>.OfDegrees(90.0F),
             toFloat: static value => value);
 
+    public static readonly AttributeType<int> INTEGER =
+        AttributeType<int>.OfInterpolated(
+            LerpFunction<int>.OfInteger(),
+            IntegerModifier.LIBRARY,
+            toFloat: static value => value,
+            toInt: static value => value);
+
     public static readonly AttributeType<Vector3> RGB_COLOR =
         AttributeType<Vector3>.OfInterpolated(
             LerpFunction<Vector3>.OfColorVec3(),
@@ -40,7 +47,7 @@ public static class AttributeTypes
         Register("float", FLOAT);
         Register("angle_degrees", ANGLE_DEGREES);
         Register("rgb_color", RGB_COLOR);
-        Register("argb_color", ARGB_COLOR);
+        Register("argb_color", ARGB_COLOR);\n        Register("integer", INTEGER);
     }
 
     private static void Register(string path, IAttributeType type)
