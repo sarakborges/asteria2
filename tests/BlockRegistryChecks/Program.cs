@@ -170,6 +170,7 @@ internal static class Program
     private static void RunChecks()
     {
         _ = TestBlocks.TEST_BLOCK;
+        SerializationChecks.Run();
         CoordinatePositionChecks.Run();
         DirectionChecks.Run();
         Vec3Checks.Run();
