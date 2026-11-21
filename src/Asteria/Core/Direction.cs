@@ -140,6 +140,11 @@ public sealed class Direction
             .OrderBy(direction => direction._data2d)
             .ToArray();
 
+    private static readonly IReadOnlyList<Axis> YXZ_AXIS_ORDER =
+        Array.AsReadOnly(new[] { Axis.Y, Axis.X, Axis.Z });
+    private static readonly IReadOnlyList<Axis> YZX_AXIS_ORDER =
+        Array.AsReadOnly(new[] { Axis.Y, Axis.Z, Axis.X });
+
     private readonly int _data3d;
     private readonly int _oppositeIndex;
     private readonly int _data2d;
@@ -165,6 +170,7 @@ public sealed class Direction
         _axisDirection = axisDirection;
         _axis = axis;
         _normal = normal;
+        _normalVec3 = Vec3.AtLowerCornerOf(normal);
     }
 
     public static Direction[] GetValues() => (Direction[])VALUES.Clone();
@@ -188,6 +194,8 @@ public sealed class Direction
     public Vec3i GetStep() => GetUnitVec3i();
 
     public Vec3i GetUnitVec3i() => _normal;
+
+    public Vec3 GetUnitVec3() => _normalVec3;
 
     public Vec3 GetUnitVec3() => _normalVec3;
 
@@ -325,6 +333,12 @@ public sealed class Direction
         return _normal.GetX() * dx + _normal.GetZ() * dz > 0.0f;
     }
 
+    public static Direction GetApproximateNearest(Vec3 vector)
+    {
+        ArgumentNullException.ThrowIfNull(vector);
+        return GetApproximateNearest(vector.X, vector.Y, vector.Z);
+    }
+
     public static Direction GetApproximateNearest(double dx, double dy, double dz) =>
         GetApproximateNearest((float)dx, (float)dy, (float)dz);
 
@@ -366,6 +380,14 @@ public sealed class Direction
     {
         ArgumentNullException.ThrowIfNull(vector);
         return GetNearest(vector.GetX(), vector.GetY(), vector.GetZ(), orElse);
+    }
+
+    public static IReadOnlyList<Axis> AxisStepOrder(Vec3 movement)
+    {
+        ArgumentNullException.ThrowIfNull(movement);
+        return Math.Abs(movement.X) < Math.Abs(movement.Z)
+            ? YZX_AXIS_ORDER
+            : YXZ_AXIS_ORDER;
     }
 
     private static int JavaAbs(int value) =>
