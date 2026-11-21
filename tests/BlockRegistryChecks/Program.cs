@@ -168,7 +168,6 @@ internal static class Program
     {
         _ = TestBlocks.TEST_BLOCK;
         CoordinatePositionChecks.Run();
-        ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState);
 
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&
@@ -192,6 +191,7 @@ internal static class Program
             "The root registry must resolve the block registry by its registry key.");
         Require(BuiltInRegistries.Block.Count == 1, "Only the production air block should be registered.");
         Require(Block.BlockStateRegistry.Count == 7, "Expected one air state and six test states.");
+        ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState);
 
         CheckResourceLocations();
         CheckDefaultedBlockRegistry();
