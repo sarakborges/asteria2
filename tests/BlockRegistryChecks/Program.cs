@@ -92,6 +92,34 @@ internal static class Program
         public void SetDefaultState(BlockState state) => RegisterDefaultState(state);
     }
 
+    private static class TestBlocks
+    {
+        public static BooleanProperty TEST_POWERED { get; }
+        public static IntegerProperty TEST_STAGE { get; }
+        public static TestBlockDefinition TEST_BLOCK { get; }
+
+        static TestBlocks()
+        {
+            // Reserve the air state ID first, matching the built-in content bootstrap order.
+            _ = Blocks.AIR;
+
+            TEST_POWERED = BooleanProperty.Create("powered");
+            TEST_STAGE = IntegerProperty.Create("stage", 0, 2);
+            TEST_BLOCK = new TestBlockDefinition(
+                BlockProperties.Of().Strength(1.5f, 6.0f),
+                builder =>
+                {
+                    builder.Add(TEST_POWERED);
+                    builder.Add(TEST_STAGE);
+                });
+
+            TEST_BLOCK.SetDefaultState(
+                TEST_BLOCK.DefaultState
+                    .SetValue(TEST_POWERED, false)
+                    .SetValue(TEST_STAGE, 1));
+        }
+    }
+
     private enum TestDeclaredOrder { Z = 2, X = 0, Y = 1 }
 
     private sealed class ThrowingPaletteResize<T> : IPaletteResize<T> where T : class
@@ -138,6 +166,8 @@ internal static class Program
 
     private static void RunChecks()
     {
+        _ = TestBlocks.TEST_BLOCK;
+
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&
             Block.BlockStateRegistry.Count == 7 &&
@@ -158,7 +188,7 @@ internal static class Program
                     RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Block.Location)),
                 BuiltInRegistries.Block),
             "The root registry must resolve the block registry by its registry key.");
-        Require(BuiltInRegistries.Block.Count == 2, "Two Asteria blocks should be registered.");
+        Require(BuiltInRegistries.Block.Count == 1, "Only the production air block should be registered.");
         Require(Block.BlockStateRegistry.Count == 7, "Expected one air state and six test states.");
 
         CheckResourceLocations();
@@ -342,7 +372,6 @@ internal static class Program
     private static void CheckDefaultedBlockRegistry()
     {
         ResourceLocation airId = ResourceLocation.Parse("asteria:air");
-        ResourceLocation testId = ResourceLocation.Parse("asteria:registry_test");
         ResourceLocation missingId = ResourceLocation.Parse("asteria:not_registered");
 
         Require(
@@ -368,7 +397,7 @@ internal static class Program
             "A null resource key must remain an exact empty lookup even in a defaulted registry.");
 
         RegistryKey<Block> missingKey = CreateEntryKey<Block>(BuiltInRegistries.Block.Location, missingId);
-        RegistryKey<Block> testKey = CreateEntryKey<Block>(BuiltInRegistries.Block.Location, testId);
+        RegistryKey<Block> airKey = CreateEntryKey<Block>(BuiltInRegistries.Block.Location, airId);
         Require(
             BuiltInRegistries.Block.GetValue(missingKey) is null &&
             BuiltInRegistries.Block.GetOptional(missingKey) is null &&
@@ -376,16 +405,15 @@ internal static class Program
             BuiltInRegistries.Block.GetHolder(missingKey) is null,
             "Defaulted registries must keep resource-key, optional, and holder lookups exact rather than falling back.");
         Require(
-            ReferenceEquals(BuiltInRegistries.Block.GetValue(testKey), Blocks.TEST_BLOCK) &&
-            ReferenceEquals(BuiltInRegistries.Block.GetOptional(testKey), Blocks.TEST_BLOCK),
-            "Exact resource-key lookups must still return registered values.");
+            BuiltInRegistries.Block.Count == 1 &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(airKey), Blocks.AIR) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetOptional(airKey), Blocks.AIR),
+            "The production block registry must contain only built-in content; test fixtures must stay outside it.");
         Require(ReferenceEquals(BuiltInRegistries.Block.GetAny(), Blocks.AIR.BuiltInRegistryHolder), "DefaultedMappedRegistry.getAny must return its default holder.");
         Holder<Block>.Reference? randomDefaultedHolder = BuiltInRegistries.Block.GetRandom(new Random(0));
         Require(
-            randomDefaultedHolder is not null &&
-            (ReferenceEquals(randomDefaultedHolder, Blocks.AIR.BuiltInRegistryHolder) ||
-             ReferenceEquals(randomDefaultedHolder, Blocks.TEST_BLOCK.BuiltInRegistryHolder)),
-            "DefaultedMappedRegistry.getRandom must use the registry values and retain the default holder fallback.");
+            ReferenceEquals(randomDefaultedHolder, Blocks.AIR.BuiltInRegistryHolder),
+            "DefaultedMappedRegistry.getRandom must return a registered holder.");
         Require(BuiltInRegistries.Block.GetHolder(missingId) is null, "Exact holder lookups must not hide missing keys.");
         Require(BuiltInRegistries.Block.GetId(new TestBlockDefinition(BlockProperties.Of())) == 0, "Unknown objects must resolve to the default block ID.");
         Require(BuiltInRegistries.Block.GetId(null!) == 0, "Null reverse lookups in a defaulted registry must resolve to the default ID.");
@@ -409,17 +437,17 @@ internal static class Program
             missingHolderException.Message == $"Missing element {missingKey}",
             "HolderGetter.getOrThrow(resource key) must use the vanilla missing-element diagnostic.");
 
-        Holder<Block>.Reference registered = ((HolderGetter<Block>)BuiltInRegistries.Block).GetOrThrow(testKey);
-        Require(ReferenceEquals(registered, Blocks.TEST_BLOCK.BuiltInRegistryHolder), "Registration must bind the pre-created intrusive holder.");
+        Holder<Block>.Reference registered = ((HolderGetter<Block>)BuiltInRegistries.Block).GetOrThrow(airKey);
+        Require(ReferenceEquals(registered, Blocks.AIR.BuiltInRegistryHolder), "Registration must bind the pre-created intrusive holder.");
         Require(registered.IsBound, "The built-in holder must be fully bound after freeze.");
-        Require(ReferenceEquals(registered.Value, Blocks.TEST_BLOCK), "The holder must resolve to its registered block.");
+        Require(ReferenceEquals(registered.Value, Blocks.AIR), "The holder must resolve to its registered block.");
         HolderUnwrap<Block> referenceUnwrap = registered.Unwrap();
-        Require(referenceUnwrap.IsKey && referenceUnwrap.Key == RegistryKey<Block>.Create(BuiltInRegistries.Block.Key, testId) && referenceUnwrap.Value is null, "Holder.Reference.unwrap must return its registry key.");
-        Require(registered.UnwrapKey() == RegistryKey<Block>.Create(BuiltInRegistries.Block.Key, testId), "Holder.Reference.unwrapKey must return its registry key.");
-        Require(registered.GetRegisteredNameIfPresent() == testId.ToString(), "Holder.Reference registered name must use its identifier.");
-        Require(registered.GetRegisteredName() == testId.ToString(), "Holder.Reference registered name must be present after binding.");
+        Require(referenceUnwrap.IsKey && referenceUnwrap.Key == RegistryKey<Block>.Create(BuiltInRegistries.Block.Key, airId) && referenceUnwrap.Value is null, "Holder.Reference.unwrap must return its registry key.");
+        Require(registered.UnwrapKey() == RegistryKey<Block>.Create(BuiltInRegistries.Block.Key, airId), "Holder.Reference.unwrapKey must return its registry key.");
+        Require(registered.GetRegisteredNameIfPresent() == airId.ToString(), "Holder.Reference registered name must use its identifier.");
+        Require(registered.GetRegisteredName() == airId.ToString(), "Holder.Reference registered name must be present after binding.");
         Require(registered.CanSerializeIn(BuiltInRegistries.Block), "A reference holder must serialize in its owning registry.");
-        Require(ReferenceEquals(BuiltInRegistries.Block.WrapAsHolder(Blocks.TEST_BLOCK), registered), "wrapAsHolder must reuse registered references.");
+        Require(ReferenceEquals(BuiltInRegistries.Block.WrapAsHolder(Blocks.AIR), registered), "wrapAsHolder must reuse registered references.");
 
         Block directValue = new TestBlockDefinition(BlockProperties.Of());
         Holder<Block> direct = BuiltInRegistries.Block.WrapAsHolder(directValue);
@@ -1369,7 +1397,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         RegistryKey<Block> keyRegistrationKey = RegistryKey<Block>.Create(
             keyRegistrationRegistry.Key,
             ResourceLocation.Parse("asteria:key_registration"));
-        Block keyRegistrationValue = Blocks.TEST_BLOCK;
+        Block keyRegistrationValue = TestBlocks.TEST_BLOCK;
         Block keyRegistrationResult =
             Registry.Register(keyRegistrationRegistry, keyRegistrationKey, keyRegistrationValue);
         Require(
@@ -1559,17 +1587,17 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
     private static void CheckBlockStateDefinition()
     {
-        StateDefinition definition = Blocks.TEST_BLOCK.StateDefinition;
+        StateDefinition definition = TestBlocks.TEST_BLOCK.StateDefinition;
         Require(definition.PossibleStates.Count == 6, "powered(2) x stage(3) must create six states.");
         Require(!definition.IsSingletonState, "StateDefinition.isSingletonState must be false when properties are declared.");
         Require(
-            definition.ToString() == $"StateDefinition{{block={Blocks.TEST_BLOCK}, properties=[powered, stage]}}",
+            definition.ToString() == $"StateDefinition{{block={TestBlocks.TEST_BLOCK}, properties=[powered, stage]}}",
             "StateDefinition.toString must expose the owner and sorted property names.");
         Require(
             Blocks.AIR.StateDefinition.IsSingletonState && Blocks.AIR.DefaultState.IsSingletonState,
             "An empty StateDefinition and its StateHolder must both report singleton state.");
         Require(
-            !Blocks.TEST_BLOCK.DefaultState.IsSingletonState,
+            !TestBlocks.TEST_BLOCK.DefaultState.IsSingletonState,
             "A state definition with properties must not report singleton states.");
 
         var alternateDefaultOwner = new TestBlockDefinition(BlockProperties.Of());
@@ -1588,51 +1616,51 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             definition.Any().GetProperties().SequenceEqual(definition.Properties),
             "StateHolder.getProperties must expose the immutable ordered property collection.");
-        Require(ReferenceEquals(definition.GetProperty("powered"), Blocks.TEST_POWERED), "Property lookup must return the declared property.");
+        Require(ReferenceEquals(definition.GetProperty("powered"), TestBlocks.TEST_POWERED), "Property lookup must return the declared property.");
         Require(
             definition.GetProperty("") is null && definition.GetProperty(" ") is null &&
             definition.GetProperty("missing") is null,
             "StateDefinition.getProperty must return no result for empty, whitespace, and unknown property names.");
         Require(
-            definition.Any().GetValue(Blocks.TEST_POWERED),
+            definition.Any().GetValue(TestBlocks.TEST_POWERED),
             "The first state must follow vanilla's BooleanProperty order: true before false.");
 
-        BlockState defaultState = Blocks.TEST_BLOCK.DefaultState;
-        Require(!defaultState.GetValue(Blocks.TEST_POWERED), "powered default must be false.");
-        Require(defaultState.GetValue(Blocks.TEST_STAGE) == 1, "stage default must be one.");
-        Require(ReferenceEquals(defaultState, Blocks.TEST_BLOCK.DefaultState), "The default state must be a stable precomputed instance.");
+        BlockState defaultState = TestBlocks.TEST_BLOCK.DefaultState;
+        Require(!defaultState.GetValue(TestBlocks.TEST_POWERED), "powered default must be false.");
+        Require(defaultState.GetValue(TestBlocks.TEST_STAGE) == 1, "stage default must be one.");
+        Require(ReferenceEquals(defaultState, TestBlocks.TEST_BLOCK.DefaultState), "The default state must be a stable precomputed instance.");
     }
 
     private static void CheckBlockStateTransitions()
     {
-        BlockState defaultState = Blocks.TEST_BLOCK.DefaultState;
-        BlockState changedState = defaultState.SetValue(Blocks.TEST_STAGE, 2).SetValue(Blocks.TEST_POWERED, true);
-        Require(changedState.GetValue(Blocks.TEST_POWERED), "powered must transition to true.");
-        Require(changedState.GetValue(Blocks.TEST_STAGE) == 2, "stage must transition to two.");
-        Require(ReferenceEquals(changedState, defaultState.SetValue(Blocks.TEST_POWERED, true).SetValue(Blocks.TEST_STAGE, 2)), "The same property combination must resolve to the same state object.");
-        Require(ReferenceEquals(changedState, changedState.SetValue(Blocks.TEST_STAGE, 2)), "Setting an existing value must preserve identity.");
-        Require(changedState.Cycle(Blocks.TEST_STAGE).GetValue(Blocks.TEST_STAGE) == 0, "Integer cycling must wrap.");
+        BlockState defaultState = TestBlocks.TEST_BLOCK.DefaultState;
+        BlockState changedState = defaultState.SetValue(TestBlocks.TEST_STAGE, 2).SetValue(TestBlocks.TEST_POWERED, true);
+        Require(changedState.GetValue(TestBlocks.TEST_POWERED), "powered must transition to true.");
+        Require(changedState.GetValue(TestBlocks.TEST_STAGE) == 2, "stage must transition to two.");
+        Require(ReferenceEquals(changedState, defaultState.SetValue(TestBlocks.TEST_POWERED, true).SetValue(TestBlocks.TEST_STAGE, 2)), "The same property combination must resolve to the same state object.");
+        Require(ReferenceEquals(changedState, changedState.SetValue(TestBlocks.TEST_STAGE, 2)), "Setting an existing value must preserve identity.");
+        Require(changedState.Cycle(TestBlocks.TEST_STAGE).GetValue(TestBlocks.TEST_STAGE) == 0, "Integer cycling must wrap.");
 
-        BlockState sourceForCopy = defaultState.SetValue(Blocks.TEST_STAGE, 2);
+        BlockState sourceForCopy = defaultState.SetValue(TestBlocks.TEST_STAGE, 2);
         var sharedPropertyTarget = new TestBlockDefinition(
             BlockProperties.Of(),
             builder =>
             {
-                builder.Add(Blocks.TEST_POWERED);
-                builder.Add(Blocks.TEST_STAGE);
+                builder.Add(TestBlocks.TEST_POWERED);
+                builder.Add(TestBlocks.TEST_STAGE);
             });
         BlockState sharedPropertyCopy = sharedPropertyTarget.WithPropertiesOf(sourceForCopy);
         Require(
-            !sharedPropertyCopy.GetValue(Blocks.TEST_POWERED) &&
-            sharedPropertyCopy.GetValue(Blocks.TEST_STAGE) == 2,
+            !sharedPropertyCopy.GetValue(TestBlocks.TEST_POWERED) &&
+            sharedPropertyCopy.GetValue(TestBlocks.TEST_STAGE) == 2,
             "WithPropertiesOf must copy each shared property into the target block's default state.");
 
         var partialPropertyTarget = new TestBlockDefinition(
             BlockProperties.Of(),
-            builder => builder.Add(Blocks.TEST_POWERED));
+            builder => builder.Add(TestBlocks.TEST_POWERED));
         BlockState partialPropertyCopy = partialPropertyTarget.WithPropertiesOf(sourceForCopy);
         Require(
-            !partialPropertyCopy.GetValue(Blocks.TEST_POWERED) &&
+            !partialPropertyCopy.GetValue(TestBlocks.TEST_POWERED) &&
             partialPropertyCopy.GetProperties().Count == 1,
             "WithPropertiesOf must copy shared properties while ignoring properties absent from the target definition.");
 
@@ -1644,7 +1672,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             unrelatedPropertyCopy.GetValue(unrelatedPowered),
             "WithPropertiesOf must not copy a property merely because a different property instance has the same name.");
-        Require(defaultState.Cycle(Blocks.TEST_POWERED).GetValue(Blocks.TEST_POWERED), "Boolean cycling must toggle false to true.");
+        Require(defaultState.Cycle(TestBlocks.TEST_POWERED).GetValue(TestBlocks.TEST_POWERED), "Boolean cycling must toggle false to true.");
 
         InvalidOperationException repeatedInitialization = Capture<InvalidOperationException>(
             () => defaultState.InitializeNeighbors(Array.Empty<BlockState[]>()),
@@ -1654,8 +1682,8 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "StateHolder.initializeNeighbors must throw the vanilla empty-message IllegalStateException.");
 
         BooleanProperty foreignPowered = BooleanProperty.Create("powered");
-        Require(Blocks.TEST_POWERED.Equals(foreignPowered), "Boolean properties with the same value type and name must compare equal.");
-        Require(Blocks.TEST_POWERED.GetHashCode() == foreignPowered.GetHashCode(), "Equal Boolean properties must have equal hash codes.");
+        Require(TestBlocks.TEST_POWERED.Equals(foreignPowered), "Boolean properties with the same value type and name must compare equal.");
+        Require(TestBlocks.TEST_POWERED.GetHashCode() == foreignPowered.GetHashCode(), "Equal Boolean properties must have equal hash codes.");
         Require(ReferenceEquals(changedState, changedState.TrySetValue(foreignPowered, false)), "trySetValue with a foreign property instance must preserve the current state.");
         Require(!changedState.TryGetValue(foreignPowered, out _), "A separate property instance must not be accepted by name alone.");
 
@@ -1702,16 +1730,16 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "setValue must use the vanilla missing-property diagnostic.");
 
         ArgumentException invalidSetValue = Capture<ArgumentException>(
-            () => changedState.SetValue(Blocks.TEST_STAGE, 9),
+            () => changedState.SetValue(TestBlocks.TEST_STAGE, 9),
             "setValue must throw IllegalArgumentException for values outside the property's allowed set.");
         string invalidSetMessage =
-            $"Cannot set property {Blocks.TEST_STAGE} to 9 on {changedState.Block}, it is not an allowed value";
+            $"Cannot set property {TestBlocks.TEST_STAGE} to 9 on {changedState.Block}, it is not an allowed value";
         Require(
             invalidSetValue.Message == invalidSetMessage,
             "setValue must use the vanilla invalid-value diagnostic without a parameter-name suffix.");
 
         ArgumentException invalidTrySetValue = Capture<ArgumentException>(
-            () => changedState.TrySetValue(Blocks.TEST_STAGE, 9),
+            () => changedState.TrySetValue(TestBlocks.TEST_STAGE, 9),
             "trySetValue must throw IllegalArgumentException for values outside the property's allowed set.");
         Require(
             invalidTrySetValue.Message == invalidSetMessage,
@@ -1769,13 +1797,13 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(Block.GetId(null) == 0, "Block.getId(null) must use the air state ID.");
         Require(
             Block.GetId(Blocks.AIR.DefaultState) == 0 &&
-            Block.GetId(Blocks.TEST_BLOCK.DefaultState) == ids.GetId(Blocks.TEST_BLOCK.DefaultState),
+            Block.GetId(TestBlocks.TEST_BLOCK.DefaultState) == ids.GetId(TestBlocks.TEST_BLOCK.DefaultState),
             "Block.getId must expose the global insertion-order state IDs.");
         Require(
             ReferenceEquals(Block.StateById(0), Blocks.AIR.DefaultState) &&
             ReferenceEquals(
-                Block.StateById(ids.GetId(Blocks.TEST_BLOCK.DefaultState)),
-                Blocks.TEST_BLOCK.DefaultState),
+                Block.StateById(ids.GetId(TestBlocks.TEST_BLOCK.DefaultState)),
+                TestBlocks.TEST_BLOCK.DefaultState),
             "Block.stateById must resolve valid IDs to their exact state instances.");
         Require(
             ReferenceEquals(Block.StateById(-1), Blocks.AIR.DefaultState) &&
@@ -1828,8 +1856,8 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "IdMapper construction must preallocate both forward and reverse identity indexes.");
 
         var ids = new BlockStateIdMap();
-        BlockState highIdState = Blocks.TEST_BLOCK.DefaultState.SetValue(Blocks.TEST_STAGE, 2);
-        BlockState nextState = Blocks.TEST_BLOCK.DefaultState;
+        BlockState highIdState = TestBlocks.TEST_BLOCK.DefaultState.SetValue(TestBlocks.TEST_STAGE, 2);
+        BlockState nextState = TestBlocks.TEST_BLOCK.DefaultState;
 
         ids.AddMapping(highIdState, 7);
         Require(
@@ -1876,7 +1904,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             booleanValues.Select(value => value.ToString()).SequenceEqual(new[] { "lit=true", "lit=false" }),
             "Property.getAllValues must expose values in the property's declared order and format them as name=value.");
         Require(
-            Blocks.TEST_POWERED.Value(Blocks.TEST_BLOCK.DefaultState).Value == false,
+            TestBlocks.TEST_POWERED.Value(TestBlocks.TEST_BLOCK.DefaultState).Value == false,
             "Property.value(StateHolder) must wrap the value currently stored in the state.");
         Require(
             lit.Value(true) == booleanValues[0] &&
@@ -1893,7 +1921,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             litTrue != lit.Value(false),
             "Property.Value record equality must distinguish different values of the same property.");
 
-        IStatePropertyValue[] stateValues = Blocks.TEST_BLOCK.DefaultState.GetValues().ToArray();
+        IStatePropertyValue[] stateValues = TestBlocks.TEST_BLOCK.DefaultState.GetValues().ToArray();
         Require(
             stateValues.Select(value => value.Property.Name).SequenceEqual(new[] { "powered", "stage" }) &&
             stateValues.Select(value => value.ValueName).SequenceEqual(new[] { "false", "1" }) &&
@@ -1901,11 +1929,11 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "StateHolder.getValues must expose all property values in state-definition order.");
 
         ArgumentException invalidPropertyValue = Capture<ArgumentException>(
-            () => new StatePropertyValue<int>(Blocks.TEST_STAGE, 9),
+            () => new StatePropertyValue<int>(TestBlocks.TEST_STAGE, 9),
             "Property.Value must reject values outside the property's possible values.");
         Require(
             invalidPropertyValue.Message ==
-                $"Value 9 does not belong to property {Blocks.TEST_STAGE}",
+                $"Value 9 does not belong to property {TestBlocks.TEST_STAGE}",
             "Property.Value must use the vanilla invalid-value diagnostic.");
 
         IntegerProperty age = IntegerProperty.Create("age", 2, 4);
@@ -2393,8 +2421,8 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
     private static void CheckLinearPaletteOverflow()
     {
         BlockState first = Blocks.AIR.DefaultState;
-        BlockState second = Blocks.TEST_BLOCK.DefaultState;
-        BlockState third = second.SetValue(Blocks.TEST_STAGE, 2);
+        BlockState second = TestBlocks.TEST_BLOCK.DefaultState;
+        BlockState third = second.SetValue(TestBlocks.TEST_STAGE, 2);
         var palette = new LinearPalette<BlockState>(1);
         var resize = new ThrowingPaletteResize<BlockState>();
 
@@ -2423,7 +2451,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
     private static void CheckPalettedContainerInvalidIndexOrder()
     {
-        BlockState placedState = Blocks.TEST_BLOCK.DefaultState;
+        BlockState placedState = TestBlocks.TEST_BLOCK.DefaultState;
 
         var setContainer = CreateBlockStateContainer(Blocks.AIR.DefaultState);
         bool setFailed = false;
@@ -2499,7 +2527,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
     private static void CheckPalettedContainer()
     {
-        BlockState defaultState = Blocks.TEST_BLOCK.DefaultState;
+        BlockState defaultState = TestBlocks.TEST_BLOCK.DefaultState;
         var strategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(Block.BlockStateRegistry);
         var palette = new PalettedContainer<BlockState>(defaultState, strategy);
         Require(palette.Size == ChunkSection.BlockCount, "Block-state strategy must create 4096 entries.");
@@ -2509,7 +2537,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(ReferenceEquals(GetAt(palette, 2048), defaultState), "A single-value palette must return its only value for every index.");
         Require(!palette.MaybeHas(state => state.IsAir), "Single-value maybeHas must inspect the only value.");
 
-        BlockState alternate = defaultState.SetValue(Blocks.TEST_STAGE, 2);
+        BlockState alternate = defaultState.SetValue(TestBlocks.TEST_STAGE, 2);
         BlockState previous = GetAndSetAt(palette, 10, alternate);
         Require(ReferenceEquals(previous, defaultState), "getAndSet must return the previous state.");
         Require(palette.Mode == PaletteMode.Local, "The second distinct value must create a local palette.");
@@ -2712,14 +2740,14 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(section.PaletteMode == PaletteMode.SingleValue, "An empty section must start in single-value mode.");
 
         PalettedContainer<BlockState> prefilledStates = CreateBlockStateContainer(Blocks.AIR.DefaultState);
-        prefilledStates.Set(1, 0, 0, Blocks.TEST_BLOCK.DefaultState);
+        prefilledStates.Set(1, 0, 0, TestBlocks.TEST_BLOCK.DefaultState);
         ChunkSection prefilledSection = new(prefilledStates);
         Require(
             prefilledSection.NonAirBlockCount == 1,
             "The LevelChunkSection container constructor must recalculate cached counts from the supplied state container.");
-        BlockState xAxisState = Blocks.TEST_BLOCK.DefaultState;
-        BlockState zAxisState = xAxisState.SetValue(Blocks.TEST_STAGE, 2);
-        BlockState yAxisState = xAxisState.SetValue(Blocks.TEST_POWERED, true);
+        BlockState xAxisState = TestBlocks.TEST_BLOCK.DefaultState;
+        BlockState zAxisState = xAxisState.SetValue(TestBlocks.TEST_STAGE, 2);
+        BlockState yAxisState = xAxisState.SetValue(TestBlocks.TEST_POWERED, true);
         section.SetBlockState(1, 0, 0, xAxisState);
         section.SetBlockState(0, 0, 1, zAxisState);
         section.SetBlockState(0, 1, 0, yAxisState);
@@ -2783,14 +2811,14 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             tickingAirSection.TickingBlockCount == 0,
             "Replacing one air state with another must not decrement or increment the ticking count.");
 
-        BlockState placedState = Blocks.TEST_BLOCK.DefaultState;
+        BlockState placedState = TestBlocks.TEST_BLOCK.DefaultState;
         BlockState previous = section.SetBlockState(15, 15, 15, placedState);
         Require(ReferenceEquals(previous, Blocks.AIR.DefaultState), "SetBlockState must return the previous state.");
         Require(ReferenceEquals(section.GetBlockState(15, 15, 15), placedState), "Reads must return the placed state.");
         Require(section.NonAirBlockCount == 1, "Placing a non-air block must increment the count.");
         Require(!section.HasOnlyAir, "A section with a non-air block must not be empty.");
 
-        section.SetBlockState(15, 15, 15, placedState.SetValue(Blocks.TEST_STAGE, 2));
+        section.SetBlockState(15, 15, 15, placedState.SetValue(TestBlocks.TEST_STAGE, 2));
         Require(section.NonAirBlockCount == 1, "Replacing one non-air state with another must not change the count.");
         section.SetBlockState(15, 15, 15, Blocks.AIR.DefaultState);
         Require(section.NonAirBlockCount == 0, "Replacing non-air with air must decrement the count.");

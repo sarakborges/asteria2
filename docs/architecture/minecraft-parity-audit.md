@@ -71,7 +71,7 @@ O `ChunkSection` não deve ganhar contadores ou APIs fictícios de fluido/bioma 
 
 ## Lacunas de integração e manutenção
 
-1. **Conteúdo de teste no runtime:** `Blocks.TEST_BLOCK` e `asteria:registry_test` são fixtures de validação, mas atualmente são inicializados pelo bootstrap de conteúdo e verificados em `Main._Ready`. Antes de introduzir blocos reais, separar fixtures do catálogo de conteúdo de runtime e transformar `Main` no ponto de entrada do jogo.
+1. **Conteúdo de teste no runtime (resolvido em 21/11/2026):** `TEST_BLOCK` e suas propriedades agora existem somente no harness de testes. O catálogo de runtime registra apenas `AIR`, e `Main._Ready` inicializa os registries e valida o bloco padrão, sem executar assertions de fixtures. O loop de jogo continua sendo trabalho futuro.
 2. **Relatórios de concorrência:** o detector preserva o protocolo de exclusão, mas precisa de uma camada de crash report/logging Asteria para reproduzir a forma de diagnóstico do jogo.
 3. **Persistência e rede:** as paletas têm a lógica em memória, mas ainda não têm codecs nem leitura/escrita de buffer/arquivo. Isso é uma etapa de integração, não uma falha nas transições de paleta implementadas.
 4. **Testes:** o harness cobre as áreas atuais, mas está concentrado num único `Program.cs`. Separar por subsistema é uma melhoria de manutenção a considerar quando o conjunto de testes crescer.
@@ -103,3 +103,14 @@ O `ChunkSection` não deve ganhar contadores ou APIs fictícios de fluido/bioma 
 - [SimpleBitStorage](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/SimpleBitStorage/)
 - [ZeroBitStorage](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/zerobitstorage/)
 - [LevelChunkSection](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/LevelChunkSection/)
+
+
+## Follow-up — isolamento de fixtures (21/11/2026)
+
+A contaminação de conteúdo identificada na baseline foi removida:
+- `src/Asteria/Content/Blocks/Blocks.cs` registra somente `AIR`.
+- O bloco com propriedades `powered` e `stage` foi movido para uma fixture privada no harness de testes; ele continua cobrindo estados, IDs globais, paletas e seções sem entrar no catálogo de runtime.
+- Os testes agora verificam explicitamente que o registry de blocos de produção contém somente o conteúdo definido por `Blocks`.
+- `scripts/Main.cs` limita-se ao bootstrap de conteúdo e validação do bloco `AIR`; ainda não existe loop de jogo.
+
+A separação segue o princípio de manter fixtures de teste fora do catálogo de conteúdo carregado pelo jogo. Não cria APIs ou modelos de gameplay antes de existirem seus domínios correspondentes.
