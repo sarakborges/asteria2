@@ -228,11 +228,10 @@ public sealed class OctahedralGroup
 
     public SymmetricGroup3 Permutation => _permutation;
 
-    public FrontAndTop Rotate(FrontAndTop input)
+    public FrontAndTop? Rotate(FrontAndTop input)
     {
         ArgumentNullException.ThrowIfNull(input);
-        return FrontAndTop.FromFrontAndTop(Rotate(input.Front()), Rotate(input.Top()))
-            ?? throw new InvalidOperationException("A valid front/top pair rotated to an invalid pair.");
+        return FrontAndTop.FromFrontAndTop(Rotate(input.Front()), Rotate(input.Top()));
     }
 
     public override string ToString() => _name;

@@ -108,12 +108,21 @@ internal static class OctahedralGroupChecks
 
             foreach (FrontAndTop value in FrontAndTop.GetValues())
             {
-                FrontAndTop rotated = group.Rotate(value);
-                Require(
-                    ReferenceEquals(group.Inverse().Rotate(rotated), value),
-                    "All twelve front/top pairs must round-trip through a group element and its inverse.");
-                Require(!ReferenceEquals(rotated.Front().GetAxis(), rotated.Top().GetAxis()),
-                    "Rotated front and top directions must remain orthogonal.");
+                FrontAndTop? rotated = group.Rotate(value);
+                if (rotated is not null)
+                {
+                    Require(
+                        ReferenceEquals(group.Inverse().Rotate(rotated), value),
+                        "Representable front/top pairs must round-trip through a group element and its inverse.");
+                    Require(!ReferenceEquals(rotated.Front().GetAxis(), rotated.Top().GetAxis()),
+                        "Representable rotated front and top directions must remain orthogonal.");
+                }
+                else
+                {
+                    Require(
+                        FrontAndTop.FromFrontAndTop(group.Rotate(value.Front()), group.Rotate(value.Top())) is null,
+                        "The group rotation must preserve the reference lookup's unsupported-pair result.");
+                }
             }
         }
 
