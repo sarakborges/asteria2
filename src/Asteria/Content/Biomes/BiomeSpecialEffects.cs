@@ -8,9 +8,8 @@ public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverri
 
     public int GetGrassColor(double x, double z, int defaultColor, Func<double, double, double>? biomeInfoNoise = null)
     {
-        if (GrassColorOverride is int overrideColor)
-            return overrideColor;
-        return ModifyGrassColor(GrassColorModifier, x, z, defaultColor, biomeInfoNoise);
+        int color = GrassColorOverride ?? defaultColor;
+        return ModifyGrassColor(GrassColorModifier, x, z, color, biomeInfoNoise);
     }
 
     public sealed class Builder
