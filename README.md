@@ -2,6 +2,10 @@
 
 Nova implementação do Asteria, construída do zero com Godot .NET.
 
+## Escopo do produto
+
+Asteria é exclusivamente single-player/offline/local. Redstone e multiplayer/network play não fazem parte do projeto. Consulte [docs/architecture/project-scope.md](docs/architecture/project-scope.md).
+
 ## Requisitos
 
 - Godot 4.7.2 — edição .NET

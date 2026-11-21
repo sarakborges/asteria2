@@ -264,6 +264,47 @@ public sealed class AABB : IEquatable<AABB>
         return from.Add(scale * dx, scale * dy, scale * dz);
     }
 
+    /// <summary>
+    /// Clips a segment against a collection of local AABBs and returns the nearest block hit.
+    /// </summary>
+    public static BlockHitResult? Clip(
+        IEnumerable<AABB> boxes,
+        Vec3 from,
+        Vec3 to,
+        BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(boxes);
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(to);
+        ArgumentNullException.ThrowIfNull(position);
+
+        var scaleReference = new[] { 1.0 };
+        Direction? direction = null;
+        double dx = to.X - from.X;
+        double dy = to.Y - from.Y;
+        double dz = to.Z - from.Z;
+
+        foreach (AABB box in boxes)
+        {
+            ArgumentNullException.ThrowIfNull(box);
+            AABB worldBox = box.Move(position);
+            direction = GetDirection(
+                worldBox.MinX, worldBox.MinY, worldBox.MinZ,
+                worldBox.MaxX, worldBox.MaxY, worldBox.MaxZ,
+                from, scaleReference, direction, dx, dy, dz);
+        }
+
+        if (direction is null)
+            return null;
+
+        double scale = scaleReference[0];
+        return new BlockHitResult(
+            from.Add(scale * dx, scale * dy, scale * dz),
+            direction,
+            position,
+            inside: false);
+    }
+
     private static Direction? GetDirection(
         double minX, double minY, double minZ,
         double maxX, double maxY, double maxZ,

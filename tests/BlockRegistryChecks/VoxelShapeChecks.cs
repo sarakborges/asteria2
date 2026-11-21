@@ -13,6 +13,7 @@ internal static class VoxelShapeChecks
         CheckJoinShortcutsAndNonEmptyQueries();
         CheckFaceShapesAndSlices();
         CheckContinuousEdgesAndCollision();
+        CheckShapeClippingAndHitResults();
         CheckAxisCycleAndDiscreteAxisQueries();
     }
 
@@ -390,6 +391,63 @@ internal static class VoxelShapeChecks
         Require(
             block.Collide(Direction.Axis.X, new AABB(-2, 0, 0, -1, 1, 1), 1.0E-8) == 0.0,
             "Movement smaller than the collision epsilon must resolve to zero.");
+    }
+
+    private static void CheckShapeClippingAndHitResults()
+    {
+        VoxelShape block = Shapes.Block();
+        var position = new BlockPos(10, 20, 30);
+
+        BlockHitResult? outsideHit = block.Clip(
+            new Vec3(9, 20.5, 30.5),
+            new Vec3(12, 20.5, 30.5),
+            position);
+        Require(outsideHit is not null && outsideHit.GetHitType() == HitResult.Type.BLOCK,
+            "A segment entering a block shape must produce a block hit.");
+        Vec3 outsideLocation = outsideHit!.GetLocation();
+        Require(
+            Math.Abs(outsideLocation.X - 10.0) < 1.0E-9 &&
+            Math.Abs(outsideLocation.Y - 20.5) < 1.0E-9 &&
+            Math.Abs(outsideLocation.Z - 30.5) < 1.0E-9 &&
+            ReferenceEquals(outsideHit.GetDirection(), Direction.WEST) &&
+            ReferenceEquals(outsideHit.GetBlockPos(), position) &&
+            !outsideHit.IsInside(),
+            "AABB list clipping must preserve the nearest hit point, face direction and block position.");
+
+        BlockHitResult? insideHit = block.Clip(
+            new Vec3(10.5, 20.5, 30.5),
+            new Vec3(12, 20.5, 30.5),
+            position);
+        Require(insideHit is not null && insideHit.IsInside(),
+            "A segment starting within the occupied shape must use the inside-hit fast path.");
+        Vec3 insideLocation = insideHit!.GetLocation();
+        Require(
+            Math.Abs(insideLocation.X - 10.5015) < 1.0E-9 &&
+            Math.Abs(insideLocation.Y - 20.5) < 1.0E-9 &&
+            Math.Abs(insideLocation.Z - 30.5) < 1.0E-9 &&
+            ReferenceEquals(insideHit.GetDirection(), Direction.WEST),
+            "Inside hits must use the reference 0.001 segment offset and opposite nearest direction.");
+
+        Require(
+            block.Clip(new Vec3(9, 22, 32), new Vec3(12, 22, 32), position) is null,
+            "A segment outside the shape's transverse bounds must miss.");
+        Require(
+            block.Clip(new Vec3(10, 20, 30), new Vec3(10.0001, 20, 30), position) is null,
+            "A segment below the squared-length threshold must miss.");
+        Require(
+            Shapes.Empty().Clip(new Vec3(9, 20, 30), new Vec3(12, 20, 30), position) is null,
+            "An empty shape must always miss.");
+
+        BlockHitResult miss = BlockHitResult.Miss(
+            Vec3.ZERO, Direction.NORTH, position);
+        BlockPos replacementPosition = new(1, 2, 3);
+        Require(miss.GetHitType() == HitResult.Type.MISS,
+            "BlockHitResult.Miss must preserve the MISS discriminator.");
+        Require(
+            ReferenceEquals(miss.WithDirection(Direction.SOUTH).GetDirection(), Direction.SOUTH) &&
+            ReferenceEquals(miss.WithPosition(replacementPosition).GetBlockPos(), replacementPosition) &&
+            miss.HitBorder().IsWorldBorderHit(),
+            "BlockHitResult transformations must preserve independent metadata.");
     }
 
     private static void CheckAxisCycleAndDiscreteAxisQueries()

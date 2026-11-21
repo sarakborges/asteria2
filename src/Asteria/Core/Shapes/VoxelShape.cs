@@ -225,6 +225,36 @@ public abstract class VoxelShape
         return start - 1;
     }
 
+    /// <summary>
+    /// Clips a segment against this shape in the coordinate space of a block position.
+    /// </summary>
+    public BlockHitResult? Clip(Vec3 from, Vec3 to, BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(to);
+        ArgumentNullException.ThrowIfNull(position);
+
+        if (IsEmpty())
+            return null;
+
+        Vec3 difference = to.Subtract(from);
+        if (difference.LengthSquared() < 1.0E-7)
+            return null;
+
+        Vec3 testPoint = from.Add(difference.Scale(0.001));
+        if (Shape.IsFullWide(
+            FindIndex(Direction.Axis.X, testPoint.X - position.GetX()),
+            FindIndex(Direction.Axis.Y, testPoint.Y - position.GetY()),
+            FindIndex(Direction.Axis.Z, testPoint.Z - position.GetZ())))
+        {
+            Direction direction = Direction.GetApproximateNearest(
+                difference.X, difference.Y, difference.Z).GetOpposite();
+            return new BlockHitResult(testPoint, direction, position, inside: true);
+        }
+
+        return AABB.Clip(ToAabbs(), from, to, position);
+    }
+
     public Vec3? ClosestPointTo(Vec3 point)
     {
         ArgumentNullException.ThrowIfNull(point);

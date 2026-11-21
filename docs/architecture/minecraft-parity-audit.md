@@ -4,17 +4,31 @@
 
 - Repositório: `sarakborges/asteria2`
 - Branch auditada: `feature/block-registry`
-- Commit-base auditado: `b3801aecb7577da2e7afea9c8993b23e8f15c2f5`
+- Commit-base auditado: `e7d736e91dc664f0a4910aa0567f817036542f1c`
 - Inventário do HEAD: 130 arquivos versionados: 90 arquivos C# em `src/Asteria`, 12 arquivos C# no harness de testes e 1 arquivo C# de bootstrap em `scripts`.
+- Escopo de produto: jogo exclusivamente single-player/offline/local; redstone e multiplayer/network play estão explicitamente fora do escopo.
 - Referência: Minecraft Java Edition 26.3, usando o código-fonte decompilado e os contratos observáveis das classes equivalentes.
 
 Esta auditoria cobre todo o conteúdo atualmente existente no repositório. “Paridade confirmada” significa que o comportamento que Asteria implementa foi comparado com o membro correspondente da referência; não significa que Asteria já implemente o jogo inteiro.
 
+## Escopo do produto
+
+Asteria é um jogo local single-player/offline. Esta decisão altera quais partes da referência são requisitos e quais são deliberadamente excluídas.
+
+**Fora de escopo:**
+- Redstone: circuitos, níveis de potência, fios, repetidores, comparadores e propagação de sinais.
+- Multiplayer/network play: transporte de rede, protocolo de jogo, servidor/cliente autoritativo, replicação e sincronização remota.
+
+**Ainda necessários no modo local:**
+- Simulação e scheduler locais para atualizações de blocos/fluidos e random ticks não relacionados a redstone.
+- Mundo, chunks, geração, entidades, física, rendering e persistência/save-load local.
+- APIs de serialização interna ou em disco quando necessárias para salvar/carregar o mundo; não implementar codecs de protocolo de rede apenas para imitar o servidor Minecraft.
+
 ## Resultado executivo
 
-Os subsistemas de conteúdo e armazenamento — identificadores, registries, holders, estados genéricos, estados de bloco, mapas de IDs, paletas e armazenamento compactado — têm paridade comportamental confirmada no escopo que foi portado e testado. A geometria discreta já contém as 48 transformações octaédricas, rotação de ocupação, enumeração de caixas/arestas/faces e as consultas geométricas fundamentais. `VoxelShape` também contém recortes de faces, arestas contínuas e colisão por eixo; o último incremento precisa passar novamente pelo harness e pelo build.
+Os subsistemas de conteúdo e armazenamento — identificadores, registries, holders, estados genéricos, estados de bloco, mapas de IDs, paletas e armazenamento compactado — têm paridade comportamental confirmada no escopo que foi portado e testado. A geometria discreta já contém as 48 transformações octaédricas, rotação de ocupação, enumeração de caixas/arestas/faces e as consultas geométricas fundamentais. `VoxelShape` também contém recortes de faces, arestas contínuas e colisão por eixo. O clipping de raios com `BlockHitResult` foi adicionado no incremento seguinte; validação pendente até o CI correspondente.
 
-Asteria ainda não é um jogo funcional completo: mundo, chunks completos, geração, biomas, iluminação, simulação de fluidos, entidades, rendering, rede e persistência continuam ausentes ou parciais.
+Asteria ainda não é um jogo funcional completo: mundo, chunks completos, geração, biomas, iluminação, simulação de fluidos, entidades, rendering e persistência local continuam ausentes ou parciais. Multiplayer, transporte de rede e servidor/cliente são fora de escopo, não pendências.
 
 ## Matriz por subsistema
 
@@ -40,9 +54,9 @@ Asteria ainda não é um jogo funcional completo: mundo, chunks completos, gera�
 | `Fluid` / `FluidState` | `Fluid` / `FluidState` | Parcial: registry, holder intrusivo, definição/estado padrão, estado vazio, ID map, source/empty/amount/own-height/random-ticking e `BlockState.GetFluidState`. `FlowingFluid`, água/lava, consultas de mundo, formas, fluxo, ticks e interação ainda não foram portados. |
 | `Direction` / `Direction.Axis` / `Plane` / `FrontAndTop` | `Direction` / `FrontAndTop` | Parcial: seis direções, vetores, IDs, eixo, plano, yaw, nearest-direction e rotações discretas; `FrontAndTop` e as 48 transformações de `OctahedralGroup` estão portados. APIs dependentes de entidade, RNG, codecs e integração com renderer permanecem pendentes. O modelo C# usa objetos singleton por identidade. |
 | `Position` / `Vec3` | `Position` / `Vec3` | Parcial: factories por `Vec3i`, aritmética, produto escalar/vetorial, distância, normalização, rotações com tabela Mth, alinhamento, projeção, igualdade/hash e finitude. Codec, rede, RNG, `Vec2` e JOML permanecem pendentes; `Position` tem nomes de acesso adaptados ao C#. |
-| `AABB` | `AABB` | Parcial: normalização de limites, factories por posição/vetor, contração/expansão, inflate/deflate, união/interseção, movimento, intervalos de interseção, contenção half-open, clipping de segmento com tolerância `1e-7`, colisão ao longo de vetor, distância, medidas, next-deflated, igualdade/hash/NaN e builder. Sobrecargas de JOML foram adaptadas para `System.Numerics.Vector3`; integração `BoundingBox`/`BlockHitResult` ainda depende dos domínios de estrutura e hit-result. |
+| `AABB` / `HitResult` / `BlockHitResult` | `AABB` / `HitResult` / `BlockHitResult` | Parcial: AABB cobre normalização, operações vetoriais, clipping de segmento, colisão e medidas. `HitResult`/`BlockHitResult` agora fornecem o resultado de raycast, `MISS`, `inside`, direção, posição e sinalizador de world border. Sobrecargas específicas de JOML/BoundingBox e integração com entidades ainda pendentes. |
 | `DiscreteVoxelShape` / `BitSetDiscreteVoxelShape` | Shapes homônimas | Parcial: grade/bitset X/Y/Z, bounds em cache, `isFullWide`, `firstFull`/`lastFull`, cópia, região preenchida, interior, rotação por `OctahedralGroup`, enumeração greedy de caixas, arestas com mesclagem e faces por transição de ocupação. A API discreta central está portada; ainda faltam integrações de clipping, occlusion e shape slicing avançado. |
-| `VoxelShape` / `CubeVoxelShape` / `ArrayVoxelShape` / `SliceShape` / `SubShape` | Tipos homônimos | Parcial: coordenadas uniformes/explicitas, min/max, bounds, move, optimize, caixas/AABBs, arestas contínuas, closest-point, queries transversais, cache das seis faces, slices/subshapes e colisão de AABB por eixo. `clip` ainda depende de `BlockHitResult`; igualdade estrutural e integrações de occlusion/contexto continuam pendentes. |
+| `VoxelShape` / `CubeVoxelShape` / `ArrayVoxelShape` / `SliceShape` / `SubShape` | Tipos homônimos | Parcial: coordenadas uniformes/explicitas, min/max, bounds, move, optimize, caixas/AABBs, arestas contínuas, closest-point, queries transversais, cache das seis faces, slices/subshapes, clipping de segmento para `BlockHitResult` e colisão swept-AABB por eixo. Igualdade estrutural, occlusion e contexto/world integration continuam pendentes. |
 | `Shapes` | `Shapes` | Parcial: EMPTY/BLOCK/INFINITY, box/create/findBits, join, joinUnoptimized, joinIsNotEmpty, OR e seleção sequencial de mergers com `BooleanOp`. `blockOccludes`, occlusion-context integration and higher-level collision shortcuts remain pending. |
 | `BooleanOp` / `IndexMerger` | Tipos homônimos | As 16 funções booleanas e os quatro mergers foram portados: identical, non-overlapping, indirect e discrete-cube. Seleção com tolerância `1e-7` e teto de custo 256 preservada. |
 
@@ -76,9 +90,11 @@ A base atual não implementa ainda os sistemas completos abaixo. Eles devem ser 
 - Lighting engine, sky/block light e propagação.
 - Block shapes, colisão, raycast, física e integração com o servidor de jogo.
 - Renderização de blocos, culling, meshing, materiais e atlas.
-- Tick scheduler, block ticks, fluid ticks, random tick loop e redstone.
+- Tick scheduler local, block ticks, fluid ticks e random tick loop permanecem necessários para simulação single-player.
+- Redstone (power propagation, wires, repeaters, comparators e circuit updates) é explicitamente fora de escopo.
 - Entidades, AI, jogadores, itens, inventário, crafting, menus e drops.
-- Áudio/partículas em runtime, comandos, networking/protocol, client/server e save/load.
+- Áudio/partículas em runtime, comandos e save/load local ainda não foram implementados.
+- Networking/protocol, client/server, multiplayer e sincronização remota são explicitamente fora de escopo.
 - Data packs/resource packs, codecs, NBT e serialização de rede/disco.
 
 O `ChunkSection` já possui os contadores de fluido correspondentes à referência. Não deve ganhar armazenamento ou APIs de bioma fictícios antes da criação do modelo e do container reais.
@@ -117,6 +133,10 @@ O `ChunkSection` já possui os contadores de fluido correspondentes à referênc
 - [SimpleBitStorage](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/SimpleBitStorage/)
 - [ZeroBitStorage](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/zerobitstorage/)
 - [LevelChunkSection](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/LevelChunkSection/)
+- [AABB](https://aldak0.ru/javadoc/26.3.x/net/minecraft/world/phys/AABB.html)
+- [HitResult](https://aldak0.ru/javadoc/26.3.x/net/minecraft/world/phys/HitResult.html)
+- [BlockHitResult](https://aldak0.ru/javadoc/26.3.x/net/minecraft/world/phys/BlockHitResult.html)
+- [VoxelShape](https://aldak0.ru/javadoc/26.3.x/net/minecraft/world/phys/shapes/VoxelShape.html)
 - [ChunkAccess](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/ChunkAccess/)
 - [Heightmap](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/Heightmap/)
 - [OctahedralGroup](https://mc-packet-reference.netlify.app/26.x/source/com/mojang/math/OctahedralGroup/)

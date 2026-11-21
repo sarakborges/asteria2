@@ -21,9 +21,10 @@ The first discrete storage increment ports the occupancy substrate of the shape 
 
 ## Continuous shapes and Boolean joins
 
-- `VoxelShape` provides bounds, per-axis min/max, coordinate-aware min/max, move, optimize, merged box and edge traversal, AABB materialization, closest-point lookup, cached face extraction, and per-axis AABB collision clipping.
+- `VoxelShape` provides bounds, per-axis min/max, coordinate-aware min/max, move, optimize, merged box and edge traversal, AABB materialization, closest-point lookup, cached face extraction, per-axis AABB collision clipping, and segment clipping to `BlockHitResult`.
 - `SliceShape` uses `SubShape` to restrict occupancy to a one-cell-thick plane while retaining the original in-plane coordinate lists. Empty and full-cube results canonicalize to `Shapes.Empty()` and `Shapes.Block()`.
 - `VoxelShape.ForAllEdges` maps the discrete edge traversal back to the continuous axis coordinate lists. `VoxelShape.Collide` ports the reference swept-AABB axis scan, including transverse-range clipping, axis-cycle transforms and the `1e-7` contact epsilon.
+- `VoxelShape.Clip` checks the reference inside-point fast path (`0.001` segment offset) and otherwise delegates to the multi-AABB ray clip. `AABB.Clip(IEnumerable<AABB>, ...)` selects the nearest face intersection and produces `BlockHitResult`.
 - `CubeVoxelShape` uses uniform `CubePointRange` coordinates and the exact clamped floor-based coordinate-to-cell mapping. `ArrayVoxelShape` preserves explicit lists and validates that every axis has exactly dimension-plus-one coordinates.
 - `Shapes` provides canonical empty/block shapes, `box`/`create` factories, the 1/2/4/8-part grid-fit test, `INFINITY`, `join`, `joinUnoptimized`, `joinIsNotEmpty`, and variadic OR.
 - `joinUnoptimized` builds X/Y/Z mergers in sequence, fills the output grid via `BooleanOp`, and selects cube storage only when all three mergers are discrete-cube mergers. `join` then optimizes by rebuilding from merged boxes.
@@ -50,6 +51,9 @@ The first discrete storage increment ports the occupancy substrate of the shape 
 - [SubShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/subshape/)
 - [SliceShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/sliceshape/)
 - [VoxelShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/voxelshape/)
+- [AABB — Minecraft 26.3](https://aldak0.ru/javadoc/26.3.x/net/minecraft/world/phys/AABB.html)
+- [HitResult — Minecraft 26.3](https://aldak0.ru/javadoc/26.3.x/net/minecraft/world/phys/HitResult.html)
+- [BlockHitResult — Minecraft 26.3](https://aldak0.ru/javadoc/26.3.x/net/minecraft/world/phys/BlockHitResult.html)
 - [CubeVoxelShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/cubevoxelshape/)
 - [ArrayVoxelShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/arrayvoxelshape/)
 - [Shapes — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/shapes/)
