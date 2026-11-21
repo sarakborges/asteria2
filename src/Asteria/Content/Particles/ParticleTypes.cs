@@ -20,6 +20,8 @@ public static class ParticleTypes
     public static readonly SimpleParticleType COPPER_FIRE_FLAME = Register("copper_fire_flame", false);
     public static readonly SimpleParticleType CRIT = Register("crit", false);
     public static readonly SimpleParticleType DAMAGE_INDICATOR = Register("damage_indicator", true);
+    public static readonly ParticleType<PowerParticleOption> DRAGON_BREATH =
+        RegisterConfigured<PowerParticleOption>("dragon_breath", false, PowerParticleOption.CreateCodec);
     public static readonly SimpleParticleType DRIPPING_LAVA = Register("dripping_lava", false);
     public static readonly SimpleParticleType FALLING_LAVA = Register("falling_lava", false);
     public static readonly SimpleParticleType LANDING_LAVA = Register("landing_lava", false);
@@ -52,6 +54,9 @@ public static class ParticleTypes
     public static readonly ParticleType<ColorParticleOption> TINTED_LEAVES =
         RegisterConfigured<ColorParticleOption>("tinted_leaves", false, ColorParticleOption.CreateCodec);
     public static readonly SimpleParticleType SCULK_SOUL = Register("sculk_soul", false);
+    public static readonly ParticleType<SculkChargeParticleOptions> SCULK_CHARGE =
+        RegisterConfigured<SculkChargeParticleOptions>(
+            "sculk_charge", true, static _ => SculkChargeParticleOptions.CODEC);
     public static readonly SimpleParticleType SCULK_CHARGE_POP = Register("sculk_charge_pop", true);
     public static readonly SimpleParticleType SOUL_FIRE_FLAME = Register("soul_fire_flame", false);
     public static readonly SimpleParticleType SOUL = Register("soul", false);
@@ -131,8 +136,9 @@ public static class ParticleTypes
     public const int SimpleTypeCount = 106;
     public const int ColorTypeCount = 3;
     public const int SpellOptionCount = 2;
+    public const int NumericOptionCount = 2;
     public const int RegisteredTypeCount =
-        SimpleTypeCount + ColorTypeCount + SpellOptionCount;
+        SimpleTypeCount + ColorTypeCount + SpellOptionCount + NumericOptionCount;
 
     public static Codec<IParticleOptions> CODEC { get; } =
         MapCodec<IParticleOptions>.Dispatch(

@@ -13,6 +13,8 @@ internal static class ParticleChecks
         CheckSimpleOptionsCodec();
         CheckColorParticleOptionsCodec();
         CheckSpellParticleOptionsCodec();
+        CheckPowerParticleOptionCodec();
+        CheckSculkChargeParticleOptionsCodec();
         CheckByNameCodecFailures();
     }
 
@@ -22,8 +24,8 @@ internal static class ParticleChecks
 
         Require(registry.IsFrozen,
             "The particle type registry must be frozen after built-in bootstrap.");
-        Require(ParticleTypes.RegisteredTypeCount == 111,
-            "The local particle registry must include 106 simple, three color and two spell option types.");
+        Require(ParticleTypes.RegisteredTypeCount == 113,
+            "The local particle registry must include 106 simple, three color, two spell and two numeric option types.");
         Require(registry.Count == ParticleTypes.RegisteredTypeCount,
             "Every implemented simple particle type must be registered.");
         Require(ReferenceEquals(
@@ -36,6 +38,12 @@ internal static class ParticleChecks
             "The trial-spawner player particle must keep its non-field registry identifier.");
         Require(registry.GetId(ParticleTypes.ASH) < registry.GetId(ParticleTypes.FIREFLY),
             "Simple particle registration order must follow the source declaration order.");
+        Require(registry.GetId(ParticleTypes.DAMAGE_INDICATOR) < registry.GetId(ParticleTypes.DRAGON_BREATH) &&
+                registry.GetId(ParticleTypes.DRAGON_BREATH) < registry.GetId(ParticleTypes.DRIPPING_LAVA),
+            "Dragon breath must occupy its source declaration position.");
+        Require(registry.GetId(ParticleTypes.SCULK_SOUL) < registry.GetId(ParticleTypes.SCULK_CHARGE) &&
+                registry.GetId(ParticleTypes.SCULK_CHARGE) < registry.GetId(ParticleTypes.SCULK_CHARGE_POP),
+            "Sculk charge must occupy its source declaration position.");
 
         Require(ParticleTypes.DAMAGE_INDICATOR.OverrideLimiter &&
                 ParticleTypes.EXPLOSION.OverrideLimiter &&
@@ -232,6 +240,89 @@ internal static class ParticleChecks
             "Both spell particle types must retain overrideLimiter=false.");
     }
 
+
+
+    private static void CheckPowerParticleOptionCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+
+        PowerParticleOption defaultOption =
+            PowerParticleOption.Create(ParticleTypes.DRAGON_BREATH, 1.0F);
+        JsonElement defaultEncoded =
+            ParticleTypes.CODEC.EncodeStart(ops, defaultOption).GetOrThrow();
+        Require(ops.Get(defaultEncoded, "type").GetOrThrow().GetString() == "asteria:dragon_breath" &&
+                !ops.Get(defaultEncoded, "power").TryGetResult(out _),
+            "Dragon breath must omit its optional power field when it equals 1.0.");
+
+        PowerParticleOption defaultDecoded =
+            (PowerParticleOption)ParticleTypes.CODEC.Parse(ops, defaultEncoded).GetOrThrow();
+        Require(ReferenceEquals(defaultDecoded.Type, ParticleTypes.DRAGON_BREATH) &&
+                defaultDecoded.GetPower() == 1.0F,
+            "Dragon breath must default absent power to 1.0.");
+
+        PowerParticleOption source =
+            PowerParticleOption.Create(ParticleTypes.DRAGON_BREATH, 0.375F);
+        JsonElement encoded = ParticleTypes.CODEC.EncodeStart(ops, source).GetOrThrow();
+        Require(ops.Get(encoded, "power").GetOrThrow().GetSingle() == 0.375F,
+            "Dragon breath must encode non-default power as a float.");
+
+        PowerParticleOption decoded =
+            (PowerParticleOption)ParticleTypes.CODEC.Parse(ops, encoded).GetOrThrow();
+        Require(ReferenceEquals(decoded.GetParticleType(), ParticleTypes.DRAGON_BREATH) &&
+                decoded.GetPower() == 0.375F,
+            "Dragon breath power options must round-trip their type and payload.");
+
+        JsonElement invalid = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("type"), ops.CreateString("asteria:dragon_breath")),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("power"), ops.CreateString("invalid"))
+        });
+        Require(ParticleTypes.CODEC.Parse(ops, invalid).IsError,
+            "A present invalid dragon breath power must fail rather than use the default.");
+
+        Require(!ParticleTypes.DRAGON_BREATH.OverrideLimiter,
+            "Dragon breath must retain overrideLimiter=false.");
+    }
+
+    private static void CheckSculkChargeParticleOptionsCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        var source = new SculkChargeParticleOptions(1.25F);
+
+        JsonElement encoded = ParticleTypes.CODEC.EncodeStart(ops, source).GetOrThrow();
+        Require(ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:sculk_charge" &&
+                ops.Get(encoded, "roll").GetOrThrow().GetSingle() == 1.25F,
+            "Sculk charge must encode the required roll field and its particle type.");
+
+        SculkChargeParticleOptions decoded =
+            (SculkChargeParticleOptions)ParticleTypes.CODEC.Parse(ops, encoded).GetOrThrow();
+        Require(decoded == source &&
+                ReferenceEquals(decoded.GetParticleType(), ParticleTypes.SCULK_CHARGE),
+            "Sculk charge options must round-trip roll and resolve the registered type.");
+
+        JsonElement missingRoll = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("type"), ops.CreateString("asteria:sculk_charge"))
+        });
+        Require(ParticleTypes.CODEC.Parse(ops, missingRoll).IsError,
+            "Sculk charge must reject an absent required roll field.");
+
+        JsonElement invalidRoll = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("type"), ops.CreateString("asteria:sculk_charge")),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("roll"), ops.CreateString("invalid"))
+        });
+        Require(ParticleTypes.CODEC.Parse(ops, invalidRoll).IsError,
+            "Sculk charge must reject an invalid roll value.");
+
+        Require(ParticleTypes.SCULK_CHARGE.OverrideLimiter,
+            "Sculk charge must retain overrideLimiter=true.");
+    }
 
     private static void CheckByNameCodecFailures()
     {

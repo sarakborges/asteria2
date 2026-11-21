@@ -253,3 +253,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Codec de registro mantém defaults da referência: `color=-1` e `power=1.0`. Campos ausentes recebem defaults; ao codificar, valores iguais aos defaults são omitidos. Campo presente inválido não cai silenciosamente no default.
 - `RGB_COLOR_CODEC` usa inteiro como representação primária e vetor RGB de três floats como alternativa. Os getters de canal retornam componentes RGB normalizados.
 - Os dois tipos estão registrados nas posições relativas da declaração 26.3, com `overrideLimiter=false`. Contagem atual: 106 simples + 3 coloridos + 2 spell.
+
+
+## Incremento — PowerParticleOption e SculkChargeParticleOptions (21/11/2026)
+
+- Portado `PowerParticleOption` para `dragon_breath`: `power` é um campo opcional com default `1.0`; o default é omitido durante a codificação e um valor presente inválido causa erro. `overrideLimiter=false`.
+- Portado `SculkChargeParticleOptions` como record com campo obrigatório `roll`; o tipo associado é o singleton registrado `sculk_charge`, com `overrideLimiter=true`.
+- Os dois registros ocupam suas posições relativas na ordem built-in 26.3. Contagem de tipos agora é 113: 106 simples, 3 coloridos, 2 spell e 2 opções numéricas.
+- Os contratos de buffer e stream codecs permanecem excluídos por escopo offline.
