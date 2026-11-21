@@ -1734,6 +1734,21 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             Require(ids.GetId(state) == id, "State-to-ID lookup must round-trip.");
         }
         Require(ids.GetId(Blocks.AIR.DefaultState) == 0, "The first block's singleton state must receive ID zero.");
+        Require(Block.GetId(null) == 0, "Block.getId(null) must use the air state ID.");
+        Require(
+            Block.GetId(Blocks.AIR.DefaultState) == 0 &&
+            Block.GetId(Blocks.TEST_BLOCK.DefaultState) == ids.GetId(Blocks.TEST_BLOCK.DefaultState),
+            "Block.getId must expose the global insertion-order state IDs.");
+        Require(
+            ReferenceEquals(Block.StateById(0), Blocks.AIR.DefaultState) &&
+            ReferenceEquals(
+                Block.StateById(ids.GetId(Blocks.TEST_BLOCK.DefaultState)),
+                Blocks.TEST_BLOCK.DefaultState),
+            "Block.stateById must resolve valid IDs to their exact state instances.");
+        Require(
+            ReferenceEquals(Block.StateById(-1), Blocks.AIR.DefaultState) &&
+            ReferenceEquals(Block.StateById(ids.Count), Blocks.AIR.DefaultState),
+            "Block.stateById must fall back to the default air state for negative and out-of-range IDs.");
         Require(ids.ById(-1) is null, "Nullable ID lookup must return null for invalid global state IDs.");
         ArgumentException missingState = Capture<ArgumentException>(
             () => ((IIdMap<BlockState>)ids).ByIdOrThrow(-1),

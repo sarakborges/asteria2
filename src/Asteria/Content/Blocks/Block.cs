@@ -10,6 +10,20 @@ public class Block
     /// <summary>Global block-state ID map, populated as each state is constructed.</summary>
     public static BlockStateIdMap BlockStateRegistry { get; } = new();
 
+    /// <summary>Returns the runtime ID of a state, using air's ID for null or unregistered states.</summary>
+    public static int GetId(BlockState? blockState)
+    {
+        if (blockState is null)
+            return 0;
+
+        int id = BlockStateRegistry.GetId(blockState);
+        return id == -1 ? 0 : id;
+    }
+
+    /// <summary>Resolves a runtime state ID, falling back to the default air state when absent.</summary>
+    public static BlockState StateById(int idWithData) =>
+        BlockStateRegistry.ById(idWithData) ?? Blocks.AIR.DefaultState;
+
     public BlockProperties Properties { get; }
     public StateDefinition StateDefinition { get; }
     public float ExplosionResistance { get; }

@@ -40,7 +40,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 - `BlockState.SetValue`, `TrySetValue`, and `Cycle` resolve through the precomputed neighbor tables; `TryGetValue` provides the optional-value lookup path.
 - Each `BlockState` snapshots the currently modeled state-level `BlockStateBase` values at construction: air, destroy speed, correct-tool requirement, occlusion, random ticking, lava ignition, liquid, replaceability, and terrain-particle behavior. Mutating the retained properties builder does not retroactively change existing states.
 - Block map colors, sound/instrument data, light emission/dampening, push reaction, shape/predicate behavior, loot metadata, feature flags, and the complete state cache remain pending their corresponding domain systems.
-- `Block.BLOCK_STATE_REGISTRY` is the global `IdMapper<BlockState>` equivalent. Each state receives its insertion-order ID in its constructor, as soon as `StateDefinition` materializes it; this map is independent of the built-in block registry and is not frozen with it.
+- `Block.BlockStateRegistry` is the global `IdMapper<BlockState>` equivalent. Each state receives its insertion-order ID in its constructor, as soon as `StateDefinition` materializes it; this map is independent of the built-in block registry and is not frozen with it. `Block.GetId` maps null or unknown states to the air ID (zero), and `Block.StateById` resolves missing IDs to the default air state.
 
 ## Paletted storage
 
