@@ -94,4 +94,32 @@ public sealed class Chunk : LevelHeightAccessor
     public int GetHeight() => _levelHeightAccessor.GetHeight();
 
     public int GetMinY() => _levelHeightAccessor.GetMinY();
+
+    public int GetMaxY() => _levelHeightAccessor.GetMaxY();
+
+    public int GetMinSectionY() => _levelHeightAccessor.GetMinSectionY();
+
+    public int GetMaxSectionY() => _levelHeightAccessor.GetMaxSectionY();
+
+    public int GetSectionsCount() => _levelHeightAccessor.GetSectionsCount();
+
+    public int GetSectionIndex(int blockY) => _levelHeightAccessor.GetSectionIndex(blockY);
+
+    public int GetSectionIndexFromSectionY(int sectionY) =>
+        _levelHeightAccessor.GetSectionIndexFromSectionY(sectionY);
+
+    public int GetSectionYFromSectionIndex(int sectionIndex) =>
+        _levelHeightAccessor.GetSectionYFromSectionIndex(sectionIndex);
+
+    public bool IsInsideBuildHeight(BlockPos position) =>
+        _levelHeightAccessor.IsInsideBuildHeight(position);
+
+    public bool IsInsideBuildHeight(int blockY) =>
+        _levelHeightAccessor.IsInsideBuildHeight(blockY);
+
+    public bool IsOutsideBuildHeight(BlockPos position) =>
+        _levelHeightAccessor.IsOutsideBuildHeight(position);
+
+    public bool IsOutsideBuildHeight(int blockY) =>
+        _levelHeightAccessor.IsOutsideBuildHeight(blockY);
 }

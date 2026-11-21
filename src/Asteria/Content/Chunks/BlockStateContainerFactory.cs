@@ -26,7 +26,7 @@ public sealed class BlockStateContainerFactory
     public static BlockStateContainerFactory CreateBuiltIn() =>
         new(
             PalettedContainerStrategy<BlockState>.CreateForBlockStates(Block.BlockStateRegistry),
-            Blocks.AIR.DefaultState);
+            Asteria.Content.Blocks.Blocks.AIR.DefaultState);
 
     public PalettedContainer<BlockState> CreateForBlockStates() =>
         new(DefaultBlockState, BlockStatesStrategy);
