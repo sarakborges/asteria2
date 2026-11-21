@@ -31,6 +31,8 @@ Other numeric methods from the 26.3 utility class remain outside this increment.
 
 The C# `Position` contract uses `GetX/GetY/GetZ` methods in place of Java's `x/y/z` method names; the returned coordinate values and call semantics are unchanged.
 
+`AABB` now uses these real-valued vectors and the discrete directions for six-face bounds, overlap, containment, segment clipping and sweep collision queries.
+
 ## Explicitly deferred
 
 The remaining `Direction` and `Vec3` members require real additional systems:
@@ -38,6 +40,7 @@ The remaining `Direction` and `Vec3` members require real additional systems:
 - Matrix rotation, quaternion and `Vector3f` accessors need the linear-algebra integration used by the renderer.
 - Random vector offsets and random direction/axis/plane selection need the game's random-source contract.
 - `Vec2`-based direction rotation output/input needs the two-dimensional vector type.
+- `BoundingBox` and block-hit-result overloads of AABB require world-generation structure and hit-result domains.
 - Codecs and stream codecs need the serialization/network domains.
 
 ## Reference source

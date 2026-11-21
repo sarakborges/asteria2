@@ -311,7 +311,7 @@ public sealed class Vec3 : Position, IEquatable<Vec3>
             ? unchecked((long)0x7ff8000000000000UL)
             : BitConverter.DoubleToInt64Bits(value);
 
-    private static string JavaDoubleToString(double value)
+    internal static string JavaDoubleToString(double value)
     {
         if (double.IsNaN(value)) return "NaN";
         if (double.IsPositiveInfinity(value)) return "Infinity";

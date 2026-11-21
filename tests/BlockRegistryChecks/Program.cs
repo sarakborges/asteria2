@@ -171,6 +171,7 @@ internal static class Program
         CoordinatePositionChecks.Run();
         DirectionChecks.Run();
         Vec3Checks.Run();
+        AabbChecks.Run();
 
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&
