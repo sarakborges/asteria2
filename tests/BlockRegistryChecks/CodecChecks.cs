@@ -11,6 +11,7 @@ internal static class CodecChecks
         CheckListCodecs();
         CheckRangeValidation();
         CheckRecordCodecBuilder();
+        CheckDefaultedOptionalFields();
         CheckUnitAndDispatchCodecs();
     }
 
@@ -219,6 +220,43 @@ internal static class CodecChecks
         });
         Require(dispatch.Parse(ops, unknown).IsError,
             "Dispatch codecs must reject unknown subtype discriminators.");
+    }
+
+
+    private static void CheckDefaultedOptionalFields()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        MapCodec<float> field = Codecs.FLOAT.OptionalFieldOf("power", 1.0F);
+
+        Require(field.Parse(ops, ops.EmptyMap).GetOrThrow() == 1.0F,
+            "An absent optional field must decode to its configured default.");
+
+        JsonElement defaultEncoded = field.EncodeStart(ops, 1.0F).GetOrThrow();
+        Require(defaultEncoded.ValueKind == JsonValueKind.Object &&
+                !ops.Get(defaultEncoded, "power").TryGetResult(out _),
+            "Encoding an optional field's default value must omit that field.");
+
+        JsonElement nonDefaultEncoded = field.EncodeStart(ops, 2.5F).GetOrThrow();
+        Require(ops.Get(nonDefaultEncoded, "power").GetOrThrow().GetSingle() == 2.5F,
+            "Encoding a non-default optional field must write its configured key.");
+
+        JsonElement invalidPresent = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("power"),
+                ops.CreateString("not_a_number"))
+        });
+        Require(field.Parse(ops, invalidPresent).IsError,
+            "A present but invalid optional field must fail instead of silently using the default.");
+
+        JsonElement explicitNull = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("power"),
+                ops.Empty)
+        });
+        Require(field.Parse(ops, explicitNull).IsError,
+            "A present null optional field must fail instead of being treated as absent.");
     }
 
     private static void Require(bool condition, string message)

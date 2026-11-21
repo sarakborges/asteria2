@@ -95,6 +95,12 @@ public abstract class Codec<TValue> : Encoder<TValue>, Decoder<TValue>
         return new FieldMapCodec<TValue>(this, name);
     }
 
+    public MapCodec<TValue> OptionalFieldOf(string name, TValue defaultValue)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return new DefaultedFieldMapCodec<TValue>(this, name, defaultValue);
+    }
+
     public override string ToString() =>
         GetType().Name;
 
