@@ -13,6 +13,7 @@ internal static class ChunkChecks
         CheckHeightAccessor();
         CheckChunkConstructionAndSections(nonAirState);
         CheckMismatchedSectionArray();
+        CheckWorldSurfaceHeightmap(nonAirState);
     }
 
     private static void CheckHeightAccessor()
@@ -123,6 +124,55 @@ internal static class ChunkChecks
         Require(chunk.GetSections().Length == 24, "Chunk section storage length must come from the height accessor.");
         Require(chunk.GetSection(0).HasOnlyAir, "A mismatched supplied section array must be discarded before missing sections are filled.");
         Require(!ReferenceEquals(chunk.GetSection(0), supplied[0]), "A mismatched supplied section array must not partially populate the chunk.");
+    }
+
+    private static void CheckWorldSurfaceHeightmap(BlockState nonAirState)
+    {
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
+        var chunk = new Chunk(new ChunkPos(-2, 3), height, factory);
+        Heightmap heightmap = Heightmap.CreateWorldSurface(chunk);
+
+        Require(heightmap.BitsPerEntry == 9, "A 384-block world height requires 9 bits per heightmap entry.");
+        Require(heightmap.GetRawData().Length == 37, "A 9-bit, 256-column heightmap must use 37 packed longs.");
+        Require(heightmap.GetFirstAvailable(3, 5) == -64, "An unprimed heightmap column starts at minimum build Y.");
+        Require(heightmap.GetHighestTaken(3, 5) == -65, "An empty unprimed column has no occupied block above its first available Y.");
+
+        // Seed a surface block before priming: the first available Y is one above the highest block.
+        chunk.GetSection(chunk.GetSectionIndex(10)).SetBlockState(3, 10, 5, nonAirState);
+        heightmap.Prime();
+        Require(heightmap.GetFirstAvailable(3, 5) == 11, "Priming must find the highest non-air block in the column.");
+        Require(heightmap.GetHighestTaken(3, 5) == 10, "Highest taken Y must be first available Y minus one.");
+        Require(heightmap.GetFirstAvailable(4, 5) == -64, "Priming one column must not change adjacent column heights.");
+
+        // Adding a new top block advances the first-available height.
+        chunk.GetSection(chunk.GetSectionIndex(20)).SetBlockState(3, 20 & 15, 5, nonAirState);
+        Require(heightmap.Update(3, 20, 5, nonAirState), "Adding a block above the current surface must update its height.");
+        Require(heightmap.GetFirstAvailable(3, 5) == 21, "A new top block must set first available Y to block Y plus one.");
+
+        // A block below the current surface does not change the stored height.
+        chunk.GetSection(chunk.GetSectionIndex(12)).SetBlockState(3, 12, 5, nonAirState);
+        Require(!heightmap.Update(3, 12, 5, nonAirState), "Adding a block sufficiently below the surface must not update the heightmap.");
+
+        // Removing the top block rescans downward and finds the next highest block.
+        BlockState air = Blocks.AIR.DefaultState;
+        chunk.GetSection(chunk.GetSectionIndex(20)).SetBlockState(3, 20 & 15, 5, air);
+        Require(heightmap.Update(3, 20, 5, air), "Removing the surface block must trigger a downward rescan.");
+        Require(heightmap.GetFirstAvailable(3, 5) == 13, "Removing the top block must reveal the previously buried block.");
+
+        chunk.GetSection(chunk.GetSectionIndex(12)).SetBlockState(3, 12, 5, air);
+        Require(heightmap.Update(3, 12, 5, air), "Removing the next surface block must trigger another downward rescan.");
+        Require(heightmap.GetFirstAvailable(3, 5) == 11, "Downward rescan must find the original lower block.");
+
+        chunk.GetSection(chunk.GetSectionIndex(10)).SetBlockState(3, 10, 5, air);
+        Require(heightmap.Update(3, 10, 5, air), "Removing the final column block must reset its height to minimum build Y.");
+        Require(heightmap.GetFirstAvailable(3, 5) == -64, "An empty column must return to minimum build Y.");
+
+        // A second column remains independent and uses the same packed storage.
+        chunk.GetSection(chunk.GetSectionIndex(0)).SetBlockState(4, 0, 2, nonAirState);
+        Require(heightmap.Update(4, 0, 2, nonAirState), "A new block in another column must update independently.");
+        Require(heightmap.GetFirstAvailable(4, 2) == 1, "The second column must store its own first available Y.");
+        Require(heightmap.GetFirstAvailable(3, 5) == -64, "Updating a neighboring column must not alter the first column.");
     }
 
     private static void Require(bool condition, string message)
