@@ -22,6 +22,12 @@ public static class ExtraCodecs
     public static readonly Codec<int> RGB_COLOR_CODEC =
         Codecs.INT.WithAlternative(VECTOR3F, Argb.ColorFromVector3);
 
+    public static readonly Codec<int> POSITIVE_INT =
+        Codecs.INT.Validate(value =>
+            value > 0
+                ? DataResult<int>.Success(value)
+                : DataResult<int>.Error($"Value must be positive: {value}"));
+
     public static readonly Codec<Vector3> STRING_RGB_VEC3_COLOR =
         HexColor(6)
             .XMap(Argb.Opaque, Argb.Transparent)

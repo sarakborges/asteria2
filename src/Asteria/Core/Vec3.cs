@@ -1,4 +1,5 @@
 using System.Globalization;
+using Asteria.Serialization;
 
 namespace Asteria.Core;
 
@@ -7,6 +8,27 @@ namespace Asteria.Core;
 /// </summary>
 public sealed class Vec3 : Position, IEquatable<Vec3>
 {
+    /// <summary>Three doubles encoded as an exact-size list, matching the source vector codec.</summary>
+    public static Codec<Vec3> CODEC { get; } =
+        Codecs.DOUBLE.ListOf().FlatXMap(
+            values =>
+            {
+                if (values.Count != 3)
+                {
+                    const string error = "Input is not a list of 3 elements";
+                    return values.Count > 3
+                        ? DataResult<Vec3>.Error(
+                            error,
+                            new Vec3(values[0], values[1], values[2]))
+                        : DataResult<Vec3>.Error(error);
+                }
+
+                return DataResult<Vec3>.Success(
+                    new Vec3(values[0], values[1], values[2]));
+            },
+            value => DataResult<IReadOnlyList<double>>.Success(
+                new[] { value.X, value.Y, value.Z }));
+
     public static readonly Vec3 ZERO = new(0.0, 0.0, 0.0);
     public static readonly Vec3 X_AXIS = new(1.0, 0.0, 0.0);
     public static readonly Vec3 Y_AXIS = new(0.0, 1.0, 0.0);

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Asteria.Core;
 using Asteria.Serialization;
 
 internal static class CodecChecks
@@ -6,6 +7,8 @@ internal static class CodecChecks
     public static void Run()
     {
         CheckPrimitiveCodecs();
+        CheckVec3Codec();
+        CheckPositiveIntegerCodec();
         CheckMappedCodecs();
         CheckFieldCodecs();
         CheckListCodecs();
@@ -257,6 +260,62 @@ internal static class CodecChecks
         });
         Require(field.Parse(ops, explicitNull).IsError,
             "A present null optional field must fail instead of being treated as absent.");
+    }
+
+
+    private static void CheckVec3Codec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        var source = new Vec3(1.25, -2.5, 3.75);
+
+        JsonElement encoded = Vec3.CODEC.EncodeStart(ops, source).GetOrThrow();
+        IReadOnlyList<JsonElement> encodedComponents = ops.GetList(encoded).GetOrThrow();
+        Require(encodedComponents.Count == 3 &&
+                encodedComponents[0].GetDouble() == 1.25 &&
+                encodedComponents[1].GetDouble() == -2.5 &&
+                encodedComponents[2].GetDouble() == 3.75,
+            "Vec3 codec must encode exactly three double coordinates in X/Y/Z order.");
+
+        Vec3 decoded = Vec3.CODEC.Parse(ops, encoded).GetOrThrow();
+        Require(decoded.Equals(source),
+            "Vec3 codec must round-trip real-valued double coordinates.");
+
+        JsonElement shortList = ops.CreateList(new[]
+        {
+            ops.CreateDouble(1.0),
+            ops.CreateDouble(2.0)
+        });
+        DataResult<Vec3> shortResult = Vec3.CODEC.Parse(ops, shortList);
+        Require(shortResult.IsError && !shortResult.HasResultOrPartial,
+            "Vec3 codec must reject lists shorter than three without a partial vector.");
+
+        JsonElement longList = ops.CreateList(new[]
+        {
+            ops.CreateDouble(1.0),
+            ops.CreateDouble(2.0),
+            ops.CreateDouble(3.0),
+            ops.CreateDouble(4.0)
+        });
+        DataResult<Vec3> longResult = Vec3.CODEC.Parse(ops, longList);
+        Require(longResult.IsError &&
+                longResult.TryGetPartial(out Vec3 partial) &&
+                partial.Equals(new Vec3(1.0, 2.0, 3.0)),
+            "Vec3 codec must retain the first three values as a partial result for oversized lists.");
+    }
+
+    private static void CheckPositiveIntegerCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        Require(ExtraCodecs.POSITIVE_INT.Parse(ops, ops.CreateInt(1)).GetOrThrow() == 1 &&
+                ExtraCodecs.POSITIVE_INT.Parse(ops, ops.CreateInt(int.MaxValue)).GetOrThrow() == int.MaxValue,
+            "Positive integer codec must accept the inclusive positive Int32 range.");
+
+        foreach (int value in new[] { 0, -1, int.MinValue })
+        {
+            DataResult<int> result = ExtraCodecs.POSITIVE_INT.Parse(ops, ops.CreateInt(value));
+            Require(result.IsError && result.ErrorMessage == $"Value must be positive: {value}",
+                "Positive integer codec must reject non-positive values with the source error message.");
+        }
     }
 
     private static void Require(bool condition, string message)
