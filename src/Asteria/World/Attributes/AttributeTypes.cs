@@ -1,12 +1,12 @@
 using System.Numerics;
 using Asteria.Content.Identifiers;
+using Asteria.Content.Particles;
 using Asteria.Content.Registries;
 using Asteria.World.Attributes.Modifiers;
 using Asteria.World.Level;
 
 namespace Asteria.World.Attributes;
 
-/// <summary>Built-in interpolation and modifier policies for implemented environment value types.</summary>
 public static class AttributeTypes
 {
     public static readonly AttributeType<bool> BOOLEAN =
@@ -45,6 +45,17 @@ public static class AttributeTypes
             LerpFunction<Vector4>.OfColorVec4(),
             ColorModifier.ARGB_LIBRARY);
 
+    public static readonly AttributeType<IParticleOptions> PARTICLE =
+        AttributeType<IParticleOptions>.OfNotInterpolated(ParticleTypes.CODEC);
+
+    public static readonly AttributeType<IReadOnlyList<AmbientParticle>> AMBIENT_PARTICLES =
+        AttributeType<IReadOnlyList<AmbientParticle>>.OfInterpolated(
+            AmbientParticle.CODEC.ListOf(),
+            LerpFunction<AmbientParticle>.OfListCrossFade(
+                static (particle, alpha) =>
+                    particle with { Probability = particle.Probability * alpha }),
+            ListModifier<AmbientParticle>.LIBRARY);
+
     internal static void RegisterAll()
     {
         Register("boolean", BOOLEAN);
@@ -54,6 +65,8 @@ public static class AttributeTypes
         Register("argb_color", ARGB_COLOR);
         Register("integer", INTEGER);
         Register("moon_phase", MOON_PHASE);
+        Register("particle", PARTICLE);
+        Register("ambient_particles", AMBIENT_PARTICLES);
     }
 
     private static void Register(string path, IAttributeType type)

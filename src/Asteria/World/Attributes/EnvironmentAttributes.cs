@@ -30,6 +30,12 @@ public static class EnvironmentAttributes
     public static readonly EnvironmentAttribute<float> CREATURE_WORLD_GEN_SPAWN_PROBABILITY =
         Float(0.1F, false, AttributeRange<float>.UnitFloatEpsilon);
 
+    public static readonly EnvironmentAttribute<IReadOnlyList<AmbientParticle>> AMBIENT_PARTICLES =
+        EnvironmentAttribute<IReadOnlyList<AmbientParticle>>.CreateBuilder(AttributeTypes.AMBIENT_PARTICLES)
+            .DefaultValue(Array.Empty<AmbientParticle>())
+            .Syncable()
+            .Build();
+
     internal static void RegisterAll()
     {
         Register("visual/fog_start_distance", FOG_START_DISTANCE);
@@ -53,6 +59,7 @@ public static class EnvironmentAttributes
         Register("gameplay/monsters_burn", MONSTERS_BURN);
         Register("gameplay/can_pillager_patrol_spawn", CAN_PILLAGER_PATROL_SPAWN);
         Register("gameplay/creature_world_gen_spawn_probability", CREATURE_WORLD_GEN_SPAWN_PROBABILITY);
+        Register("visual/ambient_particles", AMBIENT_PARTICLES);
     }
 
     private static EnvironmentAttribute<float> Float(
