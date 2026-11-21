@@ -90,7 +90,7 @@ public class Block
     public virtual FluidState GetFluidState(BlockState state)
     {
         ArgumentNullException.ThrowIfNull(state);
-        return Fluids.EMPTY.DefaultFluidState;
+        return global::Asteria.Content.Fluids.Fluids.EMPTY.DefaultFluidState;
     }
 
     /// <summary>Copies every property shared by the source block into this block's default state.</summary>
