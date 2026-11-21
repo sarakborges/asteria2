@@ -197,8 +197,6 @@ public sealed class Direction
 
     public Vec3 GetUnitVec3() => _normalVec3;
 
-    public Vec3 GetUnitVec3() => _normalVec3;
-
     public int GetStepX() => _normal.GetX();
 
     public int GetStepY() => _normal.GetY();
