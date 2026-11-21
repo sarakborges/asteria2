@@ -1792,7 +1792,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             () => ((IIdMap<BlockState>)ids).GetIdOrThrow(null),
             "IdMap.getIdOrThrow must reject values absent from the ID map.");
         Require(
-            missingId.Message == $"Can't find id for '' in map {ids}",
+            missingId.Message == $"Can't find id for 'null' in map {ids}",
             "IdMap.getIdOrThrow must use the vanilla missing-value error message.");
     }
 

@@ -18,7 +18,8 @@ public interface IIdMap<T> : IEnumerable<T> where T : class
         int id = GetId(value);
         if (id == -1)
         {
-            throw new ArgumentException($"Can't find id for '{value}' in map {this}");
+            string valueDescription = value?.ToString() ?? "null";
+            throw new ArgumentException($"Can't find id for '{valueDescription}' in map {this}");
         }
 
         return id;
