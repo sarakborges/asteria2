@@ -1,0 +1,176 @@
+using Asteria.World.Attributes;
+using Asteria.World.Attributes.Modifiers;
+
+internal static class EnvironmentAttributeChecks
+{
+    public static void Run()
+    {
+        CheckAttributeDefinitionAndRange();
+        CheckTypeInterpolationAndNumericProjection();
+        CheckTypedModifierLibraries();
+        CheckEnvironmentAttributeMap();
+    }
+
+    private static void CheckAttributeDefinitionAndRange()
+    {
+        RequireThrows<InvalidOperationException>(
+            () => EnvironmentAttribute<float>.CreateBuilder(AttributeTypes.FLOAT).Build(),
+            "An environment attribute must reject a missing default value.");
+
+        EnvironmentAttribute<float> attribute = EnvironmentAttribute<float>
+            .CreateBuilder(AttributeTypes.FLOAT)
+            .DefaultValue(0.8F)
+            .ValueRange(AttributeRange<float>.UnitFloat)
+            .Syncable()
+            .SpatiallyInterpolated()
+            .FullResolutionBiomes()
+            .Build();
+
+        Require(attribute.DefaultValue == 0.8F, "An environment attribute must retain its default value.");
+        Require(attribute.IsSyncable && attribute.IsPositional &&
+                attribute.IsSpatiallyInterpolated && attribute.IsFullResolutionBiomes,
+            "Environment attribute flags must preserve their builder defaults and enabled states.");
+        Require(attribute.ValueRange.IsValid(0.25F), "A value inside an attribute range must validate.");
+        Require(!attribute.ValueRange.TryValidate(1.25F, out string? error) &&
+                error == "1.25 is not in range [0; 1]",
+            "Float range validation must report the reference interval and rejected value.");
+        Require(attribute.SanitizeValue(1.25F) == 1.0F &&
+                attribute.SanitizeValue(-0.25F) == 0.0F,
+            "Float range sanitization must clamp values to the inclusive interval.");
+
+        EnvironmentAttribute<bool> nonPositional = EnvironmentAttribute<bool>
+            .CreateBuilder(AttributeTypes.BOOLEAN)
+            .DefaultValue(false)
+            .NotPositional()
+            .Build();
+        Require(!nonPositional.IsPositional && !nonPositional.IsSpatiallyInterpolated,
+            "Non-positional attributes must retain false spatial interpolation by default.");
+    }
+
+    private static void CheckTypeInterpolationAndNumericProjection()
+    {
+        Require(AttributeTypes.FLOAT.ToFloat(0.75F) == 0.75F,
+            "The float attribute type must expose its float projection.");
+        RequireThrows<InvalidOperationException>(
+            () => AttributeTypes.FLOAT.ToInt(0.75F),
+            "A float attribute type must reject an unregistered integer projection.");
+
+        Require(Math.Abs(LerpFunction<float>.OfFloat().Apply(0.25F, 0.8F, 1.0F) - 0.85F) < 0.000001F,
+            "Float interpolation must preserve alpha-weighted linear interpolation.");
+        Require(AttributeTypes.BOOLEAN.KeyframeLerp.Apply(0.999F, false, true) == false &&
+                AttributeTypes.BOOLEAN.KeyframeLerp.Apply(1.0F, false, true),
+            "Non-interpolated keyframe transitions must switch at alpha one.");
+        Require(AttributeTypes.BOOLEAN.StateChangeLerp.Apply(0.0F, false, true) &&
+                !AttributeTypes.BOOLEAN.SpatialLerp.Apply(0.499F, false, true) &&
+                AttributeTypes.BOOLEAN.SpatialLerp.Apply(0.5F, false, true) &&
+                AttributeTypes.BOOLEAN.PartialTickLerp.Apply(0.0F, false, true),
+            "The four non-interpolated contexts must use their distinct reference step thresholds.");
+    }
+
+    private static void CheckTypedModifierLibraries()
+    {
+        Require(BooleanModifier.AND.Apply(true, false) == false &&
+                BooleanModifier.NAND.Apply(true, false) == true &&
+                BooleanModifier.OR.Apply(false, true) == true &&
+                BooleanModifier.NOR.Apply(false, true) == false &&
+                BooleanModifier.XOR.Apply(true, true) == false &&
+                BooleanModifier.XNOR.Apply(true, true) == true,
+            "Boolean modifier truth tables must match the six reference operations.");
+
+        Require(FloatModifier.ADD.Apply(0.4F, 0.3F) == 0.7F &&
+                FloatModifier.SUBTRACT.Apply(0.4F, 0.3F) == 0.1F &&
+                FloatModifier.MULTIPLY.Apply(0.4F, 0.5F) == 0.2F &&
+                FloatModifier.MINIMUM.Apply(0.4F, 0.3F) == 0.3F &&
+                FloatModifier.MAXIMUM.Apply(0.4F, 0.3F) == 0.4F,
+            "Float modifiers must preserve addition, subtraction, multiplication, minimum and maximum.");
+        Require(Math.Abs(
+                FloatModifier.ALPHA_BLEND.Apply(0.8F, new FloatWithAlpha(1.0F, 0.25F)) - 0.85F) < 0.000001F,
+            "Alpha blending must interpolate from the subject toward the argument value by its alpha.");
+        Require(FloatModifier.ALPHA_BLEND
+                .ArgumentKeyframeLerp(
+                    EnvironmentAttribute<float>.CreateBuilder(AttributeTypes.FLOAT).DefaultValue(0.0F).Build())
+                .Apply(0.5F, new FloatWithAlpha(0.0F, 0.0F), new FloatWithAlpha(1.0F, 1.0F))
+                == new FloatWithAlpha(0.5F, 0.5F),
+            "Alpha-blend modifier keyframes must interpolate both value and alpha.");
+    }
+
+    private static void CheckEnvironmentAttributeMap()
+    {
+        EnvironmentAttribute<float> attribute = EnvironmentAttribute<float>
+            .CreateBuilder(AttributeTypes.FLOAT)
+            .DefaultValue(0.8F)
+            .Build();
+
+        EnvironmentAttributeMap multiplyMap = EnvironmentAttributeMap.CreateBuilder()
+            .Modify(attribute, FloatModifier.MULTIPLY, 0.5F)
+            .Build();
+        Require(Math.Abs(multiplyMap.ApplyModifier(attribute, 0.8F) - 0.4F) < 0.000001F,
+            "An attribute map must apply the typed modifier to its incoming value.");
+        Require(!multiplyMap.Contains(EnvironmentAttribute<bool>
+                .CreateBuilder(AttributeTypes.BOOLEAN).DefaultValue(false).Build()),
+            "An attribute map must use attribute-definition identity for key membership.");
+
+        EnvironmentAttributeMap overrideMap = EnvironmentAttributeMap.CreateBuilder()
+            .Set(attribute, 0.25F)
+            .Build();
+        Require(overrideMap.ApplyModifier(attribute, 0.8F) == 0.25F,
+            "Set must be equivalent to the override modifier.");
+        Require(EnvironmentAttributeMap.Empty.ApplyModifier(attribute, 0.8F) == 0.8F,
+            "A missing attribute entry must leave the lower-layer value unchanged.");
+
+        EnvironmentAttributeMap.Builder mutableBuilder = EnvironmentAttributeMap.CreateBuilder()
+            .Set(attribute, 0.6F);
+        EnvironmentAttributeMap snapshot = mutableBuilder.Build();
+        mutableBuilder.Set(attribute, 0.2F);
+        Require(snapshot.ApplyModifier(attribute, 0.8F) == 0.6F,
+            "Building a map must copy the builder entries into an immutable snapshot.");
+
+        EnvironmentAttributeMap merged = EnvironmentAttributeMap.CreateBuilder()
+            .PutAll(overrideMap)
+            .PutAll(multiplyMap)
+            .Build();
+        Require(Math.Abs(merged.ApplyModifier(attribute, 0.8F) - 0.4F) < 0.000001F,
+            "PutAll must replace an existing attribute entry with the later map entry.");
+
+        RequireThrows<ArgumentException>(
+            () => EnvironmentAttributeMap.CreateBuilder().Modify(
+                attribute,
+                new UnregisteredFloatModifier(),
+                0.1F),
+            "An attribute type must reject a modifier that is not part of its operation library.");
+    }
+
+    private sealed class UnregisteredFloatModifier : AttributeModifier<float, float>
+    {
+        public override AttributeOperationId OperationId => AttributeOperationId.ADD;
+        public override string GetSerializedName() => "add";
+        public override float Apply(float subject, float argument) => subject + argument;
+        public override LerpFunction<float> ArgumentKeyframeLerp(EnvironmentAttribute<float> attribute) =>
+            LerpFunction<float>.OfFloat();
+    }
+
+    private static void Require(bool condition, string message)
+    {
+        if (!condition)
+            throw new InvalidOperationException(message);
+    }
+
+    private static void RequireThrows<TException>(Action action, string message)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException)
+        {
+            return;
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException(message, exception);
+        }
+
+        throw new InvalidOperationException(message);
+    }
+}

@@ -65,7 +65,7 @@ Asteria ainda não é um jogo funcional completo: mundo, chunks completos, bioma
 | `Mth` | `Mth` | Parcial: tabela trigonométrica SIN de 65536 entradas, `Sin`, `Cos`, `Floor`, `Lerp`, `Square`, `LengthSquared` e `Length`, cobrindo a dependência portável de `Direction`/`Vec3`. O restante da utilitária numérica não foi introduzido. |
 | `Heightmap` / `HeightmapType` | `Heightmap` / `Heightmap.Types` | Seis variantes com IDs, nomes serializados, envio ao cliente, retenção após worldgen e predicados por tags/fluidos; priming compartilhado, atualização incremental e fallback para dados incompatíveis. Persistência por codecs ainda ausente. |
 | `Chunk` | `ChunkAccess` / `ProtoChunk` / `LevelChunk` | Parcial: posições, seções, lookup de blocos e heightmaps. Ainda não há base abstrata `ChunkAccess`, subclasses com lifecycle separado, block entities, estruturas, biomas, ticks, iluminação ou serialização. |
-| `Biome` / `BiomeResolver` | `Biome` / `BiomeResolver` | Parcial: registry default e holders para Plains/Desert, dados climáticos, resolver quart e palette storage. `BiomeSpecialEffects` cobre overrides de cores e modificadores de grama; `BIOME_INFO_NOISE` foi reproduzido com seed 2345; o modificador FROZEN usa NoiseStack de três camadas com seed 3456; a correção por altitude usa SimplexNoise com seed 1234. Precipitação por temperatura e os limiares climáticos principais estão implementados. Atributos ambientais, spawn settings, generation settings/features/carvers, cache térmico e codecs locais ainda pendentes. |
+| `Biome` / `BiomeResolver` | `Biome` / `BiomeResolver` | Parcial: registry default e holders para Plains/Desert, clima, resolver quart e palette storage. BiomeSpecialEffects cobre cores e modificadores; BIOME_INFO_NOISE seed 2345, temperatura FROZEN seed 3456, correção por altitude seed 1234, precipitação e cache térmico por thread estão portados. Núcleo de atributos ambientais tipados (boolean/float, ranges, modificadores e mapa imutável) portado, ainda sem registro built-in ou integração com dados de bioma. Spawn settings, generation settings/features/carvers, verificações dependentes de nível e codecs locais ainda pendentes. |
 | `ChunkSection` | `LevelChunkSection` | Parcial: palettes de estados de bloco e `Holder<Biome>`; biome palette 4³ com dois bits por eixo, `GetNoiseBiome`, fill via `BiomeResolver`, cópia independente; contadores non-air/fluid/ticking e lookup de fluido. Packet IO foi omitido por escopo offline; codec de save/load local ainda pendente. |
 | `Main.cs`, cena e configuração Godot | Host de execução do jogo | Não há equivalente de gameplay direto. É atualmente um bootstrap/smoke test sobre uma cena Node3D vazia, não um loop de jogo. |
 
@@ -183,3 +183,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Implementada a correção de temperatura por altitude com SimplexNoise seed 1234 acima de seaLevel + 17.
 - Implementados os predicados de chuva/neve e o limiar de derretimento de iceberg.
 - Cache térmico FIFO de 1024 posições por thread, indexado pela posição compactada, está implementado. Verificações dependentes de nível/iluminação permanecem pendentes.
+
+
+## Incremento — núcleo de atributos ambientais tipados
+
+- AttributeRange<T>: validação e sanitização genéricas, incluindo os intervalos float unitário, unitário com epsilon e não negativo.
+- LerpFunction<T>: interpolação tipada e os quatro limiares distintos de transição para tipos sem interpolação.
+- AttributeType<T>: bibliotecas de modificadores permitidos, quatro políticas de interpolação e projeções numéricas opcionais.
+- EnvironmentAttribute<T>: valor padrão, range e flags de sincronização, posicionamento e resolução de biomas.
+- EnvironmentAttributeMap: entradas tipadas, composição por modificador, snapshot imutável, Set como override e PutAll com substituição pela última entrada.
+- Bibliotecas booleanas (AND/NAND/OR/NOR/XOR/XNOR) e float (alpha blend/add/subtract/multiply/minimum/maximum).
+- Escopo: runtime tipado boolean/float. Registro de tipos/atributos built-in, codecs locais, outros domínios de valor e integração do Biome com o mapa ainda pendentes.
