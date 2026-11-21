@@ -75,7 +75,7 @@ public sealed class Chunk : LevelHeightAccessor
             }
         }
 
-        return Blocks.AIR.DefaultState;
+        return global::Asteria.Content.Blocks.Blocks.AIR.DefaultState;
     }
 
     /// <summary>
