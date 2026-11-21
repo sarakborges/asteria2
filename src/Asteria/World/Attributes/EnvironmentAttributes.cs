@@ -19,12 +19,24 @@ public static class EnvironmentAttributes
     public static readonly EnvironmentAttribute<float> STAR_ANGLE = Angle();
     public static readonly EnvironmentAttribute<float> STAR_BRIGHTNESS = Float(0.0F, true, AttributeRange<float>.UnitFloat, true);
     public static readonly EnvironmentAttribute<float> SKY_LIGHT_FACTOR = Float(1.0F, true, AttributeRange<float>.UnitFloat, true);
+    public static readonly EnvironmentAttribute<float> MUSIC_VOLUME = Float(1.0F, false, AttributeRange<float>.UnitFloat, true);
+    public static readonly EnvironmentAttribute<bool> FIREFLY_BUSH_SOUNDS = Boolean(false, true);
     public static readonly EnvironmentAttribute<float> SKY_LIGHT_LEVEL = Float(15.0F, false, AttributeRange<float>.OfFloat(0.0F, 15.0F), true, false);
     public static readonly EnvironmentAttribute<bool> CAN_START_RAID = Boolean(true);
     public static readonly EnvironmentAttribute<bool> WATER_EVAPORATES = Boolean(false, true);
+    public static readonly EnvironmentAttribute<bool> RESPAWN_ANCHOR_WORKS = Boolean(false);
+    public static readonly EnvironmentAttribute<bool> NETHER_PORTAL_SPAWNS_PIGLINS = Boolean(false);
     public static readonly EnvironmentAttribute<bool> FAST_LAVA = Boolean(false, true, false);
     public static readonly EnvironmentAttribute<bool> INCREASED_FIRE_BURNOUT = Boolean(false);
+    public static readonly EnvironmentAttribute<TriState> EYEBLOSSOM_OPEN =
+        EnvironmentAttribute<TriState>.CreateBuilder(AttributeTypes.TRI_STATE).DefaultValue(TriState.DEFAULT).Build();
+    public static readonly EnvironmentAttribute<float> TURTLE_EGG_HATCH_CHANCE = Float(0.002F, false, AttributeRange<float>.UnitFloat);
+    public static readonly EnvironmentAttribute<bool> PIGLINS_ZOMBIFY = Boolean(true, true);
+    public static readonly EnvironmentAttribute<bool> SNOW_GOLEM_MELTS = Boolean(false);
+    public static readonly EnvironmentAttribute<bool> CREAKING_ACTIVE = Boolean(false, true);
     public static readonly EnvironmentAttribute<float> SURFACE_SLIME_SPAWN_CHANCE = Float(0.0F, false, AttributeRange<float>.UnitFloat);
+    public static readonly EnvironmentAttribute<float> CAT_WAKING_UP_GIFT_CHANCE = Float(0.0F, false, AttributeRange<float>.UnitFloat);
+    public static readonly EnvironmentAttribute<bool> BEES_STAY_IN_HIVE = Boolean(false);
     public static readonly EnvironmentAttribute<bool> MONSTERS_BURN = Boolean(false);
     public static readonly EnvironmentAttribute<bool> CAN_PILLAGER_PATROL_SPAWN = Boolean(true);
     public static readonly EnvironmentAttribute<float> CREATURE_WORLD_GEN_SPAWN_PROBABILITY =
@@ -44,12 +56,23 @@ public static class EnvironmentAttributes
         Register("visual/star_angle", STAR_ANGLE);
         Register("visual/star_brightness", STAR_BRIGHTNESS);
         Register("visual/sky_light_factor", SKY_LIGHT_FACTOR);
+        Register("audio/music_volume", MUSIC_VOLUME);
+        Register("audio/firefly_bush_sounds", FIREFLY_BUSH_SOUNDS);
         Register("gameplay/sky_light_level", SKY_LIGHT_LEVEL);
         Register("gameplay/can_start_raid", CAN_START_RAID);
         Register("gameplay/water_evaporates", WATER_EVAPORATES);
+        Register("gameplay/respawn_anchor_works", RESPAWN_ANCHOR_WORKS);
+        Register("gameplay/nether_portal_spawns_piglin", NETHER_PORTAL_SPAWNS_PIGLINS);
         Register("gameplay/fast_lava", FAST_LAVA);
         Register("gameplay/increased_fire_burnout", INCREASED_FIRE_BURNOUT);
+        Register("gameplay/eyeblossom_open", EYEBLOSSOM_OPEN);
+        Register("gameplay/turtle_egg_hatch_chance", TURTLE_EGG_HATCH_CHANCE);
+        Register("gameplay/piglins_zombify", PIGLINS_ZOMBIFY);
+        Register("gameplay/snow_golem_melts", SNOW_GOLEM_MELTS);
+        Register("gameplay/creaking_active", CREAKING_ACTIVE);
         Register("gameplay/surface_slime_spawn_chance", SURFACE_SLIME_SPAWN_CHANCE);
+        Register("gameplay/cat_waking_up_gift_chance", CAT_WAKING_UP_GIFT_CHANCE);
+        Register("gameplay/bees_stay_in_hive", BEES_STAY_IN_HIVE);
         Register("gameplay/monsters_burn", MONSTERS_BURN);
         Register("gameplay/can_pillager_patrol_spawn", CAN_PILLAGER_PATROL_SPAWN);
         Register("gameplay/creature_world_gen_spawn_probability", CREATURE_WORLD_GEN_SPAWN_PROBABILITY);

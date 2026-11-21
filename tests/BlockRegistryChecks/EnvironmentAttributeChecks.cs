@@ -26,8 +26,8 @@ internal static class EnvironmentAttributeChecks
                 ReferenceEquals(
                     BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:float")),
                     AttributeTypes.FLOAT) &&
-                ReferenceEquals(BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:tri_state")), AttributeTypes.TRI_STATE) &&
-                ReferenceEquals(BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:angle_degrees")), AttributeTypes.ANGLE_DEGREES),
+                ReferenceEquals(BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:angle_degrees")), AttributeTypes.ANGLE_DEGREES) &&
+                BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:tri_state")) is null,
             "Built-in attribute type keys must resolve to the original typed policies.");
         Require(AttributeTypes.BOOLEAN.ValueType == typeof(bool) &&
                 AttributeTypes.FLOAT.ValueType == typeof(float) &&
@@ -215,6 +215,10 @@ internal static class EnvironmentAttributeChecks
             ReferenceEquals(
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/creature_world_gen_spawn_probability")),
                 EnvironmentAttributes.CREATURE_WORLD_GEN_SPAWN_PROBABILITY),
+        Require(BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:audio/music_volume")) is null &&
+                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/eyeblossom_open")) is null &&
+                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/respawn_anchor_works")) is null,
+            "Audio, bed and object-specific definitions must not enter the generic environment registry.");
             "Built-in attribute keys must resolve to their canonical typed definitions.");
         Require(EnvironmentAttributes.FOG_END_DISTANCE.DefaultValue == 1024.0F &&
             EnvironmentAttributes.FOG_END_DISTANCE.IsSpatiallyInterpolated &&
