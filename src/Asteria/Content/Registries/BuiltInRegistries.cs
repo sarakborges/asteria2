@@ -4,6 +4,7 @@ using Asteria.Content.Blocks;
 using BuiltInBlocks = Asteria.Content.Blocks.Blocks;
 using BuiltInBiomes = Asteria.Content.Biomes.Biomes;
 using BuiltInAttributeTypes = Asteria.World.Attributes.AttributeTypes;
+using BuiltInEnvironmentAttributes = Asteria.World.Attributes.EnvironmentAttributes;
 using Asteria.Content.Fluids;
 using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Content.Identifiers;
@@ -40,6 +41,11 @@ public static class BuiltInRegistries
             ResourceLocation.FromNamespaceAndPath("asteria", "biome"),
             ResourceLocation.FromNamespaceAndPath("asteria", "plains"),
             static () => BuiltInBiomes.RegisterAll());
+
+    public static Registry<IEnvironmentAttribute> EnvironmentAttribute { get; } =
+        RegisterSimple<IEnvironmentAttribute>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "environment_attribute"),
+            static () => BuiltInEnvironmentAttributes.RegisterAll());
 
     public static Registry<IAttributeType> AttributeType { get; } =
         RegisterSimple<IAttributeType>(

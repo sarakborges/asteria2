@@ -1,14 +1,18 @@
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
+using Asteria.Core;
 using Asteria.World.Attributes.Modifiers;
 
 namespace Asteria.World.Attributes;
 
-/// <summary>Boolean and float built-in attribute type policies.</summary>
+/// <summary>Built-in interpolation and modifier policies for implemented environment value types.</summary>
 public static class AttributeTypes
 {
     public static readonly AttributeType<bool> BOOLEAN =
         AttributeType<bool>.OfNotInterpolated(BooleanModifier.LIBRARY);
+
+    public static readonly AttributeType<TriState> TRI_STATE =
+        AttributeType<TriState>.OfNotInterpolated();
 
     public static readonly AttributeType<float> FLOAT =
         AttributeType<float>.OfInterpolated(
@@ -16,10 +20,19 @@ public static class AttributeTypes
             FloatModifier.LIBRARY,
             toFloat: static value => value);
 
+    public static readonly AttributeType<float> ANGLE_DEGREES =
+        AttributeType<float>.OfInterpolated(
+            LerpFunction<float>.OfFloat(),
+            FloatModifier.LIBRARY,
+            LerpFunction<float>.OfDegrees(90.0F),
+            toFloat: static value => value);
+
     internal static void RegisterAll()
     {
         Register("boolean", BOOLEAN);
+        Register("tri_state", TRI_STATE);
         Register("float", FLOAT);
+        Register("angle_degrees", ANGLE_DEGREES);
     }
 
     private static void Register(string path, IAttributeType type)

@@ -13,6 +13,21 @@ public sealed class LerpFunction<T>
     public static LerpFunction<float> OfFloat() =>
         new(static (alpha, from, to) => from + (to - from) * alpha);
 
+    public static LerpFunction<float> OfDegrees(float maxDelta) =>
+        new((alpha, from, to) =>
+        {
+            float delta = WrapDegrees(to - from);
+            return MathF.Abs(delta) >= maxDelta ? to : from + alpha * delta;
+        });
+
+    private static float WrapDegrees(float value)
+    {
+        float angle = value % 360.0F;
+        if (angle >= 180.0F) angle -= 360.0F;
+        if (angle < -180.0F) angle += 360.0F;
+        return angle;
+    }
+
     public static LerpFunction<T> OfConstant() => OfStep(1.0F);
 
     public static LerpFunction<T> OfStep(float threshold) =>
