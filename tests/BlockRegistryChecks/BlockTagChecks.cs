@@ -21,37 +21,41 @@ internal static class BlockTagChecks
             BlockTags.Leaves.Location == ResourceLocation.Parse("asteria:leaves"),
             "Block-tag locations must preserve the canonical tag paths in Asteria's namespace.");
 
+        TagKey<Block> markerTag = TagKey<Block>.Create(
+            BuiltInRegistries.Block.Key,
+            ResourceLocation.Parse("asteria:test_tag_membership"));
         var definitions = new[]
         {
             new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
                 BlockTags.BlocksMotionInHeightmap,
-                new Holder<Block>[] { airHolder }),
+                Array.Empty<Holder<Block>>()),
             new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
                 BlockTags.BlocksMotionInHeightmapNoLeaves,
-                new Holder<Block>[] { airHolder }),
+                Array.Empty<Holder<Block>>()),
             new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
                 BlockTags.Leaves,
+                Array.Empty<Holder<Block>>()),
+            new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
+                markerTag,
                 new Holder<Block>[] { airHolder })
         };
 
         PendingTagReload<Block> pending = BuiltInRegistries.Block.PrepareTagReload(definitions);
-        Require(pending.Size == definitions.Length, "Pending tag reload must retain each heightmap-related tag.");
+        Require(pending.Size == definitions.Length, "Pending tag reload must retain each block tag.");
         Require(
-            !airHolder.Is(BlockTags.BlocksMotionInHeightmap),
+            !airHolder.Is(markerTag),
             "Holder tag membership must not change before a pending reload is applied.");
 
         pending.Apply();
 
         Require(
-            airHolder.Is(BlockTags.BlocksMotionInHeightmap) &&
-            airHolder.Is(BlockTags.BlocksMotionInHeightmapNoLeaves) &&
-            airHolder.Is(BlockTags.Leaves),
-            "Applying a tag reload must refresh tag membership in block holders.");
+            airHolder.Is(markerTag) && Blocks.AIR.DefaultState.Is(markerTag),
+            "Applying a tag reload must expose membership through both block holders and block states.");
         Require(
-            Blocks.AIR.DefaultState.Is(BlockTags.BlocksMotionInHeightmap) &&
-            Blocks.AIR.DefaultState.Is(BlockTags.BlocksMotionInHeightmapNoLeaves) &&
-            Blocks.AIR.DefaultState.Is(BlockTags.Leaves),
-            "BlockState.Is(tag) must delegate membership to its block's registry holder.");
+            !Blocks.AIR.DefaultState.Is(BlockTags.BlocksMotionInHeightmap) &&
+            !Blocks.AIR.DefaultState.Is(BlockTags.BlocksMotionInHeightmapNoLeaves) &&
+            !Blocks.AIR.DefaultState.Is(BlockTags.Leaves),
+            "Empty heightmap and leaves tags must remain empty rather than inventing built-in membership.");
     }
 
     private static void Require(bool condition, string message)

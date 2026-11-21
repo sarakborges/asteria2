@@ -1,4 +1,5 @@
 using Asteria.Content.Blocks.StateProperties;
+using Asteria.Content.Registries;
 
 namespace Asteria.Content.Blocks;
 

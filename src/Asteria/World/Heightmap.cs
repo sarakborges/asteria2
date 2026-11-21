@@ -7,8 +7,8 @@ namespace Asteria.World;
 
 /// <summary>
 /// Stores the first available world Y for each of a chunk's 16x16 columns.
-/// The predicate is supplied by the heightmap type; only the world-surface predicate
-/// can be defined from Asteria's current block-state domain.
+/// The predicate is supplied by the heightmap type; world-surface and ocean-floor predicates
+/// are representable by Asteria's current block-state and block-tag domains.
 /// </summary>
 public sealed class Heightmap
 {
