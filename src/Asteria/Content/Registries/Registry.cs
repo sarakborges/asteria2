@@ -1,5 +1,6 @@
 using System.Collections;
 using Asteria.Content.Identifiers;
+using Asteria.Serialization;
 
 namespace Asteria.Content.Registries;
 
@@ -141,6 +142,32 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
         value is not null && _byValue.TryGetValue(value, out Holder<T>.Reference? holder)
             ? holder.Key
             : null;
+
+    public Codec<T> ByNameCodec() =>
+        Codecs.STRING.FlatXMap(
+            name =>
+            {
+                ResourceLocation? location = ResourceLocation.TryParse(name);
+                if (!location.HasValue)
+                    return DataResult<T>.Error(() =>
+                        $"Invalid registry key '{name}' for {Key}");
+
+                T? value = GetValue(location.Value);
+                return value is not null
+                    ? DataResult<T>.Success(value, RegistryLifecycle)
+                    : DataResult<T>.Error(() =>
+                        $"Unknown registry key '{name}' in {Key}");
+            },
+            value =>
+            {
+                ResourceLocation? location = GetKey(value);
+                return location.HasValue
+                    ? DataResult<string>.Success(location.Value.ToString(), RegistryLifecycle)
+                    : DataResult<string>.Error(() =>
+                        $"Unregistered value '{value}' in {Key}");
+            })
+        .WithLifecycle(RegistryLifecycle);
+
 
     public bool ContainsKey(ResourceLocation location) => _byLocation.ContainsKey(location);
 

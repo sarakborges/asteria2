@@ -1,6 +1,7 @@
 using Asteria.Core.Shapes;
 using System.Runtime.CompilerServices;
 using Asteria.Content.Blocks;
+using Asteria.Content.Particles;
 using Asteria.Content.Biomes;
 using Asteria.Content.Blocks.StateProperties;
 using Asteria.Content.Chunks;
@@ -157,7 +158,7 @@ internal static class Program
         try
         {
             RunChecks();
-            Console.WriteLine("Block, fluid, biome, environment-attribute and attribute-type registries, typed environment attributes, state holders, directions, math primitives, palettes, chunk sections, coordinates, heightmaps, and chunk storage checks passed.");
+            Console.WriteLine("Block, fluid, biome, particle, environment-attribute and attribute-type registries, typed environment attributes, state holders, directions, math primitives, palettes, chunk sections, coordinates, heightmaps, and chunk storage checks passed.");
             return 0;
         }
         catch (Exception exception)
@@ -195,7 +196,7 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 5, "The root registry must contain the built-in block, fluid, biome and attribute-type registries.");
+        Require(BuiltInRegistries.Root.Count == 6, "The root registry must contain the built-in block, fluid, biome, particle, environment-attribute and attribute-type registries.");
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
@@ -214,6 +215,7 @@ internal static class Program
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState);
         BiomeChecks.Run();
         EnvironmentAttributeChecks.Run();
+        ParticleChecks.Run();
 
         CheckResourceLocations();
         CheckDefaultedBlockRegistry();
@@ -254,7 +256,7 @@ internal static class Program
             BuiltInRegistries.RootLocation == ResourceLocation.Parse("asteria:root"),
             "The root registry must use the Asteria namespace.");
         Require(
-            BuiltInRegistries.Root.Count == 5 && !BuiltInRegistries.Root.IsFrozen,
+            BuiltInRegistries.Root.Count == 6 && !BuiltInRegistries.Root.IsFrozen,
             "The root registry must register built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =

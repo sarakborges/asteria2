@@ -1,6 +1,7 @@
 using Block = Asteria.Content.Blocks.Block;
 using Biome = Asteria.Content.Biomes.Biome;
 using Asteria.Content.Blocks;
+using Asteria.Content.Particles;
 using BuiltInBlocks = Asteria.Content.Blocks.Blocks;
 using BuiltInBiomes = Asteria.Content.Biomes.Biomes;
 using BuiltInAttributeTypes = Asteria.World.Attributes.AttributeTypes;
@@ -41,6 +42,11 @@ public static class BuiltInRegistries
             ResourceLocation.FromNamespaceAndPath("asteria", "biome"),
             ResourceLocation.FromNamespaceAndPath("asteria", "plains"),
             static () => BuiltInBiomes.RegisterAll());
+
+    public static Registry<ParticleType> ParticleType { get; } =
+        RegisterSimple<ParticleType>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "particle_type"),
+            static () => ParticleTypes.RegisterAll());
 
     public static Registry<IEnvironmentAttribute> EnvironmentAttribute { get; } =
         RegisterSimple<IEnvironmentAttribute>(
