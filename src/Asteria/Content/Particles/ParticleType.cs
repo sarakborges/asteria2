@@ -51,3 +51,26 @@ public sealed class SimpleParticleType : ParticleType<SimpleParticleType>, IPart
 
     public ParticleType GetParticleType() => this;
 }
+
+/// <summary>
+/// Particle type whose options map codec is constructed with the registered type itself.
+/// Lazy creation avoids a constructor/codec cycle for options that capture their type.
+/// </summary>
+public sealed class ConfiguredParticleType<TOptions> : ParticleType<TOptions>
+    where TOptions : class, IParticleOptions
+{
+    private readonly Lazy<MapCodec<TOptions>> _codec;
+
+    public override MapCodec<TOptions> Codec => _codec.Value;
+
+    public ConfiguredParticleType(
+        bool overrideLimiter,
+        Func<ParticleType<TOptions>, MapCodec<TOptions>> codecFactory)
+        : base(overrideLimiter)
+    {
+        ArgumentNullException.ThrowIfNull(codecFactory);
+        _codec = new Lazy<MapCodec<TOptions>>(
+            () => codecFactory(this),
+            LazyThreadSafetyMode.ExecutionAndPublication);
+    }
+}

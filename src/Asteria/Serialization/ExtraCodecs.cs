@@ -16,6 +16,9 @@ public static class ExtraCodecs
     public static readonly Codec<Vector4> ARGB_COLOR_VEC4_CODEC =
         VECTOR4F.WithAlternative(Codecs.INT, Argb.Vector4FromArgb32);
 
+    public static readonly Codec<int> ARGB_COLOR_CODEC =
+        Codecs.INT.WithAlternative(VECTOR4F, Argb.ColorFromVector4);
+
     public static readonly Codec<Vector3> STRING_RGB_VEC3_COLOR =
         HexColor(6)
             .XMap(Argb.Opaque, Argb.Transparent)
