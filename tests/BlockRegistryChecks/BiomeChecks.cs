@@ -66,8 +66,8 @@ internal static class BiomeChecks
         Require(effects.WaterColor == 123456 && effects.GetFoliageColor(1) == 0x00112233 &&
                 effects.GetDryFoliageColor(2) == 0x00445566,
             "Biome special effects must retain water, foliage and dry-foliage colors.");
-        Require(effects.GetGrassColor(4, 8, 3, (x, z) => -0.2) == -11766212,
-            "The grass override must be selected as the base color before applying the grass modifier.");
+        Require(effects.GetGrassColor(4, 8, 3) == unchecked((int)0xFF4F5E51),
+            "The explicit grass override must be selected as the base color before the dark-forest modifier.");
 
         BiomeSpecialEffects darkForest = new BiomeSpecialEffects.Builder().WaterColor(1)
             .GrassColorModifier(GrassColorModifier.DARK_FOREST).Build();
@@ -76,12 +76,10 @@ internal static class BiomeChecks
 
         BiomeSpecialEffects swamp = new BiomeSpecialEffects.Builder().WaterColor(1)
             .GrassColorModifier(GrassColorModifier.SWAMP).Build();
-        Require(swamp.GetGrassColor(100, 200, 0, (x, z) => -0.10001) == -11766212,
-            "Swamp grass color must use the first noise threshold branch.");
-        Require(swamp.GetGrassColor(100, 200, 0, (x, z) => -0.1) == -9801671,
-            "Swamp grass color must use a strict negative-one-tenth noise threshold.");
-        RequireThrows<ArgumentNullException>(() => swamp.GetGrassColor(0, 0, 0),
-            "Swamp grass color must require the biome-info noise dependency.");
+        Require(swamp.GetGrassColor(100, 200, 0) == -11766212,
+            "Swamp grass color must use the dark branch for the fixed-seed noise sample.");
+        Require(swamp.GetGrassColor(0, 0, 0) == -9801671,
+            "Swamp grass color must use the light branch when the noise sample is zero.");
         Require(BiomeSpecialEffects.GetSerializedName(GrassColorModifier.DARK_FOREST) == "dark_forest" &&
                 BiomeSpecialEffects.GetSerializedName(GrassColorModifier.SWAMP) == "swamp" &&
                 BiomeSpecialEffects.GetSerializedName(GrassColorModifier.NONE) == "none",

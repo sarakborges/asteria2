@@ -8,10 +8,10 @@ public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverri
     public int GetFoliageColor(int defaultColor) => FoliageColorOverride ?? defaultColor;
     public int GetDryFoliageColor(int defaultColor) => DryFoliageColorOverride ?? defaultColor;
 
-    public int GetGrassColor(double x, double z, int defaultColor, Func<double, double, double>? biomeInfoNoise = null)
+    public int GetGrassColor(double x, double z, int defaultColor)
     {
         int color = GrassColorOverride ?? defaultColor;
-        return ModifyGrassColor(GrassColorModifier, x, z, color, biomeInfoNoise);
+        return ModifyGrassColor(GrassColorModifier, x, z, color);
     }
 
     public sealed class Builder
@@ -41,18 +41,17 @@ public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverri
 
     private static int Opaque(int color) => color | unchecked((int)0xFF000000);
 
-    private static int ModifyGrassColor(GrassColorModifier modifier, double x, double z, int baseColor, Func<double, double, double>? biomeInfoNoise) => modifier switch
+    private static int ModifyGrassColor(GrassColorModifier modifier, double x, double z, int baseColor) => modifier switch
     {
         GrassColorModifier.NONE => baseColor,
         GrassColorModifier.DARK_FOREST => Opaque(unchecked(((baseColor & 16711422) + 2634762) >> 1)),
-        GrassColorModifier.SWAMP => ModifySwampColor(x, z, biomeInfoNoise),
+        GrassColorModifier.SWAMP => ModifySwampColor(x, z),
         _ => throw new ArgumentOutOfRangeException(nameof(modifier), modifier, "Unknown grass color modifier.")
     };
 
-    private static int ModifySwampColor(double x, double z, Func<double, double, double>? biomeInfoNoise)
+    private static int ModifySwampColor(double x, double z)
     {
-        ArgumentNullException.ThrowIfNull(biomeInfoNoise);
-        double groundValue = biomeInfoNoise(x * 0.0225, z * 0.0225);
+        double groundValue = Biome.GetBiomeInfoNoise(x * 0.0225, z * 0.0225);
         return groundValue < -0.1 ? -11766212 : -9801671;
     }
 }
