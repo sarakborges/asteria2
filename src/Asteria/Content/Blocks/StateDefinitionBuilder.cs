@@ -1,3 +1,5 @@
+using Asteria.Content.Blocks.StateProperties;
+
 namespace Asteria.Content.Blocks;
 
 public class StateDefinitionBuilder<TOwner, TState>
