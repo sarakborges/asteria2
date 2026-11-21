@@ -237,3 +237,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O registry `attribute_type` agora contém nove tipos no escopo: os sete anteriores, `particle` e `ambient_particles`.
 - O registry `particle_type` contém 106 tipos simples com identificadores, ordem relativa e `overrideLimiter` conferidos. Tipos com opções especializadas seguem pendentes até seus modelos/codecs próprios; IDs numéricos não têm paridade enquanto essas entradas estiverem ausentes.
 - Atributos específicos de blocos/objetos, áudio e regras de cama continuam excluídos. Stream codecs, buffers de pacote e multiplayer continuam excluídos pelo escopo offline.
+
+
+## Incremento — opções de partículas coloridas (21/11/2026)
+
+- Portada a opção genérica `ColorParticleOption`, que mantém o `ParticleType` e um ARGB empacotado. Os getters de canal devolvem frações normalizadas de 8 bits.
+- O codec usa o campo obrigatório `color`: inteiro ARGB como forma principal e vetor RGBA de quatro floats como alternativa. A codificação usa sempre o formato inteiro principal.
+- Registrados `entity_effect`, `tinted_leaves` e `flash` nas posições relativas da declaração 26.3, todos com `overrideLimiter=false`.
+- Contagem local: 106 tipos sem payload + 3 tipos com opção colorida. Tipos especializados restantes continuam pendentes de seus modelos próprios; os IDs numéricos ainda não têm paridade com o registro completo.
