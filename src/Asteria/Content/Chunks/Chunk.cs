@@ -14,7 +14,6 @@ public sealed class Chunk : LevelHeightAccessor
 
     private readonly ChunkPos _chunkPos;
     private readonly LevelHeightAccessor _levelHeightAccessor;
-    private readonly BlockState _defaultBlockState;
     private readonly ChunkSection[] _sections;
     private readonly Dictionary<HeightmapType, Heightmap> _heightmaps = new();
     private readonly ReadOnlyDictionary<HeightmapType, Heightmap> _heightmapsView;
@@ -30,7 +29,6 @@ public sealed class Chunk : LevelHeightAccessor
 
         _chunkPos = chunkPos;
         _levelHeightAccessor = levelHeightAccessor;
-        _defaultBlockState = containerFactory.DefaultBlockState;
         _sections = new ChunkSection[levelHeightAccessor.GetSectionsCount()];
         _heightmapsView = new ReadOnlyDictionary<HeightmapType, Heightmap>(_heightmaps);
 
@@ -77,7 +75,7 @@ public sealed class Chunk : LevelHeightAccessor
             }
         }
 
-        return _defaultBlockState;
+        return Blocks.AIR.DefaultState;
     }
 
     /// <summary>

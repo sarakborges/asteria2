@@ -52,6 +52,16 @@ internal static class ChunkChecks
         BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
         var position = new ChunkPos(-3, 7);
 
+        var nonAirDefaultFactory = new BlockStateContainerFactory(
+            factory.BlockStatesStrategy,
+            nonAirState);
+        var defaultStateChunk = new Chunk(new ChunkPos(0, 0), height, nonAirDefaultFactory);
+        Require(
+            ReferenceEquals(
+                defaultStateChunk.GetBlockState(new BlockPos(0, -64, 0)),
+                Blocks.AIR.DefaultState),
+            "Chunk block lookup must use the built-in air state even when the container factory has a different default state.");
+
         var chunk = new Chunk(position, height, factory);
         Require(chunk.GetPos() == position, "Chunk must retain its ChunkPos.");
         Require(chunk.GetHeight() == 384 && chunk.GetMinY() == -64, "Chunk must delegate vertical bounds to its height accessor.");

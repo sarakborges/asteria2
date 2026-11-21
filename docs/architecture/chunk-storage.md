@@ -10,7 +10,7 @@ This increment follows the storage-related portion of `ChunkAccess`, the `LevelH
 - `GetHighestFilledSectionIndex()` scans from the top of the array and returns `-1` when every section contains only air.
 - `GetHighestSectionPosition()` retains the deprecated vanilla fallback: minimum build Y for an all-air chunk, otherwise the world block Y at the highest non-air section.
 - `IsYSpaceEmpty(start, end)` clamps to build bounds and checks sections in 16-block increments.
-- `GetBlockState(BlockPos)` maps Y to a section-array index, returns the factory's default state when the index is outside the array or the section contains only air, and otherwise reads the section using `x & 15`, `y & 15`, and `z & 15`. Like `LevelChunk.getBlockState`, this storage lookup does not validate that X/Z belong to the chunk.
+- `GetBlockState(BlockPos)` maps Y to a section-array index, returns the built-in air state when the index is outside the array or the section contains only air, and otherwise reads the section using `x & 15`, `y & 15`, and `z & 15`. Like `LevelChunk.getBlockState`, this storage lookup does not validate that X/Z belong to the chunk.
 - `HeightmapType` currently models the four block-state/block-tag-only reference variants: world surface and ocean floor, including their world-generation variants. Fluid-dependent heightmap types are deferred until `FluidState` exists.
 - `Chunk` owns heightmaps by type. `GetOrCreateHeightmapUnprimed`, `HasPrimedHeightmap`, and `GetHeight` follow `ChunkAccess` map-presence and lazy-priming behavior.
 - `PrimeHeightmaps(types)` creates requested maps and invokes one shared top-down scan, matching `Heightmap.primeHeightmaps` rather than rescanning each column separately for every map.
@@ -27,7 +27,7 @@ The read path also omits Minecraft's debug-level override and crash-report wrapp
 - Fluid state, fluid palettes/counts and fluid-sensitive heightmap variants.
 - Biome model and biome storage in chunk sections.
 - Complete level lifecycle, chunk source, lighting engine, sky-light sources and block entities.
-- Heightmap raw-data deserialization fallback and persistence codecs.
+- Heightmap persistence codecs and warning-level diagnostics for malformed serialized data.
 - Full `ProtoChunk` and `LevelChunk` behavior.
 
 The block-state-only factory intentionally does not manufacture a biome holder or a fluid state. These domains must be introduced before the corresponding section and chunk APIs are ported.

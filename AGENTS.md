@@ -6,8 +6,12 @@ Asteria 2 é uma nova implementação, iniciada do zero em Godot .NET. O código
 
 ## Direção do projeto
 
-- Usar Minecraft como referência principal de arquitetura e comportamento para os sistemas equivalentes.
-- Priorizar paridade com o comportamento de referência em vez de criar soluções próprias sem necessidade.
+- Tratar o código-fonte de Minecraft Java 26.3 como especificação para os sistemas equivalentes: buscar port fiel, não apenas semelhança arquitetural ou comportamental.
+- Preservar algoritmos, estruturas de dados, responsabilidades, constantes, ordem de operações, condições de contorno, efeitos colaterais e comportamento de erros.
+- Portar a cadeia real de dependências necessária; não substituir sistemas ausentes por stubs, aproximações ou implementações simplificadas.
+- Adaptar somente o inevitável para C#, .NET e Godot, documentando cada divergência.
+- Minecraft é apenas referência externa: nunca introduzir namespaces, identificadores, strings, dependências ou referências de runtime com namespace `minecraft` no código de Asteria.
+- Exigir testes de paridade, incluindo limites e casos de erro; compilação bem-sucedida não comprova paridade.
 - Não antecipar mecânicas, sistemas ou decisões arquiteturais que ainda não tenham sido solicitados ou definidos.
 
 ## Regras de trabalho
