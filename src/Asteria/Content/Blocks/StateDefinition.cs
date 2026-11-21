@@ -1,32 +1,31 @@
-using Asteria.Content.Blocks.StateProperties;
-
 namespace Asteria.Content.Blocks;
 
-/// <summary>
-/// StateDefinition equivalent: sorted properties, Cartesian-product states, and cached neighbor tables.
-/// </summary>
-public sealed class StateDefinition
+public class StateDefinition<TOwner, TState>
+    where TOwner : notnull
+    where TState : StateHolder<TOwner, TState>
 {
     private static readonly object Wildcard = new();
-
     private readonly StateProperty[] _properties;
     private readonly IReadOnlyList<StateProperty> _readOnlyProperties;
-    private readonly BlockState[] _states;
-    private readonly IReadOnlyList<BlockState> _readOnlyStates;
-    private readonly Dictionary<StateProperty, int> _propertyIndices =
-        new(ReferenceEqualityComparer.Instance);
+    private readonly TState[] _states;
+    private readonly IReadOnlyList<TState> _readOnlyStates;
+    private readonly Dictionary<StateProperty, int> _propertyIndices = new(ReferenceEqualityComparer.Instance);
 
-    public Block Owner { get; }
+    public TOwner Owner { get; }
     public IReadOnlyList<StateProperty> Properties => _readOnlyProperties;
-    public IReadOnlyList<BlockState> PossibleStates => _readOnlyStates;
+    public IReadOnlyList<TState> PossibleStates => _readOnlyStates;
     public bool IsSingletonState => _properties.Length == 0;
 
-    internal StateDefinition(
-        Block owner,
-        IReadOnlyList<StateProperty> properties)
+    public StateDefinition(
+        TOwner owner,
+        IReadOnlyList<StateProperty> properties,
+        Func<StateDefinition<TOwner, TState>, object[], TState> stateFactory)
     {
-        Owner = owner ?? throw new ArgumentNullException(nameof(owner));
+        ArgumentNullException.ThrowIfNull(owner);
         ArgumentNullException.ThrowIfNull(properties);
+        ArgumentNullException.ThrowIfNull(stateFactory);
+
+        Owner = owner;
         _properties = properties.OrderBy(property => property.Name, StringComparer.Ordinal).ToArray();
         _readOnlyProperties = Array.AsReadOnly(_properties);
 
@@ -35,32 +34,23 @@ public sealed class StateDefinition
         {
             StateProperty property = _properties[index];
             if (property.ValueCount == 0)
-            {
-                throw new InvalidOperationException(
-                    $"State property '{property.Name}' must have at least one possible value.");
-            }
+                throw new InvalidOperationException($"State property '{property.Name}' must have at least one possible value.");
 
             stateCount = checked(stateCount * property.ValueCount);
             if (stateCount > Array.MaxLength)
-            {
-                throw new InvalidOperationException(
-                    $"Block '{owner}' has too many possible states to materialize.");
-            }
+                throw new InvalidOperationException($"'{owner}' has too many possible states to materialize.");
         }
 
         for (int index = 0; index < _properties.Length; index++)
-        {
             _propertyIndices.Add(_properties[index], index);
-        }
 
-        _states = new BlockState[(int)stateCount];
-        var statesByValues = new Dictionary<object[], BlockState>(ObjectArrayComparer.Instance);
+        _states = new TState[(int)stateCount];
+        var statesByValues = new Dictionary<object[], TState>(ObjectArrayComparer.Instance);
 
         for (int stateIndex = 0; stateIndex < _states.Length; stateIndex++)
         {
             var values = new object[_properties.Length];
             int divisor = 1;
-
             for (int propertyIndex = _properties.Length - 1; propertyIndex >= 0; propertyIndex--)
             {
                 StateProperty property = _properties[propertyIndex];
@@ -69,7 +59,7 @@ public sealed class StateDefinition
                 divisor = checked(divisor * property.ValueCount);
             }
 
-            var state = new BlockState(this, values);
+            TState state = stateFactory(this, values);
             _states[stateIndex] = state;
             statesByValues.Add(values, state);
         }
@@ -78,71 +68,46 @@ public sealed class StateDefinition
         _readOnlyStates = Array.AsReadOnly(_states);
     }
 
-    public BlockState Any() => _states[0];
-
-    public override string ToString() =>
-        $"StateDefinition{{block={Owner}, properties=[{string.Join(", ", _properties.Select(property => property.Name))}]}}";
+    public TState Any() => _states[0];
 
     public StateProperty? GetProperty(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
-        return _properties.FirstOrDefault(
-            property => string.Equals(property.Name, name, StringComparison.Ordinal));
+        return _properties.FirstOrDefault(property => string.Equals(property.Name, name, StringComparison.Ordinal));
     }
 
     public bool HasProperty(StateProperty property) =>
         property is not null && _propertyIndices.ContainsKey(property);
 
-    internal int GetPropertyIndex(StateProperty property)
-    {
-        ArgumentNullException.ThrowIfNull(property);
-        if (_propertyIndices.TryGetValue(property, out int index))
-        {
-            return index;
-        }
-
-        throw new ArgumentException(
-            $"Property '{property.Name}' does not belong to block '{Owner}'.",
-            nameof(property));
-    }
-
     internal bool TryGetPropertyIndex(StateProperty? property, out int index)
     {
         if (property is not null && _propertyIndices.TryGetValue(property, out index))
             return true;
-
         index = -1;
         return false;
     }
 
-    private void InitializeNeighbors(Dictionary<object[], BlockState> statesByValues)
+    private void InitializeNeighbors(Dictionary<object[], TState> statesByValues)
     {
-        var neighborsByPivot = new Dictionary<object[], BlockState[]>(ObjectArrayComparer.Instance);
-
-        foreach (BlockState state in _states)
+        var neighborsByPivot = new Dictionary<object[], TState[]>(ObjectArrayComparer.Instance);
+        foreach (TState state in _states)
         {
-            var neighbors = new BlockState[_properties.Length][];
-
+            var neighbors = new TState[_properties.Length][];
             for (int propertyIndex = 0; propertyIndex < _properties.Length; propertyIndex++)
             {
                 StateProperty property = _properties[propertyIndex];
                 object[] pivotKey = state.CopyValues();
                 pivotKey[propertyIndex] = Wildcard;
 
-                if (!neighborsByPivot.TryGetValue(pivotKey, out BlockState[]? propertyNeighbors))
+                if (!neighborsByPivot.TryGetValue(pivotKey, out TState[]? propertyNeighbors))
                 {
-                    propertyNeighbors = new BlockState[property.ValueCount];
+                    propertyNeighbors = new TState[property.ValueCount];
                     object[] lookupValues = state.CopyValues();
-
                     for (int valueIndex = 0; valueIndex < property.ValueCount; valueIndex++)
                     {
                         lookupValues[propertyIndex] = property.GetValueObject(valueIndex);
-                        if (!statesByValues.TryGetValue(lookupValues, out BlockState? neighbor))
-                        {
-                            throw new InvalidOperationException(
-                                $"Could not resolve neighboring state for property '{property.Name}'.");
-                        }
-
+                        if (!statesByValues.TryGetValue(lookupValues, out TState? neighbor))
+                            throw new InvalidOperationException($"Could not resolve neighboring state for property '{property.Name}'.");
                         propertyNeighbors[valueIndex] = neighbor;
                     }
 
@@ -156,6 +121,9 @@ public sealed class StateDefinition
         }
     }
 
+    public override string ToString() =>
+        $"StateDefinition{{owner={Owner}, properties=[{string.Join(", ", _properties.Select(property => property.Name))}]}}";
+
     private sealed class ObjectArrayComparer : IEqualityComparer<object[]>
     {
         public static ObjectArrayComparer Instance { get; } = new();
@@ -163,23 +131,14 @@ public sealed class StateDefinition
         public bool Equals(object[]? left, object[]? right)
         {
             if (ReferenceEquals(left, right))
-            {
                 return true;
-            }
-
             if (left is null || right is null || left.Length != right.Length)
-            {
                 return false;
-            }
-
             for (int index = 0; index < left.Length; index++)
             {
                 if (!object.Equals(left[index], right[index]))
-                {
                     return false;
-                }
             }
-
             return true;
         }
 
@@ -187,11 +146,19 @@ public sealed class StateDefinition
         {
             var hash = new HashCode();
             foreach (object value in values)
-            {
                 hash.Add(value);
-            }
-
             return hash.ToHashCode();
         }
     }
+}
+
+public sealed class StateDefinition : StateDefinition<Block, BlockState>
+{
+    internal StateDefinition(Block owner, IReadOnlyList<StateProperty> properties)
+        : base(owner, properties, static (definition, values) => new BlockState((StateDefinition)definition, values))
+    {
+    }
+
+    public override string ToString() =>
+        $"StateDefinition{{block={Owner}, properties=[{string.Join(", ", Properties.Select(property => property.Name))}]}}";
 }
