@@ -47,6 +47,27 @@ public sealed class LerpFunction<T>
         return angle;
     }
 
+    /// <summary>Cross-fades two lists by scaling each source element by its remaining weight and each target element by its incoming weight.</summary>
+    public static LerpFunction<IReadOnlyList<T>> OfListCrossFade(Func<T, float, T> scaler)
+    {
+        ArgumentNullException.ThrowIfNull(scaler);
+        return new LerpFunction<IReadOnlyList<T>>((alpha, from, to) =>
+        {
+            ArgumentNullException.ThrowIfNull(from);
+            ArgumentNullException.ThrowIfNull(to);
+            if (alpha == 0.0F) return from;
+            if (alpha == 1.0F) return to;
+
+            var result = new T[from.Count + to.Count];
+            int index = 0;
+            foreach (T element in from)
+                result[index++] = scaler(element, 1.0F - alpha);
+            foreach (T element in to)
+                result[index++] = scaler(element, alpha);
+            return Array.AsReadOnly(result);
+        });
+    }
+
     public static LerpFunction<T> OfConstant() => OfStep(1.0F);
 
     public static LerpFunction<T> OfStep(float threshold) =>

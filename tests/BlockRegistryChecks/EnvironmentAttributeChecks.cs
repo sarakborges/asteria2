@@ -15,6 +15,7 @@ internal static class EnvironmentAttributeChecks
         CheckColorAttributeTypes();
         CheckIntegerAttributeType();
         CheckMoonPhaseAttributeType();
+        CheckListCrossFadeInterpolation();
         CheckAttributeDefinitionAndRange();
         CheckTypeInterpolationAndNumericProjection();
         CheckTypedModifierLibraries();
@@ -373,6 +374,24 @@ internal static class EnvironmentAttributeChecks
                 AttributeTypes.MOON_PHASE.StateChangeLerp.Apply(0.0F, MoonPhase.FULL_MOON, MoonPhase.NEW_MOON) == MoonPhase.NEW_MOON &&
                 AttributeTypes.MOON_PHASE.SpatialLerp.Apply(0.5F, MoonPhase.FULL_MOON, MoonPhase.NEW_MOON) == MoonPhase.NEW_MOON,
             "Moon phase must use the non-interpolated attribute policy with the reference thresholds.");
+    }
+
+    private static void CheckListCrossFadeInterpolation()
+    {
+        static string Scale(string value, float alpha) => $"{value}:{alpha:0.##}";
+        IReadOnlyList<string> from = new[] { "old-a", "old-b" };
+        IReadOnlyList<string> to = new[] { "new-a" };
+        LerpFunction<IReadOnlyList<string>> crossFade =
+            LerpFunction<string>.OfListCrossFade(Scale);
+
+        Require(ReferenceEquals(crossFade.Apply(0.0F, from, to), from) &&
+                ReferenceEquals(crossFade.Apply(1.0F, from, to), to),
+            "List cross-fade must return the original endpoint lists without allocating.");
+        IReadOnlyList<string> middle = crossFade.Apply(0.25F, from, to);
+        Require(middle.SequenceEqual(new[] { "old-a:0.75", "old-b:0.75", "new-a:0.25" }),
+            "List cross-fade must preserve source-then-target order and scale each side by its complementary alpha.");
+        Require(middle is System.Collections.ObjectModel.ReadOnlyCollection<string>,
+            "Intermediate cross-fade results must be immutable snapshots.");
     }
 
     private static void CheckAngleInterpolation()
