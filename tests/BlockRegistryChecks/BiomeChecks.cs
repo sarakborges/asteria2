@@ -62,7 +62,7 @@ internal static class BiomeChecks
         BiomeSpecialEffects effects = new BiomeSpecialEffects.Builder()
             .WaterColor(123456).FoliageColorOverride(0x00112233)
             .DryFoliageColorOverride(0x00445566).GrassColorOverride(0x00778899)
-            .GrassColorModifier(GrassColorModifier.SWAMP).Build();
+            .GrassColorModifier(GrassColorModifier.DARK_FOREST).Build();
         Require(effects.WaterColor == 123456 && effects.GetFoliageColor(1) == 0x00112233 &&
                 effects.GetDryFoliageColor(2) == 0x00445566,
             "Biome special effects must retain water, foliage and dry-foliage colors.");

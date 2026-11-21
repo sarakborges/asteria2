@@ -5,6 +5,7 @@ namespace Asteria.Content.Biomes;
 /// <summary>Registry-backed biome climate and visual data.</summary>
 public sealed class Biome
 {
+    public static float GetBiomeInfoNoise(double x, double z) => BiomeInfoNoise.Get(x, z);
     public Holder<Biome>.Reference BuiltInRegistryHolder { get; }
     public ClimateSettings Climate { get; }
     public BiomeSpecialEffects SpecialEffects { get; }

@@ -2,7 +2,7 @@ namespace Asteria.Content.Biomes;
 
 public enum GrassColorModifier { NONE, DARK_FOREST, SWAMP }
 
-/// <summary>Runtime color effects corresponding to the Minecraft 26.3 BiomeSpecialEffects record.</summary>
+/// <summary>Runtime color effects and grass-color modifiers for biome rendering.</summary>
 public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverride, int? DryFoliageColorOverride, int? GrassColorOverride, GrassColorModifier GrassColorModifier)
 {
     public int GetFoliageColor(int defaultColor) => FoliageColorOverride ?? defaultColor;
