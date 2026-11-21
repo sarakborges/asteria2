@@ -21,6 +21,9 @@ public interface DynamicOps<T>
     T CreateString(string value);
 
     DataResult<IReadOnlyList<KeyValuePair<T, T>>> GetMapValues(T input);
+
+    DataResult<MapLike<T>> GetMap(T input) =>
+        GetMapValues(input).Map(entries => new MapLike<T>(this, input, entries));
     T CreateMap(IEnumerable<KeyValuePair<T, T>> values);
     DataResult<IReadOnlyList<T>> GetList(T input);
     T CreateList(IEnumerable<T> values);

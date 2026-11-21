@@ -172,6 +172,7 @@ internal static class Program
         _ = TestBlocks.TEST_BLOCK;
         SerializationChecks.Run();
         DynamicOpsChecks.Run();
+        CodecChecks.Run();
         CoordinatePositionChecks.Run();
         DirectionChecks.Run();
         Vec3Checks.Run();

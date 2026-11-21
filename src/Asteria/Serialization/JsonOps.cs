@@ -122,6 +122,13 @@ public sealed class JsonOps : DynamicOps<JsonElement>
         return DataResult<IReadOnlyList<KeyValuePair<JsonElement, JsonElement>>>.Success(entries);
     }
 
+    public DataResult<MapLike<JsonElement>> GetMap(JsonElement input)
+    {
+        DataResult<IReadOnlyList<KeyValuePair<JsonElement, JsonElement>>> entries =
+            GetMapValues(input);
+        return entries.Map(values => new MapLike<JsonElement>(this, input, values));
+    }
+
     public JsonElement CreateMap(IEnumerable<KeyValuePair<JsonElement, JsonElement>> values)
     {
         ArgumentNullException.ThrowIfNull(values);
