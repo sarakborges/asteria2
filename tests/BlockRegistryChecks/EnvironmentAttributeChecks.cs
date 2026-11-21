@@ -9,7 +9,7 @@ internal static class EnvironmentAttributeChecks
     {
         CheckBuiltInAttributeTypeRegistry();
         CheckBuiltInEnvironmentAttributeRegistry();
-        CheckTriStateAndAngleInterpolation();
+        CheckAngleInterpolation();
         CheckAttributeDefinitionAndRange();
         CheckTypeInterpolationAndNumericProjection();
         CheckTypedModifierLibraries();
@@ -31,13 +31,12 @@ internal static class EnvironmentAttributeChecks
             "Built-in attribute type keys must resolve to the original typed policies.");
         Require(AttributeTypes.BOOLEAN.ValueType == typeof(bool) &&
                 AttributeTypes.FLOAT.ValueType == typeof(float) &&
-                AttributeTypes.TRI_STATE.ValueType == typeof(Asteria.Core.TriState) &&
                 AttributeTypes.ANGLE_DEGREES.ValueType == typeof(float),
             "The type-erased registry boundary must preserve the runtime value type.");
         Require(BuiltInRegistries.AttributeType.AsHolderIdMap().ById(0) is not null &&
                 BuiltInRegistries.AttributeType.AsHolderIdMap().ById(1) is not null &&
                 BuiltInRegistries.AttributeType.AsHolderIdMap().ById(2) is not null &&
-                BuiltInRegistries.AttributeType.AsHolderIdMap().ById(3) is not null,
+                BuiltInRegistries.AttributeType.Count == 3,
             "Attribute type registry IDs must expose both registered values.");
     }
 
@@ -208,14 +207,11 @@ internal static class EnvironmentAttributeChecks
     {
         Require(BuiltInRegistries.EnvironmentAttribute.Location == ResourceLocation.Parse("asteria:environment_attribute"),
             "The environment-attribute registry must use the Asteria key.");
-        Require(BuiltInRegistries.EnvironmentAttribute.Count == 32,
-            "The registry must contain the 32 built-in definitions whose value types are implemented.");
+        Require(BuiltInRegistries.EnvironmentAttribute.Count == 21,
+            "The registry must contain only generic environmental definitions within the product scope.");
         Require(ReferenceEquals(
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:visual/fog_end_distance")),
                 EnvironmentAttributes.FOG_END_DISTANCE) &&
-            ReferenceEquals(
-                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/eyeblossom_open")),
-                EnvironmentAttributes.EYEBLOSSOM_OPEN) &&
             ReferenceEquals(
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/creature_world_gen_spawn_probability")),
                 EnvironmentAttributes.CREATURE_WORLD_GEN_SPAWN_PROBABILITY),
@@ -225,10 +221,6 @@ internal static class EnvironmentAttributeChecks
             EnvironmentAttributes.FOG_END_DISTANCE.IsSyncable &&
             ReferenceEquals(EnvironmentAttributes.FOG_END_DISTANCE.ValueRange, AttributeRange<float>.NonNegativeFloat),
             "Fog end distance must preserve its default, range, interpolation and sync flags.");
-        Require(EnvironmentAttributes.MUSIC_VOLUME.DefaultValue == 1.0F &&
-            !EnvironmentAttributes.MUSIC_VOLUME.IsSpatiallyInterpolated &&
-            EnvironmentAttributes.MUSIC_VOLUME.IsSyncable,
-            "Music volume must be syncable but not spatially interpolated.");
         Require(EnvironmentAttributes.SKY_LIGHT_LEVEL.DefaultValue == 15.0F &&
             !EnvironmentAttributes.SKY_LIGHT_LEVEL.IsPositional &&
             EnvironmentAttributes.SKY_LIGHT_LEVEL.IsSyncable &&
@@ -243,17 +235,8 @@ internal static class EnvironmentAttributeChecks
             "Fast lava must be non-positional and syncable.");
     }
 
-    private static void CheckTriStateAndAngleInterpolation()
+    private static void CheckAngleInterpolation()
     {
-        Require(Asteria.Core.TriStateExtensions.From(true) == Asteria.Core.TriState.TRUE &&
-            Asteria.Core.TriStateExtensions.From(false) == Asteria.Core.TriState.FALSE,
-            "Tri-state conversion must map booleans to TRUE and FALSE.");
-        Require(Asteria.Core.TriStateExtensions.ToBoolean(Asteria.Core.TriState.DEFAULT, true) &&
-            !Asteria.Core.TriStateExtensions.ToBoolean(Asteria.Core.TriState.DEFAULT, false) &&
-            Asteria.Core.TriStateExtensions.GetSerializedName(Asteria.Core.TriState.DEFAULT) == "default",
-            "Tri-state DEFAULT must use the supplied fallback and serialize as default.");
-        Require(EnvironmentAttributes.EYEBLOSSOM_OPEN.DefaultValue == Asteria.Core.TriState.DEFAULT,
-            "Eyeblossom-open must default to tri-state DEFAULT.");
         Require(Math.Abs(AttributeTypes.ANGLE_DEGREES.PartialTickLerp.Apply(0.5F, 170.0F, -170.0F) - 180.0F) < 0.000001F &&
             AttributeTypes.ANGLE_DEGREES.PartialTickLerp.Apply(0.25F, 0.0F, 90.0F) == 90.0F &&
             AttributeTypes.ANGLE_DEGREES.PartialTickLerp.Apply(0.25F, 0.0F, 270.0F) == 270.0F,
