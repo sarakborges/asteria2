@@ -12,9 +12,9 @@ Esta auditoria cobre todo o conteúdo atualmente existente no repositório. “P
 
 ## Resultado executivo
 
-Os algoritmos centrais já portados — identificadores, registries, holders, estados de bloco, mapas de IDs, paletas e armazenamento compactado — correspondem ao comportamento observado no Minecraft 26.3 no escopo atualmente modelado. Uma diferença encontrada no texto de erro de `IIdMap.GetIdOrThrow(null)` foi corrigida nesta auditoria e ganhou teste de regressão.
+Os algoritmos centrais já portados — identificadores, registries, holders, estados genéricos, estados de bloco e fluido, mapas de IDs, paletas e armazenamento compactado — correspondem ao comportamento observado no Minecraft 26.3 no escopo atualmente modelado. Os domínios de fluido e seção de chunk ainda são parciais; os limites estão descritos abaixo.
 
-A principal lacuna não é uma divergência dentro desses algoritmos: é a ausência de sistemas inteiros que ainda não foram criados, especialmente mundo/chunks completos, fluidos, biomas, geração, iluminação, rendering, física, entidades, rede e persistência.
+A principal lacuna deixou de ser a ausência total de fluidos: o núcleo de `Fluid`/`FluidState` e os contadores de seção já existem. Ainda faltam simulação, mundo, biomas, geração, iluminação, rendering, física, entidades, rede e persistência.
 
 ## Matriz por subsistema
 
@@ -36,7 +36,9 @@ A principal lacuna não é uma divergência dentro desses algoritmos: é a ausê
 | `PackedBitStorage` | `SimpleBitStorage` | Packing por palavra, limite sem cruzamento de palavra, tabela de divisão, get/set/fill/getAll/unpack e raw data comparados. |
 | `ZeroBitStorage` | `ZeroBitStorage` | Semântica de zero bits, validação de índice/valor, unpack e cópia comparados. |
 | `ThreadingDetector` | `ThreadingDetector` | Protocolo de exclusão de escritor e detecção de concorrência equivalentes. A representação do erro é adaptada: Asteria lança `InvalidOperationException`; o jogo usa `ReportedException` com `CrashReport` e logging. |
-| `ChunkSection` | `LevelChunkSection` | Parcial: container de estados de bloco, contador non-air, random-ticking de blocos, cópia e recálculo. Fluidos e biomas ainda não existem na base. |
+| `StateHolder<TOwner, TState>` / `StateDefinition<TOwner, TState>` | `StateHolder` / `StateDefinition` | Lookup por identidade, array de valores, produto cartesiano, vizinhos pré-computados e builder são genéricos e compartilhados por `BlockState` e `FluidState`. |
+| `Fluid` / `FluidState` | `Fluid` / `FluidState` | Parcial: registry, holder intrusivo, definição/estado padrão, estado vazio, ID map, source/empty/amount/own-height/random-ticking e `BlockState.GetFluidState`. `FlowingFluid`, água/lava, consultas de mundo, formas, fluxo, ticks e interação ainda não foram portados. |
+| `ChunkSection` | `LevelChunkSection` | Parcial: estados de bloco, contagem non-air, `FluidCount`, `TickingFluidCount`, `HasFluid`, lookup de fluido, ticking agregado, cópia e recálculo. Biomas e codecs de seção ainda ausentes. |
 | `Main.cs`, cena e configuração Godot | Host de execução do jogo | Não há equivalente de gameplay direto. É atualmente um bootstrap/smoke test sobre uma cena Node3D vazia, não um loop de jogo. |
 
 ## Divergência encontrada e corrigida
@@ -57,7 +59,7 @@ A base atual não implementa ainda os sistemas completos abaixo. Eles devem ser 
 
 - Mundo/Level, dimensões, chunk source/manager, carregamento e lifecycle de chunks.
 - Geração de terreno, noise settings, carvers, features, estruturas e spawn.
-- Fluids/FluidState, propagação de fluidos e contadores de fluidos em seções.
+- `FlowingFluid`, água/lava, propagação, geometria, ticks e interação com o mundo; os contadores de fluidos em seções e o núcleo `FluidState` já foram portados parcialmente.
 - Modelo de biomas, quart storage, biome resolver e armazenamento de biomas em seções.
 - Lighting engine, sky/block light e propagação.
 - Block shapes, colisão, raycast, física e integração com o servidor de jogo.
@@ -67,7 +69,7 @@ A base atual não implementa ainda os sistemas completos abaixo. Eles devem ser 
 - Áudio/partículas em runtime, comandos, networking/protocol, client/server e save/load.
 - Data packs/resource packs, codecs, NBT e serialização de rede/disco.
 
-O `ChunkSection` não deve ganhar contadores ou APIs fictícios de fluido/bioma antes da criação dos tipos e dos containers correspondentes.
+O `ChunkSection` já possui os contadores de fluido correspondentes à referência. Não deve ganhar armazenamento ou APIs de bioma fictícios antes da criação do modelo e do container reais.
 
 ## Lacunas de integração e manutenção
 
@@ -103,6 +105,10 @@ O `ChunkSection` não deve ganhar contadores ou APIs fictícios de fluido/bioma 
 - [SimpleBitStorage](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/SimpleBitStorage/)
 - [ZeroBitStorage](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/zerobitstorage/)
 - [LevelChunkSection](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/LevelChunkSection/)
+- [StateHolder](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/block/state/StateHolder/)
+- [FluidState](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/material/FluidState/)
+- [Fluids](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/material/Fluids/)
+- [EmptyFluid](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/material/EmptyFluid/)
 
 
 ## Follow-up — isolamento de fixtures (21/11/2026)
