@@ -106,13 +106,13 @@ public abstract class DataResult<T>
                          second.TryGetPartial(out secondValue);
 
         if (IsSuccess && second.IsSuccess)
-            return Success(function(first, secondValue), lifecycle);
+            return DataResult<TResult>.Success(function(first, secondValue), lifecycle);
 
         string message = CombineErrorMessages(this, second);
         if (hasFirst && hasSecond)
-            return Error(() => message, function(first, secondValue), lifecycle);
+            return DataResult<TResult>.Error(() => message, function(first, secondValue), lifecycle);
 
-        return Error(() => message, lifecycle);
+        return DataResult<TResult>.Error(() => message, lifecycle);
     }
 
     public static DataResult<T> Success(
@@ -203,7 +203,7 @@ public abstract class DataResult<T>
         public override DataResult<TResult> Map<TResult>(Func<T, TResult> function)
         {
             ArgumentNullException.ThrowIfNull(function);
-            return Success(function(Value), Lifecycle);
+            return DataResult<TResult>.Success(function(Value), Lifecycle);
         }
 
         public override DataResult<TResult> FlatMap<TResult>(
@@ -267,8 +267,8 @@ public abstract class DataResult<T>
         {
             ArgumentNullException.ThrowIfNull(function);
             return _hasPartial
-                ? Error(_message, function(_partialValue), Lifecycle)
-                : Error(_message, Lifecycle);
+                ? DataResult<TResult>.Error(_message, function(_partialValue), Lifecycle)
+                : DataResult<TResult>.Error(_message, Lifecycle);
         }
 
         public override DataResult<TResult> FlatMap<TResult>(
@@ -281,13 +281,13 @@ public abstract class DataResult<T>
             DataResult<TResult> next = function(_partialValue);
             Lifecycle lifecycle = Lifecycle.Add(next.Lifecycle);
             if (next.TryGetResult(out TResult nextValue))
-                return Error(_message, nextValue, lifecycle);
+                return DataResult<TResult>.Error(_message, nextValue, lifecycle);
 
             string nextMessage = next.ErrorMessage ?? "Serialization operation failed.";
             string combinedMessage = AppendMessages(_message(), nextMessage);
             return next.TryGetPartial(out nextValue)
-                ? Error(() => combinedMessage, nextValue, lifecycle)
-                : Error(() => combinedMessage, lifecycle);
+                ? DataResult<TResult>.Error(() => combinedMessage, nextValue, lifecycle)
+                : DataResult<TResult>.Error(() => combinedMessage, lifecycle);
         }
 
         public override DataResult<T> SetPartial(T partialValue)
