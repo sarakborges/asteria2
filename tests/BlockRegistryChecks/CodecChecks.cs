@@ -11,6 +11,7 @@ internal static class CodecChecks
         CheckListCodecs();
         CheckRangeValidation();
         CheckRecordCodecBuilder();
+        CheckUnitAndDispatchCodecs();
     }
 
     private static void CheckPrimitiveCodecs()
@@ -171,6 +172,53 @@ internal static class CodecChecks
         });
         Require(codec.Parse(ops, invalid).IsError,
             "Record decoding must preserve a field's validation error.");
+    }
+
+
+    private static void CheckUnitAndDispatchCodecs()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        MapCodec<string> unit = MapCodec<string>.Unit("constant");
+
+        Require(unit.Parse(ops, ops.EmptyMap).GetOrThrow() == "constant",
+            "Unit map codecs must decode their configured constant.");
+        Require(unit.EncodeStart(ops, "ignored").GetOrThrow().ValueKind == JsonValueKind.Object,
+            "Unit map codecs must leave the map prefix unchanged.");
+
+        Codec<TestRecord> recordCodec = RecordCodecBuilder.Create<TestRecord>(instance =>
+            instance.Group(
+                Codecs.STRING.FieldOf("name").ForGetter<TestRecord>(static record => record.Name),
+                Codecs.FloatRange(0.0F, 1.0F)
+                    .FieldOf("probability")
+                    .ForGetter<TestRecord>(static record => record.Probability))
+            .Apply(instance, static (name, probability) =>
+                new TestRecord(name, probability)));
+
+        Codec<TestRecord> dispatch = MapCodec<TestRecord>.Dispatch(
+            Codecs.STRING.FieldOf("kind"),
+            static record => DataResult<string>.Success(record.Name),
+            kind => kind == "ambient"
+                ? DataResult<MapCodec<TestRecord>>.Success(recordCodec.FieldOf("payload").XMap(
+                    static value => value,
+                    static value => value))
+                : DataResult<MapCodec<TestRecord>>.Error($"Unknown kind: {kind}"))
+            .Codec();
+
+        var source = new TestRecord("ambient", 0.5F);
+        JsonElement encoded = dispatch.EncodeStart(ops, source).GetOrThrow();
+        Require(ops.Get(encoded, "kind").GetOrThrow().GetString() == "ambient",
+            "Dispatch encoding must write its discriminator field.");
+        Require(dispatch.Parse(ops, encoded).GetOrThrow() == source,
+            "Dispatch codecs must decode using the selected subtype map codec.");
+
+        JsonElement unknown = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("kind"),
+                ops.CreateString("missing"))
+        });
+        Require(dispatch.Parse(ops, unknown).IsError,
+            "Dispatch codecs must reject unknown subtype discriminators.");
     }
 
     private static void Require(bool condition, string message)

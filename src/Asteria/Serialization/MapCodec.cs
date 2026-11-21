@@ -13,6 +13,26 @@ public abstract class MapCodec<TValue>
         TData prefix);
 
     public abstract IReadOnlyList<TData> Keys<TData>(DynamicOps<TData> ops);
+    public static MapCodec<TValue> Unit(TValue value) =>
+        Unit(() => value);
+
+    public static MapCodec<TValue> Unit(Func<TValue> value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return new UnitMapCodec<TValue>(value);
+    }
+
+    public static MapCodec<TValue> Dispatch<TKey>(
+        MapCodec<TKey> keyCodec,
+        Func<TValue, DataResult<TKey>> type,
+        Func<TKey, DataResult<MapCodec<TValue>>> codec)
+    {
+        ArgumentNullException.ThrowIfNull(keyCodec);
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(codec);
+        return new KeyDispatchMapCodec<TKey, TValue>(keyCodec, type, codec);
+    }
+
 
     public DataResult<TValue> Parse<TData>(
         DynamicOps<TData> ops,
