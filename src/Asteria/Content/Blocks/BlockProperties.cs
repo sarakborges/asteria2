@@ -84,6 +84,7 @@ public sealed class BlockProperties
     public BlockProperties NoCollision()
     {
         HasCollisionValue = false;
+        CanOccludeValue = false;
         return this;
     }
 

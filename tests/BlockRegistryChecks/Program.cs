@@ -483,6 +483,16 @@ internal static class Program
                 .GetCustomAttributes(typeof(ObsoleteAttribute), inherit: false).Length > 0,
             "The legacy liquid property must remain marked deprecated.");
 
+        BlockProperties noCollisionOnly = BlockProperties.Of().NoCollision();
+        Require(
+            !noCollisionOnly.HasCollisionValue && !noCollisionOnly.CanOccludeValue,
+            "NoCollision must disable collision and occlusion together.");
+
+        BlockProperties noOcclusionOnly = BlockProperties.Of().NoOcclusion();
+        Require(
+            noOcclusionOnly.HasCollisionValue && !noOcclusionOnly.CanOccludeValue,
+            "NoOcclusion must disable occlusion without disabling collision.");
+
         var stateBehaviorProperties = BlockProperties.Of()
             .NoCollision()
             .NoOcclusion()
