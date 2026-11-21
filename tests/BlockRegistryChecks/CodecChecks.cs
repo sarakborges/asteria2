@@ -10,6 +10,7 @@ internal static class CodecChecks
         CheckFieldCodecs();
         CheckListCodecs();
         CheckRangeValidation();
+        CheckRecordCodecBuilder();
     }
 
     private static void CheckPrimitiveCodecs()
@@ -120,6 +121,56 @@ internal static class CodecChecks
         Require(range.Parse(ops, ops.CreateFloat(-0.01F)).IsError &&
                 range.Parse(ops, ops.CreateFloat(1.01F)).IsError,
             "Float ranges must reject values outside the inclusive interval.");
+    }
+
+
+    private sealed record TestRecord(string Name, float Probability);
+
+    private static void CheckRecordCodecBuilder()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        Codec<TestRecord> codec = RecordCodecBuilder.Create<TestRecord>(instance =>
+            instance.Group(
+                Codecs.STRING.FieldOf("name").ForGetter(static record => record.Name),
+                Codecs.FloatRange(0.0F, 1.0F)
+                    .FieldOf("probability")
+                    .ForGetter(static record => record.Probability))
+            .Apply(instance, static (name, probability) =>
+                new TestRecord(name, probability)));
+
+        var source = new TestRecord("ambient", 0.625F);
+        JsonElement encoded = codec.EncodeStart(ops, source).GetOrThrow();
+        TestRecord decoded = codec.Parse(ops, encoded).GetOrThrow();
+
+        Require(decoded == source,
+            "RecordCodecBuilder must encode and decode all record fields.");
+
+        Require(ops.Get(encoded, "name").GetOrThrow().GetString() == "ambient" &&
+                ops.Get(encoded, "probability").GetOrThrow().GetSingle() == 0.625F,
+            "RecordCodecBuilder must emit the configured field names and values.");
+
+        JsonElement missing = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("name"),
+                ops.CreateString("ambient"))
+        });
+        DataResult<TestRecord> missingResult = codec.Parse(ops, missing);
+        Require(missingResult.IsError &&
+                missingResult.ErrorMessage!.Contains("probability", StringComparison.Ordinal),
+            "Record decoding must preserve a missing-field error.");
+
+        JsonElement invalid = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("name"),
+                ops.CreateString("ambient")),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("probability"),
+                ops.CreateFloat(1.5F))
+        });
+        Require(codec.Parse(ops, invalid).IsError,
+            "Record decoding must preserve a field's validation error.");
     }
 
     private static void Require(bool condition, string message)

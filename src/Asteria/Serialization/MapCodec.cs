@@ -24,6 +24,13 @@ public abstract class MapCodec<TValue>
         TValue input) =>
         Encode(input, ops, ops.EmptyMap);
 
+    public RecordField<TRecord, TValue> ForGetter<TRecord>(
+        Func<TRecord, TValue> getter)
+    {
+        ArgumentNullException.ThrowIfNull(getter);
+        return new RecordField<TRecord, TValue>(this, getter);
+    }
+
     public Codec<TValue> Codec() =>
         new MapCodecAdapter<TValue>(this);
 
