@@ -58,7 +58,7 @@ internal static class ChunkChecks
         var defaultStateChunk = new Chunk(new ChunkPos(0, 0), height, nonAirDefaultFactory);
         Require(
             ReferenceEquals(
-                defaultStateChunk.GetBlockState(new BlockPos(0, -64, 0)),
+                defaultStateChunk.GetBlockState(new BlockPos(0, -65, 0)),
                 Blocks.AIR.DefaultState),
             "Chunk block lookup must use the built-in air state even when the container factory has a different default state.");
 
