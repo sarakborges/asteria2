@@ -1,3 +1,4 @@
+using Asteria.Content.Blocks.StateProperties;
 using Asteria.Core;
 using Asteria.Core.Mathematics;
 using Asteria.Core.Shapes;
@@ -16,6 +17,7 @@ internal static class VoxelShapeChecks
         CheckContinuousEdgesAndCollision();
         CheckShapeClippingAndHitResults();
         CheckShapeTransformsAndOcclusion();
+        CheckAttachFaceRotationTables();
         CheckAxisCycleAndDiscreteAxisQueries();
     }
 
@@ -551,6 +553,65 @@ internal static class VoxelShapeChecks
                 axes.ContainsKey(Direction.Axis.Y) &&
                 axes.ContainsKey(Direction.Axis.Z),
             "Axis rotation maps must contain X, Y and Z.");
+    }
+
+    private static void CheckAttachFaceRotationTables()
+    {
+        VoxelShape shape = Shapes.Box(0.125, 0.25, 0.375, 0.625, 0.75, 0.875);
+        IReadOnlyDictionary<AttachFace, IReadOnlyDictionary<Direction, VoxelShape>> maps =
+            Shapes.RotateAttachFace(shape);
+
+        Require(
+            maps.Count == 3 &&
+            maps.ContainsKey(AttachFace.FLOOR) &&
+            maps.ContainsKey(AttachFace.WALL) &&
+            maps.ContainsKey(AttachFace.CEILING),
+            "Attach-face rotations must provide floor, wall and ceiling maps.");
+        Require(
+            AttachFace.FLOOR.GetSerializedName() == "floor" &&
+            AttachFace.WALL.GetSerializedName() == "wall" &&
+            AttachFace.CEILING.GetSerializedName() == "ceiling",
+            "AttachFace serialized names must match the reference state enum.");
+
+        foreach (AttachFace face in Enum.GetValues<AttachFace>())
+        {
+            IReadOnlyDictionary<Direction, VoxelShape> directions = maps[face];
+            Require(
+                directions.Count == 4 &&
+                directions.ContainsKey(Direction.NORTH) &&
+                directions.ContainsKey(Direction.EAST) &&
+                directions.ContainsKey(Direction.SOUTH) &&
+                directions.ContainsKey(Direction.WEST),
+                "Every attach face must expose all four horizontal directions.");
+        }
+
+        foreach (OctahedralGroup initial in OctahedralGroup.GetValues())
+        {
+            var rotated = Shapes.RotateAttachFace(shape, initial);
+            Require(
+                rotated.Count == 3 &&
+                Enum.GetValues<AttachFace>().All(face => rotated[face].Count == 4),
+                $"Attach-face rotation table must remain complete for initial transform {initial.GetSerializedName()}.");
+            Require(
+                Shapes.Equal(
+                    rotated[AttachFace.WALL][Direction.NORTH],
+                    Shapes.Rotate(shape, initial)),
+                "The wall/north entry must preserve the initial transform.");
+            Require(
+                Shapes.Equal(
+                    rotated[AttachFace.FLOOR][Direction.NORTH],
+                    Shapes.Rotate(shape, OctahedralGroup.BLOCK_ROT_X_270.Compose(initial))),
+                "The floor/north entry must prepend the floor-to-wall transform.");
+            Require(
+                Shapes.Equal(
+                    rotated[AttachFace.CEILING][Direction.NORTH],
+                    Shapes.Rotate(
+                        shape,
+                        OctahedralGroup.BLOCK_ROT_Y_180
+                            .Compose(OctahedralGroup.BLOCK_ROT_X_90)
+                            .Compose(initial))),
+                "The ceiling/north entry must preserve the reference transform composition order.");
+        }
     }
 
     private static void CheckAxisCycleAndDiscreteAxisQueries()

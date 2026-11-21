@@ -28,6 +28,8 @@ The first discrete storage increment ports the occupancy substrate of the shape 
 - `CubeVoxelShape` uses uniform `CubePointRange` coordinates and the exact clamped floor-based coordinate-to-cell mapping. `ArrayVoxelShape` preserves explicit lists and validates that every axis has exactly dimension-plus-one coordinates.
 - `Shapes` provides canonical empty/block shapes, `box`/`create` factories, the 1/2/4/8-part grid-fit test, `INFINITY`, `join`, `joinUnoptimized`, `joinIsNotEmpty`, variadic OR, shape equivalence, discrete/continuous octahedral rotations, axis/direction rotation tables, collection collision and block/merged/volume face occlusion.
 - `joinUnoptimized` builds X/Y/Z mergers in sequence, fills the output grid via `BooleanOp`, and selects cube storage only when all three mergers are discrete-cube mergers. `join` then optimizes by rebuilding from merged boxes.
+- `Shapes.Rotate` transforms discrete occupancy and continuous coordinates around an arbitrary pivot, preserving the source signed-axis permutation and coordinate-list reversal.
+- `Shapes.BlockOccludes`, `MergedFaceOccludes` and `FaceShapeOccludes` use the reference face slicing and Boolean difference algorithms. `Shapes.Collide` applies candidate shapes in sequence and returns the clipped movement.
 - `Shapes.Rotate` transforms both discrete occupancy and coordinate lists around an arbitrary rotation point; `FlipAxisIfNeeded` reverses/flips coordinate order exactly when the signed axis permutation requires it.
 - `Shapes.BlockOccludes`, `MergedFaceOccludes` and `FaceShapeOccludes` use the source face-slice/Boolean-difference tests. `Shapes.Collide` applies each candidate shape in iteration order and preserves the collision epsilon.
 - `AxisCycle` supplies identity/forward/backward axis and coordinate permutations used by coordinate-aware shape bounds.
@@ -59,3 +61,4 @@ The first discrete storage increment ports the occupancy substrate of the shape 
 - [CubeVoxelShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/cubevoxelshape/)
 - [ArrayVoxelShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/arrayvoxelshape/)
 - [Shapes — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/shapes/)
+- [AttachFace — Minecraft 26.3](https://aldak0.ru/javadoc/26.3.x/net/minecraft/world/level/block/state/properties/AttachFace.html)

@@ -4,8 +4,8 @@
 
 - Repositório: `sarakborges/asteria2`
 - Branch auditada: `feature/block-registry`
-- Commit-base auditado: `e7d736e91dc664f0a4910aa0567f817036542f1c`
-- Inventário do HEAD: 130 arquivos versionados: 90 arquivos C# em `src/Asteria`, 12 arquivos C# no harness de testes e 1 arquivo C# de bootstrap em `scripts`.
+- Commit-base auditado: `bbc2145c75934da1eb3805f63b0830ac7e4bda25`
+- Inventário após o incremento `AttachFace`: 134 arquivos versionados: 93 arquivos C# em `src/Asteria`, 12 arquivos C# no harness de testes e 1 arquivo C# de bootstrap em `scripts`.
 - Escopo de produto: jogo exclusivamente single-player/offline/local; redstone e multiplayer/network play estão explicitamente fora do escopo.
 - Referência: Minecraft Java Edition 26.3, usando o código-fonte decompilado e os contratos observáveis das classes equivalentes.
 
@@ -52,12 +52,12 @@ Asteria ainda não é um jogo funcional completo: mundo, chunks completos, gera�
 | `ThreadingDetector` | `ThreadingDetector` | Protocolo de exclusão de escritor e detecção de concorrência equivalentes. A representação do erro é adaptada: Asteria lança `InvalidOperationException`; o jogo usa `ReportedException` com `CrashReport` e logging. |
 | `StateHolder<TOwner, TState>` / `StateDefinition<TOwner, TState>` | `StateHolder` / `StateDefinition` | Lookup por identidade, array de valores, produto cartesiano, vizinhos pré-computados e builder são genéricos e compartilhados por `BlockState` e `FluidState`. |
 | `Fluid` / `FluidState` | `Fluid` / `FluidState` | Parcial: registry, holder intrusivo, definição/estado padrão, estado vazio, ID map, source/empty/amount/own-height/random-ticking e `BlockState.GetFluidState`. `FlowingFluid`, água/lava, consultas de mundo, formas, fluxo, ticks e interação ainda não foram portados. |
-| `Direction` / `Direction.Axis` / `Plane` / `FrontAndTop` | `Direction` / `FrontAndTop` | Parcial: seis direções, vetores, IDs, eixo, plano, yaw, nearest-direction e rotações discretas; `FrontAndTop` e as 48 transformações de `OctahedralGroup` estão portados. APIs dependentes de entidade, RNG, codecs e integração com renderer permanecem pendentes. O modelo C# usa objetos singleton por identidade. |
-| `Position` / `Vec3` | `Position` / `Vec3` | Parcial: factories por `Vec3i`, aritmética, produto escalar/vetorial, distância, normalização, rotações com tabela Mth, alinhamento, projeção, igualdade/hash e finitude. Codec, rede, RNG, `Vec2` e JOML permanecem pendentes; `Position` tem nomes de acesso adaptados ao C#. |
+| `Direction` / `Direction.Axis` / `Plane` / `FrontAndTop` / `AttachFace` | `Direction` / `FrontAndTop` / `AttachFace` | Parcial: seis direções, vetores, IDs, eixo, plano, yaw, nearest-direction, `FrontAndTop`, `AttachFace` e 48 transformações de `OctahedralGroup`. APIs dependentes de entidade, RNG, codecs locais e integração com renderer permanecem pendentes. O modelo C# usa objetos singleton por identidade onde os membros carregam dados. |
+| `Position` / `Vec3` | `Position` / `Vec3` | Parcial: factories por `Vec3i`, aritmética, produto escalar/vetorial, distância, normalização, rotações com tabela Mth, alinhamento, projeção, igualdade/hash e finitude. Codec para persistência local, RNG, `Vec2` e JOML permanecem pendentes; codecs de rede não são alvo. `Position` tem nomes de acesso adaptados ao C#. |
 | `AABB` / `HitResult` / `BlockHitResult` | `AABB` / `HitResult` / `BlockHitResult` | Parcial: AABB cobre normalização, operações vetoriais, clipping de segmento, colisão e medidas. `HitResult`/`BlockHitResult` agora fornecem o resultado de raycast, `MISS`, `inside`, direção, posição e sinalizador de world border. Sobrecargas específicas de JOML/BoundingBox e integração com entidades ainda pendentes. |
 | `DiscreteVoxelShape` / `BitSetDiscreteVoxelShape` | Shapes homônimas | Parcial: grade/bitset X/Y/Z, bounds em cache, `isFullWide`, `firstFull`/`lastFull`, cópia, região preenchida, interior, rotação por `OctahedralGroup`, enumeração greedy de caixas, arestas com mesclagem e faces por transição de ocupação. A API discreta central está portada; ainda faltam integrações de clipping, occlusion e shape slicing avançado. |
-| `VoxelShape` / `CubeVoxelShape` / `ArrayVoxelShape` / `SliceShape` / `SubShape` | Tipos homônimos | Parcial: coordenadas uniformes/explicitas, min/max, bounds, move, optimize, caixas/AABBs, arestas contínuas, closest-point, queries transversais, cache das seis faces, slices/subshapes, clipping de segmento para `BlockHitResult` e colisão swept-AABB por eixo. Igualdade estrutural, occlusion e contexto/world integration continuam pendentes. |
-| `Shapes` | `Shapes` | Parcial: EMPTY/BLOCK/INFINITY, box/create/findBits, join, joinUnoptimized, joinIsNotEmpty, OR e seleção sequencial de mergers com `BooleanOp`. `blockOccludes`, occlusion-context integration and higher-level collision shortcuts remain pending. |
+| `VoxelShape` / `CubeVoxelShape` / `ArrayVoxelShape` / `SliceShape` / `SubShape` | Tipos homônimos | Parcial: coordenadas uniformes/explicitas, min/max, bounds, move, optimize, caixas/AABBs, arestas contínuas, closest-point, queries transversais, cache das seis faces, slices/subshapes, clipping para `BlockHitResult` e colisão swept-AABB por eixo. Igualdade de ocupação estática via `Shapes.Equal`; oclusão é feita pela álgebra de slices de `Shapes`. Contextos e integração com mundo/rendering ainda pendentes. |
+| `Shapes` | `Shapes` | Parcial: factories e álgebra booleana; `Equal`; rotação por `OctahedralGroup` com centro arbitrário; tabelas de rotação horizontal, all-axis e attach-face; colisão agregada; `BlockOccludes`, `MergedFaceOccludes` e `FaceShapeOccludes`. A integração com block-state occlusion/sturdiness e renderer continua pendente. |
 | `BooleanOp` / `IndexMerger` | Tipos homônimos | As 16 funções booleanas e os quatro mergers foram portados: identical, non-overlapping, indirect e discrete-cube. Seleção com tolerância `1e-7` e teto de custo 256 preservada. |
 
 
@@ -88,14 +88,15 @@ A base atual não implementa ainda os sistemas completos abaixo. Eles devem ser 
 - `FlowingFluid`, água/lava, propagação, geometria, ticks e interação com o mundo; os contadores de fluidos em seções e o núcleo `FluidState` já foram portados parcialmente.
 - Modelo de biomas, quart storage, biome resolver e armazenamento de biomas em seções.
 - Lighting engine, sky/block light e propagação.
-- Block shapes, colisão, raycast, física e integração com o servidor de jogo.
+- Integração de block shapes, colisão e raycast com o mundo local, contextos de colisão, física e rendering local.
 - Renderização de blocos, culling, meshing, materiais e atlas.
 - Tick scheduler local, block ticks, fluid ticks e random tick loop permanecem necessários para simulação single-player.
 - Redstone (power propagation, wires, repeaters, comparators e circuit updates) é explicitamente fora de escopo.
 - Entidades, AI, jogadores, itens, inventário, crafting, menus e drops.
 - Áudio/partículas em runtime, comandos e save/load local ainda não foram implementados.
 - Networking/protocol, client/server, multiplayer e sincronização remota são explicitamente fora de escopo.
-- Data packs/resource packs, codecs, NBT e serialização de rede/disco.
+- Data packs/resource packs, codecs, NBT e serialização em disco para save/load local.
+- Codecs de protocolo, rede e sincronização remota estão fora de escopo.
 
 O `ChunkSection` já possui os contadores de fluido correspondentes à referência. Não deve ganhar armazenamento ou APIs de bioma fictícios antes da criação do modelo e do container reais.
 
@@ -108,8 +109,8 @@ O `ChunkSection` já possui os contadores de fluido correspondentes à referênc
 
 ## Validação desta baseline
 
-- Última baseline totalmente validada antes do incremento atual: workflow [Block registry — run #375](https://github.com/sarakborges/asteria2/actions/runs/44931929483), commit `6676917`; harness e build Godot aprovados.
-- O incremento de faces/slices no commit `b3801ae` falhou no harness por uma chamada de teste sem implementação correspondente. Essa integração está sendo corrigida; não é registrada como aprovada até novo workflow verde.
+- Última baseline totalmente validada antes de `AttachFace`: workflow [Block registry — run #381](https://github.com/sarakborges/asteria2/actions/runs/44936936773), commit `bbc2145`; harness e build Godot aprovados.
+- O incremento `AttachFace` / `RotateAttachFace` está neste commit posterior e aguardando seu workflow próprio.
 - Nenhum merge para `main` ou deploy foi realizado.
 
 ## Fontes de referência consultadas
@@ -136,6 +137,8 @@ O `ChunkSection` já possui os contadores de fluido correspondentes à referênc
 - [AABB](https://aldak0.ru/javadoc/26.3.x/net/minecraft/world/phys/AABB.html)
 - [HitResult](https://aldak0.ru/javadoc/26.3.x/net/minecraft/world/phys/HitResult.html)
 - [BlockHitResult](https://aldak0.ru/javadoc/26.3.x/net/minecraft/world/phys/BlockHitResult.html)
+- [AttachFace](https://aldak0.ru/javadoc/26.3.x/net/minecraft/world/level/block/state/properties/AttachFace.html)
+- [Shapes](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/shapes/)
 - [VoxelShape](https://aldak0.ru/javadoc/26.3.x/net/minecraft/world/phys/shapes/VoxelShape.html)
 - [ChunkAccess](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/ChunkAccess/)
 - [Heightmap](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/Heightmap/)

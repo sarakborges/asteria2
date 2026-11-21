@@ -1,3 +1,4 @@
+using Asteria.Content.Blocks.StateProperties;
 using Asteria.Core;
 using Asteria.Core.Mathematics;
 
@@ -515,6 +516,31 @@ public static class Shapes
             [Direction.WEST] = Rotate(north, OctahedralGroup.BLOCK_ROT_Y_270.Compose(initial), rotationCenter),
             [Direction.UP] = Rotate(north, OctahedralGroup.BLOCK_ROT_X_270.Compose(initial), rotationCenter),
             [Direction.DOWN] = Rotate(north, OctahedralGroup.BLOCK_ROT_X_90.Compose(initial), rotationCenter)
+        };
+    }
+
+    public static IReadOnlyDictionary<AttachFace, IReadOnlyDictionary<Direction, VoxelShape>> RotateAttachFace(
+        VoxelShape north) =>
+        RotateAttachFace(north, OctahedralGroup.IDENTITY);
+
+    public static IReadOnlyDictionary<AttachFace, IReadOnlyDictionary<Direction, VoxelShape>> RotateAttachFace(
+        VoxelShape north,
+        OctahedralGroup initial)
+    {
+        ArgumentNullException.ThrowIfNull(north);
+        ArgumentNullException.ThrowIfNull(initial);
+
+        return new Dictionary<AttachFace, IReadOnlyDictionary<Direction, VoxelShape>>
+        {
+            [AttachFace.WALL] = RotateHorizontal(north, initial),
+            [AttachFace.FLOOR] = RotateHorizontal(
+                north,
+                OctahedralGroup.BLOCK_ROT_X_270.Compose(initial)),
+            [AttachFace.CEILING] = RotateHorizontal(
+                north,
+                OctahedralGroup.BLOCK_ROT_Y_180
+                    .Compose(OctahedralGroup.BLOCK_ROT_X_90)
+                    .Compose(initial))
         };
     }
 
