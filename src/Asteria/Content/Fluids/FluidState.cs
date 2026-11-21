@@ -1,3 +1,4 @@
+using Asteria.Content.Blocks;
 namespace Asteria.Content.Fluids;
 
 public sealed class FluidState : StateHolder<Fluid, FluidState>

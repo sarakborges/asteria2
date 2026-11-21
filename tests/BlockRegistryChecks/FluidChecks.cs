@@ -1,3 +1,4 @@
+using Asteria.Content.Blocks;
 using Asteria.Content.Blocks.StateProperties;
 using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
