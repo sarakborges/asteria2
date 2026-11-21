@@ -111,7 +111,7 @@ public sealed class Heightmap
                     position.Set(x, y, z);
                     BlockState state = chunk.GetBlockState(position);
 
-                    if (!state.IsAir)
+                    if (!state.Is(global::Asteria.Content.Blocks.Blocks.AIR))
                     {
                         for (int index = 0; index < remainingHeightmaps.Count; index++)
                         {

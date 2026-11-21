@@ -81,6 +81,9 @@ public sealed class BlockState
 
     public IReadOnlyList<StateProperty> GetProperties() => Definition.Properties;
 
+    /// <summary>Returns whether this state belongs to the supplied block definition.</summary>
+    public bool Is(Block block) => ReferenceEquals(Block, block);
+
     /// <summary>Returns whether this state's registered block holder belongs to the supplied tag.</summary>
     public bool Is(TagKey<Block> tag) =>
         Block.BuiltInRegistryHolder?.Is(tag) ?? false;
