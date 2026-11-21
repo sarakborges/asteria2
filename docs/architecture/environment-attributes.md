@@ -16,6 +16,8 @@ Base de comparação: Minecraft Java 26.3.
 
 ## Runtime portado neste incremento
 
+- BuiltInRegistries registra o registry attribute_type no root e inicializa boolean e float durante o bootstrap, usando identificadores asteria próprios.
+
 - AttributeRange<T> valida e sanitiza valores; os ranges float reproduzem os intervalos unitário, unitário com epsilon e não negativo.
 - LerpFunction<T> modela interpolação float e os limiares usados pelos quatro contextos de tipos não interpolados.
 - AttributeType<T> contém as bibliotecas de operações permitidas, políticas de keyframe/state/spatial/partial-tick interpolation e conversões numéricas opcionais.
@@ -28,7 +30,7 @@ Base de comparação: Minecraft Java 26.3.
 
 - O projeto ainda não possui infraestrutura de codecs. Os codecs de valor e modificador, CODEC, NETWORK_CODEC e CODEC_ONLY_POSITIONAL não foram simulados; serão portados junto ao pipeline de dados/save-load local.
 - AttributeTypes contém apenas boolean e float nesta etapa. Tipos de cor, inteiro, ângulo, listas, sons, partículas, regras e mob spawns dependem de seus domínios de valor.
-- O registro built-in de AttributeType e EnvironmentAttribute e suas constantes ainda não foram ligados ao sistema de registries.
+- O registry built-in attribute_type foi ligado ao bootstrap com as entradas asteria:boolean e asteria:float. O registry de EnvironmentAttribute e suas definições concretas ainda não foram portados.
 - Biome ainda não armazena nem resolve EnvironmentAttributeMap; a integração com fontes de ambiente e resolução espacial será outro incremento.
 - Camadas de dimensão, timeline, clima e resolução de ambiente por posição/tempo continuam pendentes.
 - Packet/network codec, sincronização remota e multiplayer estão fora do escopo. Persistência local permanece no escopo futuro.

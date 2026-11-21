@@ -5,10 +5,30 @@ internal static class EnvironmentAttributeChecks
 {
     public static void Run()
     {
+        CheckBuiltInAttributeTypeRegistry();
         CheckAttributeDefinitionAndRange();
         CheckTypeInterpolationAndNumericProjection();
         CheckTypedModifierLibraries();
         CheckEnvironmentAttributeMap();
+    }
+
+    private static void CheckBuiltInAttributeTypeRegistry()
+    {
+        Require(BuiltInRegistries.AttributeType.Location == ResourceLocation.Parse("asteria:attribute_type"),
+            "The built-in attribute type registry must use the asteria:attribute_type key.");
+        Require(ReferenceEquals(
+                    BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:boolean")),
+                    AttributeTypes.BOOLEAN) &&
+                ReferenceEquals(
+                    BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:float")),
+                    AttributeTypes.FLOAT),
+            "Built-in attribute type keys must resolve to the original typed policies.");
+        Require(AttributeTypes.BOOLEAN.ValueType == typeof(bool) &&
+                AttributeTypes.FLOAT.ValueType == typeof(float),
+            "The type-erased registry boundary must preserve the runtime value type.");
+        Require(BuiltInRegistries.AttributeType.AsHolderIdMap().ById(0) is not null &&
+                BuiltInRegistries.AttributeType.AsHolderIdMap().ById(1) is not null,
+            "Attribute type registry IDs must expose both registered values.");
     }
 
     private static void CheckAttributeDefinitionAndRange()

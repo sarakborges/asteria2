@@ -194,3 +194,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - EnvironmentAttributeMap: entradas tipadas, composição por modificador, snapshot imutável, Set como override e PutAll com substituição pela última entrada.
 - Bibliotecas booleanas (AND/NAND/OR/NOR/XOR/XNOR) e float (alpha blend/add/subtract/multiply/minimum/maximum).
 - Escopo: runtime tipado boolean/float. Registro de tipos/atributos built-in, codecs locais, outros domínios de valor e integração do Biome com o mapa ainda pendentes.
+
+
+## Incremento — registry de tipos de atributos
+
+- Adicionado o registry simples attribute_type ao root de built-in registries, seguindo a ordem de bootstrap e o freeze do restante do catálogo.
+- Registradas as políticas BOOLEAN e FLOAT com os identificadores asteria:boolean e asteria:float.
+- A interface IAttributeType mantém a fronteira de registry sem apagar o tipo genérico dos objetos AttributeType<T>; o consumidor recupera as políticas tipadas originais por identidade.
+- O catálogo ainda contém apenas os dois tipos cujos domínios já estão disponíveis. Os tipos tri-state, ângulo, cores, inteiro, listas, música, som, partículas e mob spawn aguardam os respectivos modelos e codecs.

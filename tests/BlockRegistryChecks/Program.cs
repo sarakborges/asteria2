@@ -157,7 +157,7 @@ internal static class Program
         try
         {
             RunChecks();
-            Console.WriteLine("Block, fluid and biome registries, state holders, directions, math primitives, palettes, chunk sections, coordinates, heightmaps, and chunk storage checks passed.");
+            Console.WriteLine("Block, fluid, biome and attribute-type registries, typed environment attributes, state holders, directions, math primitives, palettes, chunk sections, coordinates, heightmaps, and chunk storage checks passed.");
             return 0;
         }
         catch (Exception exception)
@@ -192,7 +192,7 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 3, "The root registry must contain the built-in block, fluid and biome registries.");
+        Require(BuiltInRegistries.Root.Count == 4, "The root registry must contain the built-in block, fluid, biome and attribute-type registries.");
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
@@ -202,6 +202,7 @@ internal static class Program
         Require(BuiltInRegistries.Block.Count == 1, "Only the production air block should be registered.");
         Require(BuiltInRegistries.Fluid.Count == 1, "Only the empty fluid should be registered.");
         Require(BuiltInRegistries.Biome.Count == 2, "The built-in biome registry must contain plains and desert.");
+        Require(BuiltInRegistries.AttributeType.Count == 2, "The attribute-type registry must contain the built-in boolean and float types.");
         Require(Fluid.FluidStateRegistry.Count == 1, "The fluid-state ID map must contain every registered fluid state.");
         Require(ReferenceEquals(Blocks.AIR.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState), "Air must contain the empty fluid state.");
         Require(Block.BlockStateRegistry.Count == 7, "Expected one air state and six test states.");
@@ -250,7 +251,7 @@ internal static class Program
             BuiltInRegistries.RootLocation == ResourceLocation.Parse("asteria:root"),
             "The root registry must use the Asteria namespace.");
         Require(
-            BuiltInRegistries.Root.Count == 3 && !BuiltInRegistries.Root.IsFrozen,
+            BuiltInRegistries.Root.Count == 4 && !BuiltInRegistries.Root.IsFrozen,
             "The root registry must register built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =
@@ -276,10 +277,19 @@ internal static class Program
         Require(
             biomeRegistryHolder is not null && !biomeRegistryHolder.IsBound,
             "The root registry must create an unbound holder for the biome registry before bootstrap.");
+
+        RegistryKey<IRegistry> attributeTypeRegistryKey =
+            RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.AttributeType.Location);
+        Holder<IRegistry>.Reference? attributeTypeRegistryHolder =
+            BuiltInRegistries.Root.GetHolder(attributeTypeRegistryKey);
+        Require(
+            attributeTypeRegistryHolder is not null && !attributeTypeRegistryHolder.IsBound,
+            "The root registry must create an unbound holder for the attribute-type registry before bootstrap.");
         Require(
             BuiltInRegistries.Block.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
             BuiltInRegistries.Fluid.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
-            BuiltInRegistries.Biome.Key.RegistryLocation == BuiltInRegistries.RootLocation,
+            BuiltInRegistries.Biome.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
+            BuiltInRegistries.AttributeType.Key.RegistryLocation == BuiltInRegistries.RootLocation,
             "Child registry keys must be rooted in the Asteria root registry.");
     }
 

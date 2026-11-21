@@ -2,15 +2,22 @@ using System.Collections.ObjectModel;
 
 namespace Asteria.World.Attributes;
 
+/// <summary>Type-erased registry identity for typed attribute policies.</summary>
+public interface IAttributeType
+{
+    Type ValueType { get; }
+}
+
 /// <summary>
 /// Interpolation and modifier policy for one attribute value type.
 /// Serialization codecs are supplied later by the local data pipeline.
 /// </summary>
-public sealed class AttributeType<T>
+public sealed class AttributeType<T> : IAttributeType
 {
     private readonly Func<T, float>? _toFloat;
     private readonly Func<T, int>? _toInt;
 
+    public Type ValueType => typeof(T);
     public IReadOnlyDictionary<AttributeOperationId, IAttributeModifier<T>> ModifierLibrary { get; }
     public LerpFunction<T> KeyframeLerp { get; }
     public LerpFunction<T> StateChangeLerp { get; }
