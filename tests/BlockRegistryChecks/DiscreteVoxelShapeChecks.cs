@@ -33,6 +33,12 @@ internal static class DiscreteVoxelShapeChecks
             "Per-line firstFull must scan coordinates along the selected axis.");
         Require(shape.LastFull(Direction.Axis.X, 1, 3) == 3,
             "Per-line lastFull must return the exclusive upper bound.");
+        Require(
+            shape.FirstFull(Direction.Axis.X, -1, 0) == shape.GetXSize() &&
+            shape.LastFull(Direction.Axis.X, -1, 0) == 0 &&
+            shape.FirstFull(Direction.Axis.X, 1, shape.GetZSize()) == shape.GetXSize() &&
+            shape.LastFull(Direction.Axis.X, 1, shape.GetZSize()) == 0,
+            "Per-line first/last queries must return empty-range sentinels for out-of-bounds coordinates.");
 
         BitSetDiscreteVoxelShape filled = BitSetDiscreteVoxelShape.WithFilledBounds(
             4, 3, 2, 1, 1, 0, 4, 3, 2);

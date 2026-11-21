@@ -107,24 +107,43 @@ public abstract class DiscreteVoxelShape
     public int FirstFull(Direction.Axis axis, int b, int c)
     {
         ArgumentNullException.ThrowIfNull(axis);
-        int size = GetSize(axis);
 
-        for (int i = 0; i < size; i++)
+        int aSize = GetSize(axis);
+        if (b >= 0 && c >= 0)
         {
-            if (IsFullAlong(axis, i, b, c))
-                return i;
+            Direction.Axis bAxis = AxisCycle.Forward.Cycle(axis);
+            Direction.Axis cAxis = AxisCycle.Backward.Cycle(axis);
+            if (b < GetSize(bAxis) && c < GetSize(cAxis))
+            {
+                AxisCycle transform = AxisCycleExtensions.Between(Direction.Axis.X, axis);
+                for (int a = 0; a < aSize; a++)
+                {
+                    if (IsFull(transform, a, b, c))
+                        return a;
+                }
+            }
         }
 
-        return size;
+        return aSize;
     }
 
     public int LastFull(Direction.Axis axis, int b, int c)
     {
         ArgumentNullException.ThrowIfNull(axis);
-        for (int i = GetSize(axis) - 1; i >= 0; i--)
+        if (b >= 0 && c >= 0)
         {
-            if (IsFullAlong(axis, i, b, c))
-                return i + 1;
+            Direction.Axis bAxis = AxisCycle.Forward.Cycle(axis);
+            Direction.Axis cAxis = AxisCycle.Backward.Cycle(axis);
+            if (b < GetSize(bAxis) && c < GetSize(cAxis))
+            {
+                int aSize = GetSize(axis);
+                AxisCycle transform = AxisCycleExtensions.Between(Direction.Axis.X, axis);
+                for (int a = aSize - 1; a >= 0; a--)
+                {
+                    if (IsFull(transform, a, b, c))
+                        return a + 1;
+                }
+            }
         }
 
         return 0;
@@ -147,10 +166,4 @@ public abstract class DiscreteVoxelShape
         return IsFullWide(x, y, z);
     }
 
-    private bool IsFullAlong(Direction.Axis axis, int a, int b, int c)
-    {
-        if (ReferenceEquals(axis, Direction.Axis.X)) return IsFull(a, b, c);
-        if (ReferenceEquals(axis, Direction.Axis.Y)) return IsFull(b, a, c);
-        return IsFull(b, c, a);
-    }
 }
