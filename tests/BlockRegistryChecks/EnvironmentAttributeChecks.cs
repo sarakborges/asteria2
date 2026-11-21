@@ -11,7 +11,8 @@ internal static class EnvironmentAttributeChecks
         CheckBuiltInAttributeTypeRegistry();
         CheckBuiltInEnvironmentAttributeRegistry();
         CheckAngleInterpolation();
-        CheckColorAttributeTypes();\n        CheckIntegerAttributeType();
+        CheckColorAttributeTypes();
+        CheckIntegerAttributeType();
         CheckAttributeDefinitionAndRange();
         CheckTypeInterpolationAndNumericProjection();
         CheckTypedModifierLibraries();
@@ -37,7 +38,8 @@ internal static class EnvironmentAttributeChecks
                 AttributeTypes.FLOAT.ValueType == typeof(float) &&
                 AttributeTypes.ANGLE_DEGREES.ValueType == typeof(float) &&
                 AttributeTypes.RGB_COLOR.ValueType == typeof(Vector3) &&
-                AttributeTypes.ARGB_COLOR.ValueType == typeof(Vector4) &&\n                AttributeTypes.INTEGER.ValueType == typeof(int),
+                AttributeTypes.ARGB_COLOR.ValueType == typeof(Vector4) &&
+                AttributeTypes.INTEGER.ValueType == typeof(int),
             "The type-erased registry boundary must preserve the runtime value type.");
         Require(BuiltInRegistries.AttributeType.AsHolderIdMap().ById(0) is not null &&
                 BuiltInRegistries.AttributeType.AsHolderIdMap().ById(1) is not null &&

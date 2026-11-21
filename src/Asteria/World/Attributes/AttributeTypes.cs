@@ -47,7 +47,8 @@ public static class AttributeTypes
         Register("float", FLOAT);
         Register("angle_degrees", ANGLE_DEGREES);
         Register("rgb_color", RGB_COLOR);
-        Register("argb_color", ARGB_COLOR);\n        Register("integer", INTEGER);
+        Register("argb_color", ARGB_COLOR);
+        Register("integer", INTEGER);
     }
 
     private static void Register(string path, IAttributeType type)
