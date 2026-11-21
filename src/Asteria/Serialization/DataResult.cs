@@ -276,7 +276,7 @@ public abstract class DataResult<T>
         {
             ArgumentNullException.ThrowIfNull(function);
             if (!_hasPartial)
-                return Error<TResult>(_message, Lifecycle);
+                return DataResult<TResult>.Error(_message, Lifecycle);
 
             DataResult<TResult> next = function(_partialValue);
             Lifecycle lifecycle = Lifecycle.Add(next.Lifecycle);
