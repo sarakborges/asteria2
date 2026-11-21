@@ -1,5 +1,6 @@
 using System.Numerics;
 using Asteria.Content.Identifiers;
+using Asteria.Content.Particles;
 using Asteria.Content.Registries;
 using Asteria.World.Attributes;
 using Asteria.World.Attributes.Modifiers;
@@ -36,6 +37,8 @@ internal static class EnvironmentAttributeChecks
                 ReferenceEquals(BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:angle_degrees")), AttributeTypes.ANGLE_DEGREES) &&
                 ReferenceEquals(BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:rgb_color")), AttributeTypes.RGB_COLOR) &&
                 ReferenceEquals(BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:argb_color")), AttributeTypes.ARGB_COLOR) &&
+                ReferenceEquals(BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:particle")), AttributeTypes.PARTICLE) &&
+                ReferenceEquals(BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:ambient_particles")), AttributeTypes.AMBIENT_PARTICLES) &&
                 BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:tri_state")) is null,
             "Built-in attribute type keys must resolve to the original typed policies.");
         Require(AttributeTypes.BOOLEAN.ValueType == typeof(bool) &&
@@ -44,12 +47,14 @@ internal static class EnvironmentAttributeChecks
                 AttributeTypes.RGB_COLOR.ValueType == typeof(Vector3) &&
                 AttributeTypes.ARGB_COLOR.ValueType == typeof(Vector4) &&
                 AttributeTypes.INTEGER.ValueType == typeof(int) &&
-                AttributeTypes.MOON_PHASE.ValueType == typeof(MoonPhase),
+                AttributeTypes.MOON_PHASE.ValueType == typeof(MoonPhase) &&
+                AttributeTypes.PARTICLE.ValueType == typeof(IParticleOptions) &&
+                AttributeTypes.AMBIENT_PARTICLES.ValueType == typeof(IReadOnlyList<AmbientParticle>),
             "The type-erased registry boundary must preserve the runtime value type.");
         Require(BuiltInRegistries.AttributeType.AsHolderIdMap().ById(0) is not null &&
                 BuiltInRegistries.AttributeType.AsHolderIdMap().ById(1) is not null &&
                 BuiltInRegistries.AttributeType.AsHolderIdMap().ById(2) is not null &&
-                BuiltInRegistries.AttributeType.Count == 7,
+                BuiltInRegistries.AttributeType.Count == 9,
             "Attribute type registry IDs must expose both registered values.");
     }
 
@@ -220,19 +225,28 @@ internal static class EnvironmentAttributeChecks
     {
         Require(BuiltInRegistries.EnvironmentAttribute.Location == ResourceLocation.Parse("asteria:environment_attribute"),
             "The environment-attribute registry must use the Asteria key.");
-        Require(BuiltInRegistries.EnvironmentAttribute.Count == 21,
+        Require(BuiltInRegistries.EnvironmentAttribute.Count == 22,
             "The registry must contain only generic environmental definitions within the product scope.");
         Require(ReferenceEquals(
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:visual/fog_end_distance")),
                 EnvironmentAttributes.FOG_END_DISTANCE) &&
             ReferenceEquals(
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/creature_world_gen_spawn_probability")),
-                EnvironmentAttributes.CREATURE_WORLD_GEN_SPAWN_PROBABILITY),
+                EnvironmentAttributes.CREATURE_WORLD_GEN_SPAWN_PROBABILITY) &&
+            ReferenceEquals(
+                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:visual/ambient_particles")),
+                EnvironmentAttributes.AMBIENT_PARTICLES),
             "Built-in attribute keys must resolve to their canonical typed definitions.");
         Require(BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:audio/music_volume")) is null &&
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/eyeblossom_open")) is null &&
-                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/respawn_anchor_works")) is null,
+                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/respawn_anchor_works")) is null &&
+                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:visual/default_dripstone_particle")) is null,
             "Audio, bed and object-specific definitions must not enter the generic environment registry.");
+        Require(EnvironmentAttributes.AMBIENT_PARTICLES.DefaultValue.Count == 0 &&
+                EnvironmentAttributes.AMBIENT_PARTICLES.IsSyncable &&
+                AttributeTypes.PARTICLE.ValueCodec is not null &&
+                AttributeTypes.AMBIENT_PARTICLES.ValueCodec is not null,
+            "Ambient particles must default to an empty synchronized list and expose their value codecs.");
         Require(EnvironmentAttributes.FOG_END_DISTANCE.DefaultValue == 1024.0F &&
             EnvironmentAttributes.FOG_END_DISTANCE.IsSpatiallyInterpolated &&
             EnvironmentAttributes.FOG_END_DISTANCE.IsSyncable &&
@@ -405,7 +419,7 @@ internal static class EnvironmentAttributeChecks
         Require(ReferenceEquals(ListModifier<string>.APPEND.Apply(new List<string>(), argument), argument),
             "Appending to an empty subject must return the original argument list.");
 
-        List<string> combined = ListModifier<string>.APPEND.Apply(subject, argument);
+        IReadOnlyList<string> combined = ListModifier<string>.APPEND.Apply(subject, argument);
         Require(combined.SequenceEqual(new[] { "base-a", "base-b", "layer-a" }) &&
                 !ReferenceEquals(combined, subject) &&
                 !ReferenceEquals(combined, argument),
