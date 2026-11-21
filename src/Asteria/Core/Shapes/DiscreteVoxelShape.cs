@@ -1,4 +1,5 @@
 using Asteria.Core;
+using Asteria.Core.Mathematics;
 
 namespace Asteria.Core.Shapes;
 
@@ -34,6 +35,55 @@ public abstract class DiscreteVoxelShape
         if (ReferenceEquals(axis, Direction.Axis.X)) return XSize;
         if (ReferenceEquals(axis, Direction.Axis.Y)) return YSize;
         return ZSize;
+    }
+
+    /// <summary>
+    /// Returns a copy of this occupancy grid transformed by the requested signed axis permutation.
+    /// </summary>
+    public DiscreteVoxelShape Rotate(OctahedralGroup rotation)
+    {
+        ArgumentNullException.ThrowIfNull(rotation);
+        if (ReferenceEquals(rotation, OctahedralGroup.IDENTITY))
+            return this;
+
+        var rotatedSize = rotation.Rotate(new MutableVec3i(XSize, YSize, ZSize));
+        int shiftX = FixupCoordinate(rotatedSize, 0);
+        int shiftY = FixupCoordinate(rotatedSize, 1);
+        int shiftZ = FixupCoordinate(rotatedSize, 2);
+
+        var result = new BitSetDiscreteVoxelShape(
+            rotatedSize.GetX(),
+            rotatedSize.GetY(),
+            rotatedSize.GetZ());
+
+        var position = new MutableVec3i();
+        for (int x = 0; x < XSize; x++)
+        for (int y = 0; y < YSize; y++)
+        for (int z = 0; z < ZSize; z++)
+        {
+            if (!IsFull(x, y, z))
+                continue;
+
+            rotation.Rotate(position.Set(x, y, z));
+            result.Fill(
+                unchecked(shiftX + position.GetX()),
+                unchecked(shiftY + position.GetY()),
+                unchecked(shiftZ + position.GetZ()));
+        }
+
+        return result;
+    }
+
+    private static int FixupCoordinate(MutableVec3i vector, int component)
+    {
+        int value = vector.Get(component);
+        if (value < 0)
+        {
+            vector.SetComponent(component, unchecked(-value));
+            return unchecked(-value - 1);
+        }
+
+        return 0;
     }
 
     public abstract bool IsFull(int x, int y, int z);
@@ -99,10 +149,8 @@ public abstract class DiscreteVoxelShape
 
     private bool IsFullAlong(Direction.Axis axis, int a, int b, int c)
     {
-        if (ReferenceEquals(axis, Direction.Axis.X))
-            return IsFull(a, b, c);
-        if (ReferenceEquals(axis, Direction.Axis.Y))
-            return IsFull(c, a, b);
+        if (ReferenceEquals(axis, Direction.Axis.X)) return IsFull(a, b, c);
+        if (ReferenceEquals(axis, Direction.Axis.Y)) return IsFull(b, a, c);
         return IsFull(b, c, a);
     }
 }

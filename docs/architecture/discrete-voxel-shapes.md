@@ -14,6 +14,8 @@ The first discrete storage increment ports the occupancy substrate of the shape 
 - Coordinate sequences now have a read-only `DoubleList` abstraction, plus uniform `CubePointRange` and offset views.
 - `IndexMerger` has the four 26.3 strategies: identical coordinate lists, separated ranges (including operand swap), indirect merged coordinates with the `1e-7` duplicate tolerance, and uniform subdivision grids selected by least common multiple.
 - `IndexMergers.Create` preserves the source decision order and the `cost * lcm <= 256` threshold.
+- `SymmetricGroup3` ports the six axis permutations, Cayley table and inverse table. `OctahedralGroup` ports all 48 signed permutations, the source Cayley/inverse tables, serialized names, block-rotation aliases, direction and front/top rotations, and the 3×3 transformation matrix.
+- `DiscreteVoxelShape.Rotate` applies the signed permutation to grid dimensions and occupied cells, including the negative-axis coordinate fixup. Each transform is tested against its inverse.
 
 ## Continuous shapes and Boolean joins
 
@@ -25,11 +27,14 @@ The first discrete storage increment ports the occupancy substrate of the shape 
 
 ## Deferred dependencies
 
-- Octahedral rotations wait for `OctahedralGroup` and signed-axis transforms.
+- Edge/face extraction, `SliceShape`, block-hit-result clipping, collision contexts, swept collision and renderer integrations still require their respective models; no placeholders were introduced.
 - Edge/face extraction, `SliceShape`, block-hit-result clipping, collision contexts, swept collision and renderer integrations still require their respective models; no placeholders were introduced.
 
 ## Reference source
 
+- [OctahedralGroup — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/com/mojang/math/octahedralgroup/)
+- [SymmetricGroup3 — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/com/mojang/math/symmetricgroup3/)
+- [FrontAndTop — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/frontandtop/)
 - [DiscreteVoxelShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/discretevoxelshape/)
 - [BitSetDiscreteVoxelShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/bitsetdiscretevoxelshape/)
 - [BooleanOp — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/booleanop/)

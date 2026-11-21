@@ -174,6 +174,7 @@ internal static class Program
         Vec3Checks.Run();
         AabbChecks.Run();
         DiscreteVoxelShapeChecks.Run();
+        OctahedralGroupChecks.Run();
         IndexMergerChecks.Run();
         VoxelShapeChecks.Run();
 
