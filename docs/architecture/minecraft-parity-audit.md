@@ -4,7 +4,7 @@
 
 - Repositório: `sarakborges/asteria2`
 - Branch auditada: `feature/block-registry`
-- Commit-base auditado: `bbc2145c75934da1eb3805f63b0830ac7e4bda25`
+- Commit-base auditado: `db6623ca40ff02b18462a729d686be1af01353e5`
 - Inventário após o incremento `AttachFace`: 134 arquivos versionados: 93 arquivos C# em `src/Asteria`, 12 arquivos C# no harness de testes e 1 arquivo C# de bootstrap em `scripts`.
 - Escopo de produto: jogo exclusivamente single-player/offline/local; redstone e multiplayer/network play estão explicitamente fora do escopo.
 - Referência: Minecraft Java Edition 26.3, usando o código-fonte decompilado e os contratos observáveis das classes equivalentes.
@@ -28,7 +28,7 @@ Asteria é um jogo local single-player/offline. Esta decisão altera quais parte
 
 Os subsistemas de conteúdo e armazenamento — identificadores, registries, holders, estados genéricos, estados de bloco, mapas de IDs, paletas e armazenamento compactado — têm paridade comportamental confirmada no escopo que foi portado e testado. A geometria discreta já contém as 48 transformações octaédricas, rotação de ocupação, enumeração de caixas/arestas/faces e as consultas geométricas fundamentais. `VoxelShape` também contém recortes de faces, arestas contínuas e colisão por eixo. O clipping de raios com `BlockHitResult` foi adicionado no incremento seguinte; validação pendente até o CI correspondente.
 
-Asteria ainda não é um jogo funcional completo: mundo, chunks completos, geração, biomas, iluminação, simulação de fluidos, entidades, rendering e persistência local continuam ausentes ou parciais. Multiplayer, transporte de rede e servidor/cliente são fora de escopo, não pendências.
+Asteria ainda não é um jogo funcional completo: mundo, chunks completos, biomas, geração, iluminação, simulação de fluidos, entidades, rendering e persistência local continuam ausentes ou parciais. A geometria local agora cobre rotação contínua, raycast, colisão e oclusão de formas, mas ainda não está ligada ao mundo/rendering. Multiplayer, transporte de rede e servidor/cliente são fora de escopo, não pendências.
 
 ## Matriz por subsistema
 
@@ -55,7 +55,7 @@ Asteria ainda não é um jogo funcional completo: mundo, chunks completos, gera�
 | `Direction` / `Direction.Axis` / `Plane` / `FrontAndTop` / `AttachFace` | `Direction` / `FrontAndTop` / `AttachFace` | Parcial: seis direções, vetores, IDs, eixo, plano, yaw, nearest-direction, `FrontAndTop`, `AttachFace` e 48 transformações de `OctahedralGroup`. APIs dependentes de entidade, RNG, codecs locais e integração com renderer permanecem pendentes. O modelo C# usa objetos singleton por identidade onde os membros carregam dados. |
 | `Position` / `Vec3` | `Position` / `Vec3` | Parcial: factories por `Vec3i`, aritmética, produto escalar/vetorial, distância, normalização, rotações com tabela Mth, alinhamento, projeção, igualdade/hash e finitude. Codec para persistência local, RNG, `Vec2` e JOML permanecem pendentes; codecs de rede não são alvo. `Position` tem nomes de acesso adaptados ao C#. |
 | `AABB` / `HitResult` / `BlockHitResult` | `AABB` / `HitResult` / `BlockHitResult` | Parcial: AABB cobre normalização, operações vetoriais, clipping de segmento, colisão e medidas. `HitResult`/`BlockHitResult` agora fornecem o resultado de raycast, `MISS`, `inside`, direção, posição e sinalizador de world border. Sobrecargas específicas de JOML/BoundingBox e integração com entidades ainda pendentes. |
-| `DiscreteVoxelShape` / `BitSetDiscreteVoxelShape` | Shapes homônimas | Parcial: grade/bitset X/Y/Z, bounds em cache, `isFullWide`, `firstFull`/`lastFull`, cópia, região preenchida, interior, rotação por `OctahedralGroup`, enumeração greedy de caixas, arestas com mesclagem e faces por transição de ocupação. A API discreta central está portada; ainda faltam integrações de clipping, occlusion e shape slicing avançado. |
+| `DiscreteVoxelShape` / `BitSetDiscreteVoxelShape` | Shapes homônimas | Parcial: grade/bitset X/Y/Z, bounds em cache, `isFullWide`, `firstFull`/`lastFull`, cópia, região preenchida, interior, rotação por `OctahedralGroup`, enumeração greedy de caixas, arestas com mesclagem e faces por transição de ocupação. As operações discretas centrais estão portadas; falta a integração com block states, mundo e renderer. |
 | `VoxelShape` / `CubeVoxelShape` / `ArrayVoxelShape` / `SliceShape` / `SubShape` | Tipos homônimos | Parcial: coordenadas uniformes/explicitas, min/max, bounds, move, optimize, caixas/AABBs, arestas contínuas, closest-point, queries transversais, cache das seis faces, slices/subshapes, clipping para `BlockHitResult` e colisão swept-AABB por eixo. Igualdade de ocupação estática via `Shapes.Equal`; oclusão é feita pela álgebra de slices de `Shapes`. Contextos e integração com mundo/rendering ainda pendentes. |
 | `Shapes` | `Shapes` | Parcial: factories e álgebra booleana; `Equal`; rotação por `OctahedralGroup` com centro arbitrário; tabelas de rotação horizontal, all-axis e attach-face; colisão agregada; `BlockOccludes`, `MergedFaceOccludes` e `FaceShapeOccludes`. A integração com block-state occlusion/sturdiness e renderer continua pendente. |
 | `BooleanOp` / `IndexMerger` | Tipos homônimos | As 16 funções booleanas e os quatro mergers foram portados: identical, non-overlapping, indirect e discrete-cube. Seleção com tolerância `1e-7` e teto de custo 256 preservada. |
@@ -109,8 +109,8 @@ O `ChunkSection` já possui os contadores de fluido correspondentes à referênc
 
 ## Validação desta baseline
 
-- Última baseline totalmente validada antes de `AttachFace`: workflow [Block registry — run #381](https://github.com/sarakborges/asteria2/actions/runs/44936936773), commit `bbc2145`; harness e build Godot aprovados.
-- O incremento `AttachFace` / `RotateAttachFace` está neste commit posterior e aguardando seu workflow próprio.
+- Workflow [Block registry — run #382](https://github.com/sarakborges/asteria2/actions/runs/44937120010), commit `db6623c`: harness e build Godot aprovados.
+- A suíte cobre `AttachFace`, todas as tabelas de rotação, rotação das 48 simetrias, equivalência de shapes, face occlusion, swept collision e clipping para `BlockHitResult`.
 - Nenhum merge para `main` ou deploy foi realizado.
 
 ## Fontes de referência consultadas
