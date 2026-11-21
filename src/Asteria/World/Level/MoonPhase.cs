@@ -1,6 +1,7 @@
+using Asteria.Serialization;
+
 namespace Asteria.World.Level;
 
-/// <summary>Eight lunar phases in the same order and with the same tick offsets as 26.3.</summary>
 public enum MoonPhase
 {
     FULL_MOON = 0,
@@ -17,6 +18,28 @@ public static class MoonPhaseExtensions
 {
     public const int PHASE_LENGTH = 24000;
     public const int COUNT = 8;
+
+    public static Codec<MoonPhase> CODEC { get; } =
+        Codecs.STRING.FlatXMap(
+            name => name switch
+            {
+                "full_moon" => DataResult<MoonPhase>.Success(MoonPhase.FULL_MOON),
+                "waning_gibbous" => DataResult<MoonPhase>.Success(MoonPhase.WANING_GIBBOUS),
+                "third_quarter" => DataResult<MoonPhase>.Success(MoonPhase.THIRD_QUARTER),
+                "waning_crescent" => DataResult<MoonPhase>.Success(MoonPhase.WANING_CRESCENT),
+                "new_moon" => DataResult<MoonPhase>.Success(MoonPhase.NEW_MOON),
+                "waxing_crescent" => DataResult<MoonPhase>.Success(MoonPhase.WAXING_CRESCENT),
+                "first_quarter" => DataResult<MoonPhase>.Success(MoonPhase.FIRST_QUARTER),
+                "waxing_gibbous" => DataResult<MoonPhase>.Success(MoonPhase.WAXING_GIBBOUS),
+                _ => DataResult<MoonPhase>.Error($"Unknown moon phase: {name}")
+            },
+            phase => DataResult<string>.Success(phase.GetSerializedName()))
+        .OrCompressed(
+            Codecs.INT.FlatXMap(
+                index => index >= 0 && index < COUNT
+                    ? DataResult<MoonPhase>.Success((MoonPhase)index)
+                    : DataResult<MoonPhase>.Error($"Unknown moon phase id: {index}"),
+                phase => DataResult<int>.Success(phase.Index())));
 
     public static int Index(this MoonPhase phase) => (int)phase;
 

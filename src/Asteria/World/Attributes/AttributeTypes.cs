@@ -4,22 +4,25 @@ using Asteria.Content.Particles;
 using Asteria.Content.Registries;
 using Asteria.World.Attributes.Modifiers;
 using Asteria.World.Level;
+using Asteria.Serialization;
 
 namespace Asteria.World.Attributes;
 
 public static class AttributeTypes
 {
     public static readonly AttributeType<bool> BOOLEAN =
-        AttributeType<bool>.OfNotInterpolated(BooleanModifier.LIBRARY);
+        AttributeType<bool>.OfNotInterpolated(Codecs.BOOL, BooleanModifier.LIBRARY);
 
     public static readonly AttributeType<float> FLOAT =
         AttributeType<float>.OfInterpolated(
+            Codecs.FLOAT,
             LerpFunction<float>.OfFloat(),
             FloatModifier.LIBRARY,
             toFloat: static value => value);
 
     public static readonly AttributeType<float> ANGLE_DEGREES =
         AttributeType<float>.OfInterpolated(
+            Codecs.FLOAT,
             LerpFunction<float>.OfFloat(),
             FloatModifier.LIBRARY,
             LerpFunction<float>.OfDegrees(90.0F),
@@ -27,21 +30,24 @@ public static class AttributeTypes
 
     public static readonly AttributeType<int> INTEGER =
         AttributeType<int>.OfInterpolated(
+            Codecs.INT,
             LerpFunction<int>.OfInteger(),
             IntegerModifier.LIBRARY,
             toFloat: static value => value,
             toInt: static value => value);
 
     public static readonly AttributeType<MoonPhase> MOON_PHASE =
-        AttributeType<MoonPhase>.OfNotInterpolated();
+        AttributeType<MoonPhase>.OfNotInterpolated(MoonPhaseExtensions.CODEC);
 
     public static readonly AttributeType<Vector3> RGB_COLOR =
         AttributeType<Vector3>.OfInterpolated(
+            ExtraCodecs.STRING_RGB_VEC3_COLOR,
             LerpFunction<Vector3>.OfColorVec3(),
             ColorModifier.RGB_LIBRARY);
 
     public static readonly AttributeType<Vector4> ARGB_COLOR =
         AttributeType<Vector4>.OfInterpolated(
+            ExtraCodecs.STRING_ARGB_VEC4_COLOR,
             LerpFunction<Vector4>.OfColorVec4(),
             ColorModifier.ARGB_LIBRARY);
 

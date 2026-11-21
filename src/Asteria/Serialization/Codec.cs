@@ -45,6 +45,26 @@ public abstract class Codec<TValue> : Encoder<TValue>, Decoder<TValue>
         return new FlatXMappedCodec<TValue, TMapped>(this, to, from);
     }
 
+    /// <summary>
+    /// Tries this codec first, then the alternative codec. Encoding always uses this codec.
+    /// Both branches preserve DataFixerUpper partial-result precedence.
+    /// </summary>
+    public Codec<TValue> WithAlternative<TAlternative>(
+        Codec<TAlternative> alternative,
+        Func<TAlternative, TValue> convert)
+    {
+        ArgumentNullException.ThrowIfNull(alternative);
+        ArgumentNullException.ThrowIfNull(convert);
+        return new AlternativeCodec<TValue, TAlternative>(this, alternative, convert);
+    }
+
+    /// <summary>Selects the compressed representation only when DynamicOps requests map compression.</summary>
+    public Codec<TValue> OrCompressed(Codec<TValue> compressedCodec)
+    {
+        ArgumentNullException.ThrowIfNull(compressedCodec);
+        return new CompressedCodec<TValue>(this, compressedCodec);
+    }
+
     public Codec<TValue> Validate(Func<TValue, DataResult<TValue>> checker)
     {
         ArgumentNullException.ThrowIfNull(checker);
@@ -141,6 +161,83 @@ public abstract class Codec<TValue> : Encoder<TValue>, Decoder<TValue>
 
         public override string ToString() =>
             $"{_source}[flatXmapped]";
+    }
+
+    private sealed class AlternativeCodec<TMain, TAlternative> : Codec<TMain>
+    {
+        private readonly Codec<TMain> _primary;
+        private readonly Codec<TAlternative> _alternative;
+        private readonly Func<TAlternative, TMain> _convert;
+
+        public AlternativeCodec(
+            Codec<TMain> primary,
+            Codec<TAlternative> alternative,
+            Func<TAlternative, TMain> convert)
+        {
+            _primary = primary;
+            _alternative = alternative;
+            _convert = convert;
+        }
+
+        public override DataResult<TData> Encode<TData>(
+            TMain input,
+            DynamicOps<TData> ops,
+            TData prefix) =>
+            _primary.Encode(input, ops, prefix);
+
+        public override DataResult<Pair<TMain, TData>> Decode<TData>(
+            DynamicOps<TData> ops,
+            TData input)
+        {
+            DataResult<Pair<TMain, TData>> primary = _primary.Decode(ops, input);
+            if (primary.IsSuccess)
+                return primary;
+
+            DataResult<Pair<TMain, TData>> alternative =
+                _alternative.Decode(ops, input).Map(pair =>
+                    new Pair<TMain, TData>(_convert(pair.First), pair.Second));
+
+            if (alternative.IsSuccess)
+                return alternative;
+
+            if (primary.HasResultOrPartial)
+                return primary;
+
+            if (alternative.HasResultOrPartial)
+                return alternative;
+
+            return DataResult<Pair<TMain, TData>>.Error(() =>
+                $"Failed to parse either. First: {primary.ErrorMessage}; Second: {alternative.ErrorMessage}");
+        }
+
+        public override string ToString() =>
+            $"{_primary}[ or {_alternative}]";
+    }
+
+    private sealed class CompressedCodec<TSource> : Codec<TSource>
+    {
+        private readonly Codec<TSource> _normal;
+        private readonly Codec<TSource> _compressed;
+
+        public CompressedCodec(Codec<TSource> normal, Codec<TSource> compressed)
+        {
+            _normal = normal;
+            _compressed = compressed;
+        }
+
+        public override DataResult<TData> Encode<TData>(
+            TSource input,
+            DynamicOps<TData> ops,
+            TData prefix) =>
+            (ops.CompressMaps ? _compressed : _normal).Encode(input, ops, prefix);
+
+        public override DataResult<Pair<TSource, TData>> Decode<TData>(
+            DynamicOps<TData> ops,
+            TData input) =>
+            (ops.CompressMaps ? _compressed : _normal).Decode(ops, input);
+
+        public override string ToString() =>
+            $"{_normal}[orCompressed {_compressed}]";
     }
 
     private sealed class LifecycleCodec<TSource> : Codec<TSource>

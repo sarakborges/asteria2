@@ -217,6 +217,7 @@ internal static class Program
         EnvironmentAttributeChecks.Run();
         ParticleChecks.Run();
         AmbientParticleChecks.Run();
+        AttributeValueCodecChecks.Run();
 
         CheckResourceLocations();
         CheckDefaultedBlockRegistry();
