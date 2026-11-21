@@ -1,7 +1,7 @@
 namespace Asteria.Content.Biomes;
 
 /// <summary>Runtime color effects corresponding to the Minecraft 26.3 BiomeSpecialEffects record.</summary>
-public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverride, int? DryFoliageColorOverride, int? GrassColorOverride, GrassColorModifierType GrassColorModifierType)
+public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverride, int? DryFoliageColorOverride, int? GrassColorOverride, GrassColorModifierType GrassColorModifier)
 {
     public int GetFoliageColor(int defaultColor) => FoliageColorOverride ?? defaultColor;
     public int GetDryFoliageColor(int defaultColor) => DryFoliageColorOverride ?? defaultColor;
@@ -10,7 +10,7 @@ public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverri
     {
         if (GrassColorOverride is int overrideColor)
             return overrideColor;
-        return ModifyGrassColor(GrassColorModifierType, x, z, defaultColor, biomeInfoNoise);
+        return ModifyGrassColor(GrassColorModifier, x, z, defaultColor, biomeInfoNoise);
     }
 
     public sealed class Builder
@@ -24,7 +24,7 @@ public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverri
         public Builder FoliageColorOverride(int value) { _foliageColorOverride = value; return this; }
         public Builder DryFoliageColorOverride(int value) { _dryFoliageColorOverride = value; return this; }
         public Builder GrassColorOverride(int value) { _grassColorOverride = value; return this; }
-        public Builder GrassColorModifierType(GrassColorModifierType value) { _grassColorModifier = value; return this; }
+        public Builder GrassColorModifier(GrassColorModifierType value) { _grassColorModifier = value; return this; }
         public BiomeSpecialEffects Build() => new(
             _waterColor ?? throw new InvalidOperationException("Missing 'water' color."),
             _foliageColorOverride, _dryFoliageColorOverride, _grassColorOverride, _grassColorModifier);
