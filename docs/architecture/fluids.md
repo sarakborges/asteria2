@@ -21,9 +21,9 @@ This is not full fluid parity. The following reference behavior still requires d
 - Water/lava source and flowing variants, their state definitions, block conversion and their environment-specific behavior.
 - World interfaces (`BlockGetter`, `LevelReader`, `Level`, server level) and scheduled tick containers.
 - Fluid flow algorithms still need world access, scheduled ticks and collision/renderer integration. `Vec3`, `AABB`, discrete occupancy, coordinate mergers and the core `VoxelShape`/`Shapes` Boolean geometry are now present.
+- `MOTION_BLOCKING` and `MOTION_BLOCKING_NO_LEAVES` heightmaps now consume the corresponding block tags plus non-empty fluid states, matching the 26.3 predicates.
 - Legacy-block conversion for all fluid types, buckets/items, particles, sounds, entities and block effects.
 - Fluid tags and serialization codecs.
-- Fluid-aware heightmap predicates.
 
 The fluid test implementation is not registered in runtime content. It exists only to verify generic fluid-state generation and the section counter behavior. No water/lava placeholders or fake world APIs were introduced.
 

@@ -11,6 +11,8 @@ internal static class FluidChecks
 
     private static TestFluid? _tickFluid;
 
+    public static BlockState WaterloggedBlockState { get; private set; } = null!;
+
     private sealed class FluidBlock : Block
     {
         private readonly FluidState _fluidState;
@@ -96,16 +98,18 @@ internal static class FluidChecks
         Require(
             !flowing.IsSourceOfType(Fluids.EMPTY),
             "A fluid state must reject source checks against another fluid type.");
+
+        WaterloggedBlockState = new FluidBlock(defaultState).DefaultState;
     }
 
     public static void CheckChunkSectionIntegration()
     {
         TestFluid fluid = _tickFluid ?? throw new InvalidOperationException("Fluid checks must run first.");
-        var block = new FluidBlock(fluid.DefaultFluidState);
+        BlockState blockState = WaterloggedBlockState;
         BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
         var section = new ChunkSection(factory.CreateForBlockStates());
 
-        section.SetBlockState(1, 2, 3, block.DefaultState);
+        section.SetBlockState(1, 2, 3, blockState);
         Require(
             section.FluidCount == 1 && section.HasFluid,
             "Adding a non-air fluid block must increment the fluid count.");
@@ -134,7 +138,7 @@ internal static class FluidChecks
             "Removing the last fluid block must reset the section fluid counters.");
 
         PalettedContainer<BlockState> prefilled = factory.CreateForBlockStates();
-        prefilled.Set(4, 5, 6, block.DefaultState);
+        prefilled.Set(4, 5, 6, blockState);
         var prefilledSection = new ChunkSection(prefilled);
         Require(
             prefilledSection.FluidCount == 1 && prefilledSection.TickingFluidCount == 1,

@@ -55,6 +55,12 @@ public sealed class Heightmap
                 static state => !state.IsAir,
             HeightmapType.OceanFloorWorldgen or HeightmapType.OceanFloor =>
                 static state => state.Is(BlockTags.BlocksMotionInHeightmap),
+            HeightmapType.MotionBlocking =>
+                static state => state.Is(BlockTags.BlocksMotionInHeightmap) ||
+                    !state.GetFluidState().IsEmpty(),
+            HeightmapType.MotionBlockingNoLeaves =>
+                static state => state.Is(BlockTags.BlocksMotionInHeightmapNoLeaves) ||
+                    !state.GetFluidState().IsEmpty(),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown heightmap type.")
         };
 

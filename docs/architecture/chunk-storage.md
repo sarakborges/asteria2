@@ -11,11 +11,11 @@ This increment follows the storage-related portion of `ChunkAccess`, the `LevelH
 - `GetHighestSectionPosition()` retains the deprecated vanilla fallback: minimum build Y for an all-air chunk, otherwise the world block Y at the highest non-air section.
 - `IsYSpaceEmpty(start, end)` clamps to build bounds and checks sections in 16-block increments.
 - `GetBlockState(BlockPos)` maps Y to a section-array index, returns the built-in air state when the index is outside the array or the section contains only air, and otherwise reads the section using `x & 15`, `y & 15`, and `z & 15`. Like `LevelChunk.getBlockState`, this storage lookup does not validate that X/Z belong to the chunk.
-- `HeightmapType` currently models the four block-state/block-tag-only variants: world surface and ocean floor, including their world-generation variants. The fluid-aware motion-blocking variants remain pending until the relevant fluid/block predicates are ported.
+- `HeightmapType` models all six reference variants, preserving IDs, serialized names, client visibility, world-generation retention, and the out-of-range ID-zero fallback. `MOTION_BLOCKING` tests `blocks_motion_in_heightmap` or a non-empty fluid state; `MOTION_BLOCKING_NO_LEAVES` tests `blocks_motion_in_heightmap_no_leaves` or a non-empty fluid state.
 - `ChunkSection` derives `FluidState` from its stored `BlockState`. It tracks `fluidCount` and `tickingFluidCount` separately, exposes `HasFluid`, `IsRandomlyTickingFluids` and `GetFluidState`, and aggregates block/fluid random ticking. Fluid counts are updated only for non-air block states, as in `LevelChunkSection`.
 - `Chunk` owns heightmaps by type. `GetOrCreateHeightmapUnprimed`, `HasPrimedHeightmap`, and `GetHeight` follow `ChunkAccess` map-presence and lazy-priming behavior.
 - `PrimeHeightmaps(types)` creates requested maps and invokes one shared top-down scan, matching `Heightmap.primeHeightmaps` rather than rescanning each column separately for every map.
-- Heightmap type IDs, serialization names, client visibility, and post-world-generation retention flags follow the reference metadata for the supported variants.
+- Heightmap type IDs, serialization names, client visibility, and post-world-generation retention flags follow the reference metadata for all six variants.
 
 ## Mutation boundary
 
@@ -25,10 +25,10 @@ The read path also omits Minecraft's debug-level override and crash-report wrapp
 
 ## Explicitly deferred
 
-- Flowing-fluid simulation and fluid-sensitive heightmap variants. Core `FluidState` and section fluid counts now exist; there is no separate fluid palette because fluid states are obtained from block states, as in the reference.
+- Flowing-fluid simulation, water/lava and world-dependent fluid behavior. Fluid-sensitive heightmap predicates are now implemented; there is no separate fluid palette because fluid states are obtained from block states, as in the reference.
 - Biome model and biome storage in chunk sections.
 - Complete level lifecycle, chunk source, lighting engine, sky-light sources and block entities.
-- Heightmap persistence codecs and warning-level diagnostics for malformed serialized data.
+- Heightmap persistence codecs.
 - Full `ProtoChunk` and `LevelChunk` behavior.
 
 The current factory creates block-state storage only; the section delegates fluid lookup through each block state. Biome storage and its holder/container factory path must be introduced before biome section APIs are ported.
