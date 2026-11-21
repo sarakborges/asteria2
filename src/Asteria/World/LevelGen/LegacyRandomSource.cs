@@ -3,7 +3,7 @@ namespace Asteria.World.LevelGen;
 /// <summary>
 /// 48-bit linear-congruential random source used by legacy world-generation algorithms.
 /// </summary>
-public sealed class LegacyRandomSource
+public sealed class LegacyRandomSource : IRandomSource
 {
     private const long ModulusMask = 281474976710655L;
     private const long Multiplier = 25214903917L;
@@ -45,6 +45,9 @@ public sealed class LegacyRandomSource
 
         return value;
     }
+
+    public float NextFloat() =>
+        NextBits(24) * (1.0F / 16777216.0F);
 
     public double NextDouble() =>
         (((long)NextBits(26) << 27) + NextBits(27)) / 9007199254740992.0;

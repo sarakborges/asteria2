@@ -1,23 +1,20 @@
 using System.Collections.ObjectModel;
+using Asteria.Serialization;
 
 namespace Asteria.World.Attributes;
 
-/// <summary>Type-erased registry identity for typed attribute policies.</summary>
 public interface IAttributeType
 {
     Type ValueType { get; }
 }
 
-/// <summary>
-/// Interpolation and modifier policy for one attribute value type.
-/// Serialization codecs are supplied later by the local data pipeline.
-/// </summary>
 public sealed class AttributeType<T> : IAttributeType
 {
     private readonly Func<T, float>? _toFloat;
     private readonly Func<T, int>? _toInt;
 
     public Type ValueType => typeof(T);
+    public Codec<T>? ValueCodec { get; }
     public IReadOnlyDictionary<AttributeOperationId, IAttributeModifier<T>> ModifierLibrary { get; }
     public LerpFunction<T> KeyframeLerp { get; }
     public LerpFunction<T> StateChangeLerp { get; }
@@ -25,6 +22,7 @@ public sealed class AttributeType<T> : IAttributeType
     public LerpFunction<T> PartialTickLerp { get; }
 
     private AttributeType(
+        Codec<T>? valueCodec,
         IReadOnlyDictionary<AttributeOperationId, IAttributeModifier<T>> modifierLibrary,
         LerpFunction<T> keyframeLerp,
         LerpFunction<T> stateChangeLerp,
@@ -33,6 +31,7 @@ public sealed class AttributeType<T> : IAttributeType
         Func<T, float>? toFloat,
         Func<T, int>? toInt)
     {
+        ValueCodec = valueCodec;
         ArgumentNullException.ThrowIfNull(modifierLibrary);
         ModifierLibrary = new ReadOnlyDictionary<AttributeOperationId, IAttributeModifier<T>>(
             new Dictionary<AttributeOperationId, IAttributeModifier<T>>(modifierLibrary));
@@ -50,18 +49,26 @@ public sealed class AttributeType<T> : IAttributeType
         LerpFunction<T>? partialTickLerp = null,
         Func<T, float>? toFloat = null,
         Func<T, int>? toInt = null) =>
-        new(
-            modifierLibrary,
-            lerp,
-            lerp,
-            lerp,
-            partialTickLerp ?? lerp,
-            toFloat,
-            toInt);
+        OfInterpolated(null, lerp, modifierLibrary, partialTickLerp, toFloat, toInt);
+
+    public static AttributeType<T> OfInterpolated(
+        Codec<T>? valueCodec,
+        LerpFunction<T> lerp,
+        IReadOnlyDictionary<AttributeOperationId, IAttributeModifier<T>> modifierLibrary,
+        LerpFunction<T>? partialTickLerp = null,
+        Func<T, float>? toFloat = null,
+        Func<T, int>? toInt = null) =>
+        new(valueCodec, modifierLibrary, lerp, lerp, lerp, partialTickLerp ?? lerp, toFloat, toInt);
 
     public static AttributeType<T> OfNotInterpolated(
         IReadOnlyDictionary<AttributeOperationId, IAttributeModifier<T>>? modifierLibrary = null) =>
+        OfNotInterpolated(null, modifierLibrary);
+
+    public static AttributeType<T> OfNotInterpolated(
+        Codec<T>? valueCodec,
+        IReadOnlyDictionary<AttributeOperationId, IAttributeModifier<T>>? modifierLibrary = null) =>
         new(
+            valueCodec,
             modifierLibrary ?? new Dictionary<AttributeOperationId, IAttributeModifier<T>>(),
             LerpFunction<T>.OfStep(1.0F),
             LerpFunction<T>.OfStep(0.0F),
@@ -77,11 +84,9 @@ public sealed class AttributeType<T> : IAttributeType
             return;
 
         if (!ModifierLibrary.Values.Any(candidate => ReferenceEquals(candidate, modifier)))
-        {
             throw new ArgumentException(
                 $"Modifier {modifier.GetSerializedName()} is not valid for {typeof(T).Name}.",
                 nameof(modifier));
-        }
     }
 
     public float ToFloat(T value) =>

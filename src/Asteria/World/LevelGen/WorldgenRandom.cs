@@ -4,7 +4,7 @@ namespace Asteria.World.LevelGen;
 /// World-generation random adapter. It preserves the source's call-count behavior and
 /// delegates bit generation to the wrapped legacy source.
 /// </summary>
-public sealed class WorldgenRandom
+public sealed class WorldgenRandom : IRandomSource
 {
     private readonly LegacyRandomSource _randomSource;
 
@@ -38,6 +38,9 @@ public sealed class WorldgenRandom
 
         return value;
     }
+
+    public float NextFloat() =>
+        NextBits(24) * (1.0F / 16777216.0F);
 
     public double NextDouble() =>
         (((long)NextBits(26) << 27) + NextBits(27)) / 9007199254740992.0;
