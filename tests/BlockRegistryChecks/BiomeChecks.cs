@@ -62,7 +62,7 @@ internal static class BiomeChecks
         BiomeSpecialEffects effects = new BiomeSpecialEffects.Builder()
             .WaterColor(123456).FoliageColorOverride(0x00112233)
             .DryFoliageColorOverride(0x00445566).GrassColorOverride(0x00778899)
-            .GrassColorModifier(BiomeSpecialEffects.GrassColorModifierType.SWAMP).Build();
+            .GrassColorModifier(GrassColorModifier.SWAMP).Build();
         Require(effects.WaterColor == 123456 && effects.GetFoliageColor(1) == 0x00112233 &&
                 effects.GetDryFoliageColor(2) == 0x00445566,
             "Biome special effects must retain water, foliage and dry-foliage colors.");
@@ -70,21 +70,21 @@ internal static class BiomeChecks
             "The grass override must be selected as the base color before applying the grass modifier.");
 
         BiomeSpecialEffects darkForest = new BiomeSpecialEffects.Builder().WaterColor(1)
-            .GrassColorModifier(BiomeSpecialEffects.GrassColorModifierType.DARK_FOREST).Build();
+            .GrassColorModifier(GrassColorModifier.DARK_FOREST).Build();
         Require(darkForest.GetGrassColor(0, 0, unchecked((int)0xFF55AA33)) == unchecked((int)0xFF3E6F1E),
             "Dark-forest grass modification must preserve reference integer arithmetic and opaque alpha.");
 
         BiomeSpecialEffects swamp = new BiomeSpecialEffects.Builder().WaterColor(1)
-            .GrassColorModifier(BiomeSpecialEffects.GrassColorModifierType.SWAMP).Build();
+            .GrassColorModifier(GrassColorModifier.SWAMP).Build();
         Require(swamp.GetGrassColor(100, 200, 0, (x, z) => -0.10001) == -11766212,
             "Swamp grass color must use the first noise threshold branch.");
         Require(swamp.GetGrassColor(100, 200, 0, (x, z) => -0.1) == -9801671,
             "Swamp grass color must use a strict negative-one-tenth noise threshold.");
         RequireThrows<ArgumentNullException>(() => swamp.GetGrassColor(0, 0, 0),
             "Swamp grass color must require the biome-info noise dependency.");
-        Require(BiomeSpecialEffects.GetSerializedName(BiomeSpecialEffects.GrassColorModifierType.DARK_FOREST) == "dark_forest" &&
-                BiomeSpecialEffects.GetSerializedName(BiomeSpecialEffects.GrassColorModifierType.SWAMP) == "swamp" &&
-                BiomeSpecialEffects.GetSerializedName(BiomeSpecialEffects.GrassColorModifierType.NONE) == "none",
+        Require(BiomeSpecialEffects.GetSerializedName(GrassColorModifier.DARK_FOREST) == "dark_forest" &&
+                BiomeSpecialEffects.GetSerializedName(GrassColorModifier.SWAMP) == "swamp" &&
+                BiomeSpecialEffects.GetSerializedName(GrassColorModifier.NONE) == "none",
             "Grass color modifier serialized names must match the reference.");
         Require(Biomes.PLAINS.SpecialEffects.WaterColor == 4159204 && Biomes.DESERT.SpecialEffects.WaterColor == 4159204,
             "Base overworld biomes must use the reference normal water color.");

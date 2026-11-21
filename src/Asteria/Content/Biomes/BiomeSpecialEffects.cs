@@ -1,7 +1,9 @@
 namespace Asteria.Content.Biomes;
 
+public enum GrassColorModifier { NONE, DARK_FOREST, SWAMP }
+
 /// <summary>Runtime color effects corresponding to the Minecraft 26.3 BiomeSpecialEffects record.</summary>
-public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverride, int? DryFoliageColorOverride, int? GrassColorOverride, GrassColorModifierType GrassColorModifier)
+public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverride, int? DryFoliageColorOverride, int? GrassColorOverride, GrassColorModifier GrassColorModifier)
 {
     public int GetFoliageColor(int defaultColor) => FoliageColorOverride ?? defaultColor;
     public int GetDryFoliageColor(int defaultColor) => DryFoliageColorOverride ?? defaultColor;
@@ -18,34 +20,34 @@ public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverri
         private int? _foliageColorOverride;
         private int? _dryFoliageColorOverride;
         private int? _grassColorOverride;
-        private GrassColorModifierType _grassColorModifier = GrassColorModifierType.NONE;
+        private GrassColorModifier _grassColorModifier = GrassColorModifier.NONE;
         public Builder WaterColor(int value) { _waterColor = value; return this; }
         public Builder FoliageColorOverride(int value) { _foliageColorOverride = value; return this; }
         public Builder DryFoliageColorOverride(int value) { _dryFoliageColorOverride = value; return this; }
         public Builder GrassColorOverride(int value) { _grassColorOverride = value; return this; }
-        public Builder GrassColorModifier(GrassColorModifierType value) { _grassColorModifier = value; return this; }
+        public Builder GrassColorModifier(GrassColorModifier value) { _grassColorModifier = value; return this; }
         public BiomeSpecialEffects Build() => new(
             _waterColor ?? throw new InvalidOperationException("Missing 'water' color."),
             _foliageColorOverride, _dryFoliageColorOverride, _grassColorOverride, _grassColorModifier);
     }
 
-    public enum GrassColorModifierType { NONE, DARK_FOREST, SWAMP }
+    public enum GrassColorModifier { NONE, DARK_FOREST, SWAMP }
 
-    public static string GetSerializedName(GrassColorModifierType modifier) => modifier switch
+    public static string GetSerializedName(GrassColorModifier modifier) => modifier switch
     {
-        GrassColorModifierType.NONE => "none",
-        GrassColorModifierType.DARK_FOREST => "dark_forest",
-        GrassColorModifierType.SWAMP => "swamp",
+        GrassColorModifier.NONE => "none",
+        GrassColorModifier.DARK_FOREST => "dark_forest",
+        GrassColorModifier.SWAMP => "swamp",
         _ => throw new ArgumentOutOfRangeException(nameof(modifier), modifier, "Unknown grass color modifier.")
     };
 
     private static int Opaque(int color) => color | unchecked((int)0xFF000000);
 
-    private static int ModifyGrassColor(GrassColorModifierType modifier, double x, double z, int baseColor, Func<double, double, double>? biomeInfoNoise) => modifier switch
+    private static int ModifyGrassColor(GrassColorModifier modifier, double x, double z, int baseColor, Func<double, double, double>? biomeInfoNoise) => modifier switch
     {
-        GrassColorModifierType.NONE => baseColor,
-        GrassColorModifierType.DARK_FOREST => Opaque(unchecked(((baseColor & 16711422) + 2634762) >> 1)),
-        GrassColorModifierType.SWAMP => ModifySwampColor(x, z, biomeInfoNoise),
+        GrassColorModifier.NONE => baseColor,
+        GrassColorModifier.DARK_FOREST => Opaque(unchecked(((baseColor & 16711422) + 2634762) >> 1)),
+        GrassColorModifier.SWAMP => ModifySwampColor(x, z, biomeInfoNoise),
         _ => throw new ArgumentOutOfRangeException(nameof(modifier), modifier, "Unknown grass color modifier.")
     };
 
