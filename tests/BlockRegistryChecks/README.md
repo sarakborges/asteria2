@@ -7,3 +7,6 @@ dotnet run --project tests/BlockRegistryChecks/BlockRegistryChecks.csproj
 ```
 
 The project links the production files under `src/Asteria/Content`; it does not keep a test-only copy of the registry implementation.
+
+
+The console harness also runs coordinate and chunk-storage parity checks against Minecraft Java 26.3.

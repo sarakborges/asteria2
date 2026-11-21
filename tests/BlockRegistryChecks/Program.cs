@@ -154,7 +154,7 @@ internal static class Program
         try
         {
             RunChecks();
-            Console.WriteLine("Block registry, holder, tag, block-state, palette, and chunk-section checks passed.");
+            Console.WriteLine("Block registry, holder, tag, block-state, palette, chunk-section, coordinate, and chunk-storage checks passed.");
             return 0;
         }
         catch (Exception exception)
@@ -166,8 +166,9 @@ internal static class Program
 
     private static void RunChecks()
     {
-        CoordinatePositionChecks.Run();
         _ = TestBlocks.TEST_BLOCK;
+        CoordinatePositionChecks.Run();
+        ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState);
 
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&

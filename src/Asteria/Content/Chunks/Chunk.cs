@@ -1,0 +1,97 @@
+using Asteria.Core;
+using Asteria.World;
+
+namespace Asteria.Content.Chunks;
+
+/// <summary>
+/// Vertical chunk storage and height mapping, limited to the block-state portion of ChunkAccess.
+/// </summary>
+public sealed class Chunk : LevelHeightAccessor
+{
+    public const int NoFilledSection = -1;
+
+    private readonly ChunkPos _chunkPos;
+    private readonly LevelHeightAccessor _levelHeightAccessor;
+    private readonly ChunkSection[] _sections;
+
+    public Chunk(
+        ChunkPos chunkPos,
+        LevelHeightAccessor levelHeightAccessor,
+        BlockStateContainerFactory containerFactory,
+        ChunkSection?[]? sections = null)
+    {
+        ArgumentNullException.ThrowIfNull(levelHeightAccessor);
+        ArgumentNullException.ThrowIfNull(containerFactory);
+
+        _chunkPos = chunkPos;
+        _levelHeightAccessor = levelHeightAccessor;
+        _sections = new ChunkSection[levelHeightAccessor.GetSectionsCount()];
+
+        if (sections is not null && _sections.Length == sections.Length)
+            Array.Copy(sections, _sections, _sections.Length);
+
+        ReplaceMissingSections(containerFactory, _sections);
+    }
+
+    private static void ReplaceMissingSections(
+        BlockStateContainerFactory containerFactory,
+        ChunkSection?[] sections)
+    {
+        for (int index = 0; index < sections.Length; index++)
+        {
+            sections[index] ??= containerFactory.CreateSection();
+        }
+    }
+
+    public ChunkPos GetPos() => _chunkPos;
+
+    /// <summary>
+    /// Returns the backing array, matching ChunkAccess.getSections().
+    /// Callers must not insert null entries.
+    /// </summary>
+    public ChunkSection[] GetSections() => _sections;
+
+    public ChunkSection GetSection(int sectionIndex) =>
+        _sections[sectionIndex];
+
+    public int GetHighestFilledSectionIndex()
+    {
+        for (int sectionIndex = _sections.Length - 1; sectionIndex >= 0; sectionIndex--)
+        {
+            if (!_sections[sectionIndex].HasOnlyAir)
+                return sectionIndex;
+        }
+
+        return NoFilledSection;
+    }
+
+    [Obsolete("Use GetHighestFilledSectionIndex and section coordinates.")]
+    public int GetHighestSectionPosition()
+    {
+        int sectionIndex = GetHighestFilledSectionIndex();
+        return sectionIndex == NoFilledSection
+            ? GetMinY()
+            : SectionPos.SectionToBlockCoord(GetSectionYFromSectionIndex(sectionIndex));
+    }
+
+    public bool IsYSpaceEmpty(int yStartInclusive, int yEndInclusive)
+    {
+        if (yStartInclusive < GetMinY())
+            yStartInclusive = GetMinY();
+
+        if (yEndInclusive > GetMaxY())
+            yEndInclusive = GetMaxY();
+
+        for (int y = yStartInclusive; y <= yEndInclusive; y = unchecked(y + 16))
+        {
+            if (!GetSection(GetSectionIndex(y)).HasOnlyAir)
+                return false;
+        }
+
+        return true;
+    }
+
+    public int GetHeight() => _levelHeightAccessor.GetHeight();
+
+    public int GetMinY() => _levelHeightAccessor.GetMinY();
+}
