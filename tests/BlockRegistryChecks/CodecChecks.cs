@@ -131,10 +131,10 @@ internal static class CodecChecks
         DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
         Codec<TestRecord> codec = RecordCodecBuilder.Create<TestRecord>(instance =>
             instance.Group(
-                Codecs.STRING.FieldOf("name").ForGetter(static record => record.Name),
+                Codecs.STRING.FieldOf("name").ForGetter<TestRecord>(static record => record.Name),
                 Codecs.FloatRange(0.0F, 1.0F)
                     .FieldOf("probability")
-                    .ForGetter(static record => record.Probability))
+                    .ForGetter<TestRecord>(static record => record.Probability))
             .Apply(instance, static (name, probability) =>
                 new TestRecord(name, probability)));
 
