@@ -1,6 +1,8 @@
 using Block = Asteria.Content.Blocks.Block;
+using Biome = Asteria.Content.Biomes.Biome;
 using Asteria.Content.Blocks;
 using BuiltInBlocks = Asteria.Content.Blocks.Blocks;
+using BuiltInBiomes = Asteria.Content.Biomes.Biomes;
 using Asteria.Content.Fluids;
 using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Content.Identifiers;
@@ -30,6 +32,12 @@ public static class BuiltInRegistries
             ResourceLocation.FromNamespaceAndPath("asteria", "fluid"),
             FluidIds.EMPTY,
             static () => BuiltInFluids.RegisterAll());
+
+    public static DefaultedRegistry<Biome> Biome { get; } =
+        RegisterDefaultedWithIntrusiveHolders<Biome>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "biome"),
+            ResourceLocation.FromNamespaceAndPath("asteria", "plains"),
+            static () => BuiltInBiomes.RegisterAll());
 
     private static DefaultedRegistry<T> RegisterDefaultedWithIntrusiveHolders<T>(
         ResourceLocation location,

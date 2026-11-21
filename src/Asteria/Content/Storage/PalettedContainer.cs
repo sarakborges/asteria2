@@ -5,7 +5,7 @@ namespace Asteria.Content.Storage;
 /// <summary>
 /// PalettedContainer with a published Data snapshot, strategy-selected palettes, and a one-writer detector.
 /// </summary>
-public sealed class PalettedContainer<T> : IPaletteResize<T> where T : class
+public sealed class PalettedContainer<T> : IPaletteResize<T>, IPalettedContainerReadOnly<T> where T : class
 {
     private sealed class Data
     {

@@ -1,6 +1,7 @@
 using Asteria.Core.Shapes;
 using System.Runtime.CompilerServices;
 using Asteria.Content.Blocks;
+using Asteria.Content.Biomes;
 using Asteria.Content.Blocks.StateProperties;
 using Asteria.Content.Chunks;
 using Asteria.Content.Identifiers;
@@ -156,7 +157,7 @@ internal static class Program
         try
         {
             RunChecks();
-            Console.WriteLine("Block and fluid registries, state holders, directions, math primitives, palettes, chunk sections, coordinates, heightmaps, and chunk storage checks passed.");
+            Console.WriteLine("Block, fluid and biome registries, state holders, directions, math primitives, palettes, chunk sections, coordinates, heightmaps, and chunk storage checks passed.");
             return 0;
         }
         catch (Exception exception)
@@ -191,7 +192,7 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 2, "The root registry must contain the built-in block and fluid registries.");
+        Require(BuiltInRegistries.Root.Count == 3, "The root registry must contain the built-in block, fluid and biome registries.");
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
@@ -200,12 +201,14 @@ internal static class Program
             "The root registry must resolve the block registry by its registry key.");
         Require(BuiltInRegistries.Block.Count == 1, "Only the production air block should be registered.");
         Require(BuiltInRegistries.Fluid.Count == 1, "Only the empty fluid should be registered.");
+        Require(BuiltInRegistries.Biome.Count == 2, "The built-in biome registry must contain plains and desert.");
         Require(Fluid.FluidStateRegistry.Count == 1, "The fluid-state ID map must contain every registered fluid state.");
         Require(ReferenceEquals(Blocks.AIR.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState), "Air must contain the empty fluid state.");
         Require(Block.BlockStateRegistry.Count == 7, "Expected one air state and six test states.");
         FluidChecks.Run();
         BlockTagChecks.Run();
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState);
+        BiomeChecks.Run();
 
         CheckResourceLocations();
         CheckDefaultedBlockRegistry();
@@ -246,7 +249,7 @@ internal static class Program
             BuiltInRegistries.RootLocation == ResourceLocation.Parse("asteria:root"),
             "The root registry must use the Asteria namespace.");
         Require(
-            BuiltInRegistries.Root.Count == 2 && !BuiltInRegistries.Root.IsFrozen,
+            BuiltInRegistries.Root.Count == 3 && !BuiltInRegistries.Root.IsFrozen,
             "The root registry must register built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =
@@ -264,9 +267,18 @@ internal static class Program
         Require(
             fluidRegistryHolder is not null && !fluidRegistryHolder.IsBound,
             "The root registry must create an unbound holder for the fluid registry before bootstrap.");
+
+        RegistryKey<IRegistry> biomeRegistryKey =
+            RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Biome.Location);
+        Holder<IRegistry>.Reference? biomeRegistryHolder =
+            BuiltInRegistries.Root.GetHolder(biomeRegistryKey);
+        Require(
+            biomeRegistryHolder is not null && !biomeRegistryHolder.IsBound,
+            "The root registry must create an unbound holder for the biome registry before bootstrap.");
         Require(
             BuiltInRegistries.Block.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
-            BuiltInRegistries.Fluid.Key.RegistryLocation == BuiltInRegistries.RootLocation,
+            BuiltInRegistries.Fluid.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
+            BuiltInRegistries.Biome.Key.RegistryLocation == BuiltInRegistries.RootLocation,
             "Child registry keys must be rooted in the Asteria root registry.");
     }
 
@@ -2621,7 +2633,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         var blockStrategy =
             PalettedContainerStrategy<BlockState>.CreateForBlockStates(registeredBlockStates);
         var biomeStrategy =
-            PalettedContainerStrategy<BlockState>.CreateForBiomes(registeredBlockStates);
+            PalettedContainerStrategy<Holder<Biome>>.CreateForBiomes(BuiltInRegistries.Biome.AsHolderIdMap());
 
         Require(
             blockStrategy.BitsPerAxis == 4 && blockStrategy.EntryCount == 4096,
@@ -2665,7 +2677,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "Biome sizing must retain local widths from one through three bits.");
         Require(
             biomeStrategy.GetConfigurationForBitCount(4) ==
-                new PaletteConfiguration(PaletteMode.Global, 3, 4, true),
+                new PaletteConfiguration(PaletteMode.Global, 1, 4, true),
             "Biome global sizing must retain the global map width separately from its requested storage width.");
 
         Require(
@@ -2678,8 +2690,8 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             biomeStrategy.GetConfigurationForPaletteSize(8) ==
                 new PaletteConfiguration(PaletteMode.Local, 3, 3, false) &&
             biomeStrategy.GetConfigurationForPaletteSize(9) ==
-                new PaletteConfiguration(PaletteMode.Global, 3, 4, true),
-            "Biome palette-size configuration must transition after eight values.");
+                new PaletteConfiguration(PaletteMode.Global, 1, 4, true),
+            "Biome palette-size configuration must transition after eight values using the biome holder registry width.");
 
         var emptyIds = new BlockStateIdMap();
         var emptyStrategy = PalettedContainerStrategy<BlockState>.CreateForBlockStates(emptyIds);
@@ -2752,13 +2764,13 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
     private static void CheckChunkSection()
     {
-        var smallContainerStrategy =
-            PalettedContainerStrategy<BlockState>.CreateForBiomes(Block.BlockStateRegistry);
+        BlockStateContainerFactory sectionFactory = BlockStateContainerFactory.CreateBuiltIn();
         var sectionWithSuppliedStrategy = new ChunkSection(
-            new PalettedContainer<BlockState>(Blocks.AIR.DefaultState, smallContainerStrategy));
+            sectionFactory.CreateForBlockStates(),
+            sectionFactory.CreateForBiomes());
         Require(
             ReferenceEquals(sectionWithSuppliedStrategy.GetBlockState(3, 3, 3), Blocks.AIR.DefaultState),
-            "LevelChunkSection must accept the supplied block-state container without imposing a section-size validation.");
+            "LevelChunkSection must accept its paired block-state and biome containers without imposing redundant size validation.");
 
         var section = new ChunkSection(CreateBlockStateContainer(Blocks.AIR.DefaultState));
         Require(section.HasOnlyAir, "A new section must be empty.");

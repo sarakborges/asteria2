@@ -12,6 +12,8 @@ This increment follows the storage-related portion of `ChunkAccess`, the `LevelH
 - `IsYSpaceEmpty(start, end)` clamps to build bounds and checks sections in 16-block increments.
 - `GetBlockState(BlockPos)` maps Y to a section-array index, returns the built-in air state when the index is outside the array or the section contains only air, and otherwise reads the section using `x & 15`, `y & 15`, and `z & 15`. Like `LevelChunk.getBlockState`, this storage lookup does not validate that X/Z belong to the chunk.
 - `HeightmapType` models all six reference variants, preserving IDs, serialized names, client visibility, world-generation retention, and the out-of-range ID-zero fallback. `MOTION_BLOCKING` tests `blocks_motion_in_heightmap` or a non-empty fluid state; `MOTION_BLOCKING_NO_LEAVES` tests `blocks_motion_in_heightmap_no_leaves` or a non-empty fluid state.
+- `ChunkSection` stores both the 16³ block-state palette and the 4³ (`BIOME_CONTAINER_BITS = 2`) biome-holder palette. `GetNoiseBiome` reads quart coordinates; `FillBiomesFromNoise` recreates the palette, resolves all 64 cells with world quart coordinates and swaps in the filled container. `GetBiomes` exposes a read-only container view, and `Copy` duplicates both palettes.
+- The biome container uses `PalettedContainerStrategy<Holder<Biome>>.CreateForBiomes` and the stable holder-ID adapter from the built-in biome registry. `BiomeContainerFactory` captures the registry's global ID width after bootstrap.
 - `ChunkSection` derives `FluidState` from its stored `BlockState`. It tracks `fluidCount` and `tickingFluidCount` separately, exposes `HasFluid`, `IsRandomlyTickingFluids` and `GetFluidState`, and aggregates block/fluid random ticking. Fluid counts are updated only for non-air block states, as in `LevelChunkSection`.
 - `Chunk` owns heightmaps by type. `GetOrCreateHeightmapUnprimed`, `HasPrimedHeightmap`, and `GetHeight` follow `ChunkAccess` map-presence and lazy-priming behavior.
 - `PrimeHeightmaps(types)` creates requested maps and invokes one shared top-down scan, matching `Heightmap.primeHeightmaps` rather than rescanning each column separately for every map.
@@ -26,12 +28,12 @@ The read path also omits Minecraft's debug-level override and crash-report wrapp
 ## Explicitly deferred
 
 - Flowing-fluid simulation, water/lava and world-dependent fluid behavior. Fluid-sensitive heightmap predicates are now implemented; there is no separate fluid palette because fluid states are obtained from block states, as in the reference.
-- Biome model and biome storage in chunk sections.
+- Biome special effects, mob spawn settings, biome generation features/carvers, position-dependent temperature noise modifiers and climate/weather queries.
 - Complete level lifecycle, chunk source, lighting engine, sky-light sources and block entities.
 - Heightmap persistence codecs.
 - Full `ProtoChunk` and `LevelChunk` behavior.
 
-The current factory creates block-state storage only; the section delegates fluid lookup through each block state. Biome storage and its holder/container factory path must be introduced before biome section APIs are ported.
+The current Biome model covers the registry-backed climate payload (precipitation flag, base temperature, temperature-modifier identifier and downfall), plus the built-in Plains and Desert definitions. BiomeResolver and the section palette path are implemented. The remaining biome effects/spawn/worldgen/noise layers stay deferred until their own dependencies are ported. Packet FriendlyByteBuf read/write APIs are deliberately omitted because multiplayer/network play is outside the project scope; local save/load serialization remains a separate requirement.
 
 ## Reference source
 
@@ -40,6 +42,8 @@ The current factory creates block-state storage only; the section delegates flui
 - [Heightmap — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/heightmap/)
 - [LevelHeightAccessor — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelheightaccessor/)
 - [LevelChunkSection — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/levelchunksection/)
+- [Biome — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/biome/biome/)
+- [BiomeResolver — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/biome/biomeresolver/)
 
 ## Heightmap raw-data loading
 

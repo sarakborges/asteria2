@@ -1,11 +1,13 @@
 using Asteria.Content.Blocks;
+using Asteria.Content.Biomes;
 using Asteria.Content.Fluids;
+using Asteria.Content.Registries;
 using Asteria.Content.Storage;
 
 namespace Asteria.Content.Chunks;
 
 /// <summary>
-/// A 16x16x16 section whose block states use the vanilla block-state palette strategy.
+/// A 16x16x16 block-state section paired with the vanilla 4x4x4 quart-resolution biome palette.
 /// </summary>
 public sealed class ChunkSection
 {
@@ -13,8 +15,12 @@ public sealed class ChunkSection
     public const int Height = 16;
     public const int Depth = 16;
     public const int BlockCount = Width * Height * Depth;
+    public const int BiomeContainerBits = 2;
+    public const int BiomeContainerWidth = 1 << BiomeContainerBits;
+    public const int BiomeCount = BiomeContainerWidth * BiomeContainerWidth * BiomeContainerWidth;
 
     private readonly PalettedContainer<BlockState> _states;
+    private PalettedContainer<Holder<Biome>> _biomes;
     private short _nonAirBlockCount;
     private short _fluidCount;
     private short _tickingBlockCount;
@@ -34,19 +40,29 @@ public sealed class ChunkSection
     public int PaletteSize => _states.PaletteSize;
 
     public ChunkSection(PalettedContainer<BlockState> states)
+        : this(states, BiomeContainerFactory.CreateBuiltIn().CreateForBiomes())
+    {
+    }
+
+    public ChunkSection(
+        PalettedContainer<BlockState> states,
+        PalettedContainer<Holder<Biome>> biomes)
     {
         _states = states ?? throw new ArgumentNullException(nameof(states));
+        _biomes = biomes ?? throw new ArgumentNullException(nameof(biomes));
         RecalculateBlockCounts();
     }
 
     private ChunkSection(
         PalettedContainer<BlockState> states,
+        PalettedContainer<Holder<Biome>> biomes,
         short nonAirBlockCount,
         short fluidCount,
         short tickingBlockCount,
         short tickingFluidCount)
     {
         _states = states;
+        _biomes = biomes;
         _nonAirBlockCount = nonAirBlockCount;
         _fluidCount = fluidCount;
         _tickingBlockCount = tickingBlockCount;
@@ -117,6 +133,39 @@ public sealed class ChunkSection
     /// <summary>Returns the mutable block-state container, matching LevelChunkSection.getStates().</summary>
     public PalettedContainer<BlockState> GetStates() => _states;
 
+    /// <summary>Returns biome palette storage through the read-only vanilla container contract.</summary>
+    public IPalettedContainerReadOnly<Holder<Biome>> GetBiomes() => _biomes;
+
+    public Holder<Biome> GetNoiseBiome(int quartX, int quartY, int quartZ) =>
+        _biomes.Get(quartX, quartY, quartZ);
+
+    /// <summary>
+    /// Replaces all 64 quart-resolution biome entries using world quart coordinates.
+    /// The palette is recreated before filling, matching LevelChunkSection.fillBiomesFromNoise.
+    /// </summary>
+    public void FillBiomesFromNoise(
+        BiomeResolver biomeResolver,
+        int quartMinX,
+        int quartMinY,
+        int quartMinZ)
+    {
+        ArgumentNullException.ThrowIfNull(biomeResolver);
+        PalettedContainer<Holder<Biome>> newBiomes = _biomes.Recreate();
+
+        for (int x = 0; x < BiomeContainerWidth; x++)
+        for (int y = 0; y < BiomeContainerWidth; y++)
+        for (int z = 0; z < BiomeContainerWidth; z++)
+        {
+            Holder<Biome> biome = biomeResolver.GetNoiseBiome(
+                quartMinX + x,
+                quartMinY + y,
+                quartMinZ + z);
+            newBiomes.GetAndSetUnchecked(x, y, z, biome);
+        }
+
+        _biomes = newBiomes;
+    }
+
     /// <summary>Rebuilds cached section counts from the block-state palette.</summary>
     public void RecalculateBlockCounts()
     {
@@ -149,6 +198,12 @@ public sealed class ChunkSection
     }
 
     public ChunkSection Copy() =>
-        new(_states.Copy(), _nonAirBlockCount, _fluidCount, _tickingBlockCount, _tickingFluidCount);
+        new(
+            _states.Copy(),
+            _biomes.Copy(),
+            _nonAirBlockCount,
+            _fluidCount,
+            _tickingBlockCount,
+            _tickingFluidCount);
 
 }

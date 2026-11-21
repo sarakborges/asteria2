@@ -1,11 +1,12 @@
 using Asteria.Content.Blocks;
+using Asteria.Content.Biomes;
+using Asteria.Content.Registries;
 using Asteria.Content.Storage;
 
 namespace Asteria.Content.Chunks;
 
 /// <summary>
-/// Block-state portion of Minecraft's PalettedContainerFactory.
-/// Biome palette creation remains unavailable until Asteria has a biome domain model.
+/// Creates the paired block-state and biome palettes required by a local chunk section.
 /// </summary>
 public sealed class BlockStateContainerFactory
 {
@@ -13,14 +14,18 @@ public sealed class BlockStateContainerFactory
 
     public BlockState DefaultBlockState { get; }
 
+    public BiomeContainerFactory BiomeContainers { get; }
+
     public BlockStateContainerFactory(
         PalettedContainerStrategy<BlockState> blockStatesStrategy,
-        BlockState defaultBlockState)
+        BlockState defaultBlockState,
+        BiomeContainerFactory? biomeContainers = null)
     {
         BlockStatesStrategy = blockStatesStrategy ??
             throw new ArgumentNullException(nameof(blockStatesStrategy));
         DefaultBlockState = defaultBlockState ??
             throw new ArgumentNullException(nameof(defaultBlockState));
+        BiomeContainers = biomeContainers ?? BiomeContainerFactory.CreateBuiltIn();
     }
 
     public static BlockStateContainerFactory CreateBuiltIn() =>
@@ -31,6 +36,9 @@ public sealed class BlockStateContainerFactory
     public PalettedContainer<BlockState> CreateForBlockStates() =>
         new(DefaultBlockState, BlockStatesStrategy);
 
+    public PalettedContainer<Holder<Biome>> CreateForBiomes() =>
+        BiomeContainers.CreateForBiomes();
+
     public ChunkSection CreateSection() =>
-        new(CreateForBlockStates());
+        new(CreateForBlockStates(), CreateForBiomes());
 }

@@ -4,8 +4,8 @@
 
 - Repositório: `sarakborges/asteria2`
 - Branch auditada: `feature/block-registry`
-- Commit-base auditado: `db6623ca40ff02b18462a729d686be1af01353e5`
-- Inventário após o incremento `AttachFace`: 134 arquivos versionados: 93 arquivos C# em `src/Asteria`, 12 arquivos C# no harness de testes e 1 arquivo C# de bootstrap em `scripts`.
+- Commit-base auditado: `80d57adb82dabc285819ef11384f8c72ada9d5c0`
+- Inventário após o incremento de biomas: 141 arquivos versionados, incluindo 98 arquivos C# em `src/Asteria`, 13 arquivos C# no harness de testes e 1 arquivo C# de bootstrap em `scripts`.
 - Escopo de produto: jogo exclusivamente single-player/offline/local; redstone e multiplayer/network play estão explicitamente fora do escopo.
 - Referência: Minecraft Java Edition 26.3, usando o código-fonte decompilado e os contratos observáveis das classes equivalentes.
 
@@ -28,7 +28,7 @@ Asteria é um jogo local single-player/offline. Esta decisão altera quais parte
 
 Os subsistemas de conteúdo e armazenamento — identificadores, registries, holders, estados genéricos, estados de bloco, mapas de IDs, paletas e armazenamento compactado — têm paridade comportamental confirmada no escopo que foi portado e testado. A geometria discreta já contém as 48 transformações octaédricas, rotação de ocupação, enumeração de caixas/arestas/faces e as consultas geométricas fundamentais. `VoxelShape` também contém recortes de faces, arestas contínuas e colisão por eixo. O clipping de raios com `BlockHitResult` foi adicionado no incremento seguinte; validação pendente até o CI correspondente.
 
-Asteria ainda não é um jogo funcional completo: mundo, chunks completos, biomas, geração, iluminação, simulação de fluidos, entidades, rendering e persistência local continuam ausentes ou parciais. A geometria local agora cobre rotação contínua, raycast, colisão e oclusão de formas, mas ainda não está ligada ao mundo/rendering. Multiplayer, transporte de rede e servidor/cliente são fora de escopo, não pendências.
+Asteria ainda não é um jogo funcional completo: mundo, chunks completos, biomas avançados, geração, iluminação, simulação de fluidos, entidades, rendering e persistência local continuam ausentes ou parciais. O armazenamento quart de biomas e o núcleo climático já foram iniciados. A geometria local agora cobre rotação contínua, raycast, colisão e oclusão de formas, mas ainda não está ligada ao mundo/rendering. Multiplayer, transporte de rede e servidor/cliente são fora de escopo, não pendências.
 
 ## Matriz por subsistema
 
@@ -64,7 +64,8 @@ Asteria ainda não é um jogo funcional completo: mundo, chunks completos, bioma
 | `Mth` | `Mth` | Parcial: tabela trigonométrica SIN de 65536 entradas, `Sin`, `Cos`, `Floor`, `Lerp`, `Square`, `LengthSquared` e `Length`, cobrindo a dependência portável de `Direction`/`Vec3`. O restante da utilitária numérica não foi introduzido. |
 | `Heightmap` / `HeightmapType` | `Heightmap` / `Heightmap.Types` | Seis variantes com IDs, nomes serializados, envio ao cliente, retenção após worldgen e predicados por tags/fluidos; priming compartilhado, atualização incremental e fallback para dados incompatíveis. Persistência por codecs ainda ausente. |
 | `Chunk` | `ChunkAccess` / `ProtoChunk` / `LevelChunk` | Parcial: posições, seções, lookup de blocos e heightmaps. Ainda não há base abstrata `ChunkAccess`, subclasses com lifecycle separado, block entities, estruturas, biomas, ticks, iluminação ou serialização. |
-| `ChunkSection` | `LevelChunkSection` | Parcial: estados de bloco, contagem non-air, `FluidCount`, `TickingFluidCount`, `HasFluid`, lookup de fluido, ticking agregado, cópia e recálculo. Biomas e codecs de seção ainda ausentes. |
+| `Biome` / `BiomeResolver` | `Biome` / `BiomeResolver` | Parcial: registry default e holders para Plains/Desert, dados climáticos (precipitação, temperatura base, modifier ID, downfall), resolver quart e palette storage na seção. Efeitos visuais, atributos ambientais, spawn settings, generation settings/features/carvers, aplicação de temperatura congelada via noise e codecs locais ainda pendentes. |
+| `ChunkSection` | `LevelChunkSection` | Parcial: palettes de estados de bloco e `Holder<Biome>`; biome palette 4³ com dois bits por eixo, `GetNoiseBiome`, fill via `BiomeResolver`, cópia independente; contadores non-air/fluid/ticking e lookup de fluido. Packet IO foi omitido por escopo offline; codec de save/load local ainda pendente. |
 | `Main.cs`, cena e configuração Godot | Host de execução do jogo | Não há equivalente de gameplay direto. É atualmente um bootstrap/smoke test sobre uma cena Node3D vazia, não um loop de jogo. |
 
 ## Divergência encontrada e corrigida
@@ -86,7 +87,7 @@ A base atual não implementa ainda os sistemas completos abaixo. Eles devem ser 
 - Mundo/Level, dimensões, chunk source/manager, carregamento e lifecycle de chunks.
 - Geração de terreno, noise settings, carvers, features, estruturas e spawn.
 - `FlowingFluid`, água/lava, propagação, geometria, ticks e interação com o mundo; os contadores de fluidos em seções e o núcleo `FluidState` já foram portados parcialmente.
-- Modelo de biomas, quart storage, biome resolver e armazenamento de biomas em seções.
+- Biome effects, environmental attributes, mob spawn settings, biome generation settings/features/carvers, temperatura dependente de posição/noise e codec de save/load local.
 - Lighting engine, sky/block light e propagação.
 - Integração de block shapes, colisão e raycast com o mundo local, contextos de colisão, física e rendering local.
 - Renderização de blocos, culling, meshing, materiais e atlas.
