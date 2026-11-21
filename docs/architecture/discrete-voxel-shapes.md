@@ -21,7 +21,8 @@ The first discrete storage increment ports the occupancy substrate of the shape 
 
 ## Continuous shapes and Boolean joins
 
-- `VoxelShape` now provides bounds, per-axis min/max, coordinate-aware min/max, move, optimize, merged box traversal, AABB materialization and closest-point lookup.
+- `VoxelShape` now provides bounds, per-axis min/max, coordinate-aware min/max, move, optimize, merged box traversal, AABB materialization, closest-point lookup, and cached face extraction.
+- `SliceShape` uses `SubShape` to restrict occupancy to a one-cell-thick plane while retaining the original in-plane coordinate lists. Empty and full-cube results canonicalize to `Shapes.Empty()` and `Shapes.Block()`.
 - `CubeVoxelShape` uses uniform `CubePointRange` coordinates and the exact clamped floor-based coordinate-to-cell mapping. `ArrayVoxelShape` preserves explicit lists and validates that every axis has exactly dimension-plus-one coordinates.
 - `Shapes` provides canonical empty/block shapes, `box`/`create` factories, the 1/2/4/8-part grid-fit test, `INFINITY`, `join`, `joinUnoptimized`, `joinIsNotEmpty`, and variadic OR.
 - `joinUnoptimized` builds X/Y/Z mergers in sequence, fills the output grid via `BooleanOp`, and selects cube storage only when all three mergers are discrete-cube mergers. `join` then optimizes by rebuilding from merged boxes.
@@ -45,6 +46,8 @@ The first discrete storage increment ports the occupancy substrate of the shape 
 - [NonOverlappingMerger — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/nonoverlappingmerger/)
 - [IndirectMerger — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/indirectmerger/)
 - [DiscreteCubeMerger — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/discretecubemerger/)
+- [SubShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/subshape/)
+- [SliceShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/sliceshape/)
 - [VoxelShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/voxelshape/)
 - [CubeVoxelShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/cubevoxelshape/)
 - [ArrayVoxelShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/arrayvoxelshape/)

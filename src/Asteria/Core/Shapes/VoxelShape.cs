@@ -9,8 +9,51 @@ public abstract class VoxelShape
 {
     public DiscreteVoxelShape Shape { get; }
 
+    private VoxelShape[]? _faces;
+
     protected VoxelShape(DiscreteVoxelShape shape) =>
         Shape = shape ?? throw new ArgumentNullException(nameof(shape));
+
+    /// <summary>
+    /// Gets the cached boundary shape facing the supplied direction.
+    /// Empty and full-block shapes return themselves, matching the reference fast paths.
+    /// </summary>
+    public VoxelShape GetFaceShape(Direction direction)
+    {
+        ArgumentNullException.ThrowIfNull(direction);
+
+        if (IsEmpty() || ReferenceEquals(this, Shapes.Block()))
+            return this;
+
+        _faces ??= new VoxelShape[6];
+        int index = direction.Get3DDataValue();
+        VoxelShape? cached = _faces[index];
+        if (cached is not null)
+            return cached;
+
+        VoxelShape face = CalculateFace(direction);
+        _faces[index] = face;
+        return face;
+    }
+
+    private VoxelShape CalculateFace(Direction direction)
+    {
+        Direction.Axis axis = direction.GetAxis();
+        if (IsCubeLikeAlong(axis))
+            return this;
+
+        double coordinate = ReferenceEquals(
+            direction.GetAxisDirection(),
+            Direction.AxisDirection.POSITIVE)
+            ? 0.9999999
+            : 1.0E-7;
+        int sliceIndex = FindIndex(axis, coordinate);
+        var slice = new SliceShape(this, axis, sliceIndex);
+        if (slice.IsEmpty())
+            return Shapes.Empty();
+
+        return slice.IsCubeLike() ? Shapes.Block() : slice;
+    }
 
     public double Min(Direction.Axis axis)
     {

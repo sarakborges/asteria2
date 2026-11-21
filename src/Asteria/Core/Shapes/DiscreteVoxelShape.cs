@@ -90,7 +90,10 @@ public abstract class DiscreteVoxelShape
 
     public abstract void Fill(int x, int y, int z);
 
-    public abstract bool IsEmpty();
+    public virtual bool IsEmpty() =>
+        FirstFull(Direction.Axis.X) >= LastFull(Direction.Axis.X) ||
+        FirstFull(Direction.Axis.Y) >= LastFull(Direction.Axis.Y) ||
+        FirstFull(Direction.Axis.Z) >= LastFull(Direction.Axis.Z);
 
     public virtual int FirstFull(Direction.Axis axis)
     {

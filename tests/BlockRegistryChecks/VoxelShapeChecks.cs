@@ -11,6 +11,7 @@ internal static class VoxelShapeChecks
         CheckCoordinateAwareBounds();
         CheckBooleanJoinOperations();
         CheckJoinShortcutsAndNonEmptyQueries();
+        CheckFaceShapesAndSlices();
         CheckAxisCycleAndDiscreteAxisQueries();
     }
 
