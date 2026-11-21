@@ -1,3 +1,4 @@
+using Asteria.Core.Shapes;
 using System.Runtime.CompilerServices;
 using Asteria.Content.Blocks;
 using Asteria.Content.Blocks.StateProperties;
@@ -172,6 +173,7 @@ internal static class Program
         DirectionChecks.Run();
         Vec3Checks.Run();
         AabbChecks.Run();
+        DiscreteVoxelShapeChecks.Run();
 
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&
