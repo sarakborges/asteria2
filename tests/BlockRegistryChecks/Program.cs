@@ -1817,6 +1817,16 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
     private static void CheckBlockStateIdMapSparseMappings()
     {
+        const int expectedCapacity = 64;
+        var preallocatedIds = new BlockStateIdMap(expectedCapacity);
+        var idMapField = typeof(BlockStateIdMap).GetField(
+            "_ids",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        var idMap = idMapField?.GetValue(preallocatedIds) as Dictionary<BlockState, int>;
+        Require(
+            idMap is not null && idMap.EnsureCapacity(0) >= expectedCapacity,
+            "IdMapper construction must preallocate both forward and reverse identity indexes.");
+
         var ids = new BlockStateIdMap();
         BlockState highIdState = Blocks.TEST_BLOCK.DefaultState.SetValue(Blocks.TEST_STAGE, 2);
         BlockState nextState = Blocks.TEST_BLOCK.DefaultState;

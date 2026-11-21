@@ -10,8 +10,7 @@ public sealed class BlockStateIdMap : IReadOnlyCollection<BlockState>, IIdMap<Bl
 {
     private int _nextId;
     private readonly List<BlockState?> _states;
-    private readonly Dictionary<BlockState, int> _ids =
-        new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<BlockState, int> _ids;
 
     public int Count => _ids.Count;
 
@@ -23,6 +22,7 @@ public sealed class BlockStateIdMap : IReadOnlyCollection<BlockState>, IIdMap<Bl
         }
 
         _states = new List<BlockState?>(expectedSize);
+        _ids = new Dictionary<BlockState, int>(expectedSize, ReferenceEqualityComparer.Instance);
     }
 
     public void Add(BlockState state)
