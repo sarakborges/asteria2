@@ -3,6 +3,7 @@ using Asteria.Content.Blocks;
 using Asteria.Content.Blocks.StateProperties;
 using Asteria.Content.Chunks;
 using Asteria.Content.Identifiers;
+using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
 using Asteria.Content.Storage;
 
@@ -154,7 +155,7 @@ internal static class Program
         try
         {
             RunChecks();
-            Console.WriteLine("Block registry, holder, tag, block-state, palette, chunk-section, coordinate, heightmap, and chunk-storage checks passed.");
+            Console.WriteLine("Block and fluid registries, holder, tag, state, palette, chunk-section, coordinate, heightmap, and chunk-storage checks passed.");
             return 0;
         }
         catch (Exception exception)
@@ -182,7 +183,7 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 1, "The root registry must contain the built-in block registry.");
+        Require(BuiltInRegistries.Root.Count == 2, "The root registry must contain the built-in block and fluid registries.");
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
@@ -190,7 +191,11 @@ internal static class Program
                 BuiltInRegistries.Block),
             "The root registry must resolve the block registry by its registry key.");
         Require(BuiltInRegistries.Block.Count == 1, "Only the production air block should be registered.");
+        Require(BuiltInRegistries.Fluid.Count == 1, "Only the empty fluid should be registered.");
+        Require(Fluid.FluidStateRegistry.Count == 1, "The fluid-state ID map must contain every registered fluid state.");
+        Require(ReferenceEquals(Blocks.AIR.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState), "Air must contain the empty fluid state.");
         Require(Block.BlockStateRegistry.Count == 7, "Expected one air state and six test states.");
+        FluidChecks.Run();
         BlockTagChecks.Run();
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState);
 
@@ -232,7 +237,7 @@ internal static class Program
             BuiltInRegistries.RootLocation == ResourceLocation.Parse("asteria:root"),
             "The root registry must use the Asteria namespace.");
         Require(
-            BuiltInRegistries.Root.Count == 1 && !BuiltInRegistries.Root.IsFrozen,
+            BuiltInRegistries.Root.Count == 2 && !BuiltInRegistries.Root.IsFrozen,
             "The root registry must register built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =
@@ -242,8 +247,17 @@ internal static class Program
         Require(
             blockRegistryHolder is not null && !blockRegistryHolder.IsBound,
             "The root registry must create an unbound holder for each child registry before bootstrap.");
+
+        RegistryKey<IRegistry> fluidRegistryKey =
+            RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Fluid.Location);
+        Holder<IRegistry>.Reference? fluidRegistryHolder =
+            BuiltInRegistries.Root.GetHolder(fluidRegistryKey);
         Require(
-            BuiltInRegistries.Block.Key.RegistryLocation == BuiltInRegistries.RootLocation,
+            fluidRegistryHolder is not null && !fluidRegistryHolder.IsBound,
+            "The root registry must create an unbound holder for the fluid registry before bootstrap.");
+        Require(
+            BuiltInRegistries.Block.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
+            BuiltInRegistries.Fluid.Key.RegistryLocation == BuiltInRegistries.RootLocation,
             "Child registry keys must be rooted in the Asteria root registry.");
     }
 

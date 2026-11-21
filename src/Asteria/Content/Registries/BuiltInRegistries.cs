@@ -1,6 +1,8 @@
 using Block = Asteria.Content.Blocks.Block;
 using Asteria.Content.Blocks;
 using BuiltInBlocks = Asteria.Content.Blocks.Blocks;
+using Asteria.Content.Fluids;
+using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Content.Identifiers;
 
 namespace Asteria.Content.Registries;
@@ -22,6 +24,12 @@ public static class BuiltInRegistries
             ResourceLocation.FromNamespaceAndPath("asteria", "block"),
             ResourceLocation.FromNamespaceAndPath("asteria", "air"),
             static () => BuiltInBlocks.RegisterAll());
+
+    public static DefaultedRegistry<Fluid> Fluid { get; } =
+        RegisterDefaultedWithIntrusiveHolders<Fluid>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "fluid"),
+            FluidIds.EMPTY,
+            static () => BuiltInFluids.RegisterAll());
 
     private static DefaultedRegistry<T> RegisterDefaultedWithIntrusiveHolders<T>(
         ResourceLocation location,

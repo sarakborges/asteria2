@@ -1,4 +1,5 @@
 using Asteria.Content.Blocks.StateProperties;
+using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
 
 namespace Asteria.Content.Blocks;
@@ -84,6 +85,12 @@ public class Block
     protected void RegisterDefaultState(BlockState state)
     {
         DefaultState = state;
+    }
+
+    public virtual FluidState GetFluidState(BlockState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        return Fluids.EMPTY.DefaultFluidState;
     }
 
     /// <summary>Copies every property shared by the source block into this block's default state.</summary>

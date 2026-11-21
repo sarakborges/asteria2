@@ -1,5 +1,7 @@
 using Asteria.Content.Registries;
 
+using Asteria.Content.Fluids;
+
 namespace Asteria.Content.Blocks;
 
 public sealed class BlockState : StateHolder<Block, BlockState>
@@ -37,4 +39,6 @@ public sealed class BlockState : StateHolder<Block, BlockState>
 
     public bool Is(TagKey<Block> tag) =>
         Block.BuiltInRegistryHolder?.Is(tag) ?? false;
+
+    public FluidState GetFluidState() => Block.GetFluidState(this);
 }
