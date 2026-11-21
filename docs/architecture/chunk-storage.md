@@ -20,13 +20,14 @@ This increment follows the storage-related portion of `ChunkAccess`, the complet
 - `GetHighestSectionPosition()` retains the deprecated vanilla fallback: minimum build Y for an all-air chunk, otherwise the world block Y at the highest non-air section.
 - `IsYSpaceEmpty(start, end)` clamps to build bounds and checks sections in 16-block increments.
 - `GetBlockState(BlockPos)` maps Y to a section-array index, returns the factory's default state when the index is outside the array or the section contains only air, and otherwise reads the section using `x & 15`, `y & 15`, and `z & 15`.
-- `Heightmap.CreateWorldSurface` uses the reference `!state.isAir()` predicate. Its priming pass scans each local X/Z column downward from the highest non-empty section; its incremental update advances new top blocks and rescans a column when its current top block is removed.
+- `Heightmap.CreateWorldSurface` uses the reference `!state.isAir()` predicate. `Heightmap.CreateOceanFloor` uses the registered `blocks_motion_in_heightmap` block tag. Their priming pass scans each local X/Z column downward from the highest non-empty section; incremental updates advance new top blocks and rescan a column when its current top block is removed.
+- `BlockState.Is(tag)` delegates membership to the owning registered block holder. Heightmap-related block tags use Asteria's namespace and are populated through the existing post-freeze tag-reload mechanism.
 - Height values store the first available Y (one above the highest occupied block) relative to minimum build Y. With height 384, each entry uses 9 bits and all 256 columns occupy 37 packed 64-bit words.
 - Heightmap packed storage reuses Asteria's non-straddling fixed-width storage, matching the reference SimpleBitStorage packing layout.
 
 ## Predicate boundary
 
-Minecraft 26.3 defines six heightmap types. The two world-surface variants use the non-air predicate and are supported by this increment. The other four depend on block tags, fluid state, and leaf classification, which Asteria does not yet model. They are deliberately not represented by approximations based on collision or occlusion flags.
+Minecraft 26.3 defines six heightmap types. Both world-surface variants use the non-air predicate; both ocean-floor variants use the `blocks_motion_in_heightmap` block tag. Those four block-only predicates are now representable. The two motion-blocking variants additionally include non-empty fluid state, so their full behavior remains deferred until Asteria has a `FluidState` model. They are deliberately not approximated with collision or occlusion flags.
 
 The heightmap is currently a standalone chunk-bound storage object. Chunk ownership, the vanilla heightmap type map, lazy priming, and serialized-data recovery will be added when the world/chunk lifecycle exists. `ChunkSection.SetBlockState` remains a low-level storage operation; it does not automatically notify a heightmap.
 

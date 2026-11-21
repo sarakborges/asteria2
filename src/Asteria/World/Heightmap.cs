@@ -45,6 +45,12 @@ public sealed class Heightmap
         new(chunk, static state => !state.IsAir);
 
     /// <summary>
+    /// Creates the ocean-floor variant, using the current block-tag snapshot.
+    /// </summary>
+    public static Heightmap CreateOceanFloor(Chunk chunk) =>
+        new(chunk, static state => state.Is(BlockTags.BlocksMotionInHeightmap));
+
+    /// <summary>
     /// Scans each column downward from the highest non-empty section and primes its first available Y.
     /// The caller should prime a newly created map before relying on its values.
     /// </summary>

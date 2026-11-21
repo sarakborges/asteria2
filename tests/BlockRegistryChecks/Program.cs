@@ -154,7 +154,7 @@ internal static class Program
         try
         {
             RunChecks();
-            Console.WriteLine("Block registry, holder, tag, block-state, palette, chunk-section, coordinate, and chunk-storage checks passed.");
+            Console.WriteLine("Block registry, holder, tag, block-state, palette, chunk-section, coordinate, heightmap, and chunk-storage checks passed.");
             return 0;
         }
         catch (Exception exception)
@@ -191,6 +191,7 @@ internal static class Program
             "The root registry must resolve the block registry by its registry key.");
         Require(BuiltInRegistries.Block.Count == 1, "Only the production air block should be registered.");
         Require(Block.BlockStateRegistry.Count == 7, "Expected one air state and six test states.");
+        BlockTagChecks.Run();
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState);
 
         CheckResourceLocations();
