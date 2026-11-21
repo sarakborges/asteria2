@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
 using Asteria.Content.Storage;
@@ -201,6 +202,11 @@ public sealed class Heightmap
             return;
         }
 
+        Trace.TraceWarning(
+            "Ignoring heightmap data for chunk {0}: size mismatch, expected {1}, got {2}",
+            chunk.GetPos(),
+            rawData.Length,
+            data.Length);
         PrimeAll(new[] { chunk.GetOrCreateHeightmapUnprimed(type) });
     }
 

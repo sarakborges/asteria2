@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using Asteria.Content.Blocks;
 using Asteria.Core;
 using Asteria.World;
@@ -32,8 +33,20 @@ public sealed class Chunk : LevelHeightAccessor
         _sections = new ChunkSection[levelHeightAccessor.GetSectionsCount()];
         _heightmapsView = new ReadOnlyDictionary<HeightmapType, Heightmap>(_heightmaps);
 
-        if (sections is not null && _sections.Length == sections.Length)
-            Array.Copy(sections, _sections, _sections.Length);
+        if (sections is not null)
+        {
+            if (_sections.Length == sections.Length)
+            {
+                Array.Copy(sections, _sections, _sections.Length);
+            }
+            else
+            {
+                Trace.TraceWarning(
+                    "Could not set level chunk sections, array length is {0} instead of {1}",
+                    sections.Length,
+                    _sections.Length);
+            }
+        }
 
         ReplaceMissingSections(containerFactory, _sections);
     }
