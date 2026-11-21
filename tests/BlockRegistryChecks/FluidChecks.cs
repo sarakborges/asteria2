@@ -1,11 +1,28 @@
 using Asteria.Content.Blocks;
+using Asteria.Content.Blocks;
 using Asteria.Content.Blocks.StateProperties;
+using Asteria.Content.Chunks;
 using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
 
 internal static class FluidChecks
 {
     private static readonly IntegerProperty LEVEL = IntegerProperty.Create("level", 1, 8);
+
+    private static TestFluid? _tickFluid;
+
+    private sealed class FluidBlock : Block
+    {
+        private readonly FluidState _fluidState;
+
+        public FluidBlock(FluidState fluidState)
+            : base(BlockProperties.Of(), createIntrusiveRegistryHolder: false)
+        {
+            _fluidState = fluidState ?? throw new ArgumentNullException(nameof(fluidState));
+        }
+
+        public override FluidState GetFluidState(BlockState state) => _fluidState;
+    }
 
     private sealed class TestFluid : Fluid
     {
@@ -55,6 +72,7 @@ internal static class FluidChecks
         Require(!empty.IsFull(), "The empty fluid state must not be full.");
 
         var fluid = new TestFluid();
+        _tickFluid = fluid;
         Require(
             fluid.StateDefinition.PossibleStates.Count == 8,
             "Fluid state definitions must materialize every integer-property combination.");
@@ -78,6 +96,49 @@ internal static class FluidChecks
         Require(
             !flowing.IsSourceOfType(Fluids.EMPTY),
             "A fluid state must reject source checks against another fluid type.");
+    }
+
+    public static void CheckChunkSectionIntegration()
+    {
+        TestFluid fluid = _tickFluid ?? throw new InvalidOperationException("Fluid checks must run first.");
+        var block = new FluidBlock(fluid.DefaultFluidState);
+        BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
+        var section = new ChunkSection(factory.CreateForBlockStates());
+
+        section.SetBlockState(1, 2, 3, block.DefaultState);
+        Require(
+            section.FluidCount == 1 && section.HasFluid,
+            "Adding a non-air fluid block must increment the fluid count.");
+        Require(
+            section.TickingFluidCount == 1 && section.IsRandomlyTickingFluids && section.IsRandomlyTicking,
+            "Randomly ticking fluid states must increment their own section counter and aggregate ticking state.");
+        Require(
+            ReferenceEquals(section.GetFluidState(1, 2, 3), fluid.DefaultFluidState),
+            "Section fluid lookup must delegate through the stored block state.");
+
+        ChunkSection copy = section.Copy();
+        Require(
+            copy.FluidCount == 1 && copy.TickingFluidCount == 1 && copy.HasFluid,
+            "Copy must preserve fluid and ticking-fluid counters.");
+        copy.SetBlockState(1, 2, 3, Blocks.AIR.DefaultState);
+        Require(
+            copy.FluidCount == 0 && copy.TickingFluidCount == 0 && !copy.HasFluid && !copy.IsRandomlyTicking,
+            "Replacing a fluid block with air must decrement both fluid counters independently of the source section.");
+        Require(
+            section.FluidCount == 1 && section.TickingFluidCount == 1,
+            "Mutating a copied section must not change the original fluid counters.");
+
+        section.SetBlockState(1, 2, 3, Blocks.AIR.DefaultState);
+        Require(
+            section.FluidCount == 0 && section.TickingFluidCount == 0 && !section.HasFluid,
+            "Removing the last fluid block must reset the section fluid counters.");
+
+        PalettedContainer<BlockState> prefilled = factory.CreateForBlockStates();
+        prefilled.Set(4, 5, 6, block.DefaultState);
+        var prefilledSection = new ChunkSection(prefilled);
+        Require(
+            prefilledSection.FluidCount == 1 && prefilledSection.TickingFluidCount == 1,
+            "RecalculateBlockCounts must reconstruct fluid and random-ticking fluid counts from prefilled states.");
     }
 
     private static void Require(bool condition, string message)

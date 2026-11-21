@@ -229,6 +229,7 @@ internal static class Program
         CheckChunkSection();
         CheckStateIdsAreAssignedAtConstruction();
         CheckFrozenRegistry();
+        FluidChecks.CheckChunkSectionIntegration();
     }
 
     private static void CheckBuiltInRegistryRoot()
