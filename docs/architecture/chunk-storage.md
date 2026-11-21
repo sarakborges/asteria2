@@ -2,7 +2,7 @@
 
 ## Minecraft 26.3 reference
 
-This increment follows the storage-related portion of `ChunkAccess` and the complete `LevelHeightAccessor` contract, while keeping missing game domains out of Asteria.
+This increment follows the storage-related portion of `ChunkAccess`, the complete `LevelHeightAccessor` contract, and the ordinary block-state read path from `LevelChunk.getBlockState`, while keeping missing game domains out of Asteria.
 
 - `LevelHeightAccessor` defines inclusive build-height bounds, vertical section bounds, and block/section-to-array-index conversion.
 - `Chunk` retains a `ChunkPos`, a height accessor, and a vertical array of `ChunkSection` instances.
@@ -18,6 +18,13 @@ This increment follows the storage-related portion of `ChunkAccess` and the comp
 - `GetHighestFilledSectionIndex()` scans from the top of the array and returns `-1` when every section contains only air.
 - `GetHighestSectionPosition()` retains the deprecated vanilla fallback: minimum build Y for an all-air chunk, otherwise the world block Y at the highest non-air section.
 - `IsYSpaceEmpty(start, end)` clamps to build bounds and checks sections in 16-block increments, preserving the reference implementation.
+- `GetBlockState(BlockPos)` maps Y to a section-array index, returns the factory's default state when the index is outside the array or the section contains only air, and otherwise reads the section using `x & 15`, `y & 15`, and `z & 15`. Like `LevelChunk.getBlockState`, this storage lookup does not validate that X/Z belong to the chunk.
+
+## Mutation boundary
+
+The chunk-level `setBlockState` method is deliberately not exposed yet. In Minecraft 26.3, `LevelChunk.setBlockState` is not just a palette write: it also updates heightmaps, light-engine section status, sky-light sources, block entities, and world neighbor/place effects. Asteria currently has no complete Level/world, heightmap, lighting, or block-entity models to support those side effects. `ChunkSection.SetBlockState` remains the lower-level section-storage primitive; it is not presented as a complete chunk mutation operation.
+
+The read path also omits Minecraft's debug-level override and crash-report wrapping because Asteria's `Chunk` has no `Level` or crash-reporting context.
 
 ## Explicitly deferred
 
@@ -27,6 +34,7 @@ The block-state-only factory intentionally does not manufacture a biome holder o
 
 ## Reference source
 
+- [LevelChunk — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/levelchunk/)
 - [ChunkAccess — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/chunkaccess/)
 - [LevelHeightAccessor — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelheightaccessor/)
 - [LevelChunkSection — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/levelchunksection/)

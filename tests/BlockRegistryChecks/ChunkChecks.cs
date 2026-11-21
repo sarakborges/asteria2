@@ -61,6 +61,21 @@ internal static class ChunkChecks
         Require(chunk.GetHighestSectionPosition() == -64, "An all-air chunk's highest section position must fall back to minimum Y.");
 #pragma warning restore CS0618
         Require(chunk.IsYSpaceEmpty(int.MinValue, int.MaxValue), "An all-air chunk must report its entire build range as empty.");
+        Require(
+            ReferenceEquals(
+                chunk.GetBlockState(new BlockPos(position.GetMinBlockX(), -64, position.GetMinBlockZ())),
+                Blocks.AIR.DefaultState),
+            "Block lookup in an empty section must return the factory's default air state.");
+        Require(
+            ReferenceEquals(
+                chunk.GetBlockState(new BlockPos(position.GetMinBlockX(), -65, position.GetMinBlockZ())),
+                Blocks.AIR.DefaultState),
+            "Block lookup below the section array must return the default air state.");
+        Require(
+            ReferenceEquals(
+                chunk.GetBlockState(new BlockPos(position.GetMinBlockX(), 320, position.GetMinBlockZ())),
+                Blocks.AIR.DefaultState),
+            "Block lookup above the section array must return the default air state.");
 
         var suppliedSection = factory.CreateSection();
         var supplied = new ChunkSection?[24];
@@ -74,7 +89,20 @@ internal static class ChunkChecks
         Require(ReferenceEquals(fromSections.GetSection(4), suppliedSection), "Later edits to the source array must not change the chunk's section references.");
 
         var occupiedChunk = new Chunk(position, height, factory);
-        occupiedChunk.GetSection(4).SetBlockState(0, 0, 0, nonAirState);
+        BlockPos occupiedPosition = position.GetBlockAt(15, 15, 9);
+        occupiedChunk.GetSection(4).SetBlockState(15, 15, 9, nonAirState);
+        Require(
+            ReferenceEquals(occupiedChunk.GetBlockState(occupiedPosition), nonAirState),
+            "Chunk block lookup must route world coordinates to the correct section-local coordinates.");
+
+        BlockPos aliasedPosition = new(
+            occupiedPosition.GetX() + 16,
+            occupiedPosition.GetY(),
+            occupiedPosition.GetZ() - 32);
+        Require(
+            ReferenceEquals(occupiedChunk.GetBlockState(aliasedPosition), nonAirState),
+            "Chunk block lookup must preserve vanilla local-coordinate masking without adding an X/Z ownership check.");
+
         Require(occupiedChunk.GetHighestFilledSectionIndex() == 4, "Highest filled section must return the greatest non-air section-array index.");
 #pragma warning disable CS0618
         Require(occupiedChunk.GetHighestSectionPosition() == 0, "Highest section position must convert the section index back to world block Y.");
