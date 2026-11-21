@@ -50,3 +50,10 @@ Base de comparação: Minecraft Java 26.3.
 - Portado `LerpFunction.ofListCrossFade` de 26.3: alpha zero/um retorna a lista de origem/destino sem alocação; valores intermediários concatenam primeiro os elementos de origem escalados por `1 - alpha`, depois os elementos de destino escalados por `alpha`.
 - O resultado intermediário é um snapshot somente leitura; não há clamp de alpha nem deduplicação, preservando a ordem e as chamadas ao scaler da referência.
 - Isso prepara a interpolação de `AMBIENT_PARTICLES`, mas não registra um tipo incompleto: `PARTICLE` e `AMBIENT_PARTICLES` aguardam o domínio real de partículas e os codecs locais necessários.
+
+
+## Incremento — modificador genérico de listas
+
+- Portado `ListModifier.append` de 26.3: argumento vazio devolve a lista subject original; subject vazio devolve o argumento original; duas listas não vazias produzem uma nova lista concatenada em ordem subject → argumento.
+- A biblioteca genérica de listas expõe somente `append`, com o identificador serializado `append`.
+- A infraestrutura está pronta para `AMBIENT_PARTICLES`, mas o tipo ainda não foi registrado: `ParticleOptions`, `ParticleTypes.CODEC` e o pipeline local de codecs continuam ausentes.

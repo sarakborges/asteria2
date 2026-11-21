@@ -219,3 +219,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O resultado intermediário é um snapshot somente leitura. Não há clamp, ordenação ou deduplicação adicional.
 - `PARTICLE` e `AMBIENT_PARTICLES` não foram registrados: a referência depende de `ParticleOptions`, `ParticleTypes.CODEC`, `AmbientParticle.CODEC` e da infraestrutura de codecs locais ainda inexistente.
 - `ACTIVITY` também não foi registrado: requer o registry de activities e o domínio de schedules/AI; não há definição de atividade genérica atualmente mantida no catálogo ambiental do produto.
+
+
+## Incremento — modificador append de listas (21/11/2026)
+
+- `ListModifier<T>.APPEND` reproduz os casos de identidade e concatenação do `ListModifier.append` de 26.3, preservando a ordem subject → argumento.
+- O catálogo de modificadores de lista contém exclusivamente `append`.
+- Não registra ainda `AMBIENT_PARTICLES`: o tipo depende do domínio de partículas e dos codecs, que não foram simulados com placeholders.

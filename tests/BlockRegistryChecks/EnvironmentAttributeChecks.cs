@@ -16,6 +16,7 @@ internal static class EnvironmentAttributeChecks
         CheckIntegerAttributeType();
         CheckMoonPhaseAttributeType();
         CheckListCrossFadeInterpolation();
+        CheckListAppendModifier();
         CheckAttributeDefinitionAndRange();
         CheckTypeInterpolationAndNumericProjection();
         CheckTypedModifierLibraries();
@@ -392,6 +393,27 @@ internal static class EnvironmentAttributeChecks
             "List cross-fade must preserve source-then-target order and scale each side by its complementary alpha.");
         Require(middle is System.Collections.ObjectModel.ReadOnlyCollection<string>,
             "Intermediate cross-fade results must be immutable snapshots.");
+    }
+
+    private static void CheckListAppendModifier()
+    {
+        List<string> subject = new() { "base-a", "base-b" };
+        List<string> argument = new() { "layer-a" };
+
+        Require(ReferenceEquals(ListModifier<string>.APPEND.Apply(subject, new List<string>()), subject),
+            "Appending an empty argument must return the original subject list.");
+        Require(ReferenceEquals(ListModifier<string>.APPEND.Apply(new List<string>(), argument), argument),
+            "Appending to an empty subject must return the original argument list.");
+
+        List<string> combined = ListModifier<string>.APPEND.Apply(subject, argument);
+        Require(combined.SequenceEqual(new[] { "base-a", "base-b", "layer-a" }) &&
+                !ReferenceEquals(combined, subject) &&
+                !ReferenceEquals(combined, argument),
+            "Appending two non-empty lists must concatenate subject then argument into a new list.");
+        Require(ListModifier<string>.APPEND.GetSerializedName() == "append" &&
+                ListModifier<string>.LIBRARY.Count == 1 &&
+                ReferenceEquals(ListModifier<string>.LIBRARY[AttributeOperationId.APPEND], ListModifier<string>.APPEND),
+            "The list modifier library must expose only the append operation under its serialized name.");
     }
 
     private static void CheckAngleInterpolation()
