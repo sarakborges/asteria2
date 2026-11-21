@@ -40,7 +40,7 @@ internal static class Vec3Checks
         var origin = new Vec3(1.0, 2.0, 3.0);
         var other = new Vec3(4.0, 6.0, 8.0);
         Require(origin.VectorTo(other).Equals(new Vec3(3.0, 4.0, 5.0)), "VectorTo must return destination minus source.");
-        Require(origin.Dot(other) == 41.0, "Dot product must sum component products.");
+        Require(origin.Dot(other) == 40.0, "Dot product must sum component products.");
         Require(
             origin.Cross(other).Equals(new Vec3(-2.0, 4.0, -2.0)),
             "Cross product must preserve the right-handed component order.");
