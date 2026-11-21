@@ -57,7 +57,7 @@ public sealed class Biome
         if (!HasPrecipitation)
             return Precipitation.NONE;
 
-        return GetHeightAdjustedTemperature(position, seaLevel) >= 0.15F
+        return WarmEnoughToRain(position, seaLevel)
             ? Precipitation.RAIN
             : Precipitation.SNOW;
     }
