@@ -115,7 +115,7 @@ public abstract class DiscreteVoxelShape
             Direction.Axis cAxis = AxisCycle.Backward.Cycle(axis);
             if (b < GetSize(bAxis) && c < GetSize(cAxis))
             {
-                AxisCycle transform = AxisCycleExtensions.Between(axis, Direction.Axis.X);
+                AxisCycle transform = AxisCycleExtensions.Between(Direction.Axis.X, axis);
                 for (int a = 0; a < aSize; a++)
                 {
                     if (IsFull(transform, a, b, c))
@@ -137,7 +137,7 @@ public abstract class DiscreteVoxelShape
             if (b < GetSize(bAxis) && c < GetSize(cAxis))
             {
                 int aSize = GetSize(axis);
-                AxisCycle transform = AxisCycleExtensions.Between(axis, Direction.Axis.X);
+                AxisCycle transform = AxisCycleExtensions.Between(Direction.Axis.X, axis);
                 for (int a = aSize - 1; a >= 0; a--)
                 {
                     if (IsFull(transform, a, b, c))

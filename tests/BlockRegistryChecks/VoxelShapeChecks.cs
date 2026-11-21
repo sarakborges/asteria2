@@ -316,18 +316,18 @@ internal static class VoxelShapeChecks
             "Backward axis cycle must map X to Z.");
         Require(AxisCycle.Forward.Inverse() == AxisCycle.Backward,
             "Forward axis cycle inverse must be backward.");
-        Require(AxisCycle.Forward.Cycle(1, 2, 3) == (2, 3, 1),
-            "Forward coordinate cycling must map (x,y,z) to (y,z,x).");
-        Require(AxisCycle.Backward.Cycle(1, 2, 3) == (3, 1, 2),
-            "Backward coordinate cycling must map (x,y,z) to (z,x,y).");
+        Require(AxisCycle.Forward.Cycle(1, 2, 3) == (3, 1, 2),
+            "Forward axis cycling must select (z,x,y) for X/Y/Z respectively.");
+        Require(AxisCycle.Backward.Cycle(1, 2, 3) == (2, 3, 1),
+            "Backward axis cycling must select (y,z,x) for X/Y/Z respectively.");
 
         var shape = new BitSetDiscreteVoxelShape(2, 3, 4);
         shape.Fill(1, 2, 3);
         Require(shape.IsFullWide(AxisCycle.None, 1, 2, 3),
             "Identity axis-cycle occupancy must preserve coordinates.");
-        Require(shape.IsFullWide(AxisCycle.Forward, 3, 1, 2),
+        Require(shape.IsFullWide(AxisCycle.Forward, 2, 3, 1),
             "Forward axis-cycle occupancy must remap coordinates in source order.");
-        Require(shape.IsFullWide(AxisCycle.Backward, 2, 3, 1),
+        Require(shape.IsFullWide(AxisCycle.Backward, 3, 1, 2),
             "Backward axis-cycle occupancy must remap coordinates in source order.");
     }
 

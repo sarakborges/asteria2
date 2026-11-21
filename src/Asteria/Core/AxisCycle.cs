@@ -47,8 +47,8 @@ public static class AxisCycleExtensions
         cycle switch
         {
             AxisCycle.None => (x, y, z),
-            AxisCycle.Forward => (y, z, x),
-            AxisCycle.Backward => (z, x, y),
+            AxisCycle.Forward => (z, x, y),
+            AxisCycle.Backward => (y, z, x),
             _ => throw new ArgumentOutOfRangeException(nameof(cycle))
         };
 
