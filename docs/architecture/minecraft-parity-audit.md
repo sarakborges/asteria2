@@ -65,7 +65,7 @@ Asteria ainda não é um jogo funcional completo: mundo, chunks completos, bioma
 | `Mth` | `Mth` | Parcial: tabela trigonométrica SIN de 65536 entradas, `Sin`, `Cos`, `Floor`, `Lerp`, `Square`, `LengthSquared` e `Length`, cobrindo a dependência portável de `Direction`/`Vec3`. O restante da utilitária numérica não foi introduzido. |
 | `Heightmap` / `HeightmapType` | `Heightmap` / `Heightmap.Types` | Seis variantes com IDs, nomes serializados, envio ao cliente, retenção após worldgen e predicados por tags/fluidos; priming compartilhado, atualização incremental e fallback para dados incompatíveis. Persistência por codecs ainda ausente. |
 | `Chunk` | `ChunkAccess` / `ProtoChunk` / `LevelChunk` | Parcial: posições, seções, lookup de blocos e heightmaps. Ainda não há base abstrata `ChunkAccess`, subclasses com lifecycle separado, block entities, estruturas, biomas, ticks, iluminação ou serialização. |
-| `Biome` / `BiomeResolver` | `Biome` / `BiomeResolver` | Parcial: registry default e holders para Plains/Desert, clima, resolver quart e palette storage. BiomeSpecialEffects cobre cores e modificadores; BIOME_INFO_NOISE seed 2345, temperatura FROZEN seed 3456, correção por altitude seed 1234, precipitação e cache térmico por thread estão portados. Núcleo de atributos ambientais tipados (boolean/float, ranges, modificadores e mapa imutável) portado, ainda sem registro built-in ou integração com dados de bioma. Spawn settings, generation settings/features/carvers, verificações dependentes de nível e codecs locais ainda pendentes. |
+| `Biome` / `BiomeResolver` | `Biome` / `BiomeResolver` | Parcial: registry default e holders para Plains/Desert, clima, resolver quart e palette storage. BiomeSpecialEffects cobre cores e modificadores; BIOME_INFO_NOISE seed 2345, temperatura FROZEN seed 3456, correção por altitude seed 1234, precipitação e cache térmico por thread estão portados. Núcleo de atributos ambientais tipados portado: registries environment_attribute/attribute_type, boolean/tri-state/float/angle_degrees e 32 definições built-in compatíveis; integração do mapa com Biome e domínios de cor/áudio/partícula/atividade/bed rule/mob spawn pendentes. Spawn settings, generation settings/features/carvers, verificações dependentes de nível e codecs locais ainda pendentes. |
 | `ChunkSection` | `LevelChunkSection` | Parcial: palettes de estados de bloco e `Holder<Biome>`; biome palette 4³ com dois bits por eixo, `GetNoiseBiome`, fill via `BiomeResolver`, cópia independente; contadores non-air/fluid/ticking e lookup de fluido. Packet IO foi omitido por escopo offline; codec de save/load local ainda pendente. |
 | `Main.cs`, cena e configuração Godot | Host de execução do jogo | Não há equivalente de gameplay direto. É atualmente um bootstrap/smoke test sobre uma cena Node3D vazia, não um loop de jogo. |
 
@@ -202,3 +202,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Registradas as políticas BOOLEAN e FLOAT com os identificadores asteria:boolean e asteria:float.
 - A interface IAttributeType mantém a fronteira de registry sem apagar o tipo genérico dos objetos AttributeType<T>; o consumidor recupera as políticas tipadas originais por identidade.
 - O catálogo ainda contém apenas os dois tipos cujos domínios já estão disponíveis. Os tipos tri-state, ângulo, cores, inteiro, listas, música, som, partículas e mob spawn aguardam os respectivos modelos e codecs.
+
+
+## Incremento — registries e definições ambientais built-in
+
+- O root agora registra environment_attribute antes de attribute_type, conforme a ordem de 26.3.
+- AttributeTypes registra boolean, tri_state, float e angle_degrees. TriState e o wrap angular do partial tick foram portados com seus thresholds.
+- 32 definições ambientais que usam esses quatro tipos foram registradas com defaults, ranges e flags correspondentes.
+- Tipos dependentes de valores ainda ausentes foram omitidos; IDs numéricos após essas lacunas não são considerados equivalentes. Lookup por chave é validado.
+- EnvironmentAttributeMap ainda não está ligado ao Biome; codecs locais permanecem pendentes. Multiplayer e sincronização remota continuam fora de escopo.

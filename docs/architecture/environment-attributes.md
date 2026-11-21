@@ -16,7 +16,7 @@ Base de comparação: Minecraft Java 26.3.
 
 ## Runtime portado neste incremento
 
-- BuiltInRegistries registra o registry attribute_type no root e inicializa boolean e float durante o bootstrap, usando identificadores asteria próprios.
+- BuiltInRegistries registra environment_attribute e attribute_type no root, nessa ordem. O bootstrap registra boolean, tri_state, float e angle_degrees e 32 definições ambientais compatíveis com esses domínios.
 
 - AttributeRange<T> valida e sanitiza valores; os ranges float reproduzem os intervalos unitário, unitário com epsilon e não negativo.
 - LerpFunction<T> modela interpolação float e os limiares usados pelos quatro contextos de tipos não interpolados.
@@ -29,8 +29,18 @@ Base de comparação: Minecraft Java 26.3.
 ## Limites deste incremento
 
 - O projeto ainda não possui infraestrutura de codecs. Os codecs de valor e modificador, CODEC, NETWORK_CODEC e CODEC_ONLY_POSITIONAL não foram simulados; serão portados junto ao pipeline de dados/save-load local.
-- AttributeTypes contém apenas boolean e float nesta etapa. Tipos de cor, inteiro, ângulo, listas, sons, partículas, regras e mob spawns dependem de seus domínios de valor.
-- O registry built-in attribute_type foi ligado ao bootstrap com as entradas asteria:boolean e asteria:float. O registry de EnvironmentAttribute e suas definições concretas ainda não foram portados.
+- AttributeTypes contém boolean, tri_state, float e angle_degrees. RGB/ARGB, inteiro, moon phase, partículas, listas, sons, bed rules, activities e mob spawn dependem de domínios de valor ainda não portados.
+- Os registries built-in environment_attribute e attribute_type foram ligados ao root e ao bootstrap. As 32 definições ambientais com tipos já implementados foram registradas por chave; as entradas que dependem de domínios ausentes foram omitidas, portanto não se afirma paridade dos IDs numéricos após essas lacunas.
 - Biome ainda não armazena nem resolve EnvironmentAttributeMap; a integração com fontes de ambiente e resolução espacial será outro incremento.
 - Camadas de dimensão, timeline, clima e resolução de ambiente por posição/tempo continuam pendentes.
 - Packet/network codec, sincronização remota e multiplayer estão fora do escopo. Persistência local permanece no escopo futuro.
+
+
+## Incremento — tipos e definições ambientais built-in
+
+- Implementado TriState com TRUE/FALSE/DEFAULT, conversão de boolean, fallback e nome serializado.
+- AttributeTypes agora registra boolean, tri_state, float e angle_degrees na ordem da referência.
+- LerpFunction.OfDegrees reproduz o wrap angular e o limite de 90 graus da interpolação de partial tick.
+- Registradas as 32 definições EnvironmentAttributes cujos tipos de valor estão implementados; defaults, ranges, syncability, positional e spatial interpolation foram copiados da tabela 26.3.
+- Os tipos de cor, inteiro, moon phase, partículas, listas, sons, bed rules, activities e mob spawn permanecem pendentes. Não há claim de equivalência dos IDs numéricos das definições após entradas omitidas.
+- EnvironmentAttributeMap ainda não está integrado ao Biome. Os codecs locais seguem pendentes; codecs de rede e multiplayer estão fora do escopo.
