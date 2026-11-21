@@ -172,12 +172,12 @@ internal static class AttributeValueCodecChecks
             value >= 0
                 ? DataResult<int>.Success(value)
                 : DataResult<int>.Error("negative", 5));
-        Codec<string> alternative = Codecs.STRING.XMap(
-            static value => value.Length,
-            static value => value.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        Codec<int> combined = primary.WithAlternative(alternative, static value => value);
+        Codec<string> alternative = Codecs.INT.XMap(
+            static value => value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            static value => int.Parse(value, System.Globalization.CultureInfo.InvariantCulture));
+        Codec<int> combined = primary.WithAlternative(alternative, static value => value.Length);
 
-        DataResult<int> result = combined.Parse(ops, ops.CreateString("12"));
+        DataResult<int> result = combined.Parse(ops, ops.CreateInt(-1));
         Require(result.IsError && result.TryGetPartial(out int partial) && partial == 5,
             "An errored primary branch carrying a partial value must take precedence over a successful alternative.");
     }
