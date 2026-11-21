@@ -1,3 +1,5 @@
+using Asteria.Content.Identifiers;
+using Asteria.Content.Registries;
 using Asteria.World.Attributes;
 using Asteria.World.Attributes.Modifiers;
 
