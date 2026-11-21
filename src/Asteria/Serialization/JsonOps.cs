@@ -54,6 +54,18 @@ public sealed class JsonOps : DynamicOps<JsonElement>
     public JsonElement CreateNumeric(NumberValue value) =>
         Parse(value.ToString());
 
+    public JsonElement CreateByte(sbyte value) => CreateNumeric(NumberValue.Of(value));
+    public JsonElement CreateUnsignedByte(byte value) => CreateNumeric(NumberValue.Of(value));
+    public JsonElement CreateShort(short value) => CreateNumeric(NumberValue.Of(value));
+    public JsonElement CreateUnsignedShort(ushort value) => CreateNumeric(NumberValue.Of(value));
+    public JsonElement CreateInt(int value) => CreateNumeric(NumberValue.Of(value));
+    public JsonElement CreateUnsignedInt(uint value) => CreateNumeric(NumberValue.Of(value));
+    public JsonElement CreateLong(long value) => CreateNumeric(NumberValue.Of(value));
+    public JsonElement CreateUnsignedLong(ulong value) => CreateNumeric(NumberValue.Of(value));
+    public JsonElement CreateFloat(float value) => CreateNumeric(NumberValue.Of(value));
+    public JsonElement CreateDouble(double value) => CreateNumeric(NumberValue.Of(value));
+
+
     public DataResult<bool> GetBooleanValue(JsonElement input) =>
         input.ValueKind == JsonValueKind.True
             ? DataResult<bool>.Success(true)
@@ -270,6 +282,100 @@ public sealed class JsonOps : DynamicOps<JsonElement>
         }
 
         return Serialize(result);
+    }
+
+
+    public DataResult<JsonElement> MergeToPrimitive(JsonElement prefix, JsonElement value) =>
+        IsEmpty(prefix)
+            ? DataResult<JsonElement>.Success(value.Clone())
+            : DataResult<JsonElement>.Error(
+                () => $"Do not know how to append a primitive value {Format(value)} to {Format(prefix)}",
+                value.Clone());
+
+    public bool TryGetNumber(JsonElement input, out NumberValue value)
+    {
+        DataResult<NumberValue> result = GetNumberValue(input);
+        if (result.TryGetResult(out value))
+            return true;
+
+        value = default;
+        return false;
+    }
+
+    public JsonElement Set(JsonElement input, string key, JsonElement value)
+    {
+        DataResult<JsonElement> result = MergeToMap(input, CreateString(key), value);
+        return result.TryGetResult(out JsonElement merged) ? merged : input;
+    }
+
+    public JsonElement Update(JsonElement input, string key, Func<JsonElement, JsonElement> function)
+    {
+        ArgumentNullException.ThrowIfNull(function);
+        DataResult<JsonElement> current = Get(input, key);
+        return current.TryGetResult(out JsonElement value)
+            ? Set(input, key, function(value))
+            : input;
+    }
+
+    public U ConvertTo<U>(DynamicOps<U> outputOps, JsonElement input)
+    {
+        ArgumentNullException.ThrowIfNull(outputOps);
+
+        DataResult<IReadOnlyList<KeyValuePair<JsonElement, JsonElement>>> map = GetMapValues(input);
+        if (map.TryGetResult(out IReadOnlyList<KeyValuePair<JsonElement, JsonElement>> entries))
+        {
+            var converted = new List<KeyValuePair<U, U>>(entries.Count);
+            foreach (KeyValuePair<JsonElement, JsonElement> entry in entries)
+            {
+                converted.Add(new KeyValuePair<U, U>(
+                    ConvertTo(outputOps, entry.Key),
+                    ConvertTo(outputOps, entry.Value)));
+            }
+
+            return outputOps.CreateMap(converted);
+        }
+
+        DataResult<IReadOnlyList<JsonElement>> list = GetList(input);
+        if (list.TryGetResult(out IReadOnlyList<JsonElement> elements))
+        {
+            var converted = new List<U>(elements.Count);
+            foreach (JsonElement element in elements)
+                converted.Add(ConvertTo(outputOps, element));
+
+            return outputOps.CreateList(converted);
+        }
+
+        DataResult<string> stringValue = GetStringValue(input);
+        if (stringValue.TryGetResult(out string text))
+            return outputOps.CreateString(text);
+
+        DataResult<bool> booleanValue = GetBooleanValue(input);
+        if (booleanValue.TryGetResult(out bool boolean))
+            return outputOps.CreateBoolean(boolean);
+
+        DataResult<NumberValue> numberValue = GetNumberValue(input);
+        if (numberValue.TryGetResult(out NumberValue number))
+        {
+            if (number.TryGetInt64Exact(out long integral))
+            {
+                if ((sbyte)integral == integral)
+                    return outputOps.CreateByte((sbyte)integral);
+                if ((short)integral == integral)
+                    return outputOps.CreateShort((short)integral);
+                if ((int)integral == integral)
+                    return outputOps.CreateInt((int)integral);
+
+                return outputOps.CreateLong(integral);
+            }
+
+            double floating = number.DoubleValue;
+            float single = (float)floating;
+            return (double)single == floating
+                ? outputOps.CreateFloat(single)
+                : outputOps.CreateDouble(floating);
+        }
+
+        return outputOps.Empty;
     }
 
     public override string ToString() =>
