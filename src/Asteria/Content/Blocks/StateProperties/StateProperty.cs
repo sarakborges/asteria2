@@ -25,6 +25,7 @@ public abstract class StateProperty
     internal abstract int GetValueIndex(object value);
     internal abstract string GetSerializedValue(object value);
     internal abstract IStatePropertyValue CreateValue(object value);
+    internal abstract BlockState CopyValue(BlockState source, BlockState target);
 
     public override bool Equals(object? obj) =>
         obj is StateProperty other &&
@@ -145,6 +146,9 @@ public abstract class StateProperty<T> : StateProperty where T : notnull, ICompa
             value is T typedValue
                 ? typedValue
                 : throw new ArgumentException($"Value {value} does not belong to property {this}"));
+
+    internal override BlockState CopyValue(BlockState source, BlockState target) =>
+        target.TrySetValue(this, source.GetValue(this));
 
     public StatePropertyValue<T> Value(T value) =>
         new(this, value);

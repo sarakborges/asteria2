@@ -1,3 +1,4 @@
+using Asteria.Content.Blocks.StateProperties;
 using Asteria.Content.Registries;
 
 namespace Asteria.Content.Blocks;
@@ -83,6 +84,18 @@ public class Block
     protected void RegisterDefaultState(BlockState state)
     {
         DefaultState = state;
+    }
+
+    /// <summary>Copies every property shared by the source block into this block's default state.</summary>
+    public BlockState WithPropertiesOf(BlockState source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        BlockState result = DefaultState;
+        foreach (StateProperty property in source.Block.StateDefinition.Properties)
+            result = property.CopyValue(source, result);
+
+        return result;
     }
 
     public override string ToString() =>

@@ -1612,6 +1612,38 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(ReferenceEquals(changedState, defaultState.SetValue(Blocks.TEST_POWERED, true).SetValue(Blocks.TEST_STAGE, 2)), "The same property combination must resolve to the same state object.");
         Require(ReferenceEquals(changedState, changedState.SetValue(Blocks.TEST_STAGE, 2)), "Setting an existing value must preserve identity.");
         Require(changedState.Cycle(Blocks.TEST_STAGE).GetValue(Blocks.TEST_STAGE) == 0, "Integer cycling must wrap.");
+
+        BlockState sourceForCopy = defaultState.SetValue(Blocks.TEST_STAGE, 2);
+        var sharedPropertyTarget = new TestBlockDefinition(
+            BlockProperties.Of(),
+            builder =>
+            {
+                builder.Add(Blocks.TEST_POWERED);
+                builder.Add(Blocks.TEST_STAGE);
+            });
+        BlockState sharedPropertyCopy = sharedPropertyTarget.WithPropertiesOf(sourceForCopy);
+        Require(
+            !sharedPropertyCopy.GetValue(Blocks.TEST_POWERED) &&
+            sharedPropertyCopy.GetValue(Blocks.TEST_STAGE) == 2,
+            "WithPropertiesOf must copy each shared property into the target block's default state.");
+
+        var partialPropertyTarget = new TestBlockDefinition(
+            BlockProperties.Of(),
+            builder => builder.Add(Blocks.TEST_POWERED));
+        BlockState partialPropertyCopy = partialPropertyTarget.WithPropertiesOf(sourceForCopy);
+        Require(
+            !partialPropertyCopy.GetValue(Blocks.TEST_POWERED) &&
+            partialPropertyCopy.GetProperties().Count == 1,
+            "WithPropertiesOf must copy shared properties while ignoring properties absent from the target definition.");
+
+        BooleanProperty unrelatedPowered = BooleanProperty.Create("powered");
+        var unrelatedPropertyTarget = new TestBlockDefinition(
+            BlockProperties.Of(),
+            builder => builder.Add(unrelatedPowered));
+        BlockState unrelatedPropertyCopy = unrelatedPropertyTarget.WithPropertiesOf(sourceForCopy);
+        Require(
+            unrelatedPropertyCopy.GetValue(unrelatedPowered),
+            "WithPropertiesOf must not copy a property merely because a different property instance has the same name.");
         Require(defaultState.Cycle(Blocks.TEST_POWERED).GetValue(Blocks.TEST_POWERED), "Boolean cycling must toggle false to true.");
 
         InvalidOperationException repeatedInitialization = Capture<InvalidOperationException>(
