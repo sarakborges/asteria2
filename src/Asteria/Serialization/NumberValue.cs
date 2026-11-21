@@ -32,7 +32,7 @@ public readonly struct NumberValue : IEquatable<NumberValue>
         ArgumentNullException.ThrowIfNull(text);
 
         if (!text.Contains('.') &&
-            !text.Contains('e', StringComparison.OrdinalIgnoreCase) &&
+            !text.Contains('e') && !text.Contains('E') &&
             BigInteger.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out BigInteger integer))
         {
             return Of(integer);
