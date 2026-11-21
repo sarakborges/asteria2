@@ -169,6 +169,8 @@ internal static class Program
     {
         _ = TestBlocks.TEST_BLOCK;
         CoordinatePositionChecks.Run();
+        DirectionChecks.Run();
+        Vec3Checks.Run();
 
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&

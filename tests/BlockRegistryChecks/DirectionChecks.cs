@@ -48,6 +48,10 @@ internal static class DirectionChecks
             Require(direction.GetUnitVec3i().GetX() == direction.GetStepX(), "Unit vector X must match the X step.");
             Require(direction.GetUnitVec3i().GetY() == direction.GetStepY(), "Unit vector Y must match the Y step.");
             Require(direction.GetUnitVec3i().GetZ() == direction.GetStepZ(), "Unit vector Z must match the Z step.");
+            Require(
+                direction.GetUnitVec3().Equals(new Vec3(direction.GetStepX(), direction.GetStepY(), direction.GetStepZ())),
+                "Real-valued direction vectors must match their integer unit vectors.");
+
             Require(ReferenceEquals(Direction.ByName(direction.GetName()), direction), "Names must resolve to their canonical direction instances.");
         }
 

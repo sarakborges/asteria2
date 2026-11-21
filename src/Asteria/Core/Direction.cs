@@ -147,6 +147,7 @@ public sealed class Direction
     private readonly Axis _axis;
     private readonly AxisDirection _axisDirection;
     private readonly Vec3i _normal;
+    private readonly Vec3 _normalVec3;
 
     private Direction(
         int data3d,
@@ -187,6 +188,8 @@ public sealed class Direction
     public Vec3i GetStep() => GetUnitVec3i();
 
     public Vec3i GetUnitVec3i() => _normal;
+
+    public Vec3 GetUnitVec3() => _normalVec3;
 
     public int GetStepX() => _normal.GetX();
 

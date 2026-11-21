@@ -47,6 +47,23 @@ public static class Mth
         return (int)floor;
     }
 
+    public static double Lerp(double alpha, double from, double to) =>
+        from + alpha * (to - from);
+
+    public static double Square(double value) => value * value;
+
+    public static double LengthSquared(double x, double y) =>
+        x * x + y * y;
+
+    public static double LengthSquared(double x, double y, double z) =>
+        x * x + y * y + z * z;
+
+    public static double Length(double x, double y) =>
+        Math.Sqrt(LengthSquared(x, y));
+
+    public static double Length(double x, double y, double z) =>
+        Math.Sqrt(LengthSquared(x, y, z));
+
     private static long JavaLongCast(double value)
     {
         if (double.IsNaN(value))
