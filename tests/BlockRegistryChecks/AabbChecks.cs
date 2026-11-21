@@ -42,7 +42,7 @@ internal static class AabbChecks
 
         Require(reversed.SetMinX(-4).Equals(new AABB(-4, -2, -3, 5, 6, 7)),
             "SetMinX must replace only the requested bound.");
-        Require(reversed.SetMinY(-5).MinY == -5 && reversed.SetMinY(-5).MaxY == 7,
+        Require(reversed.SetMinY(-5).MinY == -5 && reversed.SetMinY(-5).MaxY == 6,
             "SetMinY must preserve all other bounds.");
         Require(reversed.SetMinZ(-6).MinZ == -6, "SetMinZ must replace the lower Z bound.");
         Require(reversed.SetMaxX(8).MaxX == 8, "SetMaxX must replace the upper X bound.");
