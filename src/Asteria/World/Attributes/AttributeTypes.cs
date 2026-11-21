@@ -2,6 +2,7 @@ using System.Numerics;
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.World.Attributes.Modifiers;
+using Asteria.World.Level;
 
 namespace Asteria.World.Attributes;
 
@@ -31,6 +32,9 @@ public static class AttributeTypes
             toFloat: static value => value,
             toInt: static value => value);
 
+    public static readonly AttributeType<MoonPhase> MOON_PHASE =
+        AttributeType<MoonPhase>.OfNotInterpolated();
+
     public static readonly AttributeType<Vector3> RGB_COLOR =
         AttributeType<Vector3>.OfInterpolated(
             LerpFunction<Vector3>.OfColorVec3(),
@@ -49,6 +53,7 @@ public static class AttributeTypes
         Register("rgb_color", RGB_COLOR);
         Register("argb_color", ARGB_COLOR);
         Register("integer", INTEGER);
+        Register("moon_phase", MOON_PHASE);
     }
 
     private static void Register(string path, IAttributeType type)

@@ -202,7 +202,7 @@ internal static class Program
         Require(BuiltInRegistries.Block.Count == 1, "Only the production air block should be registered.");
         Require(BuiltInRegistries.Fluid.Count == 1, "Only the empty fluid should be registered.");
         Require(BuiltInRegistries.Biome.Count == 2, "The built-in biome registry must contain plains and desert.");
-        Require(BuiltInRegistries.AttributeType.Count == 6, "The attribute-type registry must contain boolean, float, angle, RGB, ARGB and integer types.");
+        Require(BuiltInRegistries.AttributeType.Count == 7, "The attribute-type registry must contain boolean, float, angle, RGB, ARGB, integer and moon-phase types.");
         Require(Fluid.FluidStateRegistry.Count == 1, "The fluid-state ID map must contain every registered fluid state.");
         Require(ReferenceEquals(Blocks.AIR.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState), "Air must contain the empty fluid state.");
         Require(Block.BlockStateRegistry.Count == 7, "Expected one air state and six test states.");

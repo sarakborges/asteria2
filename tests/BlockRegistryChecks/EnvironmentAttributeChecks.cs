@@ -3,6 +3,7 @@ using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.World.Attributes;
 using Asteria.World.Attributes.Modifiers;
+using Asteria.World.Level;
 
 internal static class EnvironmentAttributeChecks
 {
@@ -13,6 +14,7 @@ internal static class EnvironmentAttributeChecks
         CheckAngleInterpolation();
         CheckColorAttributeTypes();
         CheckIntegerAttributeType();
+        CheckMoonPhaseAttributeType();
         CheckAttributeDefinitionAndRange();
         CheckTypeInterpolationAndNumericProjection();
         CheckTypedModifierLibraries();
@@ -39,12 +41,13 @@ internal static class EnvironmentAttributeChecks
                 AttributeTypes.ANGLE_DEGREES.ValueType == typeof(float) &&
                 AttributeTypes.RGB_COLOR.ValueType == typeof(Vector3) &&
                 AttributeTypes.ARGB_COLOR.ValueType == typeof(Vector4) &&
-                AttributeTypes.INTEGER.ValueType == typeof(int),
+                AttributeTypes.INTEGER.ValueType == typeof(int) &&
+                AttributeTypes.MOON_PHASE.ValueType == typeof(MoonPhase),
             "The type-erased registry boundary must preserve the runtime value type.");
         Require(BuiltInRegistries.AttributeType.AsHolderIdMap().ById(0) is not null &&
                 BuiltInRegistries.AttributeType.AsHolderIdMap().ById(1) is not null &&
                 BuiltInRegistries.AttributeType.AsHolderIdMap().ById(2) is not null &&
-                BuiltInRegistries.AttributeType.Count == 6,
+                BuiltInRegistries.AttributeType.Count == 7,
             "Attribute type registry IDs must expose both registered values.");
     }
 
@@ -330,6 +333,46 @@ internal static class EnvironmentAttributeChecks
 
         Require(AttributeTypes.INTEGER.ModifierLibrary.Count == 5,
             "The integer attribute type must expose exactly five modifier operations.");
+    }
+
+
+    private static void CheckMoonPhaseAttributeType()
+    {
+        Require(ReferenceEquals(
+                    BuiltInRegistries.AttributeType.GetValue(ResourceLocation.Parse("asteria:moon_phase")),
+                    AttributeTypes.MOON_PHASE),
+            "The moon-phase attribute type must be registered under asteria:moon_phase.");
+        Require(MoonPhaseExtensions.COUNT == 8 &&
+                MoonPhaseExtensions.PHASE_LENGTH == 24000,
+            "Moon phase count and phase length must match the reference constants.");
+
+        MoonPhase[] phases =
+        {
+            MoonPhase.FULL_MOON, MoonPhase.WANING_GIBBOUS,
+            MoonPhase.THIRD_QUARTER, MoonPhase.WANING_CRESCENT,
+            MoonPhase.NEW_MOON, MoonPhase.WAXING_CRESCENT,
+            MoonPhase.FIRST_QUARTER, MoonPhase.WAXING_GIBBOUS
+        };
+        string[] names =
+        {
+            "full_moon", "waning_gibbous", "third_quarter", "waning_crescent",
+            "new_moon", "waxing_crescent", "first_quarter", "waxing_gibbous"
+        };
+
+        for (int index = 0; index < phases.Length; index++)
+        {
+            Require(phases[index].Index() == index &&
+                    phases[index].StartTick() == index * 24000 &&
+                    phases[index].GetSerializedName() == names[index],
+                "Moon phase order, index, start tick and serialized name must match 26.3.");
+        }
+
+        Require(AttributeTypes.MOON_PHASE.ModifierLibrary.Count == 0 &&
+                AttributeTypes.MOON_PHASE.KeyframeLerp.Apply(0.999F, MoonPhase.FULL_MOON, MoonPhase.NEW_MOON) == MoonPhase.FULL_MOON &&
+                AttributeTypes.MOON_PHASE.KeyframeLerp.Apply(1.0F, MoonPhase.FULL_MOON, MoonPhase.NEW_MOON) == MoonPhase.NEW_MOON &&
+                AttributeTypes.MOON_PHASE.StateChangeLerp.Apply(0.0F, MoonPhase.FULL_MOON, MoonPhase.NEW_MOON) == MoonPhase.NEW_MOON &&
+                AttributeTypes.MOON_PHASE.SpatialLerp.Apply(0.5F, MoonPhase.FULL_MOON, MoonPhase.NEW_MOON) == MoonPhase.NEW_MOON,
+            "Moon phase must use the non-interpolated attribute policy with the reference thresholds.");
     }
 
     private static void CheckAngleInterpolation()
