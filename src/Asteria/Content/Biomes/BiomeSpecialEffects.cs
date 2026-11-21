@@ -31,8 +31,6 @@ public sealed record BiomeSpecialEffects(int WaterColor, int? FoliageColorOverri
             _foliageColorOverride, _dryFoliageColorOverride, _grassColorOverride, _grassColorModifier);
     }
 
-    public enum GrassColorModifier { NONE, DARK_FOREST, SWAMP }
-
     public static string GetSerializedName(GrassColorModifier modifier) => modifier switch
     {
         GrassColorModifier.NONE => "none",
