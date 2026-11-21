@@ -44,8 +44,10 @@ internal static class DiscreteVoxelShapeChecks
             "WithFilledBounds must keep its provided Z bounds.");
         Require(filled.IsFull(1, 1, 0) && filled.IsFull(3, 2, 1),
             "WithFilledBounds must fill the complete half-open range.");
-        Require(!filled.IsFull(0, 1, 0) && !filled.IsFull(1, 0, 0) && !filled.IsFull(1, 1, 2),
-            "Cells outside the half-open range must remain empty.");
+        Require(!filled.IsFull(0, 1, 0) && !filled.IsFull(1, 0, 0),
+            "In-range cells outside the filled half-open bounds must remain empty.");
+        Require(!filled.IsFullWide(1, 1, 2),
+            "Wide occupancy must reject coordinates on the upper Z boundary.");
 
         var copy = new BitSetDiscreteVoxelShape(filled);
         copy.Fill(0, 0, 0);
