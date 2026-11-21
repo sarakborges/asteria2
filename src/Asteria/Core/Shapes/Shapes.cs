@@ -262,6 +262,264 @@ public static class Shapes
                         first.IsFullWide(x1, y1, z1),
                         second.IsFullWide(x2, y2, z2)))));
 
+    public static double Collide(
+        Direction.Axis axis,
+        AABB moving,
+        IEnumerable<VoxelShape> shapes,
+        double distance)
+    {
+        ArgumentNullException.ThrowIfNull(axis);
+        ArgumentNullException.ThrowIfNull(moving);
+        ArgumentNullException.ThrowIfNull(shapes);
+
+        foreach (VoxelShape shape in shapes)
+        {
+            ArgumentNullException.ThrowIfNull(shape);
+            if (Math.Abs(distance) < Epsilon)
+                return 0.0;
+
+            distance = shape.Collide(axis, moving, distance);
+        }
+
+        return distance;
+    }
+
+    public static bool BlockOccludes(
+        VoxelShape shape,
+        VoxelShape occluder,
+        Direction direction)
+    {
+        ArgumentNullException.ThrowIfNull(shape);
+        ArgumentNullException.ThrowIfNull(occluder);
+        ArgumentNullException.ThrowIfNull(direction);
+
+        if (ReferenceEquals(shape, Block()) && ReferenceEquals(occluder, Block()))
+            return true;
+
+        if (occluder.IsEmpty())
+            return false;
+
+        Direction.Axis axis = direction.GetAxis();
+        bool positive = ReferenceEquals(
+            direction.GetAxisDirection(),
+            Direction.AxisDirection.POSITIVE);
+        VoxelShape first = positive ? shape : occluder;
+        VoxelShape second = positive ? occluder : shape;
+        BooleanOp operation = positive ? BooleanOp.ONLY_FIRST : BooleanOp.ONLY_SECOND;
+
+        return FuzzyEquals(first.Max(axis), 1.0, Epsilon) &&
+               FuzzyEquals(second.Min(axis), 0.0, Epsilon) &&
+               !JoinIsNotEmpty(
+                   new SliceShape(first, axis, first.Shape.GetSize(axis) - 1),
+                   new SliceShape(second, axis, 0),
+                   operation);
+    }
+
+    public static bool MergedFaceOccludes(
+        VoxelShape shape,
+        VoxelShape occluder,
+        Direction direction)
+    {
+        ArgumentNullException.ThrowIfNull(shape);
+        ArgumentNullException.ThrowIfNull(occluder);
+        ArgumentNullException.ThrowIfNull(direction);
+
+        if (ReferenceEquals(shape, Block()) || ReferenceEquals(occluder, Block()))
+            return true;
+
+        Direction.Axis axis = direction.GetAxis();
+        bool positive = ReferenceEquals(
+            direction.GetAxisDirection(),
+            Direction.AxisDirection.POSITIVE);
+        VoxelShape first = positive ? shape : occluder;
+        VoxelShape second = positive ? occluder : shape;
+
+        if (!FuzzyEquals(first.Max(axis), 1.0, Epsilon))
+            first = Empty();
+
+        if (!FuzzyEquals(second.Min(axis), 0.0, Epsilon))
+            second = Empty();
+
+        VoxelShape mergedFace = JoinUnoptimized(
+            new SliceShape(first, axis, first.Shape.GetSize(axis) - 1),
+            new SliceShape(second, axis, 0),
+            BooleanOp.OR);
+
+        return !JoinIsNotEmpty(Block(), mergedFace, BooleanOp.ONLY_FIRST);
+    }
+
+    public static bool FaceShapeOccludes(VoxelShape shape, VoxelShape occluder)
+    {
+        ArgumentNullException.ThrowIfNull(shape);
+        ArgumentNullException.ThrowIfNull(occluder);
+
+        if (ReferenceEquals(shape, Block()) || ReferenceEquals(occluder, Block()))
+            return true;
+
+        if (shape.IsEmpty() && occluder.IsEmpty())
+            return false;
+
+        return !JoinIsNotEmpty(
+            Block(),
+            JoinUnoptimized(shape, occluder, BooleanOp.OR),
+            BooleanOp.ONLY_FIRST);
+    }
+
+    public static bool Equal(VoxelShape first, VoxelShape second)
+    {
+        ArgumentNullException.ThrowIfNull(first);
+        ArgumentNullException.ThrowIfNull(second);
+        return !JoinIsNotEmpty(first, second, BooleanOp.NOT_SAME);
+    }
+
+    public static VoxelShape Rotate(VoxelShape shape, OctahedralGroup rotation) =>
+        Rotate(shape, rotation, BLOCK_CENTER);
+
+    public static VoxelShape Rotate(
+        VoxelShape shape,
+        OctahedralGroup rotation,
+        Vec3 rotationPoint)
+    {
+        ArgumentNullException.ThrowIfNull(shape);
+        ArgumentNullException.ThrowIfNull(rotation);
+        ArgumentNullException.ThrowIfNull(rotationPoint);
+
+        if (ReferenceEquals(rotation, OctahedralGroup.IDENTITY))
+            return shape;
+
+        DiscreteVoxelShape rotatedDiscrete = shape.Shape.Rotate(rotation);
+        if (shape is CubeVoxelShape && BLOCK_CENTER.Equals(rotationPoint))
+            return new CubeVoxelShape(rotatedDiscrete);
+
+        Direction.Axis newX = rotation.Permutation.PermuteAxis(Direction.Axis.X);
+        Direction.Axis newY = rotation.Permutation.PermuteAxis(Direction.Axis.Y);
+        Direction.Axis newZ = rotation.Permutation.PermuteAxis(Direction.Axis.Z);
+
+        DoubleList newXs = shape.GetCoords(newX);
+        DoubleList newYs = shape.GetCoords(newY);
+        DoubleList newZs = shape.GetCoords(newZ);
+
+        return new ArrayVoxelShape(
+            rotatedDiscrete,
+            FlipAxisIfNeeded(newXs, rotation.Inverts(Direction.Axis.X), rotationPoint.Get(newX), rotationPoint.X),
+            FlipAxisIfNeeded(newYs, rotation.Inverts(Direction.Axis.Y), rotationPoint.Get(newY), rotationPoint.Y),
+            FlipAxisIfNeeded(newZs, rotation.Inverts(Direction.Axis.Z), rotationPoint.Get(newZ), rotationPoint.Z));
+    }
+
+    public static DoubleList FlipAxisIfNeeded(
+        DoubleList axis,
+        bool flip,
+        double newRelative,
+        double oldRelative)
+    {
+        ArgumentNullException.ThrowIfNull(axis);
+        if (!flip && newRelative == oldRelative)
+            return axis;
+
+        var values = new double[axis.Count];
+        if (flip)
+        {
+            int target = 0;
+            for (int index = axis.Count - 1; index >= 0; index--)
+                values[target++] = -(axis.GetDouble(index) - newRelative) + oldRelative;
+        }
+        else
+        {
+            for (int index = 0; index < axis.Count; index++)
+                values[index] = axis.GetDouble(index) - newRelative + oldRelative;
+        }
+
+        return new ArrayDoubleList(values);
+    }
+
+    public static IReadOnlyDictionary<Direction.Axis, VoxelShape> RotateHorizontalAxis(VoxelShape zAxis) =>
+        RotateHorizontalAxis(zAxis, BLOCK_CENTER);
+
+    public static IReadOnlyDictionary<Direction.Axis, VoxelShape> RotateHorizontalAxis(
+        VoxelShape zAxis,
+        Vec3 rotationCenter)
+    {
+        ArgumentNullException.ThrowIfNull(zAxis);
+        ArgumentNullException.ThrowIfNull(rotationCenter);
+        return new Dictionary<Direction.Axis, VoxelShape>
+        {
+            [Direction.Axis.Z] = zAxis,
+            [Direction.Axis.X] = Rotate(zAxis, OctahedralGroup.BLOCK_ROT_Y_90, rotationCenter)
+        };
+    }
+
+    public static IReadOnlyDictionary<Direction.Axis, VoxelShape> RotateAllAxis(VoxelShape north) =>
+        RotateAllAxis(north, BLOCK_CENTER);
+
+    public static IReadOnlyDictionary<Direction.Axis, VoxelShape> RotateAllAxis(
+        VoxelShape north,
+        Vec3 rotationCenter)
+    {
+        ArgumentNullException.ThrowIfNull(north);
+        ArgumentNullException.ThrowIfNull(rotationCenter);
+        return new Dictionary<Direction.Axis, VoxelShape>
+        {
+            [Direction.Axis.Z] = north,
+            [Direction.Axis.X] = Rotate(north, OctahedralGroup.BLOCK_ROT_Y_90, rotationCenter),
+            [Direction.Axis.Y] = Rotate(north, OctahedralGroup.BLOCK_ROT_X_90, rotationCenter)
+        };
+    }
+
+    public static IReadOnlyDictionary<Direction, VoxelShape> RotateHorizontal(VoxelShape north) =>
+        RotateHorizontal(north, OctahedralGroup.IDENTITY, BLOCK_CENTER);
+
+    public static IReadOnlyDictionary<Direction, VoxelShape> RotateHorizontal(
+        VoxelShape north,
+        OctahedralGroup initial) =>
+        RotateHorizontal(north, initial, BLOCK_CENTER);
+
+    public static IReadOnlyDictionary<Direction, VoxelShape> RotateHorizontal(
+        VoxelShape north,
+        OctahedralGroup initial,
+        Vec3 rotationCenter)
+    {
+        ArgumentNullException.ThrowIfNull(north);
+        ArgumentNullException.ThrowIfNull(initial);
+        ArgumentNullException.ThrowIfNull(rotationCenter);
+        return new Dictionary<Direction, VoxelShape>
+        {
+            [Direction.NORTH] = Rotate(north, initial),
+            [Direction.EAST] = Rotate(north, OctahedralGroup.BLOCK_ROT_Y_90.Compose(initial), rotationCenter),
+            [Direction.SOUTH] = Rotate(north, OctahedralGroup.BLOCK_ROT_Y_180.Compose(initial), rotationCenter),
+            [Direction.WEST] = Rotate(north, OctahedralGroup.BLOCK_ROT_Y_270.Compose(initial), rotationCenter)
+        };
+    }
+
+    public static IReadOnlyDictionary<Direction, VoxelShape> RotateAll(VoxelShape north) =>
+        RotateAll(north, OctahedralGroup.IDENTITY, BLOCK_CENTER);
+
+    public static IReadOnlyDictionary<Direction, VoxelShape> RotateAll(
+        VoxelShape north,
+        Vec3 rotationCenter) =>
+        RotateAll(north, OctahedralGroup.IDENTITY, rotationCenter);
+
+    public static IReadOnlyDictionary<Direction, VoxelShape> RotateAll(
+        VoxelShape north,
+        OctahedralGroup initial,
+        Vec3 rotationCenter)
+    {
+        ArgumentNullException.ThrowIfNull(north);
+        ArgumentNullException.ThrowIfNull(initial);
+        ArgumentNullException.ThrowIfNull(rotationCenter);
+        return new Dictionary<Direction, VoxelShape>
+        {
+            [Direction.NORTH] = Rotate(north, initial),
+            [Direction.EAST] = Rotate(north, OctahedralGroup.BLOCK_ROT_Y_90.Compose(initial), rotationCenter),
+            [Direction.SOUTH] = Rotate(north, OctahedralGroup.BLOCK_ROT_Y_180.Compose(initial), rotationCenter),
+            [Direction.WEST] = Rotate(north, OctahedralGroup.BLOCK_ROT_Y_270.Compose(initial), rotationCenter),
+            [Direction.UP] = Rotate(north, OctahedralGroup.BLOCK_ROT_X_270.Compose(initial), rotationCenter),
+            [Direction.DOWN] = Rotate(north, OctahedralGroup.BLOCK_ROT_X_90.Compose(initial), rotationCenter)
+        };
+    }
+
+    private static bool FuzzyEquals(double first, double second, double tolerance) =>
+        Math.Abs(first - second) <= tolerance;
+
     private static int JavaRound(double value)
     {
         if (double.IsNaN(value)) return 0;

@@ -14,6 +14,7 @@ internal static class VoxelShapeChecks
         CheckFaceShapesAndSlices();
         CheckContinuousEdgesAndCollision();
         CheckShapeClippingAndHitResults();
+        CheckShapeTransformsAndOcclusion();
         CheckAxisCycleAndDiscreteAxisQueries();
     }
 
@@ -448,6 +449,107 @@ internal static class VoxelShapeChecks
             ReferenceEquals(miss.WithPosition(replacementPosition).GetBlockPos(), replacementPosition) &&
             miss.HitBorder().IsWorldBorderHit(),
             "BlockHitResult transformations must preserve independent metadata.");
+    }
+
+    private static void CheckShapeTransformsAndOcclusion()
+    {
+        VoxelShape empty = Shapes.Empty();
+        VoxelShape block = Shapes.Block();
+        VoxelShape lowerHalf = Shapes.Box(0, 0, 0, 1, 0.5, 1);
+        VoxelShape upperHalf = Shapes.Box(0, 0.5, 0, 1, 1, 1);
+
+        Require(Shapes.Equal(block, Shapes.Box(0, 0, 0, 1, 1, 1)),
+            "Shapes.Equal must compare occupancy independently of shape representation.");
+        Require(!Shapes.Equal(lowerHalf, upperHalf),
+            "Shapes.Equal must detect different occupied volumes.");
+        Require(Shapes.Equal(empty, Shapes.Empty()),
+            "Shapes.Equal must treat the canonical empty volumes as equal.");
+
+        Require(Shapes.BlockOccludes(block, block, Direction.EAST),
+            "Two canonical full blocks must occlude one another.");
+        Require(!Shapes.BlockOccludes(block, empty, Direction.EAST),
+            "An empty occluder must never occlude a block face.");
+        Require(
+            !Shapes.BlockOccludes(block, lowerHalf, Direction.EAST),
+            "A partial adjacent face must not fully occlude the source block.");
+        Require(
+            Shapes.BlockOccludes(block, block, Direction.EAST) &&
+            Shapes.BlockOccludes(block, block, Direction.WEST),
+            "Block occlusion must respect both positive and negative face directions.");
+
+        Require(
+            Shapes.MergedFaceOccludes(lowerHalf, upperHalf, Direction.EAST),
+            "Complementary adjacent face slices must merge to a fully occluding face.");
+        Require(
+            !Shapes.MergedFaceOccludes(lowerHalf, empty, Direction.EAST),
+            "A single partial face must not count as a merged full face.");
+        Require(
+            Shapes.FaceShapeOccludes(lowerHalf, upperHalf),
+            "Complementary occupied volumes must collectively cover the full block.");
+        Require(
+            !Shapes.FaceShapeOccludes(lowerHalf, empty),
+            "A partial shape plus an empty shape must not occlude a full block.");
+
+        Require(
+            Math.Abs(Shapes.Collide(
+                Direction.Axis.X,
+                new AABB(-2, 0.2, 0.2, -1, 0.8, 0.8),
+                new[] { block },
+                5.0) - 1.0) < 1.0E-7,
+            "Shapes.Collide must combine shape restrictions and stop at the nearest obstacle.");
+        Require(
+            Shapes.Collide(
+                Direction.Axis.X,
+                new AABB(-2, 0.2, 0.2, -1, 0.8, 0.8),
+                Array.Empty<VoxelShape>(),
+                5.0) == 5.0,
+            "Shapes.Collide over an empty collection must preserve the requested movement.");
+        Require(
+            Shapes.Collide(
+                Direction.Axis.X,
+                new AABB(-2, 0.2, 0.2, -1, 0.8, 0.8),
+                new[] { block },
+                1.0E-8) == 0.0,
+            "Shapes.Collide must return zero when the remaining movement is below epsilon.");
+
+        VoxelShape asymmetric = Shapes.Box(0.125, 0.25, 0.375, 0.625, 0.75, 0.875);
+        Require(ReferenceEquals(Shapes.Rotate(asymmetric, OctahedralGroup.IDENTITY), asymmetric),
+            "Identity shape rotation must preserve the source instance.");
+        foreach (OctahedralGroup rotation in OctahedralGroup.GetValues())
+        {
+            VoxelShape rotated = Shapes.Rotate(asymmetric, rotation);
+            VoxelShape roundTrip = Shapes.Rotate(rotated, rotation.Inverse());
+            Require(
+                Shapes.Equal(asymmetric, roundTrip),
+                $"Continuous voxel-shape rotation must round-trip through {rotation.GetSerializedName()}.");
+
+            VoxelShape customCenterRotation = Shapes.Rotate(
+                asymmetric, rotation, new Vec3(0.25, 0.5, 0.75));
+            VoxelShape customCenterRoundTrip = Shapes.Rotate(
+                customCenterRotation, rotation.Inverse(), new Vec3(0.25, 0.5, 0.75));
+            Require(
+                Shapes.Equal(asymmetric, customCenterRoundTrip),
+                $"Custom-center voxel-shape rotation must round-trip through {rotation.GetSerializedName()}.");
+        }
+
+        var horizontal = Shapes.RotateHorizontal(asymmetric);
+        Require(horizontal.Count == 4 &&
+                horizontal.ContainsKey(Direction.NORTH) &&
+                horizontal.ContainsKey(Direction.EAST) &&
+                horizontal.ContainsKey(Direction.SOUTH) &&
+                horizontal.ContainsKey(Direction.WEST),
+            "Horizontal rotation maps must contain the four horizontal directions.");
+
+        var all = Shapes.RotateAll(asymmetric);
+        Require(all.Count == 6 && all.ContainsKey(Direction.UP) && all.ContainsKey(Direction.DOWN),
+            "All-direction rotation maps must contain exactly six directions.");
+
+        var axes = Shapes.RotateAllAxis(asymmetric);
+        Require(axes.Count == 3 &&
+                axes.ContainsKey(Direction.Axis.X) &&
+                axes.ContainsKey(Direction.Axis.Y) &&
+                axes.ContainsKey(Direction.Axis.Z),
+            "Axis rotation maps must contain X, Y and Z.");
     }
 
     private static void CheckAxisCycleAndDiscreteAxisQueries()
