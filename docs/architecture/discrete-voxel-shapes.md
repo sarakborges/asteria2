@@ -16,6 +16,8 @@ The first discrete storage increment ports the occupancy substrate of the shape 
 - `IndexMergers.Create` preserves the source decision order and the `cost * lcm <= 256` threshold.
 - `SymmetricGroup3` ports the six axis permutations, Cayley table and inverse table. `OctahedralGroup` ports all 48 signed permutations, the source Cayley/inverse tables, serialized names, block-rotation aliases, direction and front/top rotations, and the 3×3 transformation matrix.
 - `DiscreteVoxelShape.Rotate` applies the signed permutation to grid dimensions and occupied cells, including the negative-axis coordinate fixup. Each transform is tested against its inverse.
+- `ForAllEdges` preserves the sector-parity test and optional contiguous-edge merge; `ForAllFaces` emits boundary transitions in all three axis cycles.
+- `AxisCycle` includes axis-specific integer and double coordinate selection, along with axis and value-cycle transforms matching the reference.
 
 ## Continuous shapes and Boolean joins
 
@@ -27,8 +29,7 @@ The first discrete storage increment ports the occupancy substrate of the shape 
 
 ## Deferred dependencies
 
-- Edge/face extraction, `SliceShape`, block-hit-result clipping, collision contexts, swept collision and renderer integrations still require their respective models; no placeholders were introduced.
-- Edge/face extraction, `SliceShape`, block-hit-result clipping, collision contexts, swept collision and renderer integrations still require their respective models; no placeholders were introduced.
+- `SliceShape`, block-hit-result clipping, collision contexts, swept collision and renderer integrations still require their respective models; no placeholders were introduced.
 
 ## Reference source
 

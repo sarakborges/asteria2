@@ -34,6 +34,40 @@ public static class AxisCycleExtensions
         };
     }
 
+    public static int Cycle(
+        this AxisCycle cycle,
+        int x,
+        int y,
+        int z,
+        Direction.Axis axis)
+    {
+        ArgumentNullException.ThrowIfNull(axis);
+        return cycle switch
+        {
+            AxisCycle.None => axis.Choose(x, y, z),
+            AxisCycle.Forward => axis.Choose(z, x, y),
+            AxisCycle.Backward => axis.Choose(y, z, x),
+            _ => throw new ArgumentOutOfRangeException(nameof(cycle))
+        };
+    }
+
+    public static double Cycle(
+        this AxisCycle cycle,
+        double x,
+        double y,
+        double z,
+        Direction.Axis axis)
+    {
+        ArgumentNullException.ThrowIfNull(axis);
+        return cycle switch
+        {
+            AxisCycle.None => axis.Choose(x, y, z),
+            AxisCycle.Forward => axis.Choose(z, x, y),
+            AxisCycle.Backward => axis.Choose(y, z, x),
+            _ => throw new ArgumentOutOfRangeException(nameof(cycle))
+        };
+    }
+
     public static AxisCycle Inverse(this AxisCycle cycle) =>
         cycle switch
         {

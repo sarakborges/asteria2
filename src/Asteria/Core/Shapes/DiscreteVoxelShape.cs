@@ -154,16 +154,145 @@ public abstract class DiscreteVoxelShape
         x < XSize && y < YSize && z < ZSize &&
         IsFull(x, y, z);
 
-    public bool IsFull(AxisCycle transform, int x, int y, int z)
+    public bool IsFull(AxisCycle transform, int x, int y, int z) =>
+        IsFull(
+            transform.Cycle(x, y, z, Direction.Axis.X),
+            transform.Cycle(x, y, z, Direction.Axis.Y),
+            transform.Cycle(x, y, z, Direction.Axis.Z));
+
+    public bool IsFullWide(AxisCycle transform, int x, int y, int z) =>
+        IsFullWide(
+            transform.Cycle(x, y, z, Direction.Axis.X),
+            transform.Cycle(x, y, z, Direction.Axis.Y),
+            transform.Cycle(x, y, z, Direction.Axis.Z));
+
+    public void ForAllEdges(Action<int, int, int, int, int, int> consumer, bool mergeNeighbors)
     {
-        (x, y, z) = transform.Cycle(x, y, z);
-        return IsFull(x, y, z);
+        ForAllAxisEdges(consumer, AxisCycle.None, mergeNeighbors);
+        ForAllAxisEdges(consumer, AxisCycle.Forward, mergeNeighbors);
+        ForAllAxisEdges(consumer, AxisCycle.Backward, mergeNeighbors);
     }
 
-    public bool IsFullWide(AxisCycle transform, int x, int y, int z)
+    private void ForAllAxisEdges(
+        Action<int, int, int, int, int, int> consumer,
+        AxisCycle transform,
+        bool mergeNeighbors)
     {
-        (x, y, z) = transform.Cycle(x, y, z);
-        return IsFullWide(x, y, z);
+        AxisCycle inverse = transform.Inverse();
+        int aSize = GetSize(inverse.Cycle(Direction.Axis.X));
+        int bSize = GetSize(inverse.Cycle(Direction.Axis.Y));
+        int cSize = GetSize(inverse.Cycle(Direction.Axis.Z));
+
+        for (int a = 0; a <= aSize; a++)
+        {
+            for (int b = 0; b <= bSize; b++)
+            {
+                int lastStart = -1;
+
+                for (int c = 0; c <= cSize; c++)
+                {
+                    int fullSectors = 0;
+                    int oddSectors = 0;
+
+                    for (int da = 0; da <= 1; da++)
+                    {
+                        for (int db = 0; db <= 1; db++)
+                        {
+                            if (IsFullWide(inverse, a + da - 1, b + db - 1, c))
+                            {
+                                fullSectors++;
+                                oddSectors ^= da ^ db;
+                            }
+                        }
+                    }
+
+                    if (fullSectors == 1 ||
+                        fullSectors == 3 ||
+                        fullSectors == 2 && (oddSectors & 1) == 0)
+                    {
+                        if (mergeNeighbors)
+                        {
+                            if (lastStart == -1)
+                                lastStart = c;
+                        }
+                        else
+                        {
+                            consumer(
+                                inverse.Cycle(a, b, c, Direction.Axis.X),
+                                inverse.Cycle(a, b, c, Direction.Axis.Y),
+                                inverse.Cycle(a, b, c, Direction.Axis.Z),
+                                inverse.Cycle(a, b, c + 1, Direction.Axis.X),
+                                inverse.Cycle(a, b, c + 1, Direction.Axis.Y),
+                                inverse.Cycle(a, b, c + 1, Direction.Axis.Z));
+                        }
+                    }
+                    else if (lastStart != -1)
+                    {
+                        consumer(
+                            inverse.Cycle(a, b, lastStart, Direction.Axis.X),
+                            inverse.Cycle(a, b, lastStart, Direction.Axis.Y),
+                            inverse.Cycle(a, b, lastStart, Direction.Axis.Z),
+                            inverse.Cycle(a, b, c, Direction.Axis.X),
+                            inverse.Cycle(a, b, c, Direction.Axis.Y),
+                            inverse.Cycle(a, b, c, Direction.Axis.Z));
+                        lastStart = -1;
+                    }
+                }
+            }
+        }
     }
 
+    public void ForAllFaces(Action<Direction, int, int, int> consumer)
+    {
+        ForAllAxisFaces(consumer, AxisCycle.None);
+        ForAllAxisFaces(consumer, AxisCycle.Forward);
+        ForAllAxisFaces(consumer, AxisCycle.Backward);
+    }
+
+    private void ForAllAxisFaces(Action<Direction, int, int, int> consumer, AxisCycle transform)
+    {
+        AxisCycle inverse = transform.Inverse();
+        Direction.Axis cAxis = inverse.Cycle(Direction.Axis.Z);
+        int aSize = GetSize(inverse.Cycle(Direction.Axis.X));
+        int bSize = GetSize(inverse.Cycle(Direction.Axis.Y));
+        int cSize = GetSize(cAxis);
+        Direction negative = Direction.FromAxisAndDirection(cAxis, Direction.AxisDirection.NEGATIVE);
+        Direction positive = Direction.FromAxisAndDirection(cAxis, Direction.AxisDirection.POSITIVE);
+
+        for (int a = 0; a < aSize; a++)
+        {
+            for (int b = 0; b < bSize; b++)
+            {
+                bool lastFull = false;
+
+                for (int c = 0; c <= cSize; c++)
+                {
+                    bool full = c != cSize && IsFull(inverse, a, b, c);
+
+                    if (!lastFull && full)
+                    {
+                        consumer(
+                            negative,
+                            inverse.Cycle(a, b, c, Direction.Axis.X),
+                            inverse.Cycle(a, b, c, Direction.Axis.Y),
+                            inverse.Cycle(a, b, c, Direction.Axis.Z));
+                    }
+
+                    if (lastFull && !full)
+                    {
+                        consumer(
+                            positive,
+                            inverse.Cycle(a, b, c - 1, Direction.Axis.X),
+                            inverse.Cycle(a, b, c - 1, Direction.Axis.Y),
+                            inverse.Cycle(a, b, c - 1, Direction.Axis.Z));
+                    }
+
+                    lastFull = full;
+                }
+            }
+        }
+    }
+
+    public void ForAllBoxes(Action<int, int, int, int, int, int> consumer, bool mergeNeighbors) =>
+        BitSetDiscreteVoxelShape.ForAllBoxes(this, consumer, mergeNeighbors);
 }

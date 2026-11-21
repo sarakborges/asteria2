@@ -76,6 +76,8 @@ internal static class DiscreteVoxelShapeChecks
         }
         Require(!shell.IsInterior(1, 1, 1), "A missing face-neighbor must prevent interior classification.");
 
+        CheckFaceAndEdgeEnumeration();
+
         var adjacent = new BitSetDiscreteVoxelShape(2, 1, 1);
         adjacent.Fill(0, 0, 0);
         adjacent.Fill(1, 0, 0);
@@ -134,6 +136,60 @@ internal static class DiscreteVoxelShapeChecks
             "BooleanOp FIRST must return its first operand.");
         Require(BooleanOp.SECOND.Apply(false, true) && !BooleanOp.SECOND.Apply(true, false),
             "BooleanOp SECOND must return its second operand.");
+    }
+
+    private static void CheckFaceAndEdgeEnumeration()
+    {
+        var unit = new BitSetDiscreteVoxelShape(1, 1, 1);
+        unit.Fill(0, 0, 0);
+
+        var faces = new List<(Direction Direction, int X, int Y, int Z)>();
+        unit.ForAllFaces((direction, x, y, z) => faces.Add((direction, x, y, z)));
+        Require(faces.Count == 6, "A single occupied cell must expose six faces.");
+        Require(
+            faces.Select(face => face.Direction).Distinct(ReferenceEqualityComparer.Instance).Count() == 6,
+            "A single occupied cell must expose one face in each of the six directions.");
+        Require(
+            faces.All(face => face.X == 0 && face.Y == 0 && face.Z == 0),
+            "Unit-cell faces must identify the cell origin and use the face direction to encode the side.");
+
+        var unitEdges = new List<(int X1, int Y1, int Z1, int X2, int Y2, int Z2)>();
+        unit.ForAllEdges((x1, y1, z1, x2, y2, z2) =>
+            unitEdges.Add((x1, y1, z1, x2, y2, z2)), mergeNeighbors: false);
+        Require(unitEdges.Count == 12, "A single occupied cell must expose twelve unit edges.");
+        Require(
+            unitEdges.All(edge =>
+                Math.Abs(edge.X2 - edge.X1) +
+                Math.Abs(edge.Y2 - edge.Y1) +
+                Math.Abs(edge.Z2 - edge.Z1) == 1),
+            "Every unmerged unit-cell edge must span exactly one grid interval.");
+
+        var prism = new BitSetDiscreteVoxelShape(1, 1, 2);
+        prism.Fill(0, 0, 0);
+        prism.Fill(0, 0, 1);
+
+        int mergedEdgeCount = 0;
+        prism.ForAllEdges((_, _, _, _, _, _) => mergedEdgeCount++, mergeNeighbors: true);
+        int unmergedEdgeCount = 0;
+        prism.ForAllEdges((_, _, _, _, _, _) => unmergedEdgeCount++, mergeNeighbors: false);
+        Require(
+            mergedEdgeCount == 12 && unmergedEdgeCount == 16,
+            "Neighbor merging must combine the four two-cell longitudinal edges of a 1x1x2 prism.");
+
+        var prismFaces = new List<Direction>();
+        prism.ForAllFaces((direction, _, _, _) => prismFaces.Add(direction));
+        Require(
+            prismFaces.Count == 6 &&
+            prismFaces.Distinct(ReferenceEqualityComparer.Instance).Count() == 6,
+            "A solid 1x1x2 prism must expose exactly six boundary faces.");
+
+        var empty = new BitSetDiscreteVoxelShape(2, 2, 2);
+        int emptyEdges = 0;
+        int emptyFaces = 0;
+        empty.ForAllEdges((_, _, _, _, _, _) => emptyEdges++, mergeNeighbors: true);
+        empty.ForAllFaces((_, _, _, _) => emptyFaces++);
+        Require(emptyEdges == 0 && emptyFaces == 0,
+            "Empty occupancy grids must not emit edges or faces.");
     }
 
     private static void Require(bool condition, string message)
