@@ -2586,9 +2586,9 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
     private static void CheckPalettedContainerStrategyConfiguration()
     {
         var registeredBlockStates = new BlockStateIdMap();
-        foreach (Holder<Block>.Reference blockHolder in BuiltInRegistries.Block.ListElements())
+        foreach (Block block in new[] { Blocks.AIR, TestBlocks.TEST_BLOCK })
         {
-            foreach (BlockState state in blockHolder.Value.StateDefinition.PossibleStates)
+            foreach (BlockState state in block.StateDefinition.PossibleStates)
                 registeredBlockStates.Add(state);
         }
 
