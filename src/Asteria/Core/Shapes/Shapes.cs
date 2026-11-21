@@ -1,4 +1,5 @@
 using Asteria.Core;
+using Asteria.Core.Mathematics;
 
 namespace Asteria.Core.Shapes;
 
