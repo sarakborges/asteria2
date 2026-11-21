@@ -314,7 +314,7 @@ internal static class VoxelShapeChecks
             "Forward axis cycle must map Z to X.");
         Require(ReferenceEquals(AxisCycle.Backward.Cycle(Direction.Axis.X), Direction.Axis.Z),
             "Backward axis cycle must map X to Z.");
-        Require(ReferenceEquals(AxisCycle.Forward.Inverse(), AxisCycle.Backward),
+        Require(AxisCycle.Forward.Inverse() == AxisCycle.Backward,
             "Forward axis cycle inverse must be backward.");
         Require(AxisCycle.Forward.Cycle(1, 2, 3) == (2, 3, 1),
             "Forward coordinate cycling must map (x,y,z) to (y,z,x).");

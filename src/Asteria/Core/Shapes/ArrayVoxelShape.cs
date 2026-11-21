@@ -17,10 +17,10 @@ public sealed class ArrayVoxelShape : VoxelShape
         double[] ys,
         double[] zs)
         : this(
-            shape,
-            new ArrayDoubleList(CopyToSize(xs, shape?.GetXSize() + 1 ?? throw new ArgumentNullException(nameof(shape)))),
-            new ArrayDoubleList(CopyToSize(ys, shape.GetYSize() + 1)),
-            new ArrayDoubleList(CopyToSize(zs, shape.GetZSize() + 1)))
+            shape ?? throw new ArgumentNullException(nameof(shape)),
+            new ArrayDoubleList(CopyToSize(xs, RequireShape(shape).GetXSize() + 1)),
+            new ArrayDoubleList(CopyToSize(ys, RequireShape(shape).GetYSize() + 1)),
+            new ArrayDoubleList(CopyToSize(zs, RequireShape(shape).GetZSize() + 1)))
     {
     }
 
@@ -56,6 +56,9 @@ public sealed class ArrayVoxelShape : VoxelShape
         if (ReferenceEquals(axis, Direction.Axis.Y)) return _ys;
         return _zs;
     }
+
+    private static DiscreteVoxelShape RequireShape(DiscreteVoxelShape? shape) =>
+        shape ?? throw new ArgumentNullException(nameof(shape));
 
     private static double[] CopyToSize(double[] values, int size)
     {
