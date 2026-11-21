@@ -31,3 +31,10 @@ Network packet codecs are out of scope. Local disk persistence remains in scope.
 - [OverworldBiomes — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/data/worldgen/biome/overworldbiomes/)
 - [LevelChunkSection — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/levelchunksection/)
 - [PalettedContainer — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/palettedcontainer/)
+
+## Temperature and precipitation
+
+- The `FROZEN` temperature modifier combines the three-layer frozen-temperature noise (seed 3456) with the biome-info noise at the reference scales and thresholds.
+- The altitude correction uses the separate temperature noise (seed 1234) above `seaLevel + 17`.
+- `GetHeightAdjustedTemperature`, rain/snow selection, warm-enough-to-rain, cold-enough-to-snow and frozen-ocean iceberg melt threshold are implemented.
+- The reference's per-thread 1024-entry temperature cache and the remaining level-dependent freeze/snow checks are not part of this increment.

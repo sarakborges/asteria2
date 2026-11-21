@@ -1,6 +1,7 @@
 using Asteria.Content.Biomes;
 using Asteria.Content.Chunks;
 using Asteria.Content.Registries;
+using Asteria.Core;
 
 internal static class BiomeChecks
 {
@@ -8,6 +9,7 @@ internal static class BiomeChecks
     {
         CheckBuiltInBiomeRegistry();
         CheckSpecialEffects();
+        CheckTemperatureModifiers();
         CheckBiomeSectionPalette();
     }
 
@@ -86,6 +88,29 @@ internal static class BiomeChecks
             "Grass color modifier serialized names must match the reference.");
         Require(Biomes.PLAINS.SpecialEffects.WaterColor == 4159204 && Biomes.DESERT.SpecialEffects.WaterColor == 4159204,
             "Base overworld biomes must use the reference normal water color.");
+    }
+    private static void CheckTemperatureModifiers()
+    {
+        BlockPos origin = new(0, 0, 0);
+        BlockPos warmPatch = new(1, 0, 1);
+        BlockPos coldPatch = new(100, 0, 200);
+        Require(Biome.TemperatureModifier.NONE.ModifyTemperature(origin, 0.8F) == 0.8F,
+            "The NONE temperature modifier must preserve the biome base temperature.");
+        Require(Biome.TemperatureModifier.FROZEN.ModifyTemperature(origin, 0.8F) == 0.2F,
+            "The frozen modifier must produce the fixed cold patch at the origin.");
+        Require(Biome.TemperatureModifier.FROZEN.ModifyTemperature(warmPatch, 0.8F) == 0.8F,
+            "The frozen modifier must preserve base temperature outside a cold patch.");
+        Require(Biome.TemperatureModifier.FROZEN.ModifyTemperature(coldPatch, 0.8F) == 0.2F,
+            "The frozen modifier must reproduce the fixed-seed large- and small-scale noise combination.");
+
+        Require(Biomes.PLAINS.GetHeightAdjustedTemperature(new BlockPos(8, 80, 16), 63) == 0.8F,
+            "Height adjustment must not apply at sea level plus seventeen blocks.");
+        Require(Math.Abs(Biomes.PLAINS.GetHeightAdjustedTemperature(new BlockPos(8, 81, 16), 63) - 0.80110264F) < 0.000001F,
+            "Height adjustment must use the fixed-seed temperature noise above the snow level.");
+        Require(Biomes.DESERT.GetPrecipitationAt(origin, 63) == Biome.Precipitation.NONE,
+            "A biome without precipitation must never return rain or snow.");
+        Require(Biomes.PLAINS.GetPrecipitationAt(origin, 63) == Biome.Precipitation.RAIN,
+            "A warm precipitation-enabled biome must return rain.");
     }
     private static void CheckBiomeSectionPalette()
     {
