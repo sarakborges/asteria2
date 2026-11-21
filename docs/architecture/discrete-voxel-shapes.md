@@ -15,11 +15,18 @@ The first discrete storage increment ports the occupancy substrate of the shape 
 - `IndexMerger` has the four 26.3 strategies: identical coordinate lists, separated ranges (including operand swap), indirect merged coordinates with the `1e-7` duplicate tolerance, and uniform subdivision grids selected by least common multiple.
 - `IndexMergers.Create` preserves the source decision order and the `cost * lcm <= 256` threshold.
 
+## Continuous shapes and Boolean joins
+
+- `VoxelShape` now provides bounds, per-axis min/max, coordinate-aware min/max, move, optimize, merged box traversal, AABB materialization and closest-point lookup.
+- `CubeVoxelShape` uses uniform `CubePointRange` coordinates and the exact clamped floor-based coordinate-to-cell mapping. `ArrayVoxelShape` preserves explicit lists and validates that every axis has exactly dimension-plus-one coordinates.
+- `Shapes` provides canonical empty/block shapes, `box`/`create` factories, the 1/2/4/8-part grid-fit test, `INFINITY`, `join`, `joinUnoptimized`, `joinIsNotEmpty`, and variadic OR.
+- `joinUnoptimized` builds X/Y/Z mergers in sequence, fills the output grid via `BooleanOp`, and selects cube storage only when all three mergers are discrete-cube mergers. `join` then optimizes by rebuilding from merged boxes.
+- `AxisCycle` supplies identity/forward/backward axis and coordinate permutations used by coordinate-aware shape bounds.
+
 ## Deferred dependencies
 
 - Octahedral rotations wait for `OctahedralGroup` and signed-axis transforms.
-- Axis-cycle transforms, face/edge extraction, and full shape Boolean joins are subsequent increments. The coordinate-list and index-merger substrate is now implemented.
-- `VoxelShape`, `Shapes`, `SliceShape`, collision contexts and renderer integrations are not placeholder types in this increment.
+- Edge/face extraction, `SliceShape`, block-hit-result clipping, collision contexts, swept collision and renderer integrations still require their respective models; no placeholders were introduced.
 
 ## Reference source
 
@@ -32,3 +39,7 @@ The first discrete storage increment ports the occupancy substrate of the shape 
 - [NonOverlappingMerger — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/nonoverlappingmerger/)
 - [IndirectMerger — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/indirectmerger/)
 - [DiscreteCubeMerger — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/discretecubemerger/)
+- [VoxelShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/voxelshape/)
+- [CubeVoxelShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/cubevoxelshape/)
+- [ArrayVoxelShape — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/arrayvoxelshape/)
+- [Shapes — Minecraft 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/phys/shapes/shapes/)

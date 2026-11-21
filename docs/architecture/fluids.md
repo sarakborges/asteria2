@@ -20,7 +20,7 @@ This is not full fluid parity. The following reference behavior still requires d
 - `FlowingFluid` update ordering, source conversion, neighbor inspection, slope-distance search, spread maps, scheduled updates and tick delays.
 - Water/lava source and flowing variants, their state definitions, block conversion and their environment-specific behavior.
 - World interfaces (`BlockGetter`, `LevelReader`, `Level`, server level) and scheduled tick containers.
-- Fluid flow algorithms still need the world-aware vector calculations, voxel shapes, AABB and collision/renderer geometry. `Vec3` arithmetic and the six discrete directions, axes, planes and orthogonal rotations are now present.
+- Fluid flow algorithms still need world access, scheduled ticks and collision/renderer integration. `Vec3`, `AABB`, discrete occupancy, coordinate mergers and the core `VoxelShape`/`Shapes` Boolean geometry are now present.
 - Legacy-block conversion for all fluid types, buckets/items, particles, sounds, entities and block effects.
 - Fluid tags and serialization codecs.
 - Fluid-aware heightmap predicates.

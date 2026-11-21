@@ -85,12 +85,24 @@ public abstract class DiscreteVoxelShape
         x < XSize && y < YSize && z < ZSize &&
         IsFull(x, y, z);
 
+    public bool IsFull(AxisCycle transform, int x, int y, int z)
+    {
+        (x, y, z) = transform.Cycle(x, y, z);
+        return IsFull(x, y, z);
+    }
+
+    public bool IsFullWide(AxisCycle transform, int x, int y, int z)
+    {
+        (x, y, z) = transform.Cycle(x, y, z);
+        return IsFullWide(x, y, z);
+    }
+
     private bool IsFullAlong(Direction.Axis axis, int a, int b, int c)
     {
         if (ReferenceEquals(axis, Direction.Axis.X))
             return IsFull(a, b, c);
         if (ReferenceEquals(axis, Direction.Axis.Y))
-            return IsFull(b, a, c);
+            return IsFull(c, a, b);
         return IsFull(b, c, a);
     }
 }

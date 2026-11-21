@@ -175,6 +175,7 @@ internal static class Program
         AabbChecks.Run();
         DiscreteVoxelShapeChecks.Run();
         IndexMergerChecks.Run();
+        VoxelShapeChecks.Run();
 
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&

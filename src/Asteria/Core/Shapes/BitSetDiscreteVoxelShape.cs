@@ -234,4 +234,41 @@ public sealed class BitSetDiscreteVoxelShape : DiscreteVoxelShape
         for (int index = start; index < end; index++)
             _storage[index] = false;
     }
+
+    public static BitSetDiscreteVoxelShape Join(
+        DiscreteVoxelShape first,
+        DiscreteVoxelShape second,
+        IndexMerger xMerger,
+        IndexMerger yMerger,
+        IndexMerger zMerger,
+        BooleanOp operation)
+    {
+        ArgumentNullException.ThrowIfNull(first);
+        ArgumentNullException.ThrowIfNull(second);
+        ArgumentNullException.ThrowIfNull(xMerger);
+        ArgumentNullException.ThrowIfNull(yMerger);
+        ArgumentNullException.ThrowIfNull(zMerger);
+        ArgumentNullException.ThrowIfNull(operation);
+
+        var result = new BitSetDiscreteVoxelShape(
+            xMerger.Size() - 1,
+            yMerger.Size() - 1,
+            zMerger.Size() - 1);
+
+        xMerger.ForMergedIndexes((firstX, secondX, resultX) =>
+            yMerger.ForMergedIndexes((firstY, secondY, resultY) =>
+                zMerger.ForMergedIndexes((firstZ, secondZ, resultZ) =>
+                {
+                    if (operation.Apply(
+                        first.IsFullWide(firstX, firstY, firstZ),
+                        second.IsFullWide(secondX, secondY, secondZ)))
+                    {
+                        result.Fill(resultX, resultY, resultZ);
+                    }
+
+                    return true;
+                })));
+
+        return result;
+    }
 }
