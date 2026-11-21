@@ -6,14 +6,16 @@ using Asteria.World;
 
 internal static class ChunkChecks
 {
-    public static void Run(BlockState nonAirState)
+    public static void Run(BlockState nonAirState, BlockState fluidState)
     {
         ArgumentNullException.ThrowIfNull(nonAirState);
+        ArgumentNullException.ThrowIfNull(fluidState);
 
         CheckHeightAccessor();
         CheckChunkConstructionAndSections(nonAirState);
         CheckMismatchedSectionArray();
         CheckWorldSurfaceHeightmap(nonAirState);
+        CheckMotionBlockingHeightmaps(fluidState);
         CheckHeightmapOwnershipAndBatchPriming(nonAirState);
         CheckHeightmapRawData(nonAirState);
     }
@@ -182,6 +184,52 @@ internal static class ChunkChecks
         Require(heightmap.GetFirstAvailable(3, 5) == -64, "Updating a neighboring column must not alter the first column.");
     }
 
+    private static void CheckMotionBlockingHeightmaps(BlockState fluidState)
+    {
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
+        var chunk = new Chunk(new ChunkPos(2, -3), height, factory);
+        const int x = 7;
+        const int y = 23;
+        const int z = 9;
+
+        ChunkSection section = chunk.GetSection(chunk.GetSectionIndex(y));
+        section.SetBlockState(x, y & 15, z, fluidState);
+
+        chunk.PrimeHeightmaps(new[]
+        {
+            HeightmapType.MotionBlocking,
+            HeightmapType.MotionBlockingNoLeaves,
+            HeightmapType.OceanFloor
+        });
+
+        Heightmap motionBlocking = chunk.GetOrCreateHeightmapUnprimed(HeightmapType.MotionBlocking);
+        Heightmap motionBlockingNoLeaves = chunk.GetOrCreateHeightmapUnprimed(HeightmapType.MotionBlockingNoLeaves);
+        Heightmap oceanFloor = chunk.GetOrCreateHeightmapUnprimed(HeightmapType.OceanFloor);
+
+        Require(
+            motionBlocking.GetFirstAvailable(x, z) == y + 1,
+            "MOTION_BLOCKING must include a non-empty fluid state even when its block is not in the heightmap tag.");
+        Require(
+            motionBlockingNoLeaves.GetFirstAvailable(x, z) == y + 1,
+            "MOTION_BLOCKING_NO_LEAVES must include a non-empty fluid state.");
+        Require(
+            oceanFloor.GetFirstAvailable(x, z) == height.GetMinY(),
+            "OCEAN_FLOOR must use the block heightmap tag and must not count fluid by itself.");
+
+        section.SetBlockState(x, y & 15, z, Blocks.AIR.DefaultState);
+        Require(
+            motionBlocking.Update(x, y, z, Blocks.AIR.DefaultState),
+            "Removing the fluid-bearing surface block must update MOTION_BLOCKING.");
+        Require(
+            motionBlockingNoLeaves.Update(x, y, z, Blocks.AIR.DefaultState),
+            "Removing the fluid-bearing surface block must update MOTION_BLOCKING_NO_LEAVES.");
+        Require(
+            motionBlocking.GetFirstAvailable(x, z) == height.GetMinY() &&
+            motionBlockingNoLeaves.GetFirstAvailable(x, z) == height.GetMinY(),
+            "Fluid-aware heightmaps must rescan down to minimum Y after the last qualifying state is removed.");
+    }
+
     private static void CheckHeightmapOwnershipAndBatchPriming(BlockState nonAirState)
     {
         LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
@@ -206,10 +254,12 @@ internal static class ChunkChecks
             HeightmapType.WorldSurface,
             HeightmapType.OceanFloorWorldgen,
             HeightmapType.OceanFloor,
+            HeightmapType.MotionBlocking,
+            HeightmapType.MotionBlockingNoLeaves,
             HeightmapType.WorldSurface
         });
 
-        Require(chunk.GetHeightmaps().Count == 4, "Batch priming must create each requested type once.");
+        Require(chunk.GetHeightmaps().Count == 6, "Batch priming must create each of the six requested types once.");
         Require(
             chunk.GetHeight(HeightmapType.WorldSurfaceWorldgen, position.GetMinBlockX() + 2, position.GetMinBlockZ() + 4) == 17,
             "World-surface worldgen height must select the highest non-air block using world coordinates.");
@@ -231,6 +281,27 @@ internal static class ChunkChecks
             !HeightmapType.OceanFloor.SendToClient() &&
             HeightmapType.OceanFloor.KeepAfterWorldgen(),
             "Live-world heightmap metadata must preserve the reference identifier and usage flags.");
+
+        Require(
+            HeightmapType.MotionBlocking.GetId() == 4 &&
+            HeightmapType.MotionBlockingNoLeaves.GetId() == 5 &&
+            HeightmapTypeExtensions.ById(4) == HeightmapType.MotionBlocking &&
+            HeightmapTypeExtensions.ById(5) == HeightmapType.MotionBlockingNoLeaves,
+            "Motion-blocking heightmap types must preserve their stable IDs.");
+        Require(
+            HeightmapTypeExtensions.ById(-1) == HeightmapType.WorldSurfaceWorldgen &&
+            HeightmapTypeExtensions.ById(6) == HeightmapType.WorldSurfaceWorldgen,
+            "Out-of-range heightmap IDs must fall back to ID zero.");
+        Require(
+            HeightmapType.MotionBlocking.GetSerializationKey() == "MOTION_BLOCKING" &&
+            HeightmapType.MotionBlockingNoLeaves.GetSerializedName() == "MOTION_BLOCKING_NO_LEAVES",
+            "Motion-blocking heightmap types must preserve their serialization names.");
+        Require(
+            HeightmapType.MotionBlocking.SendToClient() &&
+            HeightmapType.MotionBlockingNoLeaves.SendToClient() &&
+            HeightmapType.MotionBlocking.KeepAfterWorldgen() &&
+            HeightmapType.MotionBlockingNoLeaves.KeepAfterWorldgen(),
+            "Both motion-blocking heightmaps use CLIENT retention and visibility.");
 
         var lazyChunk = new Chunk(position, height, factory);
         lazyChunk.GetSection(lazyChunk.GetSectionIndex(23)).SetBlockState(1, 7, 3, nonAirState);
