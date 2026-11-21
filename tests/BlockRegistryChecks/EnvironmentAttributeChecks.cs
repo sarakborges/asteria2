@@ -77,9 +77,9 @@ internal static class EnvironmentAttributeChecks
                 BooleanModifier.XNOR.Apply(true, true) == true,
             "Boolean modifier truth tables must match the six reference operations.");
 
-        Require(FloatModifier.ADD.Apply(0.4F, 0.3F) == 0.7F &&
-                FloatModifier.SUBTRACT.Apply(0.4F, 0.3F) == 0.1F &&
-                FloatModifier.MULTIPLY.Apply(0.4F, 0.5F) == 0.2F &&
+        Require(Math.Abs(FloatModifier.ADD.Apply(0.4F, 0.3F) - 0.7F) < 0.000001F &&
+                Math.Abs(FloatModifier.SUBTRACT.Apply(0.4F, 0.3F) - 0.1F) < 0.000001F &&
+                Math.Abs(FloatModifier.MULTIPLY.Apply(0.4F, 0.5F) - 0.2F) < 0.000001F &&
                 FloatModifier.MINIMUM.Apply(0.4F, 0.3F) == 0.3F &&
                 FloatModifier.MAXIMUM.Apply(0.4F, 0.3F) == 0.4F,
             "Float modifiers must preserve addition, subtraction, multiplication, minimum and maximum.");

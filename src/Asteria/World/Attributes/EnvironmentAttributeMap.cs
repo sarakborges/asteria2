@@ -14,7 +14,7 @@ public sealed class EnvironmentAttributeMap : IEquatable<EnvironmentAttributeMap
     public IReadOnlyCollection<IEnvironmentAttribute> KeySet => _entries.Keys.ToArray();
 
     private EnvironmentAttributeMap(
-        IReadOnlyDictionary<IEnvironmentAttribute, IEnvironmentAttributeEntry> entries) =>
+        Dictionary<IEnvironmentAttribute, IEnvironmentAttributeEntry> entries) =>
         _entries = new ReadOnlyDictionary<IEnvironmentAttribute, IEnvironmentAttributeEntry>(
             new Dictionary<IEnvironmentAttribute, IEnvironmentAttributeEntry>(entries));
 
