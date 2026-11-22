@@ -1,5 +1,6 @@
 using Asteria.Core;
 using Asteria.World;
+using Asteria.World.LevelGen;
 
 internal static class CoordinatePositionChecks
 {
@@ -219,6 +220,56 @@ internal static class CoordinatePositionChecks
                 new BlockPos(3, 0, 0)
             }),
             "BlockPos breadth-first traversal must process FIFO order and deduplicate packed positions.");
+
+        Require(
+            origin.Relative(Direction.NORTH, 2).Equals(new BlockPos(0, 0, -2)) &&
+            origin.Relative(Direction.UP).Equals(new BlockPos(0, 1, 0)),
+            "BlockPos direction-relative offsets must multiply the selected unit direction.");
+        var directionalMutable = new BlockPos.MutableBlockPos(4, 5, 6);
+        directionalMutable.SetWithOffset(origin, Direction.WEST).Move(Direction.UP, 3);
+        Require(
+            directionalMutable.Equals(new BlockPos(-1, 3, 0)),
+            "MutableBlockPos directional offset and movement must update each selected axis.");
+
+        Vec3 clampedLocation = new BlockPos(-2, 3, 5)
+            .ClampLocationWithin(new Vec3(-100.0, 100.0, -100.0));
+        Require(
+            clampedLocation.X > -2.0 && clampedLocation.X < -1.9999 &&
+            clampedLocation.Y > 3.0 && clampedLocation.Y < 3.0001 &&
+            clampedLocation.Z > 5.0 && clampedLocation.Z < 5.0001,
+            "BlockPos clampLocationWithin must keep each component inside the block with the source epsilon.");
+
+        var random = new WorldgenRandom(new LegacyRandomSource(123));
+        BlockPos[] randomPositions = BlockPos.RandomBetweenClosed(
+                random, 3, -2, 10, 3, 1, 17, 4)
+            .Select(position => position.Immutable())
+            .ToArray();
+        Require(
+            randomPositions.SequenceEqual(new[]
+            {
+                new BlockPos(0, 11, 4),
+                new BlockPos(-1, 12, 4),
+                new BlockPos(0, 12, 4)
+            }) &&
+            random.Count == 9,
+            "BlockPos randomBetweenClosed must preserve the source coordinate draw order and random call count.");
+
+        var emptyRandom = new WorldgenRandom(new LegacyRandomSource(123));
+        Require(
+            !BlockPos.RandomBetweenClosed(emptyRandom, 0, 0, 0, 0, 0, 0, 0).Any() &&
+            emptyRandom.Count == 0,
+            "BlockPos randomBetweenClosed with a non-positive limit must not consume random values.");
+
+        var reusedRandom = new WorldgenRandom(new LegacyRandomSource(123));
+        using (IEnumerator<BlockPos> randomCursor =
+            BlockPos.RandomBetweenClosed(reusedRandom, 2, 0, 0, 0, 3, 3, 3).GetEnumerator())
+        {
+            Require(randomCursor.MoveNext(), "BlockPos randomBetweenClosed must produce a position when its limit is positive.");
+            BlockPos reusedRandomCursor = randomCursor.Current;
+            Require(
+                randomCursor.MoveNext() && ReferenceEquals(reusedRandomCursor, randomCursor.Current),
+                "BlockPos randomBetweenClosed must reuse its mutable cursor.");
+        }
 
         breadthFirstOrder.Clear();
         int skipCount = BlockPos.BreadthFirstTraversal(
