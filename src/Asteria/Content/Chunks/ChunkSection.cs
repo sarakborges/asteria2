@@ -20,7 +20,7 @@ public class ChunkSection
     public const int BiomeCount = BiomeContainerWidth * BiomeContainerWidth * BiomeContainerWidth;
 
     private readonly PalettedContainer<BlockState> _states;
-    private PalettedContainer<Holder<Biome>> _biomes;
+    private IPalettedContainerReadOnly<Holder<Biome>> _biomes;
     private short _nonAirBlockCount;
     private short _fluidCount;
     private short _tickingBlockCount;
@@ -33,7 +33,7 @@ public class ChunkSection
     public bool IsRandomlyTicking => IsRandomlyTickingBlocks || IsRandomlyTickingFluids;
     public ChunkSection(
         PalettedContainer<BlockState> states,
-        PalettedContainer<Holder<Biome>> biomes)
+        IPalettedContainerReadOnly<Holder<Biome>> biomes)
     {
         _states = states ?? throw new ArgumentNullException(nameof(states));
         _biomes = biomes ?? throw new ArgumentNullException(nameof(biomes));
