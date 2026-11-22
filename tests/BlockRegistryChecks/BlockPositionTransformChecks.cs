@@ -1,0 +1,159 @@
+using System.Text.Json;
+using Asteria.Content.Blocks;
+using Asteria.Core;
+using Asteria.Core.Mathematics;
+using Asteria.Serialization;
+using Asteria.World.LevelGen;
+
+internal static class BlockPositionTransformChecks
+{
+    public static void Run()
+    {
+        CheckAxisCycles();
+        CheckBlockPositionRotation();
+        CheckRotationOperations();
+        CheckRotationCodecsAndRandom();
+    }
+
+    private static void CheckAxisCycles()
+    {
+        AxisCycle[] cycles = AxisCycle.GetValues();
+        Require(cycles.Length == 3 &&
+                ReferenceEquals(cycles[0], AxisCycle.NONE) &&
+                ReferenceEquals(cycles[1], AxisCycle.FORWARD) &&
+                ReferenceEquals(cycles[2], AxisCycle.BACKWARD),
+            "AxisCycle values must preserve NONE/FORWARD/BACKWARD source order.");
+
+        Require(
+            AxisCycle.NONE.Cycle(2, 3, 5, Direction.Axis.X) == 2 &&
+            AxisCycle.FORWARD.Cycle(2, 3, 5, Direction.Axis.X) == 5 &&
+            AxisCycle.BACKWARD.Cycle(2, 3, 5, Direction.Axis.X) == 3,
+            "AxisCycle integer coordinate selection must match each source permutation.");
+        Require(
+            AxisCycle.NONE.Cycle(2.5, 3.5, 5.5, Direction.Axis.Y) == 3.5 &&
+            AxisCycle.FORWARD.Cycle(2.5, 3.5, 5.5, Direction.Axis.Y) == 2.5 &&
+            AxisCycle.BACKWARD.Cycle(2.5, 3.5, 5.5, Direction.Axis.Y) == 5.5,
+            "AxisCycle double coordinate selection must match each source permutation.");
+
+        Require(
+            ReferenceEquals(AxisCycle.NONE.Cycle(Direction.Axis.Z), Direction.Axis.Z) &&
+            ReferenceEquals(AxisCycle.FORWARD.Cycle(Direction.Axis.X), Direction.Axis.Y) &&
+            ReferenceEquals(AxisCycle.FORWARD.Cycle(Direction.Axis.Y), Direction.Axis.Z) &&
+            ReferenceEquals(AxisCycle.FORWARD.Cycle(Direction.Axis.Z), Direction.Axis.X) &&
+            ReferenceEquals(AxisCycle.BACKWARD.Cycle(Direction.Axis.X), Direction.Axis.Z) &&
+            ReferenceEquals(AxisCycle.BACKWARD.Cycle(Direction.Axis.Y), Direction.Axis.X) &&
+            ReferenceEquals(AxisCycle.BACKWARD.Cycle(Direction.Axis.Z), Direction.Axis.Y),
+            "AxisCycle axis mapping must wrap in X/Y/Z order.");
+
+        Require(ReferenceEquals(AxisCycle.NONE.Inverse(), AxisCycle.NONE) &&
+                ReferenceEquals(AxisCycle.FORWARD.Inverse(), AxisCycle.BACKWARD) &&
+                ReferenceEquals(AxisCycle.BACKWARD.Inverse(), AxisCycle.FORWARD),
+            "AxisCycle inverse must map each permutation to its inverse.");
+        Require(
+            ReferenceEquals(AxisCycle.Between(Direction.Axis.X, Direction.Axis.X), AxisCycle.NONE) &&
+            ReferenceEquals(AxisCycle.Between(Direction.Axis.X, Direction.Axis.Y), AxisCycle.FORWARD) &&
+            ReferenceEquals(AxisCycle.Between(Direction.Axis.Y, Direction.Axis.X), AxisCycle.BACKWARD) &&
+            ReferenceEquals(AxisCycle.Between(Direction.Axis.Z, Direction.Axis.Y), AxisCycle.FORWARD),
+            "AxisCycle.Between must select the positive cyclic difference from source to target.");
+
+        var mutable = new BlockPos.MutableBlockPos();
+        mutable.Set(AxisCycle.FORWARD, 1, 2, 3);
+        Require(mutable.Equals(new BlockPos(3, 1, 2)),
+            "MutableBlockPos.Set(AxisCycle) must permute X/Y/Z using the source axis selectors.");
+    }
+
+    private static void CheckBlockPositionRotation()
+    {
+        var position = new BlockPos(2, 5, 3);
+        Require(ReferenceEquals(position, position.Rotate(Rotation.NONE)),
+            "A NONE block-position rotation must return the original instance.");
+        Require(position.Rotate(Rotation.CLOCKWISE_90).Equals(new BlockPos(-3, 5, 2)),
+            "A clockwise quarter-turn must map (x,y,z) to (-z,y,x).");
+        Require(position.Rotate(Rotation.CLOCKWISE_180).Equals(new BlockPos(-2, 5, -3)),
+            "A half-turn must negate X and Z while preserving Y.");
+        Require(position.Rotate(Rotation.COUNTERCLOCKWISE_90).Equals(new BlockPos(3, 5, -2)),
+            "A counter-clockwise quarter-turn must map (x,y,z) to (z,y,-x).");
+
+        var mutable = new BlockPos.MutableBlockPos(2, 5, 3);
+        BlockPos rotatedSnapshot = mutable.Rotate(Rotation.CLOCKWISE_90);
+        mutable.Move(10, 20, 30);
+        Require(rotatedSnapshot.Equals(new BlockPos(-3, 5, 2)) &&
+                !ReferenceEquals(rotatedSnapshot, mutable),
+            "MutableBlockPos rotation must return an immutable copy unaffected by later mutations.");
+    }
+
+    private static void CheckRotationOperations()
+    {
+        Rotation[] rotations = Rotation.GetValues();
+        Require(rotations.Length == 4 &&
+                ReferenceEquals(rotations[0], Rotation.NONE) &&
+                ReferenceEquals(rotations[1], Rotation.CLOCKWISE_90) &&
+                ReferenceEquals(rotations[2], Rotation.CLOCKWISE_180) &&
+                ReferenceEquals(rotations[3], Rotation.COUNTERCLOCKWISE_90),
+            "Rotation values must preserve the source enum order.");
+
+        Require(
+            ReferenceEquals(Rotation.NONE.GetRotation(), OctahedralGroup.IDENTITY) &&
+            ReferenceEquals(Rotation.CLOCKWISE_90.GetRotation(), OctahedralGroup.ROT_90_Y_NEG) &&
+            ReferenceEquals(Rotation.CLOCKWISE_180.GetRotation(), OctahedralGroup.ROT_180_FACE_XZ) &&
+            ReferenceEquals(Rotation.COUNTERCLOCKWISE_90.GetRotation(), OctahedralGroup.ROT_90_Y_POS),
+            "Each block rotation must expose its matching octahedral group element.");
+
+        for (int first = 0; first < rotations.Length; first++)
+        for (int second = 0; second < rotations.Length; second++)
+            Require(
+                ReferenceEquals(rotations[first].GetRotated(rotations[second]), rotations[(first + second) % 4]),
+                "Rotation composition must add quarter-turn indices modulo four.");
+
+        Require(ReferenceEquals(Rotation.CLOCKWISE_90.Rotate(Direction.NORTH), Direction.EAST) &&
+                ReferenceEquals(Rotation.CLOCKWISE_90.Rotate(Direction.EAST), Direction.SOUTH) &&
+                ReferenceEquals(Rotation.CLOCKWISE_180.Rotate(Direction.NORTH), Direction.SOUTH) &&
+                ReferenceEquals(Rotation.COUNTERCLOCKWISE_90.Rotate(Direction.NORTH), Direction.WEST) &&
+                ReferenceEquals(Rotation.COUNTERCLOCKWISE_90.Rotate(Direction.UP), Direction.UP),
+            "Rotation direction mapping must rotate horizontal directions and preserve vertical directions.");
+
+        Require(Rotation.CLOCKWISE_90.Rotate(2, 8) == 4 &&
+                Rotation.CLOCKWISE_180.Rotate(2, 8) == 6 &&
+                Rotation.COUNTERCLOCKWISE_90.Rotate(2, 8) == 0 &&
+                Rotation.NONE.Rotate(2, 8) == 2,
+            "Rotation integer-step mapping must preserve the source quarter-turn offsets.");
+
+        Require(ReferenceEquals(Rotation.BY_ID(0), Rotation.NONE) &&
+                ReferenceEquals(Rotation.BY_ID(-1), Rotation.COUNTERCLOCKWISE_90) &&
+                ReferenceEquals(Rotation.BY_ID(4), Rotation.NONE),
+            "Rotation BY_ID must wrap IDs using positive modulo.");
+    }
+
+    private static void CheckRotationCodecsAndRandom()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        Rotation decoded = Rotation.CODEC.Parse(ops, ops.CreateString("clockwise_90")).GetOrThrow();
+        Require(ReferenceEquals(decoded, Rotation.CLOCKWISE_90),
+            "Rotation.CODEC must decode the serialized rotation key.");
+        JsonElement encoded = Rotation.CODEC.EncodeStart(ops, Rotation.CLOCKWISE_180).GetOrThrow();
+        Require(ops.GetStringValue(encoded).GetOrThrow() == "180",
+            "Rotation.CODEC must encode the source serialized identifier.");
+
+#pragma warning disable CS0618
+        Rotation legacy = Rotation.LEGACY_CODEC.Parse(ops, ops.CreateString("COUNTERCLOCKWISE_90")).GetOrThrow();
+        JsonElement legacyEncoded = Rotation.LEGACY_CODEC.EncodeStart(ops, Rotation.CLOCKWISE_90).GetOrThrow();
+#pragma warning restore CS0618
+        Require(ReferenceEquals(legacy, Rotation.COUNTERCLOCKWISE_90) &&
+                ops.GetStringValue(legacyEncoded).GetOrThrow() == "CLOCKWISE_90",
+            "Rotation.LEGACY_CODEC must use exact enum names for legacy data.");
+
+        var random = new WorldgenRandom(new LegacyRandomSource(1234L));
+        _ = Rotation.GetRandom(random);
+        List<Rotation> shuffled = Rotation.GetShuffled(random);
+        Require(random.Count == 4 && shuffled.Count == 4 &&
+                shuffled.Distinct().Count() == 4 &&
+                shuffled.All(value => Rotation.GetValues().Any(candidate => ReferenceEquals(value, candidate))),
+            "Rotation random helpers must use one bounded draw and the source Fisher-Yates shuffle.");
+    }
+
+    private static void Require(bool condition, string message)
+    {
+        if (!condition)
+            throw new InvalidOperationException(message);
+    }
+}
