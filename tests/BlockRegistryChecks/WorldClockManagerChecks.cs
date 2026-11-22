@@ -141,4 +141,10 @@ internal static class WorldClockManagerChecks
         throw new InvalidOperationException(
             "WorldClockManager must reject unregistered clock holders with the reference diagnostic.");
     }
+    private static void Require(bool condition, string message)
+    {
+        if (!condition)
+            throw new InvalidOperationException(message);
+    }
+
 }
