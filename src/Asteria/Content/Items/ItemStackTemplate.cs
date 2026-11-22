@@ -34,6 +34,11 @@ public sealed class ItemStackTemplate
     {
     }
 
+    public ItemStackTemplate(Holder<Item> item)
+        : this(item, 1, DataComponentPatch.EMPTY)
+    {
+    }
+
     public ItemStackTemplate(Item item, int count)
         : this(
             item?.BuiltInRegistryHolder ??
@@ -67,19 +72,19 @@ public sealed class ItemStackTemplate
     }
 
     public ItemStackTemplate WithCount(int count) =>
-        Count == count ? this : new ItemStackTemplate(Item, count, Components);
+        Count == count ? this : new ItemStackTemplate(ItemHolder, count, Components);
 
     private static MapCodec<ItemStackTemplate> CreateMapCodec(
         Codec<Holder<Item>> itemCodec) =>
         RecordCodecBuilder.MapCodec<ItemStackTemplate>(instance =>
             instance.Group(
-                    itemCodec.FieldOf("id").ForGetter(static value => value.ItemHolder),
+                    itemCodec.FieldOf("id").ForGetter<ItemStackTemplate>(static value => value.ItemHolder),
                     CountCodec.OptionalFieldOf("count", 1)
-                        .ForGetter(static value => value.Count),
+                        .ForGetter<ItemStackTemplate>(static value => value.Count),
                     DataComponentPatch.CODEC.OptionalFieldOf(
                             "components",
                             DataComponentPatch.EMPTY)
-                        .ForGetter(static value => value.Components))
+                        .ForGetter<ItemStackTemplate>(static value => value.Components))
                 .Apply(
                     instance,
                     static (item, count, components) =>
