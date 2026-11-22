@@ -1,5 +1,8 @@
 using Asteria.Content.Blocks;
 using Asteria.Content.Registries;
+using Asteria.Core;
+using Asteria.Core.Shapes;
+using Asteria.World;
 
 namespace Asteria.Content.Fluids;
 
@@ -45,7 +48,11 @@ public abstract class Fluid
 
     public abstract int GetAmount(FluidState state);
 
+    public abstract float GetHeight(FluidState state, BlockGetter level, BlockPos position);
+
     public abstract float GetOwnHeight(FluidState state);
+
+    public abstract VoxelShape GetShape(FluidState state, BlockGetter level, BlockPos position);
 
     public virtual bool IsSame(Fluid other)
     {
