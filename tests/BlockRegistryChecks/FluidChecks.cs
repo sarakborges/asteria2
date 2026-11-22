@@ -21,6 +21,7 @@ internal static class FluidChecks
             : base(BlockProperties.Of(), createIntrusiveRegistryHolder: false)
         {
             _fluidState = fluidState ?? throw new ArgumentNullException(nameof(fluidState));
+            InitializeStateCaches();
         }
 
         public override FluidState GetFluidState(BlockState state) => _fluidState;
