@@ -241,6 +241,8 @@ public sealed class PalettedContainer<T> : IPaletteResize<T>, IPalettedContainer
     public PalettedContainer<T> Copy() =>
         new(_strategy, Volatile.Read(ref _data).Copy());
 
+    IPalettedContainerReadOnly<T> IPalettedContainerReadOnly<T>.Copy() => Copy();
+
     public PalettedContainer<T> Recreate()
     {
         Data data = Volatile.Read(ref _data);
