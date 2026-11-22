@@ -1,3 +1,5 @@
+using Asteria.Serialization;
+
 namespace Asteria.World.Attributes.Modifiers;
 
 public static class ListModifier<T>
@@ -6,14 +8,21 @@ public static class ListModifier<T>
         new AppendOperation();
 
     public static IReadOnlyDictionary<AttributeOperationId, IAttributeModifier<IReadOnlyList<T>>> LIBRARY { get; } =
+        CreateLibrary(null);
+
+    public static IReadOnlyDictionary<AttributeOperationId, IAttributeModifier<IReadOnlyList<T>>> CreateLibrary(
+        Codec<T>? elementCodec) =>
         new Dictionary<AttributeOperationId, IAttributeModifier<IReadOnlyList<T>>>
         {
-            [AttributeOperationId.APPEND] = APPEND
+            [AttributeOperationId.APPEND] = elementCodec is null
+                ? APPEND
+                : new AppendOperation(elementCodec.ListOf())
         };
 
-    private sealed class AppendOperation :
+    private sealed class AppendOperation(Codec<IReadOnlyList<T>>? argumentCodec = null) :
         AttributeModifier<IReadOnlyList<T>, IReadOnlyList<T>>
     {
+        public override Codec<IReadOnlyList<T>>? ArgumentCodec { get; } = argumentCodec;
         public override AttributeOperationId OperationId => AttributeOperationId.APPEND;
         public override string GetSerializedName() => OperationId.GetSerializedName();
 
