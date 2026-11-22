@@ -24,6 +24,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     private bool _cacheInitialized;
     private readonly int _lightEmission;
     private readonly Func<BlockState, bool> _emissiveRendering;
+    private readonly Func<BlockState, BlockPos, Vec3>? _offsetFunction;
 
     private static VoxelShape[] CreateOcclusionShapes(VoxelShape shape)
     {
@@ -130,6 +131,14 @@ public sealed class BlockState : StateHolder<Block, BlockState>
 
     public bool IsEmissiveRendering => _emissiveRendering(this);
 
+    public Vec3 GetOffset(BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        return _offsetFunction?.Invoke(this, position) ?? Vec3.Zero;
+    }
+
+    public bool HasOffsetFunction => _offsetFunction is not null;
+
     public VoxelShape GetCollisionShape(BlockGetter level, BlockPos position) =>
         _collisionShape ?? Block.GetCollisionShape(this, level, position);
 
@@ -176,6 +185,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         UseShapeForLightOcclusion = Block.UseShapeForLightOcclusion(this);
         _lightEmission = properties.LightEmissionValue(this);
         _emissiveRendering = properties.EmissiveRenderingValue;
+        _offsetFunction = properties.OffsetFunctionValue;
         global::Asteria.Content.Blocks.Block.BlockStateRegistry.Add(this);
     }
 
