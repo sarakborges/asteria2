@@ -53,7 +53,7 @@ internal static class BlockPositionTransformChecks
             AxisCycleExtensions.Between(Direction.Axis.X, Direction.Axis.X) == AxisCycle.None &&
             AxisCycleExtensions.Between(Direction.Axis.X, Direction.Axis.Y) == AxisCycle.Forward &&
             AxisCycleExtensions.Between(Direction.Axis.Y, Direction.Axis.X) == AxisCycle.Backward &&
-            AxisCycleExtensions.Between(Direction.Axis.Z, Direction.Axis.Y) == AxisCycle.Forward,
+            AxisCycleExtensions.Between(Direction.Axis.Z, Direction.Axis.Y) == AxisCycle.Backward,
             "AxisCycle.Between must select the positive cyclic difference from source to target.");
 
         var mutable = new BlockPos.MutableBlockPos();
