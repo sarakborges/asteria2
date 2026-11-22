@@ -223,6 +223,7 @@ internal static class Program
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState);
         BiomeChecks.Run();
         EnvironmentAttributeChecks.Run();
+        KeyframeTrackChecks.Run();
         ParticleChecks.Run();
         AmbientParticleChecks.Run();
         AttributeValueCodecChecks.Run();

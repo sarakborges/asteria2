@@ -28,11 +28,11 @@ Base de comparação: Minecraft Java 26.3.
 
 ## Limites deste incremento
 
-- O codec do argumento do modificador está exposto para operações booleanas, inteiras, float, cor e append de listas com codec de elemento fornecido. Os argumentos de cor usam os codecs hexadecimais RGB/ARGB da referência (com representação vetorial alternativa); `blend_to_gray` usa `brightness` e `factor` limitados a [0, 1]. `FloatWithAlpha` aceita forma escalar compacta quando alpha é 1 e forma expandida com alpha opcional limitado a [0, 1]. O codec completo do mapa ambiental e `CODEC_ONLY_POSITIONAL` continuam pendentes; codecs de rede permanecem fora do escopo.
+- O codec do argumento do modificador está exposto para operações booleanas, inteiras, float, cor e append de listas com codec de elemento fornecido. Os argumentos de cor usam os codecs hexadecimais RGB/ARGB da referência (com representação vetorial alternativa); `blend_to_gray` usa `brightness` e `factor` limitados a [0, 1]. `FloatWithAlpha` aceita forma escalar compacta quando alpha é 1 e forma expandida com alpha opcional limitado a [0, 1]. O codec completo do mapa ambiental e `CODEC_ONLY_POSITIONAL` foram portados; codecs de rede permanecem fora do escopo.
 - AttributeTypes contém boolean, float, angle_degrees, rgb_color, argb_color, integer e moon_phase. RGB/ARGB usam System.Numerics.Vector3/Vector4 e as cinco operações de modificador da referência. INTEGER usa Int32, interpolação por piso e as cinco operações aritméticas da referência. MOON_PHASE usa os oito estados, índices, nomes serializados e início de fase da referência, sem interpolação ou modificadores. `LerpFunction<T>.OfListCrossFade` agora reproduz a composição ordenada e a escala complementar de cada elemento para cross-fade de listas; `PARTICLE` e `AMBIENT_PARTICLES` já possuem codecs locais e usam o catálogo de partículas genéricas mantido no escopo. `ACTIVITY` depende do registry e do domínio de schedules/AI, ainda não portado; as definições de atividade específicas de villagers permanecem fora do escopo atual. Áudio, bed rules, raid/illager, slime e atributos vinculados a blocos/entidades específicos estão fora do escopo, não são pendências.
 - Os registries built-in environment_attribute e attribute_type foram ligados ao root e ao bootstrap. As 19 definições ambientais genéricas dentro do escopo foram registradas por chave. Atributos de áudio, regras de cama, raid/illager, slime e atributos de blocos/entidades específicos não são requisitos; outros tipos ainda não implementados foram omitidos, portanto não se afirma paridade dos IDs numéricos.
 - `EnvironmentAttributeResolver` aplica mapas de fontes em ordem explícita de prioridade baixa para alta, iniciando pelo default registrado ou por um valor base fornecido pelo chamador. A ordem de 26.3 é dimensão → bioma → timeline → clima.
-- A resolução espacial/temporal ainda depende de provedores reais de dimensão, amostragem de biomas, timeline e clima. Este resolver não inventa essas fontes nem implementa interpolação entre biomas/keyframes.
+- A resolução espacial/temporal ainda depende de provedores reais de dimensão, amostragem de biomas, timeline e clima. Este resolver não inventa essas fontes nem implementa interpolação entre biomas ou seleção de clocks; a amostragem temporal de keyframes passa a ser responsabilidade de `KeyframeTrackSampler`.
 - Packet/network codec, sincronização remota e multiplayer estão fora do escopo. Persistência local permanece no escopo futuro.
 
 
@@ -119,3 +119,15 @@ Base de comparação: Minecraft Java 26.3.
 - `CODEC_ONLY_POSITIONAL` valida o mapa completo e rejeita atributos com `IsPositional == false`, tanto na decodificação quanto na codificação.
 - A resolução do codec da entrada é memoizada por definição de atributo. O codec de rede não foi portado porque a execução remota/sincronização entre jogadores está fora do escopo local.
 - A infraestrutura genérica `Codecs.DispatchedMap` faz despacho por chave registrada e mantém a acumulação de erros/parciais de `DataResult` e os contratos de `DynamicOps`.
+
+
+## Incremento — keyframe tracks e attribute tracks (22/11/2026)
+
+- Portados `Keyframe<T>`, `KeyframeTrack<T>` e `KeyframeTrackSampler<T>`: codec de keyframe (ticks não negativos e value tipado), lista de keyframes validada e ordenada, easing opcional com default linear, validação de faixa do período e amostragem por segmentos.
+- O sampler preserva os limites de cada segmento, transições instantâneas com keyframes no mesmo tick e repetição periódica por floor-mod, incluindo o segmento que atravessa o fim/início do período.
+- Portados os 32 easing types built-in e Bézier cúbica. O codec aceita identificadores simples ou `{ "cubic_bezier": [x1, y1, x2, y2] }`; somente x1 e x2 são limitados a [0, 1], como na referência.
+- `AttributeTrack<TValue, TArgument>` escolhe o codec de keyframes a partir do modifier e do atributo. O campo `modifier` é opcional e usa override como padrão. A interpolação dos argumentos usa `ArgumentKeyframeLerp(attribute)`, preservando o interpolador específico do modifier.
+- `AttributeTrackSampler` reproduz o cache por `cacheTickId` e aplica o modifier ao valor-base após amostrar o argumento.
+- Adaptação explícita: como Asteria ainda não tem `WorldClock`/ `ClockManager`, o sampler recebe `totalTicks` no método `ApplyTimeBased`; não foi criado relógio fictício.
+- Ainda não portados: registro de clocks, `ClockManager`, registry de `Timeline`, markers e conexão de timelines às fontes de dimensão. Este incremento completa a camada genérica de tracks e amostragem, mas não declara o sistema de timelines inteiro concluído.
+- Codec de rede e sincronização remota permanecem fora do escopo local.

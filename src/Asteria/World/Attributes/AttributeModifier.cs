@@ -1,4 +1,5 @@
 using Asteria.Serialization;
+using Asteria.World.Timelines;
 
 namespace Asteria.World.Attributes;
 
@@ -53,6 +54,8 @@ public interface IAttributeModifier<TSubject>
     string GetSerializedName();
     DataResult<MapCodec<EnvironmentAttributeMap.IEnvironmentAttributeEntry<TSubject>>> CreateEntryCodec(
         EnvironmentAttribute<TSubject> attribute);
+    DataResult<MapCodec<IAttributeTrack<TSubject>>> CreateTrackCodec(
+        EnvironmentAttribute<TSubject> attribute);
     TSubject ApplyObject(TSubject subject, object? argument);
 }
 
@@ -90,6 +93,29 @@ public abstract class AttributeModifier<TSubject, TArgument> : IAttributeModifie
                         $"Entry does not belong to modifier '{GetSerializedName()}'."));
 
         return DataResult<MapCodec<EnvironmentAttributeMap.IEnvironmentAttributeEntry<TSubject>>>.Success(codec);
+    }
+
+    public DataResult<MapCodec<IAttributeTrack<TSubject>>> CreateTrackCodec(
+        EnvironmentAttribute<TSubject> attribute)
+    {
+        ArgumentNullException.ThrowIfNull(attribute);
+        Codec<TArgument>? argumentCodec = GetArgumentCodec(attribute);
+        if (argumentCodec is null)
+        {
+            return DataResult<MapCodec<IAttributeTrack<TSubject>>>.Error(
+                () => $"Modifier '{GetSerializedName()}' has no argument codec for attribute '{attribute}'.");
+        }
+
+        MapCodec<IAttributeTrack<TSubject>> codec =
+            KeyframeTrack<TArgument>.MapCodec(argumentCodec).XMap<IAttributeTrack<TSubject>>(
+                track => new AttributeTrack<TSubject, TArgument>(this, track),
+                track => track is AttributeTrack<TSubject, TArgument> typed &&
+                         ReferenceEquals(typed.Modifier, this)
+                    ? typed.ArgumentTrack
+                    : throw new InvalidOperationException(
+                        $"Track does not belong to modifier '{GetSerializedName()}'."));
+
+        return DataResult<MapCodec<IAttributeTrack<TSubject>>>.Success(codec);
     }
 
     public abstract TSubject Apply(TSubject subject, TArgument argument);
