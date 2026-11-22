@@ -7,11 +7,6 @@ namespace Asteria.Content.Particles;
 /// <summary>RGB dust particle options transitioning between two colors.</summary>
 public sealed class DustColorTransitionOptions : ScalableParticleOptionsBase
 {
-    public const int SCULK_PARTICLE_COLOR = 3790560;
-
-    public static readonly DustColorTransitionOptions SCULK_TO_REDSTONE =
-        new(SCULK_PARTICLE_COLOR, 16711680, 1.0F);
-
     public static MapCodec<DustColorTransitionOptions> CODEC { get; } =
         RecordCodecBuilder.MapCodec<DustColorTransitionOptions>(instance =>
             instance.Group(

@@ -9,10 +9,10 @@ Asteria é um jogo exclusivamente single-player, offline e local. Não existe re
 - **Redstone:** circuitos de redstone, níveis de potência, fios, repetidores, comparadores, sensores e propagação/atualização de sinais.
 - **Multiplayer/network play:** transporte de rede, protocolo de jogo, servidor/cliente autoritativo, replicação de estado, sincronização remota, matchmaking, lobbies e presença online.
 - **Áudio:** música, sons ambientes e demais sistemas/atributos sonoros.
-- **Atributos de objetos específicos:** definições ambientais vinculadas a blocos ou entidades individuais, como Eyeblossom, ovos de tartaruga, âncoras de renascimento, piglins, abelhas, gatos, snow golems e creakings.
+- **Conteúdo exclusivo de um único item, bloco ou entidade:** registros, partículas, atributos e comportamentos cuja existência depende de um objeto individual. Exemplos: Geyser, Eyeblossom, partículas de blocos especiais, partículas de mobs específicos, ovos de tartaruga, âncoras de renascimento, piglins, abelhas, gatos, snow golems e creakings. Atributos associados a raids/illagers e spawn de slimes também ficam excluídos.
 - **Regras de cama:** atributos e regras específicos de cama.
 
-Não portar sistemas da referência apenas porque são necessários para multiplayer ou redstone. Quando uma classe compartilhada contém lógica exclusiva desses domínios, documentar a exclusão; não adicionar stubs ou APIs vazias.
+Não portar conteúdo específico de um único objeto apenas porque existe na referência. Não portar sistemas da referência apenas porque são necessários para multiplayer ou redstone. Quando uma classe compartilhada contém lógica exclusiva desses domínios, documentar a exclusão; não adicionar stubs ou APIs vazias.
 
 ## Requisitos que continuam válidos no modo local
 

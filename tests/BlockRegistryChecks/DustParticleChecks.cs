@@ -208,11 +208,6 @@ internal static class DustParticleChecks
                 "Dust transition codec must reject scale outside the inclusive [0.01;4.0] range.");
         }
 
-        Require(DustColorTransitionOptions.SCULK_PARTICLE_COLOR == 3790560 &&
-                DustColorTransitionOptions.SCULK_TO_REDSTONE.FromColor == 3790560 &&
-                DustColorTransitionOptions.SCULK_TO_REDSTONE.ToColor == 16711680 &&
-                DustColorTransitionOptions.SCULK_TO_REDSTONE.GetScale() == 1.0F,
-            "Dust transition must expose the reference sculk-to-redstone preset.");
     }
 
     private static void CheckScaleConstruction()
@@ -229,9 +224,6 @@ internal static class DustParticleChecks
                 transitionMaximum.GetScale() == ScalableParticleOptionsBase.MAX_SCALE,
             "Scalable particle constructors must clamp values above the maximum scale.");
 
-        Require(DustParticleOptions.REDSTONE.Color == DustParticleOptions.REDSTONE_PARTICLE_COLOR &&
-                DustParticleOptions.REDSTONE.GetScale() == 1.0F,
-            "Dust options must expose the reference redstone color preset.");
     }
 
     private static JsonElement CreateOptionMap(

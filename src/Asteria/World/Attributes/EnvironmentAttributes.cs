@@ -20,13 +20,10 @@ public static class EnvironmentAttributes
     public static readonly EnvironmentAttribute<float> STAR_BRIGHTNESS = Float(0.0F, true, AttributeRange<float>.UnitFloat, true);
     public static readonly EnvironmentAttribute<float> SKY_LIGHT_FACTOR = Float(1.0F, true, AttributeRange<float>.UnitFloat, true);
     public static readonly EnvironmentAttribute<float> SKY_LIGHT_LEVEL = Float(15.0F, false, AttributeRange<float>.OfFloat(0.0F, 15.0F), true, false);
-    public static readonly EnvironmentAttribute<bool> CAN_START_RAID = Boolean(true);
     public static readonly EnvironmentAttribute<bool> WATER_EVAPORATES = Boolean(false, true);
     public static readonly EnvironmentAttribute<bool> FAST_LAVA = Boolean(false, true, false);
     public static readonly EnvironmentAttribute<bool> INCREASED_FIRE_BURNOUT = Boolean(false);
-    public static readonly EnvironmentAttribute<float> SURFACE_SLIME_SPAWN_CHANCE = Float(0.0F, false, AttributeRange<float>.UnitFloat);
     public static readonly EnvironmentAttribute<bool> MONSTERS_BURN = Boolean(false);
-    public static readonly EnvironmentAttribute<bool> CAN_PILLAGER_PATROL_SPAWN = Boolean(true);
     public static readonly EnvironmentAttribute<float> CREATURE_WORLD_GEN_SPAWN_PROBABILITY =
         Float(0.1F, false, AttributeRange<float>.UnitFloatEpsilon);
 
@@ -51,13 +48,10 @@ public static class EnvironmentAttributes
         Register("visual/star_brightness", STAR_BRIGHTNESS);
         Register("visual/sky_light_factor", SKY_LIGHT_FACTOR);
         Register("gameplay/sky_light_level", SKY_LIGHT_LEVEL);
-        Register("gameplay/can_start_raid", CAN_START_RAID);
         Register("gameplay/water_evaporates", WATER_EVAPORATES);
         Register("gameplay/fast_lava", FAST_LAVA);
         Register("gameplay/increased_fire_burnout", INCREASED_FIRE_BURNOUT);
-        Register("gameplay/surface_slime_spawn_chance", SURFACE_SLIME_SPAWN_CHANCE);
         Register("gameplay/monsters_burn", MONSTERS_BURN);
-        Register("gameplay/can_pillager_patrol_spawn", CAN_PILLAGER_PATROL_SPAWN);
         Register("gameplay/creature_world_gen_spawn_probability", CREATURE_WORLD_GEN_SPAWN_PROBABILITY);
         Register("visual/ambient_particles", AMBIENT_PARTICLES);
     }

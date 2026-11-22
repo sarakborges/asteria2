@@ -18,7 +18,7 @@ internal static class AmbientParticleChecks
     private static void CheckCodecRoundTrip()
     {
         DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
-        var source = new AmbientParticle(ParticleTypes.FIREFLY, 0.375F);
+        var source = new AmbientParticle(ParticleTypes.ASH, 0.375F);
         JsonElement encoded = AmbientParticle.CODEC.EncodeStart(ops, source).GetOrThrow();
 
         Require(ops.Get(encoded, "probability").GetOrThrow().GetSingle() == 0.375F,
@@ -26,7 +26,7 @@ internal static class AmbientParticleChecks
         IParticleOptions decodedParticle = ParticleTypes.CODEC.Parse(
             ops,
             ops.Get(encoded, "particle").GetOrThrow()).GetOrThrow();
-        Require(ReferenceEquals(decodedParticle, ParticleTypes.FIREFLY),
+        Require(ReferenceEquals(decodedParticle, ParticleTypes.ASH),
             "AmbientParticle codec must delegate its particle field to ParticleTypes.CODEC.");
 
         AmbientParticle decoded = AmbientParticle.CODEC.Parse(ops, encoded).GetOrThrow();
@@ -76,23 +76,23 @@ internal static class AmbientParticleChecks
 
     private static void CheckFactoryAndCrossFade()
     {
-        IReadOnlyList<AmbientParticle> singleton = AmbientParticle.Of(ParticleTypes.FIREFLY, 0.25F);
+        IReadOnlyList<AmbientParticle> singleton = AmbientParticle.Of(ParticleTypes.ASH, 0.25F);
         Require(singleton.Count == 1 &&
-                ReferenceEquals(singleton[0].Particle, ParticleTypes.FIREFLY) &&
+                ReferenceEquals(singleton[0].Particle, ParticleTypes.ASH) &&
                 singleton[0].Probability == 0.25F,
             "AmbientParticle.Of must return a single entry with the supplied particle and probability.");
 
         IReadOnlyList<AmbientParticle> from =
             new[] { new AmbientParticle(ParticleTypes.ASH, 0.8F) };
         IReadOnlyList<AmbientParticle> to =
-            new[] { new AmbientParticle(ParticleTypes.FIREFLY, 0.4F) };
+            new[] { new AmbientParticle(ParticleTypes.ASH, 0.4F) };
         IReadOnlyList<AmbientParticle> middle =
             AttributeTypes.AMBIENT_PARTICLES.KeyframeLerp.Apply(0.25F, from, to);
 
         Require(middle.Count == 2 &&
                 ReferenceEquals(middle[0].Particle, ParticleTypes.ASH) &&
                 Math.Abs(middle[0].Probability - 0.6F) < 0.000001F &&
-                ReferenceEquals(middle[1].Particle, ParticleTypes.FIREFLY) &&
+                ReferenceEquals(middle[1].Particle, ParticleTypes.ASH) &&
                 Math.Abs(middle[1].Probability - 0.1F) < 0.000001F,
             "Ambient particle cross-fade must preserve order and scale only probability.");
         Require(ReferenceEquals(AttributeTypes.AMBIENT_PARTICLES.KeyframeLerp.Apply(0.0F, from, to), from) &&

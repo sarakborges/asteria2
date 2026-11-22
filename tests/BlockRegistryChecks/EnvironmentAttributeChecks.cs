@@ -225,7 +225,7 @@ internal static class EnvironmentAttributeChecks
     {
         Require(BuiltInRegistries.EnvironmentAttribute.Location == ResourceLocation.Parse("asteria:environment_attribute"),
             "The environment-attribute registry must use the Asteria key.");
-        Require(BuiltInRegistries.EnvironmentAttribute.Count == 22,
+        Require(BuiltInRegistries.EnvironmentAttribute.Count == 19,
             "The registry must contain only generic environmental definitions within the product scope.");
         Require(ReferenceEquals(
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:visual/fog_end_distance")),
@@ -240,8 +240,11 @@ internal static class EnvironmentAttributeChecks
         Require(BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:audio/music_volume")) is null &&
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/eyeblossom_open")) is null &&
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/respawn_anchor_works")) is null &&
-                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:visual/default_dripstone_particle")) is null,
-            "Audio, bed and object-specific definitions must not enter the generic environment registry.");
+                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:visual/default_dripstone_particle")) is null &&
+                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/can_start_raid")) is null &&
+                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/surface_slime_spawn_chance")) is null &&
+                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/can_pillager_patrol_spawn")) is null,
+            "Audio, bed, raid/illager, slime and object-specific definitions must not enter the generic environment registry.");
         Require(EnvironmentAttributes.AMBIENT_PARTICLES.DefaultValue.Count == 0 &&
                 EnvironmentAttributes.AMBIENT_PARTICLES.IsSyncable &&
                 AttributeTypes.PARTICLE.ValueCodec is not null &&
@@ -258,10 +261,6 @@ internal static class EnvironmentAttributeChecks
             EnvironmentAttributes.SKY_LIGHT_LEVEL.ValueRange.IsValid(15.0F) &&
             !EnvironmentAttributes.SKY_LIGHT_LEVEL.ValueRange.IsValid(15.01F),
             "Sky light level must be non-positional, synchronized and bounded to [0, 15].");
-        Require(EnvironmentAttributes.CAN_START_RAID.DefaultValue &&
-            !EnvironmentAttributes.CAN_START_RAID.IsSyncable &&
-            EnvironmentAttributes.CAN_START_RAID.IsPositional,
-            "Can-start-raid must preserve its default-true positional unsynchronized definition.");
         Require(!EnvironmentAttributes.FAST_LAVA.IsPositional && EnvironmentAttributes.FAST_LAVA.IsSyncable,
             "Fast lava must be non-positional and syncable.");
     }

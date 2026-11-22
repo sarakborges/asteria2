@@ -210,7 +210,7 @@ internal static class Program
                 BuiltInRegistries.Item),
             "The root registry must resolve the item registry by its registry key.");
         Require(BuiltInRegistries.Block.Count == 1, "Only the production air block should be registered.");
-        Require(BuiltInRegistries.Item.Count == 2, "The partial built-in item registry must contain only air and stick.");
+        Require(BuiltInRegistries.Item.Count == 1, "The built-in item registry must contain only the air sentinel.");
         Require(BuiltInRegistries.Fluid.Count == 1, "Only the empty fluid should be registered.");
         Require(BuiltInRegistries.Biome.Count == 2, "The built-in biome registry must contain plains and desert.");
         Require(BuiltInRegistries.PositionSourceType.Count == 1, "The local position-source registry must contain only the block variant.");
