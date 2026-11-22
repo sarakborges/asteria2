@@ -15,6 +15,7 @@ public sealed class AttributeType<T> : IAttributeType
 
     public Type ValueType => typeof(T);
     public Codec<T>? ValueCodec { get; }
+    public Codec<IAttributeModifier<T>> ModifierCodec { get; }
     public IReadOnlyDictionary<AttributeOperationId, IAttributeModifier<T>> ModifierLibrary { get; }
     public LerpFunction<T> KeyframeLerp { get; }
     public LerpFunction<T> StateChangeLerp { get; }
@@ -35,6 +36,7 @@ public sealed class AttributeType<T> : IAttributeType
         ArgumentNullException.ThrowIfNull(modifierLibrary);
         ModifierLibrary = new ReadOnlyDictionary<AttributeOperationId, IAttributeModifier<T>>(
             new Dictionary<AttributeOperationId, IAttributeModifier<T>>(modifierLibrary));
+        ModifierCodec = CreateModifierCodec(ModifierLibrary);
         KeyframeLerp = keyframeLerp ?? throw new ArgumentNullException(nameof(keyframeLerp));
         StateChangeLerp = stateChangeLerp ?? throw new ArgumentNullException(nameof(stateChangeLerp));
         SpatialLerp = spatialLerp ?? throw new ArgumentNullException(nameof(spatialLerp));
@@ -76,6 +78,47 @@ public sealed class AttributeType<T> : IAttributeType
             LerpFunction<T>.OfStep(0.0F),
             null,
             null);
+
+    private static Codec<IAttributeModifier<T>> CreateModifierCodec(
+        IReadOnlyDictionary<AttributeOperationId, IAttributeModifier<T>> modifierLibrary)
+    {
+        var modifiers = new Dictionary<AttributeOperationId, IAttributeModifier<T>>
+        {
+            [AttributeOperationId.OVERRIDE] = AttributeModifiers.Override<T>()
+        };
+
+        foreach (KeyValuePair<AttributeOperationId, IAttributeModifier<T>> entry in modifierLibrary)
+        {
+            if (!modifiers.TryAdd(entry.Key, entry.Value))
+                throw new ArgumentException(
+                    $"Modifier operation {entry.Key.GetSerializedName()} is reserved.",
+                    nameof(modifierLibrary));
+        }
+
+        return Codecs.STRING.FlatXMap(
+            name =>
+            {
+                foreach (IAttributeModifier<T> modifier in modifiers.Values)
+                {
+                    if (modifier.GetSerializedName() == name)
+                        return DataResult<IAttributeModifier<T>>.Success(modifier);
+                }
+
+                return DataResult<IAttributeModifier<T>>.Error(
+                    $"Unknown modifier '{name}' for {typeof(T).Name}.");
+            },
+            modifier =>
+            {
+                foreach (KeyValuePair<AttributeOperationId, IAttributeModifier<T>> entry in modifiers)
+                {
+                    if (ReferenceEquals(entry.Value, modifier))
+                        return DataResult<string>.Success(entry.Key.GetSerializedName());
+                }
+
+                return DataResult<string>.Error(
+                    $"Unregistered modifier '{modifier.GetSerializedName()}' for {typeof(T).Name}.");
+            });
+    }
 
     public void CheckAllowedModifier(IAttributeModifier<T> modifier)
     {
