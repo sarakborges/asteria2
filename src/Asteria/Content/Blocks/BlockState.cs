@@ -70,6 +70,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public bool IsRandomlyTicking { get; private set; }
     public bool IgnitedByLava { get; }
     public bool IsLiquid { get; }
+    public PushReaction PistonPushReaction { get; }
     public bool IsReplaceable { get; }
     public bool ShouldSpawnTerrainParticles { get; }
     public bool IsSolidRender { get; private set; }
@@ -156,6 +157,8 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public BlockPos? GetPostProcessPos(BlockGetter level, BlockPos position) =>
         _postProcess(this, level, position);
 
+    public PushReaction GetPistonPushReaction() => PistonPushReaction;
+
     public VoxelShape GetCollisionShape(BlockGetter level, BlockPos position) =>
         _collisionShape ?? Block.GetCollisionShape(this, level, position);
 
@@ -197,6 +200,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         CanOcclude = properties.CanOccludeValue;
         IgnitedByLava = properties.IgnitedByLavaValue;
         IsLiquid = properties.IsLiquidValue;
+        PistonPushReaction = properties.PushReactionValue;
         IsReplaceable = properties.ReplaceableValue;
         ShouldSpawnTerrainParticles = properties.SpawnTerrainParticlesValue;
         UseShapeForLightOcclusion = Block.UseShapeForLightOcclusion(this);
