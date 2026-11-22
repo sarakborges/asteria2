@@ -2590,8 +2590,8 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
     private static ChunkSection CreateChunkSection(PalettedContainer<BlockState> states)
     {
-        BiomeContainerFactory biomeFactory = BiomeContainerFactory.CreateBuiltIn();
-        return new ChunkSection(states, biomeFactory.CreateForBiomes());
+        PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
+        return new ChunkSection(states, factory.CreateForBiomes());
     }
 
     private static (int X, int Y, int Z) BlockCoordinates(int index)
@@ -2827,7 +2827,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
 
     private static void CheckChunkSection()
     {
-        BlockStateContainerFactory sectionFactory = BlockStateContainerFactory.CreateBuiltIn();
+        PalettedContainerFactory sectionFactory = PalettedContainerFactory.CreateBuiltIn();
         var sectionWithSuppliedStrategy = new ChunkSection(
             sectionFactory.CreateForBlockStates(),
             sectionFactory.CreateForBiomes());
