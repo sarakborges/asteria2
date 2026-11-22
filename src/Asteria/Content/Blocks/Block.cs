@@ -116,6 +116,16 @@ public class Block
     public virtual VoxelShape GetInteractionShape(BlockState state, BlockGetter level, BlockPos position) =>
         Shapes.Empty();
 
+    protected virtual BlockState Rotate(BlockState state, Rotation rotation) => state;
+
+    protected virtual BlockState Mirror(BlockState state, Mirror mirror) => state;
+
+    internal BlockState RotateState(BlockState state, Rotation rotation) =>
+        Rotate(state, rotation);
+
+    internal BlockState MirrorState(BlockState state, Mirror mirror) =>
+        Mirror(state, mirror);
+
     public virtual VoxelShape GetOcclusionShape(BlockState state) =>
         state.GetShape(EmptyBlockGetter.Instance, BlockPos.Zero);
 
