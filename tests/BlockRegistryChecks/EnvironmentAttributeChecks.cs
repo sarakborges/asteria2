@@ -232,6 +232,64 @@ internal static class EnvironmentAttributeChecks
         JsonElement alphaEncoded = FloatModifier.ALPHA_BLEND.ArgumentCodec!.EncodeStart(ops, alpha).GetOrThrow();
         Require(FloatModifier.ALPHA_BLEND.ArgumentCodec.Parse(ops, alphaEncoded).GetOrThrow() == alpha,
             "Alpha-blend modifier arguments must preserve both value and alpha fields.");
+
+        Vector3 rgb = new(0.2F, 0.4F, 0.6F);
+        foreach (AttributeModifier<Vector3, Vector3> modifier in new[]
+        {
+            ColorModifier.ADD_RGB, ColorModifier.SUBTRACT_RGB, ColorModifier.MULTIPLY_RGB
+        })
+        {
+            JsonElement encoded = modifier.ArgumentCodec!.EncodeStart(ops, rgb).GetOrThrow();
+            Require(modifier.ArgumentCodec.Parse(ops, encoded).GetOrThrow() == rgb,
+                "RGB vector modifier arguments must round-trip through their declared codecs.");
+        }
+
+        Vector4 argb = new(0.2F, 0.4F, 0.6F, 0.8F);
+        foreach (AttributeModifier<Vector3, Vector4> modifier in new[] { ColorModifier.ALPHA_BLEND_RGB })
+        {
+            JsonElement encoded = modifier.ArgumentCodec!.EncodeStart(ops, argb).GetOrThrow();
+            Require(modifier.ArgumentCodec.Parse(ops, encoded).GetOrThrow() == argb,
+                "RGB alpha-blend arguments must preserve all four source channels.");
+        }
+
+        foreach (AttributeModifier<Vector4, Vector4> modifier in new[]
+        {
+            ColorModifier.ALPHA_BLEND_ARGB, ColorModifier.MULTIPLY_ARGB
+        })
+        {
+            JsonElement encoded = modifier.ArgumentCodec!.EncodeStart(ops, argb).GetOrThrow();
+            Require(modifier.ArgumentCodec.Parse(ops, encoded).GetOrThrow() == argb,
+                "ARGB vector modifier arguments must round-trip through their declared codecs.");
+        }
+
+        foreach (AttributeModifier<Vector4, Vector3> modifier in new[]
+        {
+            ColorModifier.ADD_ARGB, ColorModifier.SUBTRACT_ARGB
+        })
+        {
+            JsonElement encoded = modifier.ArgumentCodec!.EncodeStart(ops, rgb).GetOrThrow();
+            Require(modifier.ArgumentCodec.Parse(ops, encoded).GetOrThrow() == rgb,
+                "ARGB RGB-channel modifier arguments must preserve all three channels.");
+        }
+
+        BlendToGray blendToGray = new(0.75F, 0.4F);
+        foreach (AttributeModifier<Vector3, BlendToGray> modifier in new[] { ColorModifier.BLEND_TO_GRAY_RGB })
+        {
+            JsonElement encoded = modifier.ArgumentCodec!.EncodeStart(ops, blendToGray).GetOrThrow();
+            Require(modifier.ArgumentCodec.Parse(ops, encoded).GetOrThrow() == blendToGray,
+                "RGB blend-to-gray arguments must preserve brightness and factor.");
+        }
+
+        foreach (AttributeModifier<Vector4, BlendToGray> modifier in new[] { ColorModifier.BLEND_TO_GRAY_ARGB })
+        {
+            JsonElement encoded = modifier.ArgumentCodec!.EncodeStart(ops, blendToGray).GetOrThrow();
+            Require(modifier.ArgumentCodec.Parse(ops, encoded).GetOrThrow() == blendToGray,
+                "ARGB blend-to-gray arguments must preserve brightness and factor.");
+        }
+
+        Require(!ExtraCodecs.VECTOR3F.Parse(ops, JsonDocument.Parse("[0.1, 0.2]").RootElement).IsSuccess &&
+                !ExtraCodecs.VECTOR4F.Parse(ops, JsonDocument.Parse("[0.1, 0.2, 0.3]").RootElement).IsSuccess,
+            "Color modifier codecs must reject vectors with the wrong number of channels.");
     }
 
     private static void CheckEnvironmentAttributeResolution()
