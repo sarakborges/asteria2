@@ -228,7 +228,7 @@ internal static class BlockPositionTransformChecks
             "Block emissive rendering must be disabled by default.");
         Require(state.GetShadeBrightness(EmptyBlockGetter.Instance, BlockPos.Zero) == 1.0f,
             "Block shade brightness must be one for a non-full collision shape.");
-        Require(!state.HasOffsetFunction && state.GetOffset(new BlockPos(10, 20, -20)).Equals(Vec3.Zero),
+        Require(!state.HasOffsetFunction && state.GetOffset(new BlockPos(10, 20, -20)).Equals(Vec3.ZERO),
             "A block state without an offset function must return Vec3.ZERO.");
         Require(Mth.GetSeed(10, 0, -20) == 25548880278638L,
             "Mth.GetSeed must preserve Java's 32-bit coordinate product and signed 64-bit overflow behavior.");
