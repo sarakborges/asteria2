@@ -227,6 +227,102 @@ public class BlockPos : Vec3i
             Math.Max(first.GetZ(), second.GetZ()));
     }
 
+    /// <summary>
+    /// Enumerates the integer corners of a box in movement order. The innermost
+    /// traversal axis follows the 26.3 axis-step ordering.
+    /// </summary>
+    public static IEnumerable<BlockPos> BetweenCornersInDirection(AABB bounds, Vec3 direction)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentNullException.ThrowIfNull(direction);
+
+        return BetweenCornersInDirection(
+            Mth.Floor(bounds.MinX),
+            Mth.Floor(bounds.MinY),
+            Mth.Floor(bounds.MinZ),
+            Mth.Floor(bounds.MaxX),
+            Mth.Floor(bounds.MaxY),
+            Mth.Floor(bounds.MaxZ),
+            direction);
+    }
+
+    public static IEnumerable<BlockPos> BetweenCornersInDirection(
+        int firstCornerX,
+        int firstCornerY,
+        int firstCornerZ,
+        int secondCornerX,
+        int secondCornerY,
+        int secondCornerZ,
+        Vec3 direction)
+    {
+        ArgumentNullException.ThrowIfNull(direction);
+
+        int minCornerX = Math.Min(firstCornerX, secondCornerX);
+        int minCornerY = Math.Min(firstCornerY, secondCornerY);
+        int minCornerZ = Math.Min(firstCornerZ, secondCornerZ);
+        int maxCornerX = Math.Max(firstCornerX, secondCornerX);
+        int maxCornerY = Math.Max(firstCornerY, secondCornerY);
+        int maxCornerZ = Math.Max(firstCornerZ, secondCornerZ);
+
+        int diffX = maxCornerX - minCornerX;
+        int diffY = maxCornerY - minCornerY;
+        int diffZ = maxCornerZ - minCornerZ;
+
+        int startCornerX = direction.X >= 0.0 ? minCornerX : maxCornerX;
+        int startCornerY = direction.Y >= 0.0 ? minCornerY : maxCornerY;
+        int startCornerZ = direction.Z >= 0.0 ? minCornerZ : maxCornerZ;
+
+        Direction.Axis[] axes = Math.Abs(direction.X) < Math.Abs(direction.Z)
+            ? new[] { Direction.Axis.Y, Direction.Axis.Z, Direction.Axis.X }
+            : new[] { Direction.Axis.Y, Direction.Axis.X, Direction.Axis.Z };
+
+        Direction.Axis firstVisitAxis = axes[0];
+        Direction.Axis secondVisitAxis = axes[1];
+        Direction.Axis thirdVisitAxis = axes[2];
+
+        Direction firstVisitDirection = direction.Get(firstVisitAxis) >= 0.0
+            ? firstVisitAxis.GetPositive()
+            : firstVisitAxis.GetNegative();
+        Direction secondVisitDirection = direction.Get(secondVisitAxis) >= 0.0
+            ? secondVisitAxis.GetPositive()
+            : secondVisitAxis.GetNegative();
+        Direction thirdVisitDirection = direction.Get(thirdVisitAxis) >= 0.0
+            ? thirdVisitAxis.GetPositive()
+            : thirdVisitAxis.GetNegative();
+
+        int firstMax = firstVisitAxis.Choose(diffX, diffY, diffZ);
+        int secondMax = secondVisitAxis.Choose(diffX, diffY, diffZ);
+        int thirdMax = thirdVisitAxis.Choose(diffX, diffY, diffZ);
+
+        int firstDirX = firstVisitDirection.GetStepX();
+        int firstDirY = firstVisitDirection.GetStepY();
+        int firstDirZ = firstVisitDirection.GetStepZ();
+        int secondDirX = secondVisitDirection.GetStepX();
+        int secondDirY = secondVisitDirection.GetStepY();
+        int secondDirZ = secondVisitDirection.GetStepZ();
+        int thirdDirX = thirdVisitDirection.GetStepX();
+        int thirdDirY = thirdVisitDirection.GetStepY();
+        int thirdDirZ = thirdVisitDirection.GetStepZ();
+
+        var cursor = new MutableBlockPos();
+        for (int firstIndex = 0; firstIndex <= firstMax; firstIndex++)
+        {
+            for (int secondIndex = 0; secondIndex <= secondMax; secondIndex++)
+            {
+                for (int thirdIndex = 0; thirdIndex <= thirdMax; thirdIndex++)
+                {
+                    yield return cursor.Set(
+                        startCornerX + firstDirX * firstIndex +
+                            secondDirX * secondIndex + thirdDirX * thirdIndex,
+                        startCornerY + firstDirY * firstIndex +
+                            secondDirY * secondIndex + thirdDirY * thirdIndex,
+                        startCornerZ + firstDirZ * firstIndex +
+                            secondDirZ * secondIndex + thirdDirZ * thirdIndex);
+                }
+            }
+        }
+    }
+
     private static int FloorToInt(double value)
     {
         if (double.IsNaN(value))
