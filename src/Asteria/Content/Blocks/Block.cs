@@ -116,6 +116,16 @@ public class Block
     public virtual VoxelShape GetInteractionShape(BlockState state, BlockGetter level, BlockPos position) =>
         Shapes.Empty();
 
+    protected virtual bool HasAnalogOutputSignal(BlockState state) => false;
+
+    protected virtual bool IsSignalSource(BlockState state) => false;
+
+    internal bool HasAnalogOutputSignalForState(BlockState state) =>
+        HasAnalogOutputSignal(state);
+
+    internal bool IsSignalSourceForState(BlockState state) =>
+        IsSignalSource(state);
+
     protected virtual BlockState Rotate(BlockState state, Rotation rotation) => state;
 
     protected virtual BlockState Mirror(BlockState state, Mirror mirror) => state;
