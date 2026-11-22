@@ -335,6 +335,12 @@ internal static class ChunkChecks
         section.SetBlockState(1, aboveFluid.GetY() & 15, 4, Blocks.STONE.DefaultState);
 
         Require(
+            Blocks.STONE.DefaultState.IsCollisionShapeFullBlock(getter, aboveFluid),
+            "A full static collision shape must be cached as a full block.");
+        Require(
+            !Blocks.AIR.DefaultState.IsCollisionShapeFullBlock(getter, new BlockPos(0, 8, 0)),
+            "An empty static collision shape must be cached as not full.");
+        Require(
             Blocks.STONE.DefaultState.IsFaceSturdy(getter, aboveFluid, Direction.DOWN),
             "A full stone face must provide full support.");
         Require(
@@ -362,6 +368,10 @@ internal static class ChunkChecks
                 new BlockPos(5, 8, 4),
                 Direction.DOWN),
             "Dynamic block support must not reuse a cached face result at another position.");
+        Require(
+            dynamicSupportBlock.DefaultState.IsCollisionShapeFullBlock(getter, new BlockPos(4, 8, 4)) &&
+            !dynamicSupportBlock.DefaultState.IsCollisionShapeFullBlock(getter, new BlockPos(5, 8, 4)),
+            "Dynamic full-collision queries must evaluate the shape at each requested position.");
         Require(
             sourceFluidState.GetHeightForCamera(getter, fluidPosition) == 1.0f,
             "A source fluid directly below a sturdy upper face must use full camera height.");
