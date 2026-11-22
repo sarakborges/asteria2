@@ -56,6 +56,13 @@ public static class Mth
     public static int Sign(double value) =>
         value == 0.0 ? 0 : value > 0.0 ? 1 : -1;
 
+    public static long GetSeed(int x, int y, int z)
+    {
+        long seed = unchecked((long)(x * 3129871) ^ (long)z * 116129781L ^ y);
+        seed = unchecked(seed * seed * 42317861L + seed * 11L);
+        return seed >> 16;
+    }
+
     public static double Square(double value) => value * value;
 
     public static double Clamp(double value, double minimum, double maximum) =>
