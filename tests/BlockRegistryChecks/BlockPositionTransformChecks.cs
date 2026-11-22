@@ -243,7 +243,7 @@ internal static class BlockPositionTransformChecks
         Require(state.PistonPushReaction == PushReaction.PUSH_PULL &&
                 state.GetPistonPushReaction() == PushReaction.PUSH_PULL,
             "Block states must use PUSH_PULL as the default piston reaction and expose its source getter.");
-        Require(BlockProperties.Of().PushReaction(PushReaction.IGNORE).PushReactionValue == PushReaction.IGNORE,
+        Require(BlockProperties.Of().PushReaction(PushReaction.IGNORE_ENTITY).PushReactionValue == PushReaction.IGNORE_ENTITY,
             "Block properties must retain a configured piston push reaction.");
 
         bool customSuffocatingPredicate = BlockProperties.Of()
