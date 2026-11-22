@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Asteria.Content.Blocks;
+using Asteria.Content.Fluids;
 using Asteria.Core;
 using Asteria.World;
 
@@ -8,7 +9,7 @@ namespace Asteria.Content.Chunks;
 /// <summary>
 /// Shared chunk storage and heightmap state.
 /// </summary>
-public abstract class ChunkAccess : LevelHeightAccessor
+public abstract class ChunkAccess : BlockGetter
 {
     public const int NoFilledSection = -1;
 
@@ -67,33 +68,9 @@ public abstract class ChunkAccess : LevelHeightAccessor
 
     public ChunkPos GetPos() => _chunkPos;
 
-    /// <summary>
-    /// Returns the block state at a world position using the same section selection and
-    /// local-coordinate masking as LevelChunk.getBlockState.
-    /// </summary>
-    public BlockState GetBlockState(BlockPos position)
-    {
-        ArgumentNullException.ThrowIfNull(position);
+    public abstract BlockState GetBlockState(BlockPos position);
 
-        int x = position.GetX();
-        int y = position.GetY();
-        int z = position.GetZ();
-        int sectionIndex = GetSectionIndex(y);
-
-        if (sectionIndex >= 0 && sectionIndex < _sections.Length)
-        {
-            ChunkSection currentSection = _sections[sectionIndex];
-            if (!currentSection.HasOnlyAir)
-            {
-                return currentSection.GetBlockState(
-                    x & SectionPos.SectionMask,
-                    y & SectionPos.SectionMask,
-                    z & SectionPos.SectionMask);
-            }
-        }
-
-        return global::Asteria.Content.Blocks.Blocks.AIR.DefaultState;
-    }
+    public abstract FluidState GetFluidState(BlockPos position);
 
     /// <summary>
     /// Returns the backing array, matching ChunkAccess.getSections().
