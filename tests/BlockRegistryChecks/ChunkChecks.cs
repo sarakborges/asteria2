@@ -23,6 +23,7 @@ internal static class ChunkChecks
         CheckBlockGetterContract(fluidState);
         CheckBlockGetterDefaultMethods(nonAirState);
         CheckBlockGetterTraversal();
+        CheckBlockGetterLineQueries();
         CheckChunkBiomeAccess();
         CheckChunkSkyLightSources(nonAirState);
         CheckChunkBlockScanning(nonAirState);
@@ -198,6 +199,49 @@ internal static class ChunkChecks
         Require(
             Mth.Frac(-0.25) == 0.75 && Mth.Frac(2.25) == 0.25,
             "Mth.Frac must return the fractional part using floor semantics for negative coordinates.");
+    }
+
+    private static void CheckBlockGetterLineQueries()
+    {
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        var chunk = new TestChunkAccess(
+            new ChunkPos(0, 0),
+            height,
+            PalettedContainerFactory.CreateBuiltIn());
+        BlockPos targetPosition = new(2, 7, 4);
+        chunk.GetSection(chunk.GetSectionIndex(targetPosition.GetY()))
+            .SetBlockState(2, 7, 4, Blocks.STONE.DefaultState);
+
+        var from = new Vec3(0.5, 7.5, 4.5);
+        var to = new Vec3(4.5, 7.5, 4.5);
+        BlockHitResult hit = chunk.IsBlockInLine(
+            new ClipBlockStateContext(from, to, state => ReferenceEquals(state, Blocks.STONE.DefaultState)));
+
+        Require(
+            hit.GetHitType() == HitResult.Type.BLOCK &&
+            hit.GetLocation().Equals(to) &&
+            hit.GetDirection() == Direction.WEST &&
+            hit.GetBlockPos().Equals(BlockPos.Containing(to.X, to.Y, to.Z)),
+            "BlockGetter line queries must return the endpoint, opposite ray direction and endpoint block position for a matching state.");
+
+        BlockHitResult miss = chunk.IsBlockInLine(
+            new ClipBlockStateContext(from, to, state => false));
+        Require(
+            miss.GetHitType() == HitResult.Type.MISS &&
+            miss.GetLocation().Equals(to) &&
+            miss.GetDirection() == Direction.WEST,
+            "BlockGetter line queries must return a miss result when no state matches the predicate.");
+
+        BlockHitResult? shapeHit = chunk.ClipWithInteractionOverride(
+            from,
+            to,
+            targetPosition,
+            Blocks.STONE.DefaultState.GetCollisionShape(chunk, targetPosition),
+            Blocks.STONE.DefaultState);
+        Require(
+            shapeHit is not null &&
+            shapeHit.GetBlockPos().Equals(targetPosition),
+            "ClipWithInteractionOverride must preserve the collision-shape hit when the interaction shape is empty.");
     }
 
     private static void CheckChunkBiomeAccess()
