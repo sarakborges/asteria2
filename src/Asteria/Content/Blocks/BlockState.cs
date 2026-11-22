@@ -105,6 +105,21 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public bool IsSignalSource() =>
         Block.IsSignalSourceForState(this);
 
+    public bool ShouldRedstoneWireConnectTo(
+        BlockGetter level,
+        BlockPos position,
+        Direction? direction) =>
+        Block.ShouldRedstoneWireConnectToForState(this, level, position, direction);
+
+    public int GetSignal(BlockGetter level, BlockPos position, Direction direction) =>
+        Block.GetSignalForState(this, level, position, direction);
+
+    public int GetOwnSignal(BlockGetter level, BlockPos position) =>
+        Block.OwnSignalForState(this, level, position);
+
+    public int GetDirectSignal(BlockGetter level, BlockPos position, Direction direction) =>
+        Block.GetDirectSignalForState(this, level, position, direction);
+
     public int GetLightDampening() => LightDampening;
 
     public VoxelShape GetCollisionShape(BlockGetter level, BlockPos position) =>
