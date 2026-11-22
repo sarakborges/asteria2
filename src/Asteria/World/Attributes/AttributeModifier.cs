@@ -57,6 +57,7 @@ public abstract class AttributeModifier<TSubject, TArgument> : IAttributeModifie
 {
     public abstract AttributeOperationId OperationId { get; }
     public abstract string GetSerializedName();
+    public virtual Codec<TArgument>? ArgumentCodec => null;
     public abstract TSubject Apply(TSubject subject, TArgument argument);
     public abstract LerpFunction<TArgument> ArgumentKeyframeLerp(
         EnvironmentAttribute<TSubject> attribute);
