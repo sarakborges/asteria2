@@ -305,6 +305,22 @@ internal static class EnvironmentAttributeChecks
                 ReferenceEquals(particlesDecoded[0].Particle, ParticleTypes.ASH) &&
                 particlesDecoded[0].Probability == 0.35F,
             "Ambient-particle append arguments must round-trip through the element codec.");
+
+        foreach (IAttributeModifier<float> modifier in AttributeTypes.FLOAT.ModifierLibrary.Values
+            .Prepend(AttributeModifiers.Override<float>()))
+        {
+            JsonElement encoded = AttributeTypes.FLOAT.ModifierCodec.EncodeStart(ops, modifier).GetOrThrow();
+            Require(ReferenceEquals(
+                    AttributeTypes.FLOAT.ModifierCodec.Parse(ops, encoded).GetOrThrow(),
+                    modifier),
+                "Attribute modifier dispatch must round-trip each registered float operation by serialized name.");
+        }
+
+        Require(AttributeTypes.FLOAT.ModifierCodec.EncodeStart(
+                    ops, AttributeModifiers.Override<float>()).GetOrThrow().GetString() == "override" &&
+                !AttributeTypes.FLOAT.ModifierCodec.Parse(
+                    ops, JsonDocument.Parse("\"unknown\"").RootElement).IsSuccess,
+            "Modifier dispatch must include override and reject unknown operation names.");
     }
 
     private static void CheckEnvironmentAttributeResolution()
