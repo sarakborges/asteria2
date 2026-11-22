@@ -15,7 +15,7 @@ public class BlockPos : Vec3i
                 ? DataResult<BlockPos>.Success(new BlockPos(values[0], values[1], values[2]))
                 : DataResult<BlockPos>.Error(() => "Input is not a list of 3 elements"),
             static position => DataResult<IReadOnlyList<int>>.Success(
-                new[] { position.GetX(), position.GetY(), position.GetZ() }));
+                new[] { position.GetX(), position.GetY(), position.GetZ() })).WithLifecycle(Lifecycle.Stable());
 
     public const int PackedHorizontalLength = 26;
     public const int PackedYLength = 12;
