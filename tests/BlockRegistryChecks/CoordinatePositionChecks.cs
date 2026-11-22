@@ -175,8 +175,17 @@ internal static class CoordinatePositionChecks
         Require(
             BlockPos.SpiralAround(origin, 0, Direction.EAST, Direction.NORTH).Count() == 1,
             "BlockPos spiral traversal with radius zero must yield only the center.");
-        RequireThrows<InvalidOperationException>(
-            () => BlockPos.SpiralAround(origin, 1, Direction.EAST, Direction.WEST).GetEnumerator(),
+        bool rejectedSameAxisSpiral = false;
+        try
+        {
+            _ = BlockPos.SpiralAround(origin, 1, Direction.EAST, Direction.WEST);
+        }
+        catch (InvalidOperationException)
+        {
+            rejectedSameAxisSpiral = true;
+        }
+        Require(
+            rejectedSameAxisSpiral,
             "BlockPos spiral traversal must reject directions on the same axis.");
 
         var graph = new Dictionary<long, BlockPos[]>
