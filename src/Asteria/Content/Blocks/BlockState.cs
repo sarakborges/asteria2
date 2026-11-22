@@ -91,6 +91,16 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public VoxelShape GetInteractionShape(BlockGetter level, BlockPos position) =>
         Block.GetInteractionShape(this, level, position);
 
+    public bool IsFaceSturdy(BlockGetter level, BlockPos position, Direction direction) =>
+        IsFaceSturdy(level, position, direction, SupportType.Full);
+
+    public bool IsFaceSturdy(
+        BlockGetter level,
+        BlockPos position,
+        Direction direction,
+        SupportType supportType) =>
+        supportType.IsSupporting(this, level, position, direction);
+
     public bool HasLargeCollisionShape => _collisionShape is null || _hasLargeCollisionShape;
 
     internal BlockState(StateDefinition definition, object[] values)
