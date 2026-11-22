@@ -349,6 +349,19 @@ internal static class ChunkChecks
             !Blocks.AIR.DefaultState.IsFaceSturdy(getter, airPosition, Direction.DOWN, SupportType.Rigid),
             "Air must not provide full, center or rigid face support.");
 
+        var dynamicSupportBlock = new DynamicSupportBlock();
+        Require(
+            dynamicSupportBlock.DefaultState.IsFaceSturdy(
+                getter,
+                new BlockPos(4, 8, 4),
+                Direction.DOWN),
+            "Dynamic block support must evaluate a full shape at the queried position.");
+        Require(
+            !dynamicSupportBlock.DefaultState.IsFaceSturdy(
+                getter,
+                new BlockPos(5, 8, 4),
+                Direction.DOWN),
+            "Dynamic block support must not reuse a cached face result at another position.");
         Require(
             sourceFluidState.GetHeightForCamera(getter, fluidPosition) == 1.0f,
             "A source fluid directly below a sturdy upper face must use full camera height.");
@@ -891,6 +904,21 @@ internal static class ChunkChecks
         }
 
         public override FluidState GetFluidState(BlockState state) => _fluidState;
+    }
+
+    private sealed class DynamicSupportBlock : Block
+    {
+        public DynamicSupportBlock()
+            : base(BlockProperties.Of().DynamicShape(), createIntrusiveRegistryHolder: false)
+        {
+            InitializeStateCaches();
+        }
+
+        public override VoxelShape GetCollisionShape(
+            BlockState state,
+            BlockGetter level,
+            BlockPos position) =>
+            position.GetX() == 4 ? Shapes.Block() : Shapes.Empty();
     }
 
     private sealed class TestChunkAccess : ChunkAccess
