@@ -3,6 +3,7 @@ using Asteria.Content.Blocks;
 using Asteria.Core;
 using Asteria.Core.Mathematics;
 using Asteria.Serialization;
+using Asteria.World;
 using Asteria.World.LevelGen;
 
 internal static class BlockPositionTransformChecks
