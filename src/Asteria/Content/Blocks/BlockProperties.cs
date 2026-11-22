@@ -26,6 +26,8 @@ public sealed class BlockProperties
     public Func<BlockState, int> LightEmissionValue { get; private set; } = static _ => 0;
     public Func<BlockState, bool> EmissiveRenderingValue { get; private set; } = static _ => false;
 
+    public Func<BlockState, BlockPos, Vec3>? OffsetFunctionValue { get; private set; }
+
     private BlockProperties()
     {
     }
@@ -113,6 +115,41 @@ public sealed class BlockProperties
         EmissiveRenderingValue = emissiveRendering ??
             throw new ArgumentNullException(nameof(emissiveRendering));
         return this;
+    }
+
+    public BlockProperties OffsetType(global::Asteria.Content.Blocks.OffsetType offsetType)
+    {
+        OffsetFunctionValue = offsetType switch
+        {
+            global::Asteria.Content.Blocks.OffsetType.NONE => null,
+            global::Asteria.Content.Blocks.OffsetType.XZ => CalculateHorizontalOffset,
+            global::Asteria.Content.Blocks.OffsetType.XYZ => CalculateThreeAxisOffset,
+            _ => throw new ArgumentOutOfRangeException(nameof(offsetType))
+        };
+        return this;
+    }
+
+    private static Vec3 CalculateHorizontalOffset(BlockState state, BlockPos position)
+    {
+        long seed = Mth.GetSeed(position.GetX(), 0, position.GetZ());
+        float maxHorizontalOffset = state.Block.GetMaxHorizontalOffsetForState();
+        float xFraction = (float)(seed & 0xFL) / 15.0f;
+        float zFraction = (float)(seed >> 8 & 0xFL) / 15.0f;
+        double x = Mth.Clamp(((double)xFraction - 0.5) * 0.5,
+            -maxHorizontalOffset, maxHorizontalOffset);
+        double z = Mth.Clamp(((double)zFraction - 0.5) * 0.5,
+            -maxHorizontalOffset, maxHorizontalOffset);
+        return new Vec3(x, 0.0, z);
+    }
+
+    private static Vec3 CalculateThreeAxisOffset(BlockState state, BlockPos position)
+    {
+        long seed = Mth.GetSeed(position.GetX(), 0, position.GetZ());
+        float maxVerticalOffset = state.Block.GetMaxVerticalOffsetForState();
+        Vec3 horizontal = CalculateHorizontalOffset(state, position);
+        float yFraction = (float)(seed >> 4 & 0xFL) / 15.0f;
+        double y = ((double)yFraction - 1.0) * maxVerticalOffset;
+        return new Vec3(horizontal.X, y, horizontal.Z);
     }
 
     public BlockProperties DynamicShape()
