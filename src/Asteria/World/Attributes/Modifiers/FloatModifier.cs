@@ -1,8 +1,17 @@
 using System.Collections.ObjectModel;
+using Asteria.Serialization;
 
 namespace Asteria.World.Attributes.Modifiers;
 
-public readonly record struct FloatWithAlpha(float Value, float Alpha);
+public readonly record struct FloatWithAlpha(float Value, float Alpha)
+{
+    public static readonly Codec<FloatWithAlpha> CODEC =
+        RecordCodecBuilder.Create<FloatWithAlpha>(instance =>
+            instance.Group(
+                Codecs.FLOAT.FieldOf("value").ForGetter(static value => value.Value),
+                Codecs.FLOAT.FieldOf("alpha").ForGetter(static value => value.Alpha))
+            .Apply(instance, static (value, alpha) => new FloatWithAlpha(value, alpha)));
+}
 
 public static class FloatModifier
 {
