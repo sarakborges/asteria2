@@ -1,5 +1,6 @@
 using Asteria.Content.Registries;
 using Asteria.Serialization;
+using Asteria.World.LevelGen;
 
 namespace Asteria.Core;
 
@@ -148,6 +149,17 @@ public class BlockPos : Vec3i
 
     public override BlockPos East(int steps) => Offset(steps, 0, 0);
 
+    public BlockPos Relative(Direction direction) => Relative(direction, 1);
+
+    public BlockPos Relative(Direction direction, int steps)
+    {
+        ArgumentNullException.ThrowIfNull(direction);
+        return Offset(
+            unchecked(direction.GetStepX() * steps),
+            unchecked(direction.GetStepY() * steps),
+            unchecked(direction.GetStepZ() * steps));
+    }
+
     public override BlockPos Relative(Axis axis, int steps) =>
         steps == 0
             ? this
@@ -171,6 +183,25 @@ public class BlockPos : Vec3i
 
     public BlockPos AtY(int y) =>
         new(GetX(), y, GetZ());
+
+    public Vec3 ClampLocationWithin(Vec3 location)
+    {
+        ArgumentNullException.ThrowIfNull(location);
+
+        return new Vec3(
+            Mth.Clamp(
+                location.X,
+                (double)((float)GetX() + 1.0E-5f),
+                (double)GetX() + 1.0 - 1.0E-5),
+            Mth.Clamp(
+                location.Y,
+                (double)((float)GetY() + 1.0E-5f),
+                (double)GetY() + 1.0 - 1.0E-5),
+            Mth.Clamp(
+                location.Z,
+                (double)((float)GetZ() + 1.0E-5f),
+                (double)GetZ() + 1.0 - 1.0E-5));
+    }
 
     public virtual BlockPos Immutable() => this;
 
@@ -213,6 +244,58 @@ public class BlockPos : Vec3i
         }
     }
 
+
+
+    public static IEnumerable<BlockPos> RandomInCube(
+        IRandomSource random,
+        int limit,
+        BlockPos center,
+        int sizeToScanInAllDirections)
+    {
+        ArgumentNullException.ThrowIfNull(center);
+        return RandomBetweenClosed(
+            random,
+            limit,
+            unchecked(center.GetX() - sizeToScanInAllDirections),
+            unchecked(center.GetY() - sizeToScanInAllDirections),
+            unchecked(center.GetZ() - sizeToScanInAllDirections),
+            unchecked(center.GetX() + sizeToScanInAllDirections),
+            unchecked(center.GetY() + sizeToScanInAllDirections),
+            unchecked(center.GetZ() + sizeToScanInAllDirections));
+    }
+
+    public static IEnumerable<BlockPos> RandomBetweenClosed(
+        IRandomSource random,
+        int limit,
+        int minX,
+        int minY,
+        int minZ,
+        int maxX,
+        int maxY,
+        int maxZ)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+
+        int width = unchecked(maxX - minX + 1);
+        int height = unchecked(maxY - minY + 1);
+        int depth = unchecked(maxZ - minZ + 1);
+
+        return Enumerate();
+
+        IEnumerable<BlockPos> Enumerate()
+        {
+            var cursor = new MutableBlockPos();
+            int counter = limit;
+            while (counter > 0)
+            {
+                int x = unchecked(minX + random.NextInt(width));
+                int y = unchecked(minY + random.NextInt(height));
+                int z = unchecked(minZ + random.NextInt(depth));
+                counter--;
+                yield return cursor.Set(x, y, z);
+            }
+        }
+    }
 
     public static IEnumerable<BlockPos> WithinManhattan(BlockPos origin, int reach)
     {
@@ -656,6 +739,16 @@ public class BlockPos : Vec3i
         public MutableBlockPos Set(long packedPosition) =>
             Set(GetX(packedPosition), GetY(packedPosition), GetZ(packedPosition));
 
+        public MutableBlockPos SetWithOffset(Vec3i position, Direction direction)
+        {
+            ArgumentNullException.ThrowIfNull(position);
+            ArgumentNullException.ThrowIfNull(direction);
+            return Set(
+                unchecked(position.GetX() + direction.GetStepX()),
+                unchecked(position.GetY() + direction.GetStepY()),
+                unchecked(position.GetZ() + direction.GetStepZ()));
+        }
+
         public MutableBlockPos SetWithOffset(Vec3i position, int x, int y, int z)
         {
             ArgumentNullException.ThrowIfNull(position);
@@ -669,6 +762,17 @@ public class BlockPos : Vec3i
         {
             ArgumentNullException.ThrowIfNull(offset);
             return SetWithOffset(position, offset.GetX(), offset.GetY(), offset.GetZ());
+        }
+
+        public MutableBlockPos Move(Direction direction) => Move(direction, 1);
+
+        public MutableBlockPos Move(Direction direction, int steps)
+        {
+            ArgumentNullException.ThrowIfNull(direction);
+            return Move(
+                unchecked(direction.GetStepX() * steps),
+                unchecked(direction.GetStepY() * steps),
+                unchecked(direction.GetStepZ() * steps));
         }
 
         public MutableBlockPos Move(int x, int y, int z) =>
