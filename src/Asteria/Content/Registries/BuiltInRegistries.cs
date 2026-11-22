@@ -1,9 +1,11 @@
 using Block = Asteria.Content.Blocks.Block;
 using Biome = Asteria.Content.Biomes.Biome;
+using Item = Asteria.Content.Items.Item;
 using Asteria.Content.Blocks;
 using Asteria.Content.Particles;
 using BuiltInBlocks = Asteria.Content.Blocks.Blocks;
 using BuiltInBiomes = Asteria.Content.Biomes.Biomes;
+using BuiltInItems = Asteria.Content.Items.Items;
 using BuiltInAttributeTypes = Asteria.World.Attributes.AttributeTypes;
 using BuiltInEnvironmentAttributes = Asteria.World.Attributes.EnvironmentAttributes;
 using Asteria.Content.Fluids;
@@ -36,6 +38,12 @@ public static class BuiltInRegistries
             ResourceLocation.FromNamespaceAndPath("asteria", "fluid"),
             FluidIds.EMPTY,
             static () => BuiltInFluids.RegisterAll());
+
+    public static DefaultedRegistry<Item> Item { get; } =
+        RegisterDefaultedWithIntrusiveHolders<Item>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "item"),
+            ResourceLocation.FromNamespaceAndPath("asteria", "air"),
+            static () => BuiltInItems.RegisterAll());
 
     public static DefaultedRegistry<Biome> Biome { get; } =
         RegisterDefaultedWithIntrusiveHolders<Biome>(

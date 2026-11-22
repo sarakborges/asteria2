@@ -21,6 +21,7 @@ internal static class ParticleChecks
         CheckTrailParticleOptionCodec();
         DustParticleChecks.Run();
         BlockParticleChecks.Run();
+        ItemParticleChecks.Run();
         CheckByNameCodecFailures();
     }
 
@@ -30,8 +31,8 @@ internal static class ParticleChecks
 
         Require(registry.IsFrozen,
             "The particle type registry must be frozen after built-in bootstrap.");
-        Require(ParticleTypes.RegisteredTypeCount == 120,
-            "The local particle registry must include 106 simple, three color, two spell, three numeric, one record, two scalable and three block option types.");
+        Require(ParticleTypes.RegisteredTypeCount == 121,
+            "The local particle registry must include 106 simple, three color, two spell, three numeric, one record, two scalable, three block and one item option type.");
         Require(registry.Count == ParticleTypes.RegisteredTypeCount,
             "Every implemented simple particle type must be registered.");
         Require(ReferenceEquals(
@@ -60,9 +61,10 @@ internal static class ParticleChecks
         Require(registry.GetId(ParticleTypes.SCRAPE) < registry.GetId(ParticleTypes.SHRIEK) &&
                 registry.GetId(ParticleTypes.SHRIEK) < registry.GetId(ParticleTypes.EGG_CRACK),
             "Shriek must occupy its source declaration position.");
-        Require(registry.GetId(ParticleTypes.INSTANT_EFFECT) < registry.GetId(ParticleTypes.TRAIL) &&
+        Require(registry.GetId(ParticleTypes.INSTANT_EFFECT) < registry.GetId(ParticleTypes.ITEM) &&
+                registry.GetId(ParticleTypes.ITEM) < registry.GetId(ParticleTypes.TRAIL) &&
                 registry.GetId(ParticleTypes.TRAIL) < registry.GetId(ParticleTypes.PAUSE_MOB_GROWTH),
-            "Trail must remain between instant_effect and pause_mob_growth while item and vibration types are still absent.");
+            "Item must be registered between instant_effect and trail; vibration remains the only missing entry in this interval.");
 
         Require(ParticleTypes.DAMAGE_INDICATOR.OverrideLimiter &&
                 ParticleTypes.EXPLOSION.OverrideLimiter &&
@@ -74,8 +76,9 @@ internal static class ParticleChecks
                 !ParticleTypes.FIREFLY.OverrideLimiter &&
                 !ParticleTypes.BLOCK.OverrideLimiter &&
                 !ParticleTypes.FALLING_DUST.OverrideLimiter &&
+                !ParticleTypes.ITEM.OverrideLimiter &&
                 ParticleTypes.BLOCK_MARKER.OverrideLimiter,
-            "Block particles must retain their individual overrideLimiter flags.");
+            "Block and item particles must retain their individual overrideLimiter flags.");
     }
 
     private static void CheckSimpleOptionsCodec()

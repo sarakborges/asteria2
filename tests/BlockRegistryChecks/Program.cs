@@ -196,14 +196,21 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 6, "The root registry must contain the built-in block, fluid, biome, particle, environment-attribute and attribute-type registries.");
+        Require(BuiltInRegistries.Root.Count == 7, "The root registry must contain the built-in block, fluid, item, biome, particle, environment-attribute and attribute-type registries.");
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
                     RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Block.Location)),
                 BuiltInRegistries.Block),
             "The root registry must resolve the block registry by its registry key.");
+        Require(
+            ReferenceEquals(
+                BuiltInRegistries.Root.GetValue(
+                    RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Item.Location)),
+                BuiltInRegistries.Item),
+            "The root registry must resolve the item registry by its registry key.");
         Require(BuiltInRegistries.Block.Count == 1, "Only the production air block should be registered.");
+        Require(BuiltInRegistries.Item.Count == 2, "The partial built-in item registry must contain only air and stick.");
         Require(BuiltInRegistries.Fluid.Count == 1, "Only the empty fluid should be registered.");
         Require(BuiltInRegistries.Biome.Count == 2, "The built-in biome registry must contain plains and desert.");
         Require(BuiltInRegistries.AttributeType.Count == 9, "The attribute-type registry must contain the seven existing value types plus particle and ambient-particle types.");
@@ -262,7 +269,7 @@ internal static class Program
             BuiltInRegistries.RootLocation == ResourceLocation.Parse("asteria:root"),
             "The root registry must use the Asteria namespace.");
         Require(
-            BuiltInRegistries.Root.Count == 6 && !BuiltInRegistries.Root.IsFrozen,
+            BuiltInRegistries.Root.Count == 7 && !BuiltInRegistries.Root.IsFrozen,
             "The root registry must register built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =

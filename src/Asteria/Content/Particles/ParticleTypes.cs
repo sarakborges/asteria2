@@ -82,6 +82,9 @@ public static class ParticleTypes
     public static readonly SimpleParticleType HEART = Register("heart", false);
     public static readonly ParticleType<SpellParticleOption> INSTANT_EFFECT =
         RegisterConfigured<SpellParticleOption>("instant_effect", false, SpellParticleOption.CreateCodec);
+    public static readonly ParticleType<ItemParticleOption> ITEM =
+        RegisterConfigured<ItemParticleOption>(
+            "item", false, ItemParticleOption.CreateCodec);
     public static readonly ParticleType<TrailParticleOption> TRAIL =
         RegisterConfigured<TrailParticleOption>(
             "trail", false, static _ => TrailParticleOption.CODEC);
@@ -161,9 +164,10 @@ public static class ParticleTypes
     public const int RecordOptionCount = 1;
     public const int ScalableOptionCount = 2;
     public const int BlockOptionCount = 3;
+    public const int ItemOptionCount = 1;
     public const int RegisteredTypeCount =
         SimpleTypeCount + ColorTypeCount + SpellOptionCount + NumericOptionCount +
-        RecordOptionCount + ScalableOptionCount + BlockOptionCount;
+        RecordOptionCount + ScalableOptionCount + BlockOptionCount + ItemOptionCount;
 
     public static Codec<IParticleOptions> CODEC { get; } =
         MapCodec<IParticleOptions>.Dispatch(

@@ -235,7 +235,7 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `CanSpawn` consome uma amostra float de 24 bits e usa comparação inclusiva `<=`; testes cobrem a igualdade exata no limite, probabilidade zero/um e número de chamadas.
 - `AMBIENT_PARTICLES` usa listas cross-fade escalando somente a probabilidade e o modifier `append`; o atributo genérico `visual/ambient_particles` está registrado com default vazio e é syncable.
 - O registry `attribute_type` agora contém nove tipos no escopo: os sete anteriores, `particle` e `ambient_particles`.
-- O registry `particle_type` agora contém 120 tipos locais: 106 simples e 14 com opções especializadas (coloridas, spell, numéricas, record, escalares e três tipos de partículas de bloco). `block`, `block_marker` e `falling_dust` usam o modelo/codec genérico de estado de bloco; `item` e `vibration`, além de partículas específicas de objeto fora do escopo, seguem ausentes. Os IDs numéricos não têm paridade completa enquanto entradas anteriores na ordem de referência estiverem ausentes.
+- O registry `particle_type` agora contém 121 tipos locais: 106 simples e 15 com opções especializadas (coloridas, spell, numéricas, record, escalares, três tipos de partículas de bloco e ITEM). O payload ITEM usa `ItemStackTemplate`; o registry parcial de itens contém somente `air` e `stick`, e patches de componentes não vazios ainda não são suportados. `VIBRATION` segue ausente, portanto os IDs numéricos ainda não têm paridade completa.
 - Atributos específicos de blocos/objetos, áudio e regras de cama continuam excluídos. Stream codecs, buffers de pacote e multiplayer continuam excluídos pelo escopo offline.
 
 
@@ -313,3 +313,21 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - [BlockState](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/block/state/blockstate/)
 - [StateHolder](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/block/state/stateholder/)
 - [StateDefinition](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/block/state/statedefinition/)
+
+## Incremento — `ItemParticleOption` e modelo de template de item (21/11/2026)
+
+- Criado o registry defaulted/intrusive `item`, com `air` como default e holders associados à identidade dos objetos. O catálogo mantido por enquanto contém somente `air` e `stick`; não é uma importação da lista completa de `Items`.
+- `Item.CODEC` resolve holders pelo nome registrado e rejeita explicitamente `asteria:air`, sem usar o fallback do `DefaultedRegistry` para IDs desconhecidos.
+- Portado `ItemStackTemplate` com holder do item, `count` opcional de 1 a 99 (default 1), `components` opcional (default vazio) e alternativa compacta que aceita somente o identificador do item.
+- Portado `ItemParticleOption` com campo obrigatório `item`, mantendo o `ParticleType` associado; registrado `item` com `overrideLimiter=false` entre `instant_effect` e `trail`.
+- `DataComponentPatch` atualmente suporta apenas o patch vazio. Entradas de componentes não vazias são rejeitadas porque `DataComponentType`, seu registry e os codecs dos tipos de componentes ainda não foram portados; não é declarado suporte genérico de componentes.
+- O registry de partículas passa a 121 tipos locais. `vibration` continua ausente e a lista parcial de itens impede paridade dos IDs numéricos do registry de itens.
+- Stream codecs, criação/uso de `ItemStack` em gameplay, inventário, receitas e rede continuam fora deste incremento; o item foi portado apenas na fronteira de identidade/codec exigida pela partícula.
+
+### Fontes específicas
+
+- [BuiltInRegistries](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/registries/builtinregistries/)
+- [Item](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/item/item/)
+- [ItemStackTemplate](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/item/itemstacktemplate/)
+- [ItemParticleOption](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/itemparticleoption/)
+- [ParticleTypes](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/particletypes/)
