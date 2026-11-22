@@ -167,6 +167,50 @@ public interface BlockGetter : LevelHeightAccessor
             });
     }
 
+    BlockHitResult Clip(ClipContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        return TraverseBlocks<ClipContext, BlockHitResult>(
+            context.GetFrom(),
+            context.GetTo(),
+            context,
+            (clipContext, position) =>
+            {
+                BlockState blockState = GetBlockState(position);
+                FluidState fluidState = GetFluidState(position);
+                Vec3 from = clipContext.GetFrom();
+                Vec3 to = clipContext.GetTo();
+
+                VoxelShape blockShape = clipContext.GetBlockShape(blockState, this, position);
+                BlockHitResult? blockResult =
+                    ClipWithInteractionOverride(from, to, position, blockShape, blockState);
+
+                VoxelShape fluidShape = clipContext.GetFluidShape(fluidState, this, position);
+                BlockHitResult? fluidResult = fluidShape.Clip(from, to, position);
+
+                double blockDistanceSquared = blockResult is null
+                    ? double.MaxValue
+                    : from.DistanceToSquared(blockResult.GetLocation());
+                double fluidDistanceSquared = fluidResult is null
+                    ? double.MaxValue
+                    : from.DistanceToSquared(fluidResult.GetLocation());
+
+                return blockDistanceSquared <= fluidDistanceSquared
+                    ? blockResult
+                    : fluidResult;
+            },
+            clipContext =>
+            {
+                Vec3 end = clipContext.GetTo();
+                Vec3 delta = clipContext.GetFrom().Subtract(end);
+                return BlockHitResult.Miss(
+                    end,
+                    Direction.GetApproximateNearest(delta.X, delta.Y, delta.Z),
+                    BlockPos.Containing(end.X, end.Y, end.Z));
+            });
+    }
+
     BlockHitResult? ClipWithInteractionOverride(
         Vec3 from,
         Vec3 to,
