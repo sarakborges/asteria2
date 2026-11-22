@@ -34,6 +34,18 @@ public sealed class FluidState : StateHolder<Fluid, FluidState>
     public float GetHeight(BlockGetter level, BlockPos position) =>
         Fluid.GetHeight(this, level, position);
 
+    public float GetHeightForCamera(BlockGetter level, BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(level);
+        ArgumentNullException.ThrowIfNull(position);
+
+        BlockPos above = position.Above();
+        if (IsSource() && level.GetBlockState(above).IsFaceSturdy(level, above, Direction.Down))
+            return 1.0f;
+
+        return GetHeight(level, position);
+    }
+
     public float GetOwnHeight() => Fluid.GetOwnHeight(this);
 
     public VoxelShape GetShape(BlockGetter level, BlockPos position) =>
@@ -41,6 +53,27 @@ public sealed class FluidState : StateHolder<Fluid, FluidState>
 
     public AABB? GetAABB(BlockGetter level, BlockPos position) =>
         Fluid.GetAABB(this, level, position);
+
+    public bool ShouldRenderBackwardUpFace(BlockGetter level, BlockPos above)
+    {
+        ArgumentNullException.ThrowIfNull(level);
+        ArgumentNullException.ThrowIfNull(above);
+
+        for (int offsetX = -1; offsetX <= 1; offsetX++)
+        {
+            for (int offsetZ = -1; offsetZ <= 1; offsetZ++)
+            {
+                BlockPos position = above.Offset(offsetX, 0, offsetZ);
+                FluidState neighborFluid = level.GetFluidState(position);
+                if (neighborFluid.Fluid.IsSame(Fluid) || level.GetBlockState(position).IsSolidRender)
+                    continue;
+
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     public bool IsFull() => GetAmount() == AmountFull;
 }
