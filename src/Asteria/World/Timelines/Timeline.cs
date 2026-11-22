@@ -16,6 +16,7 @@ public sealed class Timeline
     private readonly int? _periodTicks;
     private readonly IReadOnlyDictionary<IEnvironmentAttribute, IAttributeTrackDefinition> _tracks;
     private readonly IReadOnlyDictionary<RegistryKey<ClockTimeMarker>, TimeMarkerInfo> _timeMarkers;
+    private readonly IReadOnlyCollection<IEnvironmentAttribute> _attributes;
 
     private static readonly IReadOnlyDictionary<IEnvironmentAttribute, IAttributeTrackDefinition> EmptyTracks =
         new ReadOnlyDictionary<IEnvironmentAttribute, IAttributeTrackDefinition>(
@@ -58,7 +59,7 @@ public sealed class Timeline
 
     public Holder<WorldClock> Clock => _clock;
     public int? PeriodTicks => _periodTicks;
-    public IReadOnlyCollection<IEnvironmentAttribute> Attributes => _tracks.Keys;
+    public IReadOnlyCollection<IEnvironmentAttribute> Attributes => _attributes;
 
     private Timeline(
         Holder<WorldClock> clock,
@@ -72,6 +73,7 @@ public sealed class Timeline
             ? EmptyTracks
             : new ReadOnlyDictionary<IEnvironmentAttribute, IAttributeTrackDefinition>(
                 tracks.ToDictionary(pair => pair.Key, pair => pair.Value));
+        _attributes = Array.AsReadOnly(_tracks.Keys.ToArray());
         _timeMarkers = timeMarkers.Count == 0
             ? EmptyTimeMarkers
             : new ReadOnlyDictionary<RegistryKey<ClockTimeMarker>, TimeMarkerInfo>(
@@ -243,9 +245,7 @@ public sealed class Timeline
         var dictionary = new Dictionary<TKey, TValue>();
         foreach (KeyValuePair<TKey, TValue> entry in entries)
             dictionary.Add(entry.Key, entry.Value);
-        return dictionary.Count == 0
-            ? new ReadOnlyDictionary<TKey, TValue>(dictionary)
-            : new ReadOnlyDictionary<TKey, TValue>(dictionary);
+        return new ReadOnlyDictionary<TKey, TValue>(dictionary);
     }
 
     public sealed class Builder

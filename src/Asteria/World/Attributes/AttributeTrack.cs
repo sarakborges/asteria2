@@ -15,7 +15,12 @@ public interface IAttributeTrackDefinition
 public interface IAttributeTrack<TValue> : IAttributeTrackDefinition
 {
     IAttributeModifier<TValue> Modifier { get; }
-    DataResult<IAttributeTrack<TValue>> ValidatePeriod(int periodTicks);
+    new DataResult<IAttributeTrack<TValue>> ValidatePeriod(int periodTicks);
+    IAttributeTrackSampler<TValue> BakeSampler(
+        EnvironmentAttribute<TValue> attribute,
+        Holder<WorldClock> clock,
+        int? periodTicks,
+        ClockManager clockManager);
 }
 
 /// <summary>A keyframed modifier argument track for one environment attribute value type.</summary>
@@ -44,6 +49,13 @@ public sealed record AttributeTrack<TValue, TArgument>(
         return new AttributeTrackSampler<TValue, TArgument>(
             this, attribute, clock, periodTicks, clockManager);
     }
+
+    IAttributeTrackSampler<TValue> IAttributeTrack<TValue>.BakeSampler(
+        EnvironmentAttribute<TValue> attribute,
+        Holder<WorldClock> clock,
+        int? periodTicks,
+        ClockManager clockManager) =>
+        BakeSampler(attribute, clock, periodTicks, clockManager);
 }
 
 /// <summary>Codec factory for the modifier-dispatched attribute-track schema.</summary>
