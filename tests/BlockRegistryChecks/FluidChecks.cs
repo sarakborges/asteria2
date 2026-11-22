@@ -107,42 +107,42 @@ internal static class FluidChecks
         TestFluid fluid = _tickFluid ?? throw new InvalidOperationException("Fluid checks must run first.");
         BlockState blockState = WaterloggedBlockState;
         BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
-        var section = new ChunkSection(factory.CreateForBlockStates());
+        var section = new ChunkSection(factory.CreateForBlockStates(), factory.CreateForBiomes());
 
         section.SetBlockState(1, 2, 3, blockState);
         Require(
-            section.FluidCount == 1 && section.HasFluid,
-            "Adding a non-air fluid block must increment the fluid count.");
+            section.HasFluid,
+            "Adding a non-air fluid block must mark the section as containing fluid.");
         Require(
-            section.TickingFluidCount == 1 && section.IsRandomlyTickingFluids && section.IsRandomlyTicking,
-            "Randomly ticking fluid states must increment their own section counter and aggregate ticking state.");
+            section.IsRandomlyTickingFluids && section.IsRandomlyTicking,
+            "Randomly ticking fluid states must set the fluid and aggregate ticking flags.");
         Require(
             ReferenceEquals(section.GetFluidState(1, 2, 3), fluid.DefaultFluidState),
             "Section fluid lookup must delegate through the stored block state.");
 
         ChunkSection copy = section.Copy();
         Require(
-            copy.FluidCount == 1 && copy.TickingFluidCount == 1 && copy.HasFluid,
-            "Copy must preserve fluid and ticking-fluid counters.");
+            copy.HasFluid && copy.IsRandomlyTickingFluids,
+            "Copy must preserve fluid and ticking-fluid state.");
         copy.SetBlockState(1, 2, 3, Blocks.AIR.DefaultState);
         Require(
-            copy.FluidCount == 0 && copy.TickingFluidCount == 0 && !copy.HasFluid && !copy.IsRandomlyTicking,
-            "Replacing a fluid block with air must decrement both fluid counters independently of the source section.");
+            !copy.HasFluid && !copy.IsRandomlyTickingFluids && !copy.IsRandomlyTicking,
+            "Replacing a fluid block with air must clear fluid and aggregate ticking state independently of the source section.");
         Require(
-            section.FluidCount == 1 && section.TickingFluidCount == 1,
-            "Mutating a copied section must not change the original fluid counters.");
+            section.HasFluid && section.IsRandomlyTickingFluids,
+            "Mutating a copied section must not change the original fluid state.");
 
         section.SetBlockState(1, 2, 3, Blocks.AIR.DefaultState);
         Require(
-            section.FluidCount == 0 && section.TickingFluidCount == 0 && !section.HasFluid,
-            "Removing the last fluid block must reset the section fluid counters.");
+            !section.HasFluid && !section.IsRandomlyTickingFluids,
+            "Removing the last fluid block must clear the section fluid state.");
 
         PalettedContainer<BlockState> prefilled = factory.CreateForBlockStates();
         prefilled.Set(4, 5, 6, blockState);
-        var prefilledSection = new ChunkSection(prefilled);
+        var prefilledSection = new ChunkSection(prefilled, factory.CreateForBiomes());
         Require(
-            prefilledSection.FluidCount == 1 && prefilledSection.TickingFluidCount == 1,
-            "RecalculateBlockCounts must reconstruct fluid and random-ticking fluid counts from prefilled states.");
+            prefilledSection.HasFluid && prefilledSection.IsRandomlyTickingFluids,
+            "The section constructor must rebuild fluid and random-ticking flags from prefilled states.");
     }
 
     private static void Require(bool condition, string message)
