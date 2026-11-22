@@ -19,6 +19,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     private VoxelShape _occlusionShape = Shapes.Empty();
     private VoxelShape[] _occlusionShapesByFace = EMPTY_OCCLUSION_SHAPES;
     private bool _hasLargeCollisionShape;
+    private bool _isCollisionShapeFullBlock;
     private bool[]? _faceSturdy;
     private bool _cacheInitialized;
     private readonly int _lightEmission;
@@ -94,6 +95,11 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public VoxelShape GetInteractionShape(BlockGetter level, BlockPos position) =>
         Block.GetInteractionShape(this, level, position);
 
+    public bool IsCollisionShapeFullBlock(BlockGetter level, BlockPos position) =>
+        _collisionShape is not null
+            ? _isCollisionShapeFullBlock
+            : Block.IsCollisionShapeFullBlock(this, level, position);
+
     public bool IsFaceSturdy(BlockGetter level, BlockPos position, Direction direction) =>
         IsFaceSturdy(level, position, direction, SupportType.Full);
 
@@ -137,6 +143,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         {
             _collisionShape = Block.GetCollisionShape(this, EmptyBlockGetter.Instance, BlockPos.Zero);
             _hasLargeCollisionShape = IsLargeCollisionShape(_collisionShape);
+            _isCollisionShapeFullBlock = Block.IsShapeFullBlock(_collisionShape);
             _faceSturdy = new bool[DIRECTIONS.Length * SUPPORT_TYPES.Length];
             foreach (Direction direction in DIRECTIONS)
             {
