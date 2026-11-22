@@ -17,6 +17,8 @@ internal static class FluidChecks
 
     public static BlockState WaterloggedBlockState { get; private set; } = null!;
 
+    public static FluidState SourceFluidState { get; private set; } = null!;
+
     private sealed class FluidBlock : Block
     {
         private readonly FluidState _fluidState;
@@ -107,6 +109,7 @@ internal static class FluidChecks
         FluidState defaultState = fluid.DefaultFluidState;
         Require(defaultState.GetValue(LEVEL) == 1, "Fluid default state must select the first property value.");
         FluidState full = defaultState.SetValue(LEVEL, FluidState.AmountFull);
+        SourceFluidState = full;
         Require(full.GetValue(LEVEL) == FluidState.AmountFull, "Fluid state transitions must update the requested property.");
         Require(
             ReferenceEquals(full, defaultState.SetValue(LEVEL, FluidState.AmountFull)),
