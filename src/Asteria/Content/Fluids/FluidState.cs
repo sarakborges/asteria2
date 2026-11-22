@@ -40,7 +40,7 @@ public sealed class FluidState : StateHolder<Fluid, FluidState>
         ArgumentNullException.ThrowIfNull(position);
 
         BlockPos above = position.Above();
-        if (IsSource() && level.GetBlockState(above).IsFaceSturdy(level, above, Direction.Down))
+        if (IsSource() && level.GetBlockState(above).IsFaceSturdy(level, above, Direction.DOWN))
             return 1.0f;
 
         return GetHeight(level, position);
