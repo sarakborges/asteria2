@@ -1,4 +1,6 @@
 using Asteria.Content.Biomes;
+using BuiltInBiomes = Asteria.Content.Biomes.Biomes;
+using BuiltInBlocks = Asteria.Content.Blocks.Blocks;
 using Asteria.Content.Blocks;
 using Asteria.Content.Registries;
 using Asteria.Content.Storage;
@@ -18,10 +20,10 @@ public sealed record PalettedContainerFactory(
 
         return new PalettedContainerFactory(
             PalettedContainerStrategy<BlockState>.CreateForBlockStates(Block.BlockStateRegistry),
-            Blocks.AIR.DefaultState,
+            BuiltInBlocks.AIR.DefaultState,
             PalettedContainerStrategy<Holder<Biome>>.CreateForBiomes(
                 BuiltInRegistries.Biome.AsHolderIdMap()),
-            Biomes.PLAINS.BuiltInRegistryHolder);
+            BuiltInBiomes.PLAINS.BuiltInRegistryHolder);
     }
 
     public PalettedContainer<BlockState> CreateForBlockStates() =>
