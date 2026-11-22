@@ -5,6 +5,7 @@ using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
 using Asteria.Content.Storage;
 using Asteria.Core;
+using Asteria.Core.Shapes;
 using Asteria.World;
 using Asteria.World.Lighting;
 using Asteria.World.BlockScan;
@@ -20,6 +21,7 @@ internal static class ChunkChecks
         CheckHeightAccessor();
         CheckChunkAccessLifecycle();
         CheckBlockGetterContract(fluidState);
+        CheckBlockGetterDefaultMethods(nonAirState);
         CheckChunkBiomeAccess();
         CheckChunkSkyLightSources(nonAirState);
         CheckChunkBlockScanning(nonAirState);
@@ -88,6 +90,51 @@ internal static class ChunkChecks
         Require(
             blockGetter.GetFluidState(outsideBuildHeight).IsEmpty(),
             "Fluid lookup outside the section array must return the empty fluid state.");
+    }
+
+    private static void CheckBlockGetterDefaultMethods(BlockState lightEmittingState)
+    {
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        var chunk = new TestChunkAccess(
+            new ChunkPos(0, 0),
+            height,
+            PalettedContainerFactory.CreateBuiltIn());
+        BlockGetter getter = chunk;
+
+        BlockPos stonePosition = new(2, 6, 4);
+        BlockPos airAboveStone = stonePosition.Above();
+        chunk.GetSection(chunk.GetSectionIndex(stonePosition.GetY()))
+            .SetBlockState(2, stonePosition.GetY() & 15, 4, lightEmittingState);
+        chunk.GetSection(chunk.GetSectionIndex(6))
+            .SetBlockState(2, 6 & 15, 4, Blocks.STONE.DefaultState);
+
+        Require(
+            getter.GetLightEmission(stonePosition) == lightEmittingState.GetLightEmission(),
+            "BlockGetter light emission must delegate to the stored block state.");
+        Require(
+            getter.GetBlockFloorHeight(stonePosition) == 1.0,
+            "Block floor height inside a full collision shape must use its maximum Y.");
+        Require(
+            getter.GetBlockFloorHeight(airAboveStone) == 0.0,
+            "An empty block above a full block must inherit the block below's floor height minus one.");
+
+        Require(
+            getter.GetBlockFloorHeight(Shapes.Empty(), () => Shapes.Block()) == 0.0,
+            "An empty shape must derive its floor height from a full block below.");
+        Require(
+            getter.GetBlockFloorHeight(Shapes.Box(0, 0, 0, 1, 0.5, 1), () => Shapes.Empty()) == 0.5,
+            "A non-empty shape must return its own maximum Y without evaluating the lower shape.");
+        Require(
+            double.IsNegativeInfinity(getter.GetBlockFloorHeight(Shapes.Empty(), () => Shapes.Empty())),
+            "An empty shape above a lower shape that does not reach the block top must have negative-infinite floor height.");
+
+        IReadOnlyList<BlockState> states = getter.GetBlockStates(
+            new AABB(2.0, 6.0, 4.0, 2.0, 7.0, 4.0)).ToArray();
+        Require(
+            states.Count == 2 &&
+            ReferenceEquals(states[0], Blocks.STONE.DefaultState) &&
+            ReferenceEquals(states[1], lightEmittingState),
+            "BlockGetter block-state box queries must include both floored Y bounds in vertical order.");
     }
 
     private static void CheckChunkBiomeAccess()
