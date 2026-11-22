@@ -28,7 +28,7 @@ Base de comparação: Minecraft Java 26.3.
 
 ## Limites deste incremento
 
-- O codec do argumento do modificador está exposto para operações booleanas, inteiras, float e cor. Os vetores RGB/ARGB usam codecs de 3/4 canais; `blend_to_gray` usa o registro `{ brightness, factor }`; `alpha_blend` float usa `{ value, alpha }`. O argumento de lista ainda não possui codec declarado. O codec completo do mapa ambiental e `CODEC_ONLY_POSITIONAL` continuam pendentes; codecs de rede permanecem fora do escopo.
+- O codec do argumento do modificador está exposto para operações booleanas, inteiras, float, cor e append de listas com codec de elemento fornecido. Os vetores RGB/ARGB usam codecs de 3/4 canais; `blend_to_gray` usa o registro `{ brightness, factor }`; `alpha_blend` float usa `{ value, alpha }`. O codec completo do mapa ambiental e `CODEC_ONLY_POSITIONAL` continuam pendentes; codecs de rede permanecem fora do escopo.
 - AttributeTypes contém boolean, float, angle_degrees, rgb_color, argb_color, integer e moon_phase. RGB/ARGB usam System.Numerics.Vector3/Vector4 e as cinco operações de modificador da referência. INTEGER usa Int32, interpolação por piso e as cinco operações aritméticas da referência. MOON_PHASE usa os oito estados, índices, nomes serializados e início de fase da referência, sem interpolação ou modificadores. `LerpFunction<T>.OfListCrossFade` agora reproduz a composição ordenada e a escala complementar de cada elemento para cross-fade de listas; `PARTICLE` e `AMBIENT_PARTICLES` já possuem codecs locais e usam o catálogo de partículas genéricas mantido no escopo. `ACTIVITY` depende do registry e do domínio de schedules/AI, ainda não portado; as definições de atividade específicas de villagers permanecem fora do escopo atual. Áudio, bed rules, raid/illager, slime e atributos vinculados a blocos/entidades específicos estão fora do escopo, não são pendências.
 - Os registries built-in environment_attribute e attribute_type foram ligados ao root e ao bootstrap. As 19 definições ambientais genéricas dentro do escopo foram registradas por chave. Atributos de áudio, regras de cama, raid/illager, slime e atributos de blocos/entidades específicos não são requisitos; outros tipos ainda não implementados foram omitidos, portanto não se afirma paridade dos IDs numéricos.
 - `EnvironmentAttributeResolver` aplica mapas de fontes em ordem explícita de prioridade baixa para alta, iniciando pelo default registrado ou por um valor base fornecido pelo chamador. A ordem de 26.3 é dimensão → bioma → timeline → clima.
@@ -92,3 +92,11 @@ Base de comparação: Minecraft Java 26.3.
 - `blend_to_gray` serializa os campos obrigatórios `brightness` e `factor`.
 - Testes cobrem round-trip para alpha blend, add, subtract, multiply e blend-to-gray em RGB/ARGB, além da rejeição de vetores com número incorreto de canais.
 - Os codecs de argumentos de listas e o codec de `EnvironmentAttributeMap` permanecem pendentes; codec de rede continua fora do escopo.
+
+
+## Incremento — codec de argumentos de listas (22/11/2026)
+
+- `ListModifier<T>.CreateLibrary` agora recebe o codec do elemento e declara o codec de argumento como lista desse elemento.
+- `AMBIENT_PARTICLES` conecta o modificador `append` ao `AmbientParticle.CODEC`; listas não recebem um codec genérico inventado quando não há codec de elemento.
+- Teste verifica round-trip de uma lista com partícula e probabilidade, além da integração com a biblioteca do atributo ambiental.
+- O codec do mapa ambiental, despacho atributo/modificador e validação positional permanecem pendentes. Codec de rede continua fora do escopo.
