@@ -744,9 +744,9 @@ public class BlockPos : Vec3i
         {
             ArgumentNullException.ThrowIfNull(transform);
             return Set(
-                transform.Cycle(x, y, z, Axis.X),
-                transform.Cycle(x, y, z, Axis.Y),
-                transform.Cycle(x, y, z, Axis.Z));
+                transform.Cycle(x, y, z, Direction.Axis.X),
+                transform.Cycle(x, y, z, Direction.Axis.Y),
+                transform.Cycle(x, y, z, Direction.Axis.Z));
         }
 
         public MutableBlockPos Set(int x, int y, int z)
