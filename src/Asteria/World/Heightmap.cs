@@ -10,11 +10,11 @@ public sealed class Heightmap
 {
     private const int ColumnCount = 256;
 
-    private readonly Chunk _chunk;
+    private readonly ChunkAccess _chunk;
     private readonly Func<BlockState, bool> _isOpaque;
     private readonly PackedBitStorage _data;
 
-    public Heightmap(Chunk chunk, Types type)
+    public Heightmap(ChunkAccess chunk, Types type)
     {
         ArgumentNullException.ThrowIfNull(chunk);
 
@@ -40,7 +40,7 @@ public sealed class Heightmap
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown heightmap type.")
         };
 
-    public static void PrimeHeightmaps(Chunk chunk, IEnumerable<Types> types)
+    public static void PrimeHeightmaps(ChunkAccess chunk, IEnumerable<Types> types)
     {
         ArgumentNullException.ThrowIfNull(chunk);
         ArgumentNullException.ThrowIfNull(types);
@@ -135,7 +135,7 @@ public sealed class Heightmap
     public int GetHighestTaken(int x, int z) =>
         unchecked(GetFirstAvailable(x, z) - 1);
 
-    public void SetRawData(Chunk chunk, Types type, ulong[] data)
+    public void SetRawData(ChunkAccess chunk, Types type, ulong[] data)
     {
         ulong[] rawData = _data.GetRaw();
         if (rawData.Length == data.Length)
