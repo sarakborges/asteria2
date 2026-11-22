@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using Asteria.Content.Biomes;
 using Asteria.Content.Blocks;
 using Asteria.Content.Fluids;
+using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.World;
 
@@ -67,6 +69,39 @@ public abstract class ChunkAccess : BlockGetter
     }
 
     public ChunkPos GetPos() => _chunkPos;
+
+    public Holder<Biome> GetNoiseBiome(int quartX, int quartY, int quartZ)
+    {
+        int quartMinY = QuartPos.FromBlock(GetMinY());
+        int quartMaxY = unchecked(quartMinY + QuartPos.FromBlock(GetHeight()) - 1);
+        int clampedQuartY = Math.Clamp(quartY, quartMinY, quartMaxY);
+        int sectionIndex = GetSectionIndex(QuartPos.ToBlock(clampedQuartY));
+        return GetSection(sectionIndex).GetNoiseBiome(
+            quartX & QuartPos.Mask,
+            clampedQuartY & QuartPos.Mask,
+            quartZ & QuartPos.Mask);
+    }
+
+    public void FillBiomesFromNoise(BiomeResolver biomeResolver)
+    {
+        ArgumentNullException.ThrowIfNull(biomeResolver);
+
+        ChunkPos position = GetPos();
+        int quartMinX = QuartPos.FromBlock(position.GetMinBlockX());
+        int quartMinZ = QuartPos.FromBlock(position.GetMinBlockZ());
+        LevelHeightAccessor heightAccessor = GetHeightAccessorForGeneration();
+
+        for (int sectionY = heightAccessor.GetMinSectionY();
+             sectionY <= heightAccessor.GetMaxSectionY();
+             sectionY++)
+        {
+            ChunkSection section = GetSection(heightAccessor.GetSectionIndexFromSectionY(sectionY));
+            int quartMinY = QuartPos.FromSection(sectionY);
+            section.FillBiomesFromNoise(biomeResolver, quartMinX, quartMinY, quartMinZ);
+        }
+    }
+
+    public LevelHeightAccessor GetHeightAccessorForGeneration() => this;
 
     public abstract BlockState GetBlockState(BlockPos position);
 
