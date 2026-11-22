@@ -221,6 +221,13 @@ internal static class BlockPositionTransformChecks
             "BlockState.GetDestroySpeed must return the configured destroy speed.");
         Require(state.GetLightDampening() == state.LightDampening,
             "BlockState.GetLightDampening must expose the cached light dampening value.");
+        Require(!state.ShouldRedstoneWireConnectTo(EmptyBlockGetter.Instance, BlockPos.Zero, null) &&
+                !state.ShouldRedstoneWireConnectTo(EmptyBlockGetter.Instance, BlockPos.Zero, Direction.UP),
+            "BlockState should not connect redstone wire by default, including when a direction is supplied.");
+        Require(state.GetSignal(EmptyBlockGetter.Instance, BlockPos.Zero, Direction.UP) == 0 &&
+                state.GetOwnSignal(EmptyBlockGetter.Instance, BlockPos.Zero) == 0 &&
+                state.GetDirectSignal(EmptyBlockGetter.Instance, BlockPos.Zero, Direction.UP) == 0,
+            "BlockState redstone signal queries must preserve zero-valued base defaults.");
     }
 
     private static void Require(bool condition, string message)
