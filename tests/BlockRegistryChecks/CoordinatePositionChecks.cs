@@ -211,11 +211,12 @@ internal static class CoordinatePositionChecks
                 return BlockPos.TraversalNodeStatus.ACCEPT;
             });
         Require(
-            breadthFirstCount == 4 &&
+            breadthFirstCount == 5 &&
             breadthFirstOrder.SequenceEqual(new[]
             {
                 new BlockPos(0, 0, 0), new BlockPos(1, 0, 0),
-                new BlockPos(2, 0, 0), new BlockPos(3, 0, 0)
+                new BlockPos(2, 0, 0), new BlockPos(4, 0, 0),
+                new BlockPos(3, 0, 0)
             }),
             "BlockPos breadth-first traversal must process FIFO order and deduplicate packed positions.");
 
