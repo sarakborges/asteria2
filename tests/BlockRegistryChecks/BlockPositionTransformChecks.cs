@@ -13,6 +13,8 @@ internal static class BlockPositionTransformChecks
         CheckBlockPositionRotation();
         CheckRotationOperations();
         CheckRotationCodecsAndRandom();
+        CheckMirrorOperations();
+        CheckBlockStateTransforms();
     }
 
     private static void CheckAxisCycles()
@@ -149,6 +151,68 @@ internal static class BlockPositionTransformChecks
                 shuffled.Distinct().Count() == 4 &&
                 shuffled.All(value => Rotation.GetValues().Any(candidate => ReferenceEquals(value, candidate))),
             "Rotation random helpers must use one bounded draw and the source Fisher-Yates shuffle.");
+    }
+
+    private static void CheckMirrorOperations()
+    {
+        Mirror[] mirrors = Mirror.GetValues();
+        Require(mirrors.Length == 3 &&
+                ReferenceEquals(mirrors[0], Mirror.NONE) &&
+                ReferenceEquals(mirrors[1], Mirror.LEFT_RIGHT) &&
+                ReferenceEquals(mirrors[2], Mirror.FRONT_BACK),
+            "Mirror values must preserve NONE/LEFT_RIGHT/FRONT_BACK source order.");
+
+        Require(
+            ReferenceEquals(Mirror.NONE.GetRotation(), OctahedralGroup.IDENTITY) &&
+            ReferenceEquals(Mirror.LEFT_RIGHT.GetRotation(), OctahedralGroup.INVERT_Z) &&
+            ReferenceEquals(Mirror.FRONT_BACK.GetRotation(), OctahedralGroup.INVERT_X),
+            "Mirror modes must expose the matching octahedral group transform.");
+
+        Require(
+            ReferenceEquals(Mirror.LEFT_RIGHT.MirrorDirection(Direction.NORTH), Direction.SOUTH) &&
+            ReferenceEquals(Mirror.FRONT_BACK.MirrorDirection(Direction.EAST), Direction.WEST) &&
+            ReferenceEquals(Mirror.LEFT_RIGHT.MirrorDirection(Direction.UP), Direction.UP) &&
+            ReferenceEquals(Mirror.FRONT_BACK.MirrorDirection(Direction.SOUTH), Direction.SOUTH),
+            "Mirror direction transforms must flip only the axis selected by the mirror mode.");
+
+        Require(
+            ReferenceEquals(Mirror.LEFT_RIGHT.GetRotation(Direction.NORTH), Rotation.CLOCKWISE_180) &&
+            ReferenceEquals(Mirror.LEFT_RIGHT.GetRotation(Direction.EAST), Rotation.NONE) &&
+            ReferenceEquals(Mirror.FRONT_BACK.GetRotation(Direction.EAST), Rotation.CLOCKWISE_180) &&
+            ReferenceEquals(Mirror.FRONT_BACK.GetRotation(Direction.NORTH), Rotation.NONE),
+            "Mirror rotation lookup must return a half-turn only for the matching horizontal axis.");
+
+        Require(
+            Mirror.NONE.GetMirrored(3, 8) == 3 &&
+            Mirror.LEFT_RIGHT.GetMirrored(1, 8) == 3 &&
+            Mirror.LEFT_RIGHT.GetMirrored(7, 8) == 5 &&
+            Mirror.FRONT_BACK.GetMirrored(1, 8) == 7 &&
+            Mirror.FRONT_BACK.GetMirrored(7, 8) == 1,
+            "Mirror index transforms must preserve the source half-step correction and wrap formula.");
+
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        Mirror decoded = Mirror.CODEC.Parse(ops, ops.CreateString("left_right")).GetOrThrow();
+        JsonElement encoded = Mirror.CODEC.EncodeStart(ops, Mirror.FRONT_BACK).GetOrThrow();
+        Require(ReferenceEquals(decoded, Mirror.LEFT_RIGHT) &&
+                ops.GetStringValue(encoded).GetOrThrow() == "front_back",
+            "Mirror.CODEC must decode and encode source serialized identifiers.");
+
+#pragma warning disable CS0618
+        Mirror legacy = Mirror.LEGACY_CODEC.Parse(ops, ops.CreateString("FRONT_BACK")).GetOrThrow();
+        JsonElement legacyEncoded = Mirror.LEGACY_CODEC.EncodeStart(ops, Mirror.LEFT_RIGHT).GetOrThrow();
+#pragma warning restore CS0618
+        Require(ReferenceEquals(legacy, Mirror.FRONT_BACK) &&
+                ops.GetStringValue(legacyEncoded).GetOrThrow() == "LEFT_RIGHT",
+            "Mirror.LEGACY_CODEC must use exact legacy enum names.");
+    }
+
+    private static void CheckBlockStateTransforms()
+    {
+        BlockState state = TestBlocks.TEST_BLOCK.DefaultState;
+        Require(ReferenceEquals(state, state.Rotate(Rotation.CLOCKWISE_90)),
+            "BlockState.Rotate must dispatch through the owning block and preserve the base default state.");
+        Require(ReferenceEquals(state, state.Mirror(Mirror.FRONT_BACK)),
+            "BlockState.Mirror must dispatch through the owning block and preserve the base default state.");
     }
 
     private static void Require(bool condition, string message)
