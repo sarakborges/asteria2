@@ -1,11 +1,32 @@
 using Asteria.Content.Registries;
 using Asteria.Serialization;
 using Asteria.Content.Fluids;
+using Asteria.Core;
+using Asteria.Core.Shapes;
+using Asteria.World;
 
 namespace Asteria.Content.Blocks;
 
 public sealed class BlockState : StateHolder<Block, BlockState>
 {
+    private static readonly VoxelShape[] EMPTY_OCCLUSION_SHAPES = CreateOcclusionShapes(Shapes.Empty());
+    private static readonly VoxelShape[] FULL_BLOCK_OCCLUSION_SHAPES = CreateOcclusionShapes(Shapes.Block());
+
+    private FluidState? _fluidState;
+    private VoxelShape? _collisionShape;
+    private VoxelShape _occlusionShape = Shapes.Empty();
+    private VoxelShape[] _occlusionShapesByFace = EMPTY_OCCLUSION_SHAPES;
+    private bool _hasLargeCollisionShape;
+    private bool _cacheInitialized;
+    private readonly int _lightEmission;
+
+    private static VoxelShape[] CreateOcclusionShapes(VoxelShape shape)
+    {
+        var result = new VoxelShape[6];
+        Array.Fill(result, shape);
+        return result;
+    }
+
     private static class CodecHolder
     {
         private static readonly Codec<Block> OwnerCodec =
@@ -35,11 +56,39 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public float DestroySpeed { get; }
     public bool RequiresCorrectToolForDrops { get; }
     public bool CanOcclude { get; }
-    public bool IsRandomlyTicking { get; }
+    public bool IsRandomlyTicking { get; private set; }
     public bool IgnitedByLava { get; }
     public bool IsLiquid { get; }
     public bool IsReplaceable { get; }
     public bool ShouldSpawnTerrainParticles { get; }
+    public bool IsSolidRender { get; private set; }
+    public bool PropagatesSkylightDown { get; private set; }
+    public int LightDampening { get; private set; }
+    public bool UseShapeForLightOcclusion { get; }
+    public VoxelShape OcclusionShape => _occlusionShape;
+    public bool IsLightPermeable => !IsSolidRender || LightDampening == 0;
+
+    public int GetLightEmission() => _lightEmission;
+
+    public VoxelShape GetFaceOcclusionShape(Direction direction)
+    {
+        ArgumentNullException.ThrowIfNull(direction);
+        return _occlusionShapesByFace[direction.Get3DDataValue()];
+    }
+
+    public VoxelShape GetShape(BlockGetter level, BlockPos position) =>
+        Block.GetShape(this, level, position);
+
+    public VoxelShape GetCollisionShape(BlockGetter level, BlockPos position) =>
+        _collisionShape ?? Block.GetCollisionShape(this, level, position);
+
+    public VoxelShape GetBlockSupportShape(BlockGetter level, BlockPos position) =>
+        Block.GetBlockSupportShape(this, level, position);
+
+    public VoxelShape GetInteractionShape(BlockGetter level, BlockPos position) =>
+        Block.GetInteractionShape(this, level, position);
+
+    public bool HasLargeCollisionShape => _collisionShape is null || _hasLargeCollisionShape;
 
     internal BlockState(StateDefinition definition, object[] values)
         : base(definition, values)
@@ -49,12 +98,60 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         DestroySpeed = properties.DestroyTimeValue;
         RequiresCorrectToolForDrops = properties.RequiresCorrectToolForDropsValue;
         CanOcclude = properties.CanOccludeValue;
-        IsRandomlyTicking = properties.IsRandomlyTickingValue;
         IgnitedByLava = properties.IgnitedByLavaValue;
         IsLiquid = properties.IsLiquidValue;
         IsReplaceable = properties.ReplaceableValue;
         ShouldSpawnTerrainParticles = properties.SpawnTerrainParticlesValue;
+        UseShapeForLightOcclusion = Block.UseShapeForLightOcclusion(this);
+        _lightEmission = properties.LightEmissionValue(this);
         global::Asteria.Content.Blocks.Block.BlockStateRegistry.Add(this);
+    }
+
+    internal void InitCache()
+    {
+        if (_cacheInitialized)
+            return;
+
+        _fluidState = Block.GetFluidState(this);
+        IsRandomlyTicking = Block.IsRandomlyTickingState(this);
+
+        if (!Block.DynamicShape)
+        {
+            _collisionShape = Block.GetCollisionShape(this, EmptyBlockGetter.Instance, BlockPos.Zero);
+            _hasLargeCollisionShape = IsLargeCollisionShape(_collisionShape);
+        }
+
+        _occlusionShape = CanOcclude ? Block.GetOcclusionShape(this) : Shapes.Empty();
+        IsSolidRender = Block.IsShapeFullBlock(_occlusionShape);
+
+        if (_occlusionShape.IsEmpty())
+        {
+            _occlusionShapesByFace = EMPTY_OCCLUSION_SHAPES;
+        }
+        else if (IsSolidRender)
+        {
+            _occlusionShapesByFace = FULL_BLOCK_OCCLUSION_SHAPES;
+        }
+        else
+        {
+            _occlusionShapesByFace = new VoxelShape[6];
+            foreach (Direction direction in Direction.GetValues())
+                _occlusionShapesByFace[direction.Get3DDataValue()] = _occlusionShape.GetFaceShape(direction);
+        }
+
+        PropagatesSkylightDown = Block.PropagatesSkylightDown(this);
+        LightDampening = Block.GetLightDampening(this);
+        _cacheInitialized = true;
+    }
+
+    private static bool IsLargeCollisionShape(VoxelShape shape)
+    {
+        if (shape.IsEmpty())
+            return false;
+
+        AABB bounds = shape.Bounds();
+        return bounds.MinX < 0.0 || bounds.MinY < 0.0 || bounds.MinZ < 0.0 ||
+            bounds.MaxX > 1.0 || bounds.MaxY > 1.0 || bounds.MaxZ > 1.0;
     }
 
     public bool Is(Block block) => ReferenceEquals(Block, block);
@@ -62,5 +159,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public bool Is(TagKey<Block> tag) =>
         Block.BuiltInRegistryHolder?.Is(tag) ?? false;
 
-    public FluidState GetFluidState() => Block.GetFluidState(this);
+    public FluidState GetFluidState() =>
+        _fluidState ?? throw new InvalidOperationException(
+            "BlockState cache has not been initialized. Initialize its owning block after construction.");
 }
