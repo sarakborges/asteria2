@@ -1,6 +1,9 @@
 using Asteria.Content.Blocks.StateProperties;
 using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
+using Asteria.Core;
+using Asteria.Core.Shapes;
+using Asteria.World;
 
 namespace Asteria.Content.Blocks;
 
@@ -91,6 +94,44 @@ public class Block
     {
         ArgumentNullException.ThrowIfNull(state);
         return global::Asteria.Content.Fluids.Fluids.EMPTY.DefaultFluidState;
+    }
+
+    public virtual bool IsRandomlyTickingState(BlockState state) => IsRandomlyTicking;
+
+    public virtual VoxelShape GetShape(BlockState state, BlockGetter level, BlockPos position) =>
+        Shapes.Block();
+
+    public virtual VoxelShape GetCollisionShape(BlockState state, BlockGetter level, BlockPos position) =>
+        HasCollision ? state.GetShape(level, position) : Shapes.Empty();
+
+    public virtual VoxelShape GetBlockSupportShape(BlockState state, BlockGetter level, BlockPos position) =>
+        GetCollisionShape(state, level, position);
+
+    public virtual VoxelShape GetInteractionShape(BlockState state, BlockGetter level, BlockPos position) =>
+        Shapes.Empty();
+
+    public virtual VoxelShape GetOcclusionShape(BlockState state) =>
+        state.GetShape(EmptyBlockGetter.Instance, BlockPos.Zero);
+
+    public virtual bool UseShapeForLightOcclusion(BlockState state) => false;
+
+    public virtual bool PropagatesSkylightDown(BlockState state) =>
+        !IsShapeFullBlock(state.GetShape(EmptyBlockGetter.Instance, BlockPos.Zero)) &&
+        state.GetFluidState().IsEmpty();
+
+    public virtual int GetLightDampening(BlockState state) =>
+        state.IsSolidRender ? 15 : state.PropagatesSkylightDown ? 0 : 1;
+
+    public static bool IsShapeFullBlock(VoxelShape shape)
+    {
+        ArgumentNullException.ThrowIfNull(shape);
+        return Shapes.Equal(Shapes.Block(), shape);
+    }
+
+    internal void InitializeStateCaches()
+    {
+        foreach (BlockState state in StateDefinition.PossibleStates)
+            state.InitCache();
     }
 
     /// <summary>Copies every property shared by the source block into this block's default state.</summary>
