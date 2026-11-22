@@ -50,6 +50,12 @@ public static class Mth
     public static double Lerp(double alpha, double from, double to) =>
         from + alpha * (to - from);
 
+    public static double Frac(double value) =>
+        value - Math.Floor(value);
+
+    public static int Sign(double value) =>
+        value == 0.0 ? 0 : value > 0.0 ? 1 : -1;
+
     public static double Square(double value) => value * value;
 
     public static double Clamp(double value, double minimum, double maximum) =>
