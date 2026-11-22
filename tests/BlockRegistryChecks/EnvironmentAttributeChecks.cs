@@ -290,6 +290,21 @@ internal static class EnvironmentAttributeChecks
         Require(!ExtraCodecs.VECTOR3F.Parse(ops, JsonDocument.Parse("[0.1, 0.2]").RootElement).IsSuccess &&
                 !ExtraCodecs.VECTOR4F.Parse(ops, JsonDocument.Parse("[0.1, 0.2, 0.3]").RootElement).IsSuccess,
             "Color modifier codecs must reject vectors with the wrong number of channels.");
+
+        AttributeModifier<IReadOnlyList<AmbientParticle>, IReadOnlyList<AmbientParticle>> append =
+            (AttributeModifier<IReadOnlyList<AmbientParticle>, IReadOnlyList<AmbientParticle>>)
+            AttributeTypes.AMBIENT_PARTICLES.ModifierLibrary[AttributeOperationId.APPEND];
+        IReadOnlyList<AmbientParticle> particles = Array.AsReadOnly(new[]
+        {
+            new AmbientParticle(ParticleTypes.ASH, 0.35F)
+        });
+        JsonElement particlesEncoded = append.ArgumentCodec!.EncodeStart(ops, particles).GetOrThrow();
+        IReadOnlyList<AmbientParticle> particlesDecoded =
+            append.ArgumentCodec.Parse(ops, particlesEncoded).GetOrThrow();
+        Require(particlesDecoded.Count == 1 &&
+                ReferenceEquals(particlesDecoded[0].Particle, ParticleTypes.ASH) &&
+                particlesDecoded[0].Probability == 0.35F,
+            "Ambient-particle append arguments must round-trip through the element codec.");
     }
 
     private static void CheckEnvironmentAttributeResolution()
