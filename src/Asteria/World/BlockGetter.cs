@@ -133,4 +133,66 @@ public interface BlockGetter : LevelHeightAccessor
 
         return missFactory(context);
     }
+
+    BlockHitResult IsBlockInLine(ClipBlockStateContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        return TraverseBlocks<ClipBlockStateContext, BlockHitResult>(
+            context.GetFrom(),
+            context.GetTo(),
+            context,
+            (clipContext, position) =>
+            {
+                BlockState state = GetBlockState(position);
+                Vec3 delta = clipContext.GetFrom().Subtract(clipContext.GetTo());
+                if (!clipContext.IsTargetBlock(state))
+                    return null;
+
+                Vec3 end = clipContext.GetTo();
+                return new BlockHitResult(
+                    end,
+                    Direction.GetApproximateNearest(delta.X, delta.Y, delta.Z),
+                    BlockPos.Containing(end.X, end.Y, end.Z),
+                    inside: false);
+            },
+            clipContext =>
+            {
+                Vec3 end = clipContext.GetTo();
+                Vec3 delta = clipContext.GetFrom().Subtract(end);
+                return BlockHitResult.Miss(
+                    end,
+                    Direction.GetApproximateNearest(delta.X, delta.Y, delta.Z),
+                    BlockPos.Containing(end.X, end.Y, end.Z));
+            });
+    }
+
+    BlockHitResult? ClipWithInteractionOverride(
+        Vec3 from,
+        Vec3 to,
+        BlockPos position,
+        VoxelShape blockShape,
+        BlockState blockState)
+    {
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(to);
+        ArgumentNullException.ThrowIfNull(position);
+        ArgumentNullException.ThrowIfNull(blockShape);
+        ArgumentNullException.ThrowIfNull(blockState);
+
+        BlockHitResult? result = blockShape.Clip(from, to, position);
+        if (result is not null)
+        {
+            BlockHitResult? interactionHit =
+                blockState.GetInteractionShape(this, position).Clip(from, to, position);
+            if (interactionHit is not null &&
+                interactionHit.GetLocation().DistanceToSquared(from) <
+                result.GetLocation().DistanceToSquared(from))
+            {
+                return result.WithDirection(interactionHit.GetDirection());
+            }
+        }
+
+        return result;
+    }
 }
