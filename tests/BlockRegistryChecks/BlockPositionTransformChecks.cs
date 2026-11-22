@@ -222,6 +222,12 @@ internal static class BlockPositionTransformChecks
             "BlockState.GetDestroySpeed must return the configured destroy speed.");
         Require(state.GetLightDampening() == state.LightDampening,
             "BlockState.GetLightDampening must expose the cached light dampening value.");
+        Require(state.GetRenderShape() == RenderShape.MODEL,
+            "The default BlockBehaviour render shape must be MODEL.");
+        Require(!state.IsEmissiveRendering,
+            "Block emissive rendering must be disabled by default.");
+        Require(state.GetShadeBrightness(EmptyBlockGetter.Instance, BlockPos.Zero) == 1.0f,
+            "Block shade brightness must be one for a non-full collision shape.");
         Require(!state.ShouldRedstoneWireConnectTo(EmptyBlockGetter.Instance, BlockPos.Zero, null) &&
                 !state.ShouldRedstoneWireConnectTo(EmptyBlockGetter.Instance, BlockPos.Zero, Direction.UP),
             "BlockState should not connect redstone wire by default, including when a direction is supplied.");
