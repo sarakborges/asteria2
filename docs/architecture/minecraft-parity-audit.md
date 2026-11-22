@@ -235,7 +235,7 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `CanSpawn` consome uma amostra float de 24 bits e usa comparação inclusiva `<=`; testes cobrem a igualdade exata no limite, probabilidade zero/um e número de chamadas.
 - `AMBIENT_PARTICLES` usa listas cross-fade escalando somente a probabilidade e o modifier `append`; o atributo genérico `visual/ambient_particles` está registrado com default vazio e é syncable.
 - O registry `attribute_type` agora contém nove tipos no escopo: os sete anteriores, `particle` e `ambient_particles`.
-- O registry `particle_type` agora contém 121 tipos locais: 106 simples e 15 com opções especializadas (coloridas, spell, numéricas, record, escalares, três tipos de partículas de bloco e ITEM). O payload ITEM usa `ItemStackTemplate`; o registry parcial de itens contém somente `air` e `stick`, e patches de componentes não vazios ainda não são suportados. `VIBRATION` segue ausente, portanto os IDs numéricos ainda não têm paridade completa.
+- O registry `particle_type` agora contém 122 tipos locais: 106 simples e 16 com opções especializadas (coloridas, spell, numéricas, record, escalares, três tipos de partículas de bloco, ITEM e VIBRATION). `ItemStackTemplate` mantém o catálogo parcial `air`/`stick`; patches de componentes não vazios ainda não são suportados. A lista global de itens permanece incompleta, então os IDs numéricos do registry de itens ainda não têm paridade total.
 - Atributos específicos de blocos/objetos, áudio e regras de cama continuam excluídos. Stream codecs, buffers de pacote e multiplayer continuam excluídos pelo escopo offline.
 
 
@@ -295,6 +295,26 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - [DustParticleOptions](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/dustparticleoptions/)
 - [DustColorTransitionOptions](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/dustcolortransitionoptions/)
 - [ScalableParticleOptionsBase](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/scalableparticleoptionsbase/)
+- [ParticleTypes](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/particletypes/)
+
+## Incremento — VibrationParticleOption e fontes de posição (21/11/2026)
+
+- Criado o registry local `position_source_type`, com o tipo `block` registrado. O modelo de dispatch serializa o discriminador `type`.
+- Portado `BlockPos.CODEC`: exatamente três inteiros assinados em X/Y/Z; listas curtas ou longas falham sem valor parcial.
+- Portado `BlockPositionSource`: campo obrigatório `pos` e resolução para o centro geométrico do bloco.
+- Portado `VibrationParticleOption(destination, arrival_in_ticks)`: ambos os campos são obrigatórios; `arrival_in_ticks` usa Int32 sem restrição adicional de sinal.
+- O codec seguro da vibração rejeita fontes que não sejam de bloco com a mensagem da referência `Entity position sources are not allowed`. O tipo `entity` e `EntityPositionSource` continuam ausentes porque o domínio de entidades ainda não foi portado; o discriminador não registrado também é rejeitado.
+- `vibration` foi registrado com `overrideLimiter=false`, entre `item` e `trail`. O registry local de partículas passa a 122 tipos.
+- Não foram adicionados stream codecs, buffers de pacote ou dependências de rede. A API de posição de bloco não depende de `Level`; a obtenção de posição dependente de entidade permanece pendente do domínio correspondente.
+
+### Fontes específicas
+
+- [VibrationParticleOption](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/vibrationparticleoption/)
+- [PositionSource](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/gameevent/positionsource/)
+- [PositionSourceType](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/gameevent/positionsourcetype/)
+- [BlockPositionSource](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/gameevent/blockpositionsource/)
+- [BlockPos](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/blockpos/)
+- [BuiltInRegistries](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/registries/builtinregistries/)
 - [ParticleTypes](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/particletypes/)
 
 ## Incremento — `BlockParticleOption` e `BlockState.CODEC` (21/11/2026)

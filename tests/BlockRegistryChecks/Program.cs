@@ -158,7 +158,7 @@ internal static class Program
         try
         {
             RunChecks();
-            Console.WriteLine("Block, fluid, biome, particle, environment-attribute and attribute-type registries, typed environment attributes, state holders, directions, math primitives, palettes, chunk sections, coordinates, heightmaps, and chunk storage checks passed.");
+            Console.WriteLine("Block, fluid, biome, particle, environment-attribute and attribute-type and position-source-type registries, typed environment attributes, state holders, directions, math primitives, palettes, chunk sections, coordinates, heightmaps, and chunk storage checks passed.");
             return 0;
         }
         catch (Exception exception)
@@ -196,7 +196,7 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 7, "The root registry must contain the built-in block, fluid, item, biome, particle, environment-attribute and attribute-type registries.");
+        Require(BuiltInRegistries.Root.Count == 8, "The root registry must contain the built-in block, fluid, item, biome, particle, environment-attribute, attribute-type and position-source-type registries.");
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
@@ -213,6 +213,7 @@ internal static class Program
         Require(BuiltInRegistries.Item.Count == 2, "The partial built-in item registry must contain only air and stick.");
         Require(BuiltInRegistries.Fluid.Count == 1, "Only the empty fluid should be registered.");
         Require(BuiltInRegistries.Biome.Count == 2, "The built-in biome registry must contain plains and desert.");
+        Require(BuiltInRegistries.PositionSourceType.Count == 1, "The local position-source registry must contain only the block variant.");
         Require(BuiltInRegistries.AttributeType.Count == 9, "The attribute-type registry must contain the seven existing value types plus particle and ambient-particle types.");
         Require(Fluid.FluidStateRegistry.Count == 1, "The fluid-state ID map must contain every registered fluid state.");
         Require(ReferenceEquals(Blocks.AIR.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState), "Air must contain the empty fluid state.");
@@ -269,8 +270,8 @@ internal static class Program
             BuiltInRegistries.RootLocation == ResourceLocation.Parse("asteria:root"),
             "The root registry must use the Asteria namespace.");
         Require(
-            BuiltInRegistries.Root.Count == 7 && !BuiltInRegistries.Root.IsFrozen,
-            "The root registry must register built-in registries before bootstrap freezes it.");
+            BuiltInRegistries.Root.Count == 8 && !BuiltInRegistries.Root.IsFrozen,
+            "The root registry must register all eight built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =
             RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Block.Location);
@@ -310,12 +311,21 @@ internal static class Program
         Require(
             attributeTypeRegistryHolder is not null && !attributeTypeRegistryHolder.IsBound,
             "The root registry must create an unbound holder for the attribute-type registry before bootstrap.");
+
+        RegistryKey<IRegistry> positionSourceRegistryKey =
+            RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.PositionSourceType.Location);
+        Holder<IRegistry>.Reference? positionSourceRegistryHolder =
+            BuiltInRegistries.Root.GetHolder(positionSourceRegistryKey);
+        Require(
+            positionSourceRegistryHolder is not null && !positionSourceRegistryHolder.IsBound,
+            "The root registry must create an unbound holder for the position-source-type registry before bootstrap.");
         Require(
             BuiltInRegistries.Block.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
             BuiltInRegistries.Fluid.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
             BuiltInRegistries.Biome.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
             BuiltInRegistries.EnvironmentAttribute.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
-            BuiltInRegistries.AttributeType.Key.RegistryLocation == BuiltInRegistries.RootLocation,
+            BuiltInRegistries.AttributeType.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
+            BuiltInRegistries.PositionSourceType.Key.RegistryLocation == BuiltInRegistries.RootLocation,
             "Child registry keys must be rooted in the Asteria root registry.");
     }
 

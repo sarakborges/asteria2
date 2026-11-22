@@ -12,6 +12,7 @@ using Asteria.Content.Fluids;
 using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Content.Identifiers;
 using Asteria.World.Attributes;
+using Asteria.World.GameEvents;
 
 namespace Asteria.Content.Registries;
 
@@ -65,6 +66,11 @@ public static class BuiltInRegistries
         RegisterSimple<IAttributeType>(
             ResourceLocation.FromNamespaceAndPath("asteria", "attribute_type"),
             static () => BuiltInAttributeTypes.RegisterAll());
+
+    public static Registry<PositionSourceType> PositionSourceType { get; } =
+        RegisterSimple<PositionSourceType>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "position_source_type"),
+            static () => PositionSourceTypes.RegisterAll());
 
     private static Registry<T> RegisterSimple<T>(
         ResourceLocation location,

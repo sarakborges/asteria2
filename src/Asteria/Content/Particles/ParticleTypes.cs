@@ -85,6 +85,9 @@ public static class ParticleTypes
     public static readonly ParticleType<ItemParticleOption> ITEM =
         RegisterConfigured<ItemParticleOption>(
             "item", false, ItemParticleOption.CreateCodec);
+    public static readonly ParticleType<VibrationParticleOption> VIBRATION =
+        RegisterConfigured<VibrationParticleOption>(
+            "vibration", false, static _ => VibrationParticleOption.CODEC);
     public static readonly ParticleType<TrailParticleOption> TRAIL =
         RegisterConfigured<TrailParticleOption>(
             "trail", false, static _ => TrailParticleOption.CODEC);
@@ -165,9 +168,10 @@ public static class ParticleTypes
     public const int ScalableOptionCount = 2;
     public const int BlockOptionCount = 3;
     public const int ItemOptionCount = 1;
+    public const int VibrationOptionCount = 1;
     public const int RegisteredTypeCount =
         SimpleTypeCount + ColorTypeCount + SpellOptionCount + NumericOptionCount +
-        RecordOptionCount + ScalableOptionCount + BlockOptionCount + ItemOptionCount;
+        RecordOptionCount + ScalableOptionCount + BlockOptionCount + ItemOptionCount + VibrationOptionCount;
 
     public static Codec<IParticleOptions> CODEC { get; } =
         MapCodec<IParticleOptions>.Dispatch(

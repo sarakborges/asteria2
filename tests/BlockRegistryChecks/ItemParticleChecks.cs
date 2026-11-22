@@ -190,6 +190,8 @@ internal static class ItemParticleChecks
                 BuiltInRegistries.ParticleType.GetId(ParticleTypes.INSTANT_EFFECT) <
                 BuiltInRegistries.ParticleType.GetId(ParticleTypes.ITEM) &&
                 BuiltInRegistries.ParticleType.GetId(ParticleTypes.ITEM) <
+                BuiltInRegistries.ParticleType.GetId(ParticleTypes.VIBRATION) &&
+                BuiltInRegistries.ParticleType.GetId(ParticleTypes.VIBRATION) <
                 BuiltInRegistries.ParticleType.GetId(ParticleTypes.TRAIL),
             "Item particle must retain overrideLimiter=false and its source declaration position.");
     }
