@@ -54,6 +54,9 @@ public abstract class Fluid
 
     public abstract VoxelShape GetShape(FluidState state, BlockGetter level, BlockPos position);
 
+    public bool Is(TagKey<Fluid> tag) =>
+        BuiltInRegistryHolder?.Is(tag) ?? false;
+
     public virtual AABB? GetAABB(FluidState state, BlockGetter level, BlockPos position)
     {
         if (IsEmpty)
