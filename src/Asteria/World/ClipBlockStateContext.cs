@@ -10,6 +10,10 @@ public sealed class ClipBlockStateContext
 {
     private readonly Predicate<BlockState> _targetBlock;
 
+    public Vec3 From { get; }
+
+    public Vec3 To { get; }
+
     public ClipBlockStateContext(
         Vec3 from,
         Vec3 to,
