@@ -16,8 +16,8 @@ public sealed class Chunk : LevelHeightAccessor
     private readonly ChunkPos _chunkPos;
     private readonly LevelHeightAccessor _levelHeightAccessor;
     private readonly ChunkSection[] _sections;
-    private readonly Dictionary<HeightmapType, Heightmap> _heightmaps = new();
-    private readonly ReadOnlyDictionary<HeightmapType, Heightmap> _heightmapsView;
+    private readonly Dictionary<Heightmap.Types, Heightmap> _heightmaps = new();
+    private readonly ReadOnlyDictionary<Heightmap.Types, Heightmap> _heightmapsView;
 
     public Chunk(
         ChunkPos chunkPos,
@@ -31,7 +31,7 @@ public sealed class Chunk : LevelHeightAccessor
         _chunkPos = chunkPos;
         _levelHeightAccessor = levelHeightAccessor;
         _sections = new ChunkSection[levelHeightAccessor.GetSectionsCount()];
-        _heightmapsView = new ReadOnlyDictionary<HeightmapType, Heightmap>(_heightmaps);
+        _heightmapsView = new ReadOnlyDictionary<Heightmap.Types, Heightmap>(_heightmaps);
 
         if (sections is not null)
         {
@@ -138,13 +138,13 @@ public sealed class Chunk : LevelHeightAccessor
     }
 
     /// <summary>Returns a read-only view of the heightmaps currently owned by this chunk.</summary>
-    public IReadOnlyDictionary<HeightmapType, Heightmap> GetHeightmaps() => _heightmapsView;
+    public IReadOnlyDictionary<Heightmap.Types, Heightmap> GetHeightmaps() => _heightmapsView;
 
     /// <summary>
     /// Loads serialized heightmap words. An incompatible word count falls back to a fresh
     /// priming pass, matching ChunkAccess.setHeightmap and Heightmap.setRawData.
     /// </summary>
-    public void SetHeightmap(HeightmapType type, ulong[] data)
+    public void SetHeightmap(Heightmap.Types type, ulong[] data)
     {
         ArgumentNullException.ThrowIfNull(data);
         GetOrCreateHeightmapUnprimed(type).SetRawData(this, type, data);
@@ -153,7 +153,7 @@ public sealed class Chunk : LevelHeightAccessor
     /// <summary>
     /// Gets an existing heightmap or creates an unprimed one, matching ChunkAccess.
     /// </summary>
-    public Heightmap GetOrCreateHeightmapUnprimed(HeightmapType type)
+    public Heightmap GetOrCreateHeightmapUnprimed(Heightmap.Types type)
     {
         if (_heightmaps.TryGetValue(type, out Heightmap? heightmap))
             return heightmap;
@@ -167,37 +167,19 @@ public sealed class Chunk : LevelHeightAccessor
     /// Reports whether a heightmap entry exists, matching the reference method's map-presence semantics.
     /// An explicitly created unprimed map also counts as present.
     /// </summary>
-    public bool HasPrimedHeightmap(HeightmapType type) =>
+    public bool HasPrimedHeightmap(Heightmap.Types type) =>
         _heightmaps.ContainsKey(type);
-
-    /// <summary>
-    /// Creates and primes all requested heightmaps in one shared top-down scan.
-    /// </summary>
-    public void PrimeHeightmaps(IEnumerable<HeightmapType> types)
-    {
-        ArgumentNullException.ThrowIfNull(types);
-
-        var requested = new List<Heightmap>();
-        var seen = new HashSet<HeightmapType>();
-        foreach (HeightmapType type in types)
-        {
-            if (seen.Add(type))
-                requested.Add(GetOrCreateHeightmapUnprimed(type));
-        }
-
-        Heightmap.PrimeAll(requested);
-    }
 
     /// <summary>
     /// Returns the highest occupied Y for a column. If the heightmap does not exist,
     /// it is created and primed lazily, matching ChunkAccess.getHeight.
     /// X and Z are world coordinates; their low four bits select the local column.
     /// </summary>
-    public int GetHeight(HeightmapType type, int x, int z)
+    public int GetHeight(Heightmap.Types type, int x, int z)
     {
         if (!_heightmaps.TryGetValue(type, out Heightmap? heightmap))
         {
-            PrimeHeightmaps(new[] { type });
+            Heightmap.PrimeHeightmaps(this, new[] { type });
             heightmap = _heightmaps[type];
         }
 
