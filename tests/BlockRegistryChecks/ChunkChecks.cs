@@ -102,14 +102,15 @@ internal static class ChunkChecks
         BlockGetter getter = chunk;
 
         BlockPos stonePosition = new(2, 6, 4);
+        BlockPos lightPosition = new(3, 6, 4);
         BlockPos airAboveStone = stonePosition.Above();
         chunk.GetSection(chunk.GetSectionIndex(stonePosition.GetY()))
-            .SetBlockState(2, stonePosition.GetY() & 15, 4, lightEmittingState);
-        chunk.GetSection(chunk.GetSectionIndex(6))
-            .SetBlockState(2, 6 & 15, 4, Blocks.STONE.DefaultState);
+            .SetBlockState(2, stonePosition.GetY() & 15, 4, Blocks.STONE.DefaultState);
+        chunk.GetSection(chunk.GetSectionIndex(lightPosition.GetY()))
+            .SetBlockState(3, lightPosition.GetY() & 15, 4, lightEmittingState);
 
         Require(
-            getter.GetLightEmission(stonePosition) == lightEmittingState.GetLightEmission(),
+            getter.GetLightEmission(lightPosition) == lightEmittingState.GetLightEmission(),
             "BlockGetter light emission must delegate to the stored block state.");
         Require(
             getter.GetBlockFloorHeight(stonePosition) == 1.0,
