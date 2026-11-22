@@ -34,6 +34,7 @@ public static class FloatModifier
     {
         public override AttributeOperationId OperationId => AttributeOperationId.ALPHA_BLEND;
         public override string GetSerializedName() => OperationId.GetSerializedName();
+        public override Asteria.Serialization.Codec<FloatWithAlpha> ArgumentCodec => FloatWithAlpha.CODEC;
 
         public override float Apply(float subject, FloatWithAlpha argument) =>
             subject + argument.Alpha * (argument.Value - subject);
@@ -51,6 +52,7 @@ public static class FloatModifier
     {
         public override AttributeOperationId OperationId { get; } = operationId;
         public override string GetSerializedName() => OperationId.GetSerializedName();
+        public override Asteria.Serialization.Codec<float> ArgumentCodec => Asteria.Serialization.Codecs.FLOAT;
         public override float Apply(float subject, float argument) => apply(subject, argument);
         public override LerpFunction<float> ArgumentKeyframeLerp(EnvironmentAttribute<float> attribute) =>
             LerpFunction<float>.OfFloat();
