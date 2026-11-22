@@ -177,6 +177,7 @@ internal static class Program
         DynamicOpsChecks.Run();
         CodecChecks.Run();
         CoordinatePositionChecks.Run();
+        BlockPositionTransformChecks.Run();
         DirectionChecks.Run();
         Vec3Checks.Run();
         AabbChecks.Run();
