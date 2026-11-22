@@ -23,6 +23,7 @@ public sealed class BlockProperties
     public bool ReplaceableValue { get; private set; }
     public bool SpawnTerrainParticlesValue { get; private set; } = true;
     public bool IsAir { get; private set; }
+    public Func<BlockState, int> LightEmissionValue { get; private set; } = static _ => 0;
 
     private BlockProperties()
     {
@@ -97,6 +98,12 @@ public sealed class BlockProperties
     public BlockProperties RandomTicks()
     {
         IsRandomlyTickingValue = true;
+        return this;
+    }
+
+    public BlockProperties LightLevel(Func<BlockState, int> lightEmission)
+    {
+        LightEmissionValue = lightEmission ?? throw new ArgumentNullException(nameof(lightEmission));
         return this;
     }
 
