@@ -4,6 +4,9 @@ using Asteria.Content.Chunks;
 using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
 using Asteria.Content.Storage;
+using Asteria.Core;
+using Asteria.Core.Shapes;
+using Asteria.World;
 
 internal static class FluidChecks
 {
@@ -45,8 +48,14 @@ internal static class FluidChecks
         public override int GetAmount(FluidState state) =>
             state.GetValue(LEVEL);
 
+        public override float GetHeight(FluidState state, BlockGetter level, BlockPos position) =>
+            state.GetOwnHeight();
+
         public override float GetOwnHeight(FluidState state) =>
             GetAmount(state) / 9.0f;
+
+        public override VoxelShape GetShape(FluidState state, BlockGetter level, BlockPos position) =>
+            Shapes.Box(0.0, 0.0, 0.0, 1.0, state.GetHeight(level, position), 1.0);
     }
 
     public static void Run()
@@ -72,6 +81,12 @@ internal static class FluidChecks
         Require(!empty.IsRandomlyTicking(), "The empty fluid must not randomly tick.");
         Require(empty.GetAmount() == 0, "The empty fluid amount must be zero.");
         Require(empty.GetOwnHeight() == 0.0f, "The empty fluid height must be zero.");
+        Require(
+            empty.GetHeight(EmptyBlockGetter.Instance, BlockPos.Zero) == 0.0f,
+            "The empty fluid contextual height must be zero.");
+        Require(
+            empty.GetShape(EmptyBlockGetter.Instance, BlockPos.Zero).IsEmpty(),
+            "The empty fluid shape must be empty.");
         Require(!empty.IsFull(), "The empty fluid state must not be full.");
 
         var fluid = new TestFluid();
@@ -90,6 +105,12 @@ internal static class FluidChecks
         Require(full.IsSource() && full.IsSourceOfType(fluid), "FluidState source checks must delegate to the owning fluid.");
         Require(full.IsFull() && full.GetAmount() == 8, "A fluid amount of eight must be full.");
         Require(full.GetOwnHeight() == 8.0f / 9.0f, "Fluid own height must delegate to the owning fluid.");
+        Require(
+            full.GetHeight(EmptyBlockGetter.Instance, BlockPos.Zero) == 8.0f / 9.0f,
+            "Fluid contextual height must delegate to the owning fluid.");
+        Require(
+            Math.Abs(full.GetShape(EmptyBlockGetter.Instance, BlockPos.Zero).Max(Direction.Axis.Y) - 8.0 / 9.0) < 1.0E-6,
+            "Fluid shape must use the contextual fluid height.");
         Require(full.IsRandomlyTicking(), "Fluid-state random ticking must delegate to the owning fluid.");
         Require(!full.IsEmpty(), "A non-empty fluid type must not report an empty state.");
 
