@@ -5,11 +5,12 @@ using Asteria.World;
 
 internal static class BlockStateCacheChecks
 {
-    public static void Run()
+    public static void Run(BlockState lightEmittingState)
     {
+        ArgumentNullException.ThrowIfNull(lightEmittingState);
         CheckAirStateCache();
         CheckSolidStateCache();
-        CheckConfiguredLightEmission();
+        CheckConfiguredLightEmission(lightEmittingState);
     }
 
     private static void CheckAirStateCache()
@@ -52,22 +53,10 @@ internal static class BlockStateCacheChecks
                 "A full-block occlusion shape must use the shared full-block shape on every face.");
     }
 
-    private static void CheckConfiguredLightEmission()
+    private static void CheckConfiguredLightEmission(BlockState state)
     {
-        var block = new LightEmittingTestBlock();
-        Require(block.DefaultState.GetLightEmission() == 11,
+        Require(state.GetLightEmission() == 11,
             "Block-state light emission must be computed from the owning block properties.");
-    }
-
-    private sealed class LightEmittingTestBlock : Block
-    {
-        public LightEmittingTestBlock()
-            : base(
-                BlockProperties.Of().LightLevel(static _ => 11),
-                createIntrusiveRegistryHolder: false)
-        {
-            InitializeStateCaches();
-        }
     }
 
     private static void Require(bool condition, string message)
