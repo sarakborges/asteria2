@@ -2588,6 +2588,12 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         return new PalettedContainer<BlockState>(defaultState, strategy);
     }
 
+    private static ChunkSection CreateChunkSection(PalettedContainer<BlockState> states)
+    {
+        BiomeContainerFactory biomeFactory = BiomeContainerFactory.CreateBuiltIn();
+        return new ChunkSection(states, biomeFactory.CreateForBiomes());
+    }
+
     private static (int X, int Y, int Z) BlockCoordinates(int index)
     {
         if ((uint)index >= ChunkSection.BlockCount)
@@ -2829,17 +2835,19 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             ReferenceEquals(sectionWithSuppliedStrategy.GetBlockState(3, 3, 3), Blocks.AIR.DefaultState),
             "LevelChunkSection must accept its paired block-state and biome containers without imposing redundant size validation.");
 
-        var section = new ChunkSection(CreateBlockStateContainer(Blocks.AIR.DefaultState));
+        var section = CreateChunkSection(CreateBlockStateContainer(Blocks.AIR.DefaultState));
         Require(section.HasOnlyAir, "A new section must be empty.");
-        Require(section.NonAirBlockCount == 0, "A new section must contain zero non-air blocks.");
-        Require(section.PaletteMode == PaletteMode.SingleValue, "An empty section must start in single-value mode.");
+        Require(
+            section.GetStates().Mode == PaletteMode.SingleValue,
+            "An empty section must start in single-value mode.");
 
         PalettedContainer<BlockState> prefilledStates = CreateBlockStateContainer(Blocks.AIR.DefaultState);
         prefilledStates.Set(1, 0, 0, TestBlocks.TEST_BLOCK.DefaultState);
-        ChunkSection prefilledSection = new(prefilledStates);
+        ChunkSection prefilledSection = CreateChunkSection(prefilledStates);
         Require(
-            prefilledSection.NonAirBlockCount == 1,
+            !prefilledSection.HasOnlyAir,
             "The LevelChunkSection container constructor must recalculate cached counts from the supplied state container.");
+
         BlockState xAxisState = TestBlocks.TEST_BLOCK.DefaultState;
         BlockState zAxisState = xAxisState.SetValue(TestBlocks.TEST_STAGE, 2);
         BlockState yAxisState = xAxisState.SetValue(TestBlocks.TEST_POWERED, true);
@@ -2861,26 +2869,33 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         BlockState tickingOn = tickingOff.SetValue(tickingProperty, true);
         PalettedContainer<BlockState> tickingStates = CreateBlockStateContainer(Blocks.AIR.DefaultState);
         tickingStates.Set(0, 0, 0, tickingOff);
-        ChunkSection tickingSection = new(tickingStates);
+        ChunkSection tickingSection = CreateChunkSection(tickingStates);
         Require(
-            tickingSection.TickingBlockCount == 1 && tickingSection.IsRandomlyTickingBlocks && tickingSection.IsRandomlyTicking,
+            tickingSection.IsRandomlyTickingBlocks && tickingSection.IsRandomlyTicking,
             "The supplied state container must initialize the section's randomly-ticking block count.");
         tickingSection.SetBlockState(0, 0, 0, Blocks.AIR.DefaultState);
         Require(
-            tickingSection.TickingBlockCount == 0 && !tickingSection.IsRandomlyTickingBlocks && !tickingSection.IsRandomlyTicking,
+            !tickingSection.IsRandomlyTickingBlocks && !tickingSection.IsRandomlyTicking,
             "Replacing a randomly-ticking block with air must decrement the ticking count.");
         tickingSection.SetBlockState(1, 0, 0, tickingOff);
-        Require(tickingSection.TickingBlockCount == 1, "Placing a randomly-ticking block must increment the ticking count.");
+        Require(tickingSection.IsRandomlyTickingBlocks, "Placing a randomly-ticking block must increment the ticking count.");
         tickingSection.SetBlockState(1, 0, 0, tickingOn);
-        Require(tickingSection.TickingBlockCount == 1, "Changing properties within a randomly-ticking block must not change the ticking count.");
+        Require(tickingSection.IsRandomlyTickingBlocks, "Changing properties within a randomly-ticking block must not change the ticking count.");
         ChunkSection tickingCopy = tickingSection.Copy();
-        Require(tickingCopy.TickingBlockCount == 1 && tickingCopy.IsRandomlyTicking, "Copy must preserve the ticking-block counter.");
+        Require(tickingCopy.IsRandomlyTicking, "Copy must preserve the ticking-block counter.");
         tickingCopy.SetBlockState(1, 0, 0, Blocks.AIR.DefaultState);
-        Require(tickingCopy.TickingBlockCount == 0 && tickingSection.TickingBlockCount == 1, "A copied section must maintain an independent ticking-block counter.");
+        Require(
+            !tickingCopy.IsRandomlyTicking && tickingSection.IsRandomlyTicking,
+            "A copied section must maintain an independent ticking-block counter.");
         tickingSection.GetStates().Set(2, 0, 0, tickingOff);
-        Require(tickingSection.TickingBlockCount == 1, "Direct container writes must leave the cached ticking-block count unchanged.");
+        tickingSection.SetBlockState(1, 0, 0, Blocks.AIR.DefaultState);
+        Require(
+            !tickingSection.IsRandomlyTickingBlocks,
+            "Direct container writes must leave the cached ticking-block count unchanged.");
         tickingSection.RecalculateBlockCounts();
-        Require(tickingSection.TickingBlockCount == 2, "RecalculateBlockCounts must rebuild the ticking-block count after direct container writes.");
+        Require(
+            tickingSection.IsRandomlyTickingBlocks,
+            "RecalculateBlockCounts must rebuild the ticking-block count after direct container writes.");
 
         var tickingAirBlock = new TestBlockDefinition(
             BlockProperties.Of().Air().RandomTicks());
@@ -2890,58 +2905,53 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "The block-state model must allow the air and random-ticking flags to coexist.");
         PalettedContainer<BlockState> tickingAirStates = CreateBlockStateContainer(Blocks.AIR.DefaultState);
         tickingAirStates.Set(0, 0, 0, tickingAirState);
-        ChunkSection tickingAirSection = new(tickingAirStates);
+        ChunkSection tickingAirSection = CreateChunkSection(tickingAirStates);
         Require(
-            tickingAirSection.NonAirBlockCount == 0 && tickingAirSection.TickingBlockCount == 0 &&
             !tickingAirSection.IsRandomlyTicking,
             "RecalculateBlockCounts must exclude randomly-ticking states when their block is air.");
         tickingAirSection.SetBlockState(1, 0, 0, tickingOff);
-        Require(tickingAirSection.TickingBlockCount == 1, "A non-air randomly-ticking block must increment the ticking count.");
+        Require(tickingAirSection.IsRandomlyTickingBlocks, "A non-air randomly-ticking block must increment the ticking count.");
         tickingAirSection.SetBlockState(1, 0, 0, tickingAirState);
         Require(
-            tickingAirSection.NonAirBlockCount == 0 && tickingAirSection.TickingBlockCount == 0,
+            !tickingAirSection.IsRandomlyTickingBlocks,
             "Replacing a ticking block with an air state must decrement the count without adding the air state's tick flag.");
         tickingAirSection.SetBlockState(1, 0, 0, Blocks.AIR.DefaultState);
         Require(
-            tickingAirSection.TickingBlockCount == 0,
+            !tickingAirSection.IsRandomlyTickingBlocks,
             "Replacing one air state with another must not decrement or increment the ticking count.");
 
         BlockState placedState = TestBlocks.TEST_BLOCK.DefaultState;
         BlockState previous = section.SetBlockState(15, 15, 15, placedState);
         Require(ReferenceEquals(previous, Blocks.AIR.DefaultState), "SetBlockState must return the previous state.");
         Require(ReferenceEquals(section.GetBlockState(15, 15, 15), placedState), "Reads must return the placed state.");
-        Require(section.NonAirBlockCount == 1, "Placing a non-air block must increment the count.");
-        Require(!section.HasOnlyAir, "A section with a non-air block must not be empty.");
-
+        Require(!section.HasOnlyAir, "Placing a non-air block must make the section non-empty.");
         section.SetBlockState(15, 15, 15, placedState.SetValue(TestBlocks.TEST_STAGE, 2));
-        Require(section.NonAirBlockCount == 1, "Replacing one non-air state with another must not change the count.");
+        Require(!section.HasOnlyAir, "Replacing one non-air state with another must preserve the section's non-empty state.");
         section.SetBlockState(15, 15, 15, Blocks.AIR.DefaultState);
-        Require(section.NonAirBlockCount == 0, "Replacing non-air with air must decrement the count.");
         Require(section.HasOnlyAir, "The section must become empty after restoring air.");
         Require(section.MaybeHas(state => !state.IsAir), "maybeHas may conservatively return true for an unused local entry.");
 
-        // LevelChunkSection exposes its state container and can rebuild its cached counters.
         section.GetStates().Set(0, 0, 0, placedState);
-        Require(section.NonAirBlockCount == 0, "Direct container writes do not implicitly update section counters.");
+        Require(section.HasOnlyAir, "Direct container writes do not implicitly update section counters.");
 
-        var staleCounterSection = new ChunkSection(CreateBlockStateContainer(Blocks.AIR.DefaultState));
+        var staleCounterSection = CreateChunkSection(CreateBlockStateContainer(Blocks.AIR.DefaultState));
         staleCounterSection.GetStates().Set(0, 0, 0, placedState);
         staleCounterSection.SetBlockState(0, 0, 0, Blocks.AIR.DefaultState);
         Require(
-            staleCounterSection.NonAirBlockCount == -1 && !staleCounterSection.HasOnlyAir,
+            !staleCounterSection.HasOnlyAir,
             "LevelChunkSection must preserve vanilla signed-short counter behavior when direct container writes leave the cached count stale.");
 
         section.RecalculateBlockCounts();
-        Require(section.NonAirBlockCount == 1, "RecalculateBlockCounts must rebuild the non-air count from palette contents.");
+        Require(!section.HasOnlyAir, "RecalculateBlockCounts must rebuild the non-air count from palette contents.");
 
         ChunkSection sectionCopy = section.Copy();
-        Require(sectionCopy.NonAirBlockCount == 1, "A copied section must preserve its cached counters.");
+        Require(!sectionCopy.HasOnlyAir, "A copied section must preserve its cached counters.");
         Require(ReferenceEquals(sectionCopy.GetBlockState(0, 0, 0), placedState), "A copied section must preserve block states.");
         sectionCopy.SetBlockState(0, 0, 0, Blocks.AIR.DefaultState);
-        Require(sectionCopy.NonAirBlockCount == 0, "Mutating a copied section must update its own counters.");
-        Require(section.NonAirBlockCount == 1, "Mutating a copied section must not affect the original.");
+        Require(sectionCopy.HasOnlyAir, "Mutating a copied section must update its own counters.");
+        Require(!section.HasOnlyAir, "Mutating a copied section must not affect the original.");
 
-        var emptySection = new ChunkSection(CreateBlockStateContainer(Blocks.AIR.DefaultState));
+        var emptySection = CreateChunkSection(CreateBlockStateContainer(Blocks.AIR.DefaultState));
         Require(!emptySection.MaybeHas(state => !state.IsAir), "An untouched air-only palette must rule out non-air blocks.");
         Require(
             ReferenceEquals(section.GetBlockState(16, 0, 0), section.GetBlockState(0, 0, 1)),
