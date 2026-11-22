@@ -256,7 +256,7 @@ internal static class ChunkChecks
 
         BlockPos fluidPosition = new(1, 7, 4);
         BlockPos stonePosition = new(3, 7, 4);
-        var fluidBlock = new ClipFluidBlock(fluidState);
+        var fluidBlock = new ClipFluidBlock(fluidState.GetFluidState());
         ChunkSection section = chunk.GetSection(chunk.GetSectionIndex(fluidPosition.GetY()));
         section.SetBlockState(1, 7, 4, fluidBlock.DefaultState);
         section.SetBlockState(3, 7, 4, Blocks.STONE.DefaultState);
