@@ -33,6 +33,7 @@ public static class IntegerModifier
     {
         public override AttributeOperationId OperationId { get; } = operationId;
         public override string GetSerializedName() => OperationId.GetSerializedName();
+        public override Asteria.Serialization.Codec<int> ArgumentCodec => Asteria.Serialization.Codecs.INT;
         public override int Apply(int subject, int argument) => apply(subject, argument);
         public override LerpFunction<int> ArgumentKeyframeLerp(EnvironmentAttribute<int> attribute) =>
             LerpFunction<int>.OfInteger();
