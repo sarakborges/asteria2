@@ -1,4 +1,5 @@
 using Asteria.Serialization;
+using Asteria.World.Attributes;
 
 namespace Asteria.World.Timelines;
 

@@ -1,3 +1,5 @@
+using Asteria.World.Attributes;
+
 namespace Asteria.World.Timelines;
 
 /// <summary>Precomputed segments for sampling an ordered keyframe track.</summary>

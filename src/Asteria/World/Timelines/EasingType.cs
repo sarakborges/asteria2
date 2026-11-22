@@ -91,7 +91,7 @@ public abstract class EasingType
 
     public sealed class CubicBezierEasing : EasingType, IEquatable<CubicBezierEasing>
     {
-        public static Codec<CubicBezierEasing> CODEC { get; } =
+        public static Codec<CubicBezierEasing> CUBIC_BEZIER_CODEC { get; } =
             CubicBezierControls.CODEC.FieldOf("cubic_bezier")
                 .XMap<CubicBezierEasing>(
                     static controls => new CubicBezierEasing(controls),
@@ -186,7 +186,7 @@ public abstract class EasingType
             ArgumentNullException.ThrowIfNull(input);
 
             if (input is CubicBezierEasing cubicBezier)
-                return CubicBezierEasing.CODEC.Encode(cubicBezier, ops, prefix);
+                return CubicBezierEasing.CUBIC_BEZIER_CODEC.Encode(cubicBezier, ops, prefix);
 
             foreach (KeyValuePair<string, EasingType> entry in MutableSimpleRegistry)
             {
@@ -210,12 +210,12 @@ public abstract class EasingType
                         new Pair<EasingType, TData>(easing, simplePair.Second));
 
                 DataResult<Pair<CubicBezierEasing, TData>> notBezier =
-                    CubicBezierEasing.CODEC.Decode(ops, input);
+                    CubicBezierEasing.CUBIC_BEZIER_CODEC.Decode(ops, input);
                 return DataResult<Pair<EasingType, TData>>.Error(
                     () => $"Unknown easing type '{simplePair.First}'. {notBezier.ErrorMessage}");
             }
 
-            return CubicBezierEasing.CODEC.Decode(ops, input).Map(pair =>
+            return CubicBezierEasing.CUBIC_BEZIER_CODEC.Decode(ops, input).Map(pair =>
                 new Pair<EasingType, TData>(pair.First, pair.Second));
         }
     }
