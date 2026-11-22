@@ -104,6 +104,9 @@ public class Block
     public virtual VoxelShape GetCollisionShape(BlockState state, BlockGetter level, BlockPos position) =>
         HasCollision ? state.GetShape(level, position) : Shapes.Empty();
 
+    public virtual VoxelShape GetVisualShape(BlockState state, BlockGetter level, BlockPos position) =>
+        GetCollisionShape(state, level, position);
+
     public virtual VoxelShape GetBlockSupportShape(BlockState state, BlockGetter level, BlockPos position) =>
         GetCollisionShape(state, level, position);
 
