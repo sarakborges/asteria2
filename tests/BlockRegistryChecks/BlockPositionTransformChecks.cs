@@ -208,7 +208,7 @@ internal static class BlockPositionTransformChecks
 
     private static void CheckBlockStateTransforms()
     {
-        BlockState state = TestBlocks.TEST_BLOCK.DefaultState;
+        BlockState state = Blocks.AIR.DefaultState;
         Require(ReferenceEquals(state, state.Rotate(Rotation.CLOCKWISE_90)),
             "BlockState.Rotate must dispatch through the owning block and preserve the base default state.");
         Require(ReferenceEquals(state, state.Mirror(Mirror.FRONT_BACK)),
