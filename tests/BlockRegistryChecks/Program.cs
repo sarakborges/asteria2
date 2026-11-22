@@ -112,7 +112,7 @@ internal static class Program
             TEST_POWERED = BooleanProperty.Create("powered");
             TEST_STAGE = IntegerProperty.Create("stage", 0, 2);
             TEST_BLOCK = new TestBlockDefinition(
-                BlockProperties.Of().Strength(1.5f, 6.0f),
+                BlockProperties.Of().Strength(1.5f, 6.0f).LightLevel(static _ => 11),
                 builder =>
                 {
                     builder.Add(TEST_POWERED);
@@ -192,7 +192,7 @@ internal static class Program
             "Block states must receive IDs during block construction, before registry bootstrap.");
         CheckBuiltInRegistryRoot();
         RegistryBootstrap.Initialize();
-        BlockStateCacheChecks.Run();
+        BlockStateCacheChecks.Run(TestBlocks.TEST_BLOCK.DefaultState);
         RegistryBootstrap.Initialize();
         Require(RegistryBootstrap.IsInitialized, "Bootstrap must complete and remain idempotent.");
         Require(BuiltInRegistries.AreFrozen, "Built-in registries must be frozen.");
