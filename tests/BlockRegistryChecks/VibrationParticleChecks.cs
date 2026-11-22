@@ -36,7 +36,10 @@ internal static class VibrationParticleChecks
         DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
         var position = new BlockPos(-12, 64, 37);
 
-        JsonElement encodedPosition = BlockPos.CODEC.EncodeStart(ops, position).GetOrThrow();
+        DataResult<JsonElement> encodedPositionResult = BlockPos.CODEC.EncodeStart(ops, position);
+        Require(ReferenceEquals(encodedPositionResult.Lifecycle, Lifecycle.Stable()),
+            "BlockPos codec writes must retain stable lifecycle metadata.");
+        JsonElement encodedPosition = encodedPositionResult.GetOrThrow();
         IReadOnlyList<JsonElement> coordinates = ops.GetList(encodedPosition).GetOrThrow();
         Require(coordinates.Count == 3 &&
                 coordinates[0].GetInt32() == -12 &&
@@ -44,7 +47,10 @@ internal static class VibrationParticleChecks
                 coordinates[2].GetInt32() == 37,
             "BlockPos must encode exactly three signed integers in X/Y/Z order.");
 
-        BlockPos decodedPosition = BlockPos.CODEC.Parse(ops, encodedPosition).GetOrThrow();
+        DataResult<BlockPos> decodedPositionResult = BlockPos.CODEC.Parse(ops, encodedPosition);
+        Require(ReferenceEquals(decodedPositionResult.Lifecycle, Lifecycle.Stable()),
+            "BlockPos codec reads must retain stable lifecycle metadata.");
+        BlockPos decodedPosition = decodedPositionResult.GetOrThrow();
         Require(decodedPosition.Equals(position),
             "BlockPos must round-trip all three integer coordinates.");
 
