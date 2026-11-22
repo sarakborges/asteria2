@@ -22,6 +22,7 @@ internal static class EnvironmentAttributeChecks
         CheckTypeInterpolationAndNumericProjection();
         CheckTypedModifierLibraries();
         CheckEnvironmentAttributeMap();
+        CheckEnvironmentAttributeResolution();
     }
 
     private static void CheckBuiltInAttributeTypeRegistry()
@@ -185,6 +186,35 @@ internal static class EnvironmentAttributeChecks
                 new UnregisteredFloatModifier(),
                 0.1F),
             "An attribute type must reject a modifier that is not part of its operation library.");
+    }
+
+    private static void CheckEnvironmentAttributeResolution()
+    {
+        EnvironmentAttribute<float> fogEnd = EnvironmentAttributes.FOG_END_DISTANCE;
+        EnvironmentAttributeMap dimension = EnvironmentAttributeMap.CreateBuilder()
+            .Set(fogEnd, 1200.0F)
+            .Build();
+        EnvironmentAttributeMap biome = EnvironmentAttributeMap.CreateBuilder()
+            .Modify(fogEnd, FloatModifier.MULTIPLY, 0.5F)
+            .Build();
+        EnvironmentAttributeMap timeline = EnvironmentAttributeMap.CreateBuilder()
+            .Modify(fogEnd, FloatModifier.ADD, 100.0F)
+            .Build();
+        EnvironmentAttributeMap weather = EnvironmentAttributeMap.CreateBuilder()
+            .Set(fogEnd, 300.0F)
+            .Build();
+
+        Require(EnvironmentAttributeResolver.Resolve(fogEnd, dimension, biome, timeline) == 700.0F,
+            "Environment sources must apply in low-to-high priority order: dimension, biome, then timeline.");
+        Require(EnvironmentAttributeResolver.Resolve(fogEnd, dimension, biome, timeline, weather) == 300.0F,
+            "The highest-priority weather source must be able to override lower layers.");
+        Require(EnvironmentAttributeResolver.Resolve(fogEnd) == fogEnd.DefaultValue,
+            "Resolving without source maps must return the attribute's registered default.");
+        Require(EnvironmentAttributeResolver.Resolve(fogEnd, 900.0F, EnvironmentAttributeMap.Empty) == 900.0F,
+            "An empty source must preserve an explicit lower-layer value.");
+        RequireThrows<ArgumentNullException>(
+            () => EnvironmentAttributeResolver.Resolve(fogEnd, new EnvironmentAttributeMap[] { null! }),
+            "A null source map must be rejected rather than silently skipped.");
     }
 
     private sealed class UnregisteredFloatModifier : AttributeModifier<float, float>
