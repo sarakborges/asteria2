@@ -13,10 +13,11 @@ using Asteria.Util;
 
 internal static class ChunkChecks
 {
-    public static void Run(BlockState nonAirState, BlockState fluidState)
+    public static void Run(BlockState nonAirState, BlockState fluidState, FluidState sourceFluidState)
     {
         ArgumentNullException.ThrowIfNull(nonAirState);
         ArgumentNullException.ThrowIfNull(fluidState);
+        ArgumentNullException.ThrowIfNull(sourceFluidState);
 
         CheckHeightAccessor();
         CheckChunkAccessLifecycle();
@@ -25,6 +26,7 @@ internal static class ChunkChecks
         CheckBlockGetterTraversal();
         CheckBlockGetterLineQueries();
         CheckBlockGetterClip(fluidState);
+        CheckFluidStateGeometry(fluidState, sourceFluidState);
         CheckChunkBiomeAccess();
         CheckChunkSkyLightSources(nonAirState);
         CheckChunkBlockScanning(nonAirState);
@@ -314,6 +316,80 @@ internal static class ChunkChecks
             miss.GetHitType() == HitResult.Type.BLOCK &&
             miss.GetBlockPos().Equals(stonePosition),
             "Disabling fluid clipping must leave the nearest block collision as the result.");
+    }
+
+    private static void CheckFluidStateGeometry(
+        BlockState fluidBlockState,
+        FluidState sourceFluidState)
+    {
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        var chunk = new TestChunkAccess(
+            new ChunkPos(0, 0),
+            height,
+            PalettedContainerFactory.CreateBuiltIn());
+        BlockGetter getter = chunk;
+
+        BlockPos fluidPosition = new(1, 7, 4);
+        BlockPos aboveFluid = fluidPosition.Above();
+        ChunkSection section = chunk.GetSection(chunk.GetSectionIndex(aboveFluid.GetY()));
+        section.SetBlockState(1, aboveFluid.GetY() & 15, 4, Blocks.STONE.DefaultState);
+
+        Require(
+            Blocks.STONE.DefaultState.IsFaceSturdy(getter, aboveFluid, Direction.DOWN),
+            "A full stone face must provide full support.");
+        Require(
+            Blocks.STONE.DefaultState.IsFaceSturdy(getter, aboveFluid, Direction.DOWN, SupportType.Center) &&
+            Blocks.STONE.DefaultState.IsFaceSturdy(getter, aboveFluid, Direction.DOWN, SupportType.Rigid),
+            "A full stone face must provide center and rigid support.");
+
+        BlockPos airPosition = new(2, 8, 4);
+        Require(
+            !Blocks.AIR.DefaultState.IsFaceSturdy(getter, airPosition, Direction.DOWN) &&
+            !Blocks.AIR.DefaultState.IsFaceSturdy(getter, airPosition, Direction.DOWN, SupportType.Center) &&
+            !Blocks.AIR.DefaultState.IsFaceSturdy(getter, airPosition, Direction.DOWN, SupportType.Rigid),
+            "Air must not provide full, center or rigid face support.");
+
+        Require(
+            sourceFluidState.GetHeightForCamera(getter, fluidPosition) == 1.0f,
+            "A source fluid directly below a sturdy upper face must use full camera height.");
+        Require(
+            Math.Abs(fluidBlockState.GetFluidState().GetHeightForCamera(getter, fluidPosition) - 1.0f / 9.0f) < 1.0E-6,
+            "A non-source fluid must retain its contextual camera height beneath a sturdy face.");
+
+        section.SetBlockState(1, aboveFluid.GetY() & 15, 4, Blocks.AIR.DefaultState);
+        Require(
+            Math.Abs(sourceFluidState.GetHeightForCamera(getter, fluidPosition) - 8.0f / 9.0f) < 1.0E-6,
+            "A source fluid without a sturdy upper face must use its contextual height.");
+
+        BlockPos surfaceAbove = new(10, 8, 10);
+        ChunkSection surfaceSection = chunk.GetSection(chunk.GetSectionIndex(surfaceAbove.GetY()));
+        for (int offsetX = -1; offsetX <= 1; offsetX++)
+        {
+            for (int offsetZ = -1; offsetZ <= 1; offsetZ++)
+            {
+                BlockPos neighbor = surfaceAbove.Offset(offsetX, 0, offsetZ);
+                surfaceSection.SetBlockState(
+                    neighbor.GetX() & 15,
+                    neighbor.GetY() & 15,
+                    neighbor.GetZ() & 15,
+                    fluidBlockState);
+            }
+        }
+
+        FluidState fluid = fluidBlockState.GetFluidState();
+        Require(
+            !fluid.ShouldRenderBackwardUpFace(getter, surfaceAbove),
+            "A surface surrounded by the same fluid must not render its backward upper face.");
+
+        BlockPos opening = surfaceAbove.Offset(0, 0, 0);
+        surfaceSection.SetBlockState(
+            opening.GetX() & 15,
+            opening.GetY() & 15,
+            opening.GetZ() & 15,
+            Blocks.AIR.DefaultState);
+        Require(
+            fluid.ShouldRenderBackwardUpFace(getter, surfaceAbove),
+            "A surface with a non-solid opening to a different fluid state must render its backward upper face.");
     }
 
     private static void CheckChunkBiomeAccess()
