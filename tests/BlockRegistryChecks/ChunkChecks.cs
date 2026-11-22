@@ -214,7 +214,8 @@ internal static class ChunkChecks
 
         var from = new Vec3(0.5, 7.5, 4.5);
         var to = new Vec3(4.5, 7.5, 4.5);
-        BlockHitResult hit = chunk.IsBlockInLine(
+        BlockGetter getter = chunk;
+        BlockHitResult hit = getter.IsBlockInLine(
             new ClipBlockStateContext(from, to, state => ReferenceEquals(state, Blocks.STONE.DefaultState)));
 
         Require(
@@ -224,7 +225,7 @@ internal static class ChunkChecks
             hit.GetBlockPos().Equals(BlockPos.Containing(to.X, to.Y, to.Z)),
             "BlockGetter line queries must return the endpoint, opposite ray direction and endpoint block position for a matching state.");
 
-        BlockHitResult miss = chunk.IsBlockInLine(
+        BlockHitResult miss = getter.IsBlockInLine(
             new ClipBlockStateContext(from, to, state => false));
         Require(
             miss.GetHitType() == HitResult.Type.MISS &&
@@ -232,7 +233,7 @@ internal static class ChunkChecks
             miss.GetDirection() == Direction.WEST,
             "BlockGetter line queries must return a miss result when no state matches the predicate.");
 
-        BlockHitResult? shapeHit = chunk.ClipWithInteractionOverride(
+        BlockHitResult? shapeHit = getter.ClipWithInteractionOverride(
             from,
             to,
             targetPosition,
