@@ -229,7 +229,7 @@ internal static class Program
         Require(Block.BlockStateRegistry.Count == 10, "Expected one air state and six test states.");
         FluidChecks.Run();
         BlockTagChecks.Run();
-        ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState);
+        ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState, FluidChecks.SourceFluidState);
         BiomeChecks.Run();
         EnvironmentAttributeChecks.Run();
         KeyframeTrackChecks.Run();
