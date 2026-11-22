@@ -14,6 +14,7 @@ using Asteria.Content.Identifiers;
 using Asteria.World.Attributes;
 using Asteria.World.GameEvents;
 using Asteria.World.Clocks;
+using Asteria.World.Timelines;
 
 namespace Asteria.Content.Registries;
 
@@ -77,6 +78,11 @@ public static class BuiltInRegistries
         RegisterSimple<WorldClock>(
             ResourceLocation.FromNamespaceAndPath("asteria", "world_clock"),
             static () => WorldClocks.RegisterAll());
+
+    public static Registry<Timeline> Timeline { get; } =
+        RegisterSimple<Timeline>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "timeline"),
+            static () => { });
 
     private static Registry<T> RegisterSimple<T>(
         ResourceLocation location,

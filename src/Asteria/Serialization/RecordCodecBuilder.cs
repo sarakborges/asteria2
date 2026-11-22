@@ -48,6 +48,13 @@ public static class RecordCodecBuilder
             RecordField<TRecord, TSecond> second,
             RecordField<TRecord, TThird> third) =>
             new(first, second, third);
+
+        public Group4<TRecord, TFirst, TSecond, TThird, TFourth> Group<TFirst, TSecond, TThird, TFourth>(
+            RecordField<TRecord, TFirst> first,
+            RecordField<TRecord, TSecond> second,
+            RecordField<TRecord, TThird> third,
+            RecordField<TRecord, TFourth> fourth) =>
+            new(first, second, third, fourth);
     }
 
     public sealed class Group2<TRecord, TFirst, TSecond>
@@ -105,6 +112,153 @@ public static class RecordCodecBuilder
                 _third,
                 constructor);
         }
+    }
+
+
+    public sealed class Group4<TRecord, TFirst, TSecond, TThird, TFourth>
+    {
+        private readonly RecordField<TRecord, TFirst> _first;
+        private readonly RecordField<TRecord, TSecond> _second;
+        private readonly RecordField<TRecord, TThird> _third;
+        private readonly RecordField<TRecord, TFourth> _fourth;
+
+        internal Group4(
+            RecordField<TRecord, TFirst> first,
+            RecordField<TRecord, TSecond> second,
+            RecordField<TRecord, TThird> third,
+            RecordField<TRecord, TFourth> fourth)
+        {
+            _first = first ?? throw new ArgumentNullException(nameof(first));
+            _second = second ?? throw new ArgumentNullException(nameof(second));
+            _third = third ?? throw new ArgumentNullException(nameof(third));
+            _fourth = fourth ?? throw new ArgumentNullException(nameof(fourth));
+        }
+
+        public MapCodec<TRecord> Apply(
+            Instance<TRecord> instance,
+            Func<TFirst, TSecond, TThird, TFourth, TRecord> constructor)
+        {
+            ArgumentNullException.ThrowIfNull(instance);
+            ArgumentNullException.ThrowIfNull(constructor);
+            return new RecordMapCodec<TRecord, TFirst, TSecond, TThird, TFourth>(
+                _first, _second, _third, _fourth, constructor);
+        }
+    }
+
+    private sealed class RecordMapCodec<TRecord, TFirst, TSecond, TThird, TFourth> : MapCodec<TRecord>
+    {
+        private readonly RecordField<TRecord, TFirst> _first;
+        private readonly RecordField<TRecord, TSecond> _second;
+        private readonly RecordField<TRecord, TThird> _third;
+        private readonly RecordField<TRecord, TFourth> _fourth;
+        private readonly Func<TFirst, TSecond, TThird, TFourth, TRecord> _constructor;
+
+        public RecordMapCodec(
+            RecordField<TRecord, TFirst> first,
+            RecordField<TRecord, TSecond> second,
+            RecordField<TRecord, TThird> third,
+            RecordField<TRecord, TFourth> fourth,
+            Func<TFirst, TSecond, TThird, TFourth, TRecord> constructor)
+        {
+            _first = first;
+            _second = second;
+            _third = third;
+            _fourth = fourth;
+            _constructor = constructor;
+        }
+
+        public override DataResult<TRecord> Decode<TData>(
+            DynamicOps<TData> ops,
+            MapLike<TData> input)
+        {
+            DataResult<TFirst> first = _first.Codec.Decode(ops, input);
+            DataResult<TSecond> second = _second.Codec.Decode(ops, input);
+            DataResult<TThird> third = _third.Codec.Decode(ops, input);
+            DataResult<TFourth> fourth = _fourth.Codec.Decode(ops, input);
+
+            return first.Apply2(
+                    static (left, right) => (First: left, Second: right),
+                    second)
+                .Apply2(
+                    static (pair, thirdValue) =>
+                        (pair.First, pair.Second, Third: thirdValue),
+                    third)
+                .Apply2(
+                    (values, fourthValue) =>
+                        _constructor(values.First, values.Second, values.Third, fourthValue),
+                    fourth);
+        }
+
+        public override DataResult<TData> Encode<TData>(
+            TRecord input,
+            DynamicOps<TData> ops,
+            TData prefix)
+        {
+            DataResult<TData> first = _first.Codec.EncodeStart(ops, _first.Getter(input));
+            DataResult<TData> second = _second.Codec.EncodeStart(ops, _second.Getter(input));
+            DataResult<TData> third = _third.Codec.EncodeStart(ops, _third.Getter(input));
+            DataResult<TData> fourth = _fourth.Codec.EncodeStart(ops, _fourth.Getter(input));
+
+            return first.Apply2(
+                    static (left, right) => (First: left, Second: right),
+                    second)
+                .Apply2(
+                    static (pair, thirdValue) =>
+                        (pair.First, pair.Second, Third: thirdValue),
+                    third)
+                .Apply2(
+                    static (values, fourthValue) =>
+                        (values.First, values.Second, values.Third, Fourth: fourthValue),
+                    fourth)
+                .FlatMap(maps =>
+                    ops.GetMapValues(maps.First).Apply2(
+                        static (left, right) =>
+                        {
+                            var combined = new List<KeyValuePair<TData, TData>>(
+                                left.Count + right.Count);
+                            combined.AddRange(left);
+                            combined.AddRange(right);
+                            return (IReadOnlyList<KeyValuePair<TData, TData>>)combined;
+                        },
+                        ops.GetMapValues(maps.Second))
+                    .FlatMap(firstTwo =>
+                        ops.GetMapValues(maps.Third).Apply2(
+                            static (left, right) =>
+                            {
+                                var combined = new List<KeyValuePair<TData, TData>>(
+                                    left.Count + right.Count);
+                                combined.AddRange(left);
+                                combined.AddRange(right);
+                                return (IReadOnlyList<KeyValuePair<TData, TData>>)combined;
+                            },
+                            ops.GetMapValues(maps.Fourth))
+                        .Map(lastTwo =>
+                        {
+                            var combined = new List<KeyValuePair<TData, TData>>(
+                                firstTwo.Count + lastTwo.Count);
+                            combined.AddRange(firstTwo);
+                            combined.AddRange(lastTwo);
+                            return (IReadOnlyList<KeyValuePair<TData, TData>>)combined;
+                        })))
+                .FlatMap(entries => ops.MergeToMap(prefix, entries));
+        }
+
+        public override IReadOnlyList<TData> Keys<TData>(DynamicOps<TData> ops)
+        {
+            IReadOnlyList<TData> first = _first.Codec.Keys(ops);
+            IReadOnlyList<TData> second = _second.Codec.Keys(ops);
+            IReadOnlyList<TData> third = _third.Codec.Keys(ops);
+            IReadOnlyList<TData> fourth = _fourth.Codec.Keys(ops);
+            var keys = new List<TData>(first.Count + second.Count + third.Count + fourth.Count);
+            keys.AddRange(first);
+            keys.AddRange(second);
+            keys.AddRange(third);
+            keys.AddRange(fourth);
+            return keys;
+        }
+
+        public override string ToString() =>
+            $"RecordCodec[{_first.Codec} * {_second.Codec} * {_third.Codec} * {_fourth.Codec}]";
     }
 
     private sealed class RecordMapCodec<TRecord, TFirst, TSecond, TThird> : MapCodec<TRecord>

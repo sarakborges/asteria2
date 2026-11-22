@@ -5,8 +5,14 @@ using Asteria.World.Timelines;
 
 namespace Asteria.World.Attributes;
 
-/// <summary>Type-erased attribute track used by the modifier-dispatch codec.</summary>
-public interface IAttributeTrack<TValue>
+/// <summary>Type-erased attribute track used by timeline maps.</summary>
+public interface IAttributeTrackDefinition
+{
+    DataResult<IAttributeTrackDefinition> ValidatePeriod(int periodTicks);
+}
+
+/// <summary>Typed attribute track used by the modifier-dispatch codec.</summary>
+public interface IAttributeTrack<TValue> : IAttributeTrackDefinition
 {
     IAttributeModifier<TValue> Modifier { get; }
     DataResult<IAttributeTrack<TValue>> ValidatePeriod(int periodTicks);
@@ -22,6 +28,9 @@ public sealed record AttributeTrack<TValue, TArgument>(
     public DataResult<IAttributeTrack<TValue>> ValidatePeriod(int periodTicks) =>
         KeyframeTrack<TArgument>.ValidatePeriod(ArgumentTrack, periodTicks)
             .Map<IAttributeTrack<TValue>>(_ => this);
+
+    DataResult<IAttributeTrackDefinition> IAttributeTrackDefinition.ValidatePeriod(int periodTicks) =>
+        ValidatePeriod(periodTicks).Map<IAttributeTrackDefinition>(static track => track);
 
     public AttributeTrackSampler<TValue, TArgument> BakeSampler(
         EnvironmentAttribute<TValue> attribute,

@@ -1,12 +1,16 @@
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.Core;
+using Asteria.Serialization;
 
 namespace Asteria.World.Attributes;
 
 /// <summary>Built-in environment definitions whose value types are currently implemented.</summary>
 public static class EnvironmentAttributes
 {
+    public static Codec<IEnvironmentAttribute> CODEC =>
+        BuiltInRegistries.EnvironmentAttribute.ByNameCodec();
+
     public static readonly EnvironmentAttribute<float> FOG_START_DISTANCE = Float(0.0F, true, syncable: true);
     public static readonly EnvironmentAttribute<float> FOG_END_DISTANCE = Float(1024.0F, true, AttributeRange<float>.NonNegativeFloat, true);
     public static readonly EnvironmentAttribute<float> SKY_FOG_END_DISTANCE = Float(512.0F, true, AttributeRange<float>.NonNegativeFloat, true);

@@ -10,6 +10,7 @@ public interface IEnvironmentAttribute
     bool IsSpatiallyInterpolated { get; }
     bool IsFullResolutionBiomes { get; }
     Codec<EnvironmentAttributeMap.IEnvironmentAttributeEntry> CreateEntryCodec();
+    Codec<IAttributeTrackDefinition> CreateTrackCodec();
 }
 
 /// <summary>A registered, typed environment value definition and its runtime policy flags.</summary>
@@ -57,6 +58,14 @@ public sealed class EnvironmentAttribute<T> : IEnvironmentAttribute
                 ? typed
                 : throw new InvalidOperationException(
                     $"Entry does not contain a {typeof(T).Name} environment attribute value."));
+
+    Codec<IAttributeTrackDefinition> IEnvironmentAttribute.CreateTrackCodec() =>
+        AttributeTrack.CreateCodec(this).XMap<IAttributeTrackDefinition>(
+            static track => track,
+            track => track is IAttributeTrack<T> typed
+                ? typed
+                : throw new InvalidOperationException(
+                    $"Track does not contain a {typeof(T).Name} environment attribute value."));
 
     public override string ToString() =>
         BuiltInRegistries.EnvironmentAttribute.GetKey(this)?.ToString() ?? base.ToString()!;

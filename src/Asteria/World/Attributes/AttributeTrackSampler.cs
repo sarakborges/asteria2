@@ -4,8 +4,14 @@ using Asteria.World.Timelines;
 
 namespace Asteria.World.Attributes;
 
+/// <summary>Type-erased sampling contract exposed by a timeline track.</summary>
+public interface IAttributeTrackSampler<TValue>
+{
+    TValue ApplyTimeBased(TValue baseValue, int cacheTickId);
+}
+
 /// <summary>Samples a modifier argument from its registered world clock and caches it per caller tick ID.</summary>
-public sealed class AttributeTrackSampler<TValue, TArgument>
+public sealed class AttributeTrackSampler<TValue, TArgument> : IAttributeTrackSampler<TValue>
 {
     private readonly AttributeModifier<TValue, TArgument> _modifier;
     private readonly KeyframeTrackSampler<TArgument> _argumentSampler;
