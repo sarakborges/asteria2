@@ -24,6 +24,8 @@ public abstract class StateProperty
     internal abstract object GetValueObject(int index);
     internal abstract int GetValueIndex(object value);
     internal abstract string GetSerializedValue(object value);
+    internal abstract string GetSerializedValue(BlockState state);
+    internal abstract bool TrySetValue(BlockState state, string serializedValue, out BlockState result);
     internal abstract IStatePropertyValue CreateValue(object value);
     internal abstract BlockState CopyValue(BlockState source, BlockState target);
 
@@ -138,6 +140,24 @@ public abstract class StateProperty<T> : StateProperty where T : notnull, ICompa
         }
 
         return GetName(typedValue);
+    }
+
+    internal override string GetSerializedValue(BlockState state) =>
+        GetSerializedValue(state.GetValue(this));
+
+    internal override bool TrySetValue(
+        BlockState state,
+        string serializedValue,
+        out BlockState result)
+    {
+        if (TryParse(serializedValue, out T value) && IndexOf(value) >= 0)
+        {
+            result = state.SetValue(this, value);
+            return true;
+        }
+
+        result = state;
+        return false;
     }
 
     internal override IStatePropertyValue CreateValue(object value) =>

@@ -87,6 +87,14 @@ public abstract class StateHolder<TOwner, TState>
         return GetNeighbors()[propertyIndex][valueIndex];
     }
 
+    internal object GetValueObject(StateProperty property)
+    {
+        if (!Definition.TryGetPropertyIndex(property, out int index))
+            throw new ArgumentException(
+                $"Cannot get property {property} as it does not exist in {Owner}");
+        return _values[index];
+    }
+
     internal object[] CopyValues() => (object[])_values.Clone();
 
     internal void InitializeNeighbors(TState[][] neighbors)

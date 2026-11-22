@@ -20,6 +20,7 @@ internal static class ParticleChecks
         CheckShriekParticleOptionCodec();
         CheckTrailParticleOptionCodec();
         DustParticleChecks.Run();
+        BlockParticleChecks.Run();
         CheckByNameCodecFailures();
     }
 
@@ -29,14 +30,21 @@ internal static class ParticleChecks
 
         Require(registry.IsFrozen,
             "The particle type registry must be frozen after built-in bootstrap.");
-        Require(ParticleTypes.RegisteredTypeCount == 117,
-            "The local particle registry must include 106 simple, three color, two spell, three numeric, one record and two scalable option types.");
+        Require(ParticleTypes.RegisteredTypeCount == 120,
+            "The local particle registry must include 106 simple, three color, two spell, three numeric, one record, two scalable and three block option types.");
         Require(registry.Count == ParticleTypes.RegisteredTypeCount,
             "Every implemented simple particle type must be registered.");
         Require(ReferenceEquals(
                 registry.GetValue(ResourceLocation.WithDefaultNamespace("angry_villager")),
                 ParticleTypes.ANGRY_VILLAGER),
             "The first simple particle type must use its source identifier.");
+        Require(registry.GetId(ParticleTypes.ANGRY_VILLAGER) < registry.GetId(ParticleTypes.BLOCK) &&
+                registry.GetId(ParticleTypes.BLOCK) < registry.GetId(ParticleTypes.BLOCK_MARKER) &&
+                registry.GetId(ParticleTypes.BLOCK_MARKER) < registry.GetId(ParticleTypes.BUBBLE),
+            "Block and block marker particles must retain their source declaration positions.");
+        Require(registry.GetId(ParticleTypes.SONIC_BOOM) < registry.GetId(ParticleTypes.FALLING_DUST) &&
+                registry.GetId(ParticleTypes.FALLING_DUST) < registry.GetId(ParticleTypes.FIREWORK),
+            "Falling dust must remain between sonic boom and firework.");
         Require(ReferenceEquals(
                 registry.GetValue(ResourceLocation.WithDefaultNamespace("trial_spawner_detection")),
                 ParticleTypes.TRIAL_SPAWNER_DETECTED_PLAYER),
@@ -63,8 +71,11 @@ internal static class ParticleChecks
             "Particles marked overrideLimiter=true must retain that flag.");
         Require(!ParticleTypes.BUBBLE.OverrideLimiter &&
                 !ParticleTypes.ASH.OverrideLimiter &&
-                !ParticleTypes.FIREFLY.OverrideLimiter,
-            "Particles marked overrideLimiter=false must retain that flag.");
+                !ParticleTypes.FIREFLY.OverrideLimiter &&
+                !ParticleTypes.BLOCK.OverrideLimiter &&
+                !ParticleTypes.FALLING_DUST.OverrideLimiter &&
+                ParticleTypes.BLOCK_MARKER.OverrideLimiter,
+            "Block particles must retain their individual overrideLimiter flags.");
     }
 
     private static void CheckSimpleOptionsCodec()

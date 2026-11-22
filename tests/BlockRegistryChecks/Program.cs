@@ -250,6 +250,10 @@ internal static class Program
         CheckStateIdsAreAssignedAtConstruction();
         CheckFrozenRegistry();
         FluidChecks.CheckChunkSectionIntegration();
+        BlockStateCodecChecks.Run(
+            TestBlocks.TEST_BLOCK,
+            TestBlocks.TEST_POWERED,
+            TestBlocks.TEST_STAGE);
     }
 
     private static void CheckBuiltInRegistryRoot()

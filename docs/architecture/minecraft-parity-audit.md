@@ -235,7 +235,7 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `CanSpawn` consome uma amostra float de 24 bits e usa comparação inclusiva `<=`; testes cobrem a igualdade exata no limite, probabilidade zero/um e número de chamadas.
 - `AMBIENT_PARTICLES` usa listas cross-fade escalando somente a probabilidade e o modifier `append`; o atributo genérico `visual/ambient_particles` está registrado com default vazio e é syncable.
 - O registry `attribute_type` agora contém nove tipos no escopo: os sete anteriores, `particle` e `ambient_particles`.
-- O registry `particle_type` agora contém 117 tipos locais: 106 simples e 11 com opções especializadas (coloridas, spell, numéricas, record e escalares). `dust` e `dust_color_transition` já têm modelos/codecs; `item` e `vibration`, além de opções de bloco/objeto fora do escopo, seguem ausentes. Os IDs numéricos não têm paridade completa enquanto entradas anteriores na ordem de referência estiverem ausentes.
+- O registry `particle_type` agora contém 120 tipos locais: 106 simples e 14 com opções especializadas (coloridas, spell, numéricas, record, escalares e três tipos de partículas de bloco). `block`, `block_marker` e `falling_dust` usam o modelo/codec genérico de estado de bloco; `item` e `vibration`, além de partículas específicas de objeto fora do escopo, seguem ausentes. Os IDs numéricos não têm paridade completa enquanto entradas anteriores na ordem de referência estiverem ausentes.
 - Atributos específicos de blocos/objetos, áudio e regras de cama continuam excluídos. Stream codecs, buffers de pacote e multiplayer continuam excluídos pelo escopo offline.
 
 
@@ -296,3 +296,20 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - [DustColorTransitionOptions](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/dustcolortransitionoptions/)
 - [ScalableParticleOptionsBase](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/scalableparticleoptionsbase/)
 - [ParticleTypes](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/particletypes/)
+
+## Incremento — `BlockParticleOption` e `BlockState.CODEC` (21/11/2026)
+
+- Portado o modelo `BlockParticleOption(type, state)` e o codec de mapa com campo obrigatório `block_state`. Não inclui posição de spawn, que não faz parte do tipo vanilla 26.3.
+- `BlockState.FULL_CODEC` representa o estado como objeto com `id` e `properties`; `BlockState.CODEC` também aceita a forma compacta pelo ID do bloco para o estado default.
+- O mapa `properties` aceita somente valores serializados válidos da definição de estado; propriedades ausentes mantêm o default e valores iguais ao default são omitidos na codificação. Chaves desconhecidas são ignoradas.
+- Registrados `block` (`overrideLimiter=false`) e `block_marker` (`true`) após `angry_villager`; `falling_dust` (`false`) após `sonic_boom`, conforme a ordem de declaração da referência.
+- O registry local passa a conter 120 tipos: 106 simples, 3 coloridos, 2 spell, 3 numéricos, 1 record, 2 escalares e 3 tipos de partículas de bloco.
+- Testes cobrem os três discriminadores, round-trip, forma compacta e completa do estado, defaults de propriedades, rejeição de campos/valores inválidos, flags e ordem de registro.
+- O codec usa registry local de blocos; stream codecs e buffers continuam fora do escopo single-player/offline.
+
+### Fontes específicas
+
+- [BlockParticleOption](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/blockparticleoption/)
+- [BlockState](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/block/state/blockstate/)
+- [StateHolder](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/block/state/stateholder/)
+- [StateDefinition](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/block/state/statedefinition/)

@@ -12,6 +12,12 @@ namespace Asteria.Content.Particles;
 public static class ParticleTypes
 {
     public static readonly SimpleParticleType ANGRY_VILLAGER = Register("angry_villager", false);
+    public static readonly ParticleType<BlockParticleOption> BLOCK =
+        RegisterConfigured<BlockParticleOption>(
+            "block", false, BlockParticleOption.CreateCodec);
+    public static readonly ParticleType<BlockParticleOption> BLOCK_MARKER =
+        RegisterConfigured<BlockParticleOption>(
+            "block_marker", true, BlockParticleOption.CreateCodec);
     public static readonly SimpleParticleType BUBBLE = Register("bubble", false);
     public static readonly SimpleParticleType SULFUR_BUBBLES = Register("sulfur_bubbles", false);
     public static readonly SimpleParticleType NOXIOUS_GAS = Register("noxious_gas", false);
@@ -48,6 +54,9 @@ public static class ParticleTypes
     public static readonly SimpleParticleType GUST_EMITTER_LARGE = Register("gust_emitter_large", true);
     public static readonly SimpleParticleType GUST_EMITTER_SMALL = Register("gust_emitter_small", true);
     public static readonly SimpleParticleType SONIC_BOOM = Register("sonic_boom", true);
+    public static readonly ParticleType<BlockParticleOption> FALLING_DUST =
+        RegisterConfigured<BlockParticleOption>(
+            "falling_dust", false, BlockParticleOption.CreateCodec);
     public static readonly SimpleParticleType FIREWORK = Register("firework", false);
     public static readonly SimpleParticleType FISHING = Register("fishing", false);
     public static readonly SimpleParticleType FLAME = Register("flame", false);
@@ -151,9 +160,10 @@ public static class ParticleTypes
     public const int NumericOptionCount = 3;
     public const int RecordOptionCount = 1;
     public const int ScalableOptionCount = 2;
+    public const int BlockOptionCount = 3;
     public const int RegisteredTypeCount =
         SimpleTypeCount + ColorTypeCount + SpellOptionCount + NumericOptionCount +
-        RecordOptionCount + ScalableOptionCount;
+        RecordOptionCount + ScalableOptionCount + BlockOptionCount;
 
     public static Codec<IParticleOptions> CODEC { get; } =
         MapCodec<IParticleOptions>.Dispatch(
