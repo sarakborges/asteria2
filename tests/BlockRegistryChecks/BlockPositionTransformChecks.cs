@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Asteria.Content.Blocks;
+using Asteria.Content.Materials;
 using Asteria.Core;
 using Asteria.Core.Mathematics;
 using Asteria.Serialization;
