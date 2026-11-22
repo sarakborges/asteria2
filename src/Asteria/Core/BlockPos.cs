@@ -1,3 +1,4 @@
+using Asteria.Content.Blocks;
 using Asteria.Content.Registries;
 using Asteria.Serialization;
 using Asteria.World.LevelGen;
@@ -183,6 +184,23 @@ public class BlockPos : Vec3i
 
     public BlockPos AtY(int y) =>
         new(GetX(), y, GetZ());
+
+    public virtual BlockPos Rotate(Rotation rotation)
+    {
+        ArgumentNullException.ThrowIfNull(rotation);
+
+        return rotation switch
+        {
+            var value when ReferenceEquals(value, Rotation.CLOCKWISE_90) =>
+                new BlockPos(unchecked(-GetZ()), GetY(), GetX()),
+            var value when ReferenceEquals(value, Rotation.CLOCKWISE_180) =>
+                new BlockPos(unchecked(-GetX()), GetY(), unchecked(-GetZ())),
+            var value when ReferenceEquals(value, Rotation.COUNTERCLOCKWISE_90) =>
+                new BlockPos(GetZ(), GetY(), unchecked(-GetX())),
+            var value when ReferenceEquals(value, Rotation.NONE) => this,
+            _ => throw new ArgumentOutOfRangeException(nameof(rotation))
+        };
+    }
 
     public Vec3 ClampLocationWithin(Vec3 location)
     {
@@ -718,6 +736,18 @@ public class BlockPos : Vec3i
 
         public override BlockPos Relative(Axis axis, int steps) =>
             base.Relative(axis, steps).Immutable();
+
+        public override BlockPos Rotate(Rotation rotation) =>
+            base.Rotate(rotation).Immutable();
+
+        public MutableBlockPos Set(AxisCycle transform, int x, int y, int z)
+        {
+            ArgumentNullException.ThrowIfNull(transform);
+            return Set(
+                transform.Cycle(x, y, z, Axis.X),
+                transform.Cycle(x, y, z, Axis.Y),
+                transform.Cycle(x, y, z, Axis.Z));
+        }
 
         public MutableBlockPos Set(int x, int y, int z)
         {
