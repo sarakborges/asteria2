@@ -9,8 +9,11 @@ public static class EnvironmentAttributeResolver
     /// </summary>
     public static T Resolve<T>(
         EnvironmentAttribute<T> attribute,
-        params EnvironmentAttributeMap[] sources) =>
-        Resolve(attribute, attribute?.DefaultValue!, sources);
+        params EnvironmentAttributeMap[] sources)
+    {
+        ArgumentNullException.ThrowIfNull(attribute);
+        return Resolve(attribute, attribute.DefaultValue, sources);
+    }
 
     /// <summary>
     /// Resolves an attribute from an explicit lower-layer value, applying each source in low-to-high priority order.
