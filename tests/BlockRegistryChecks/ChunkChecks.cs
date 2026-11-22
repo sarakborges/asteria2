@@ -6,6 +6,7 @@ using Asteria.Content.Registries;
 using Asteria.Content.Storage;
 using Asteria.Core;
 using Asteria.World;
+using Asteria.World.Lighting;
 
 internal static class ChunkChecks
 {
@@ -18,6 +19,7 @@ internal static class ChunkChecks
         CheckChunkAccessLifecycle();
         CheckBlockGetterContract(fluidState);
         CheckChunkBiomeAccess();
+        CheckChunkSkyLightSources(nonAirState);
         CheckChunkConstructionAndSections(nonAirState);
         CheckMismatchedSectionArray();
         CheckWorldSurfaceHeightmap(nonAirState);
@@ -132,6 +134,58 @@ internal static class ChunkChecks
         Require(QuartPos.ToBlock(-2) == -8, "Quart-to-block conversion must preserve negative coordinates.");
         Require(QuartPos.FromSection(-4) == -16, "Section-to-quart conversion must multiply by four.");
         Require(QuartPos.ToSection(-16) == -4, "Quart-to-section conversion must floor negative coordinates.");
+    }
+
+    private static void CheckChunkSkyLightSources(BlockState opaqueState)
+    {
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        var chunk = new TestChunkAccess(
+            new ChunkPos(0, 0),
+            height,
+            PalettedContainerFactory.CreateBuiltIn());
+        ChunkSkyLightSources sources = chunk.GetSkyLightSources();
+
+        Require(
+            sources.GetLowestSourceY(4, 7) == ChunkSkyLightSources.NegativeInfinity,
+            "An empty chunk column must begin without a sky-light source boundary.");
+        chunk.InitializeLightSources();
+        Require(
+            sources.GetHighestLowestSourceY() == ChunkSkyLightSources.NegativeInfinity,
+            "An empty chunk must initialize every sky-light source column to negative infinity.");
+
+        chunk.GetSection(chunk.GetSectionIndex(10)).SetBlockState(4, 10 & 15, 7, opaqueState);
+        chunk.InitializeLightSources();
+        Require(
+            sources.GetLowestSourceY(4, 7) == 11,
+            "Initial sky-light source calculation must locate the edge immediately above the highest opaque block.");
+        Require(
+            sources.GetLowestSourceY(5, 7) == ChunkSkyLightSources.NegativeInfinity,
+            "Sky-light source boundaries must remain independent between columns.");
+        Require(
+            sources.GetHighestLowestSourceY() == 11,
+            "The highest column sky-light boundary must track the maximum initialized source Y.");
+
+        chunk.GetSection(chunk.GetSectionIndex(20)).SetBlockState(4, 20 & 15, 7, opaqueState);
+        Require(
+            !sources.Update(chunk, 4, 8, 7),
+            "A block update below the current source boundary must not rescan the column.");
+        Require(
+            sources.Update(chunk, 4, 20, 7) && sources.GetLowestSourceY(4, 7) == 21,
+            "Adding a new top opaque block must move the sky-light source boundary upward.");
+
+        chunk.GetSection(chunk.GetSectionIndex(20)).SetBlockState(4, 20 & 15, 7, Blocks.AIR.DefaultState);
+        Require(
+            sources.Update(chunk, 4, 20, 7) && sources.GetLowestSourceY(4, 7) == 11,
+            "Removing the top opaque block must rescan downward to the previous boundary.");
+
+        chunk.GetSection(chunk.GetSectionIndex(10)).SetBlockState(4, 10 & 15, 7, Blocks.AIR.DefaultState);
+        Require(
+            sources.Update(chunk, 4, 10, 7) &&
+            sources.GetLowestSourceY(4, 7) == ChunkSkyLightSources.NegativeInfinity,
+            "Removing the final opaque block must clear the source boundary to negative infinity.");
+        Require(
+            sources.GetHighestLowestSourceY() == ChunkSkyLightSources.NegativeInfinity,
+            "The chunk-wide highest source boundary must return to negative infinity after the final block is removed.");
     }
 
     private static void CheckHeightAccessor()
