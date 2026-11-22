@@ -24,6 +24,7 @@ internal static class ChunkChecks
         CheckBlockGetterDefaultMethods(nonAirState);
         CheckBlockGetterTraversal();
         CheckBlockGetterLineQueries();
+        CheckBlockGetterClip(fluidState);
         CheckChunkBiomeAccess();
         CheckChunkSkyLightSources(nonAirState);
         CheckChunkBlockScanning(nonAirState);
@@ -243,6 +244,69 @@ internal static class ChunkChecks
             shapeHit is not null &&
             shapeHit.GetBlockPos().Equals(targetPosition),
             "ClipWithInteractionOverride must preserve the collision-shape hit when the interaction shape is empty.");
+    }
+
+    private static void CheckBlockGetterClip(BlockState fluidState)
+    {
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        var chunk = new TestChunkAccess(
+            new ChunkPos(0, 0),
+            height,
+            PalettedContainerFactory.CreateBuiltIn());
+
+        BlockPos fluidPosition = new(1, 7, 4);
+        BlockPos stonePosition = new(3, 7, 4);
+        var fluidBlock = new ClipFluidBlock(fluidState);
+        ChunkSection section = chunk.GetSection(chunk.GetSectionIndex(fluidPosition.GetY()));
+        section.SetBlockState(1, 7, 4, fluidBlock.DefaultState);
+        section.SetBlockState(3, 7, 4, Blocks.STONE.DefaultState);
+
+        BlockGetter getter = chunk;
+        var from = new Vec3(0.5, 7.05, 4.5);
+        var to = new Vec3(4.5, 7.05, 4.5);
+
+        BlockHitResult outlineHit = getter.Clip(new ClipContext(
+            from, to, ClipContext.Block.Outline, ClipContext.Fluid.None));
+        Require(
+            outlineHit.GetHitType() == HitResult.Type.BLOCK &&
+            outlineHit.GetBlockPos().Equals(fluidPosition),
+            "Outline clipping must use a block's outline shape even when it has no collision.");
+
+        BlockHitResult colliderHit = getter.Clip(new ClipContext(
+            from, to, ClipContext.Block.Collider, ClipContext.Fluid.None));
+        Require(
+            colliderHit.GetHitType() == HitResult.Type.BLOCK &&
+            colliderHit.GetBlockPos().Equals(stonePosition),
+            "Collider clipping must skip a non-colliding block and hit the next collider.");
+
+        BlockHitResult visualHit = getter.Clip(new ClipContext(
+            from, to, ClipContext.Block.Visual, ClipContext.Fluid.None));
+        Require(
+            visualHit.GetHitType() == HitResult.Type.BLOCK &&
+            visualHit.GetBlockPos().Equals(stonePosition),
+            "The default visual shape must match the collision shape.");
+
+        BlockHitResult anyFluidHit = getter.Clip(new ClipContext(
+            from, to, ClipContext.Block.Collider, ClipContext.Fluid.Any));
+        Require(
+            anyFluidHit.GetHitType() == HitResult.Type.BLOCK &&
+            anyFluidHit.GetBlockPos().Equals(fluidPosition) &&
+            Math.Abs(anyFluidHit.GetLocation().X - 1.0) < 1.0E-6,
+            "Any-fluid clipping must select the nearest fluid shape before a farther solid block.");
+
+        BlockHitResult sourceOnlyHit = getter.Clip(new ClipContext(
+            from, to, ClipContext.Block.Collider, ClipContext.Fluid.SourceOnly));
+        Require(
+            sourceOnlyHit.GetHitType() == HitResult.Type.BLOCK &&
+            sourceOnlyHit.GetBlockPos().Equals(stonePosition),
+            "Source-only clipping must ignore a non-source fluid state.");
+
+        BlockHitResult miss = getter.Clip(new ClipContext(
+            from, to, ClipContext.Block.Collider, ClipContext.Fluid.None));
+        Require(
+            miss.GetHitType() == HitResult.Type.BLOCK &&
+            miss.GetBlockPos().Equals(stonePosition),
+            "Disabling fluid clipping must leave the nearest block collision as the result.");
     }
 
     private static void CheckChunkBiomeAccess()
@@ -730,6 +794,20 @@ internal static class ChunkChecks
         Require(
             fallbackChunk.GetHeightmaps().Count == 1,
             "Raw-data fallback must reuse the heightmap created by SetHeightmap.");
+    }
+
+    private sealed class ClipFluidBlock : Block
+    {
+        private readonly FluidState _fluidState;
+
+        public ClipFluidBlock(FluidState fluidState)
+            : base(BlockProperties.Of().NoCollision(), createIntrusiveRegistryHolder: false)
+        {
+            _fluidState = fluidState ?? throw new ArgumentNullException(nameof(fluidState));
+            InitializeStateCaches();
+        }
+
+        public override FluidState GetFluidState(BlockState state) => _fluidState;
     }
 
     private sealed class TestChunkAccess : ChunkAccess
