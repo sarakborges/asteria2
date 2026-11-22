@@ -134,6 +134,7 @@ public abstract class ChunkAccess : BlockGetter
         ArgumentNullException.ThrowIfNull(predicate);
         ArgumentNullException.ThrowIfNull(consumer);
 
+        Func<BlockState, bool> sectionPredicate = state => predicate(state);
         BlockStateConsumer blockStateConsumer = (position, state) =>
         {
             consumer(position, state);
@@ -143,7 +144,7 @@ public abstract class ChunkAccess : BlockGetter
         for (int sectionY = GetMinSectionY(); sectionY <= GetMaxSectionY(); sectionY++)
         {
             ChunkSection section = GetSection(GetSectionIndexFromSectionY(sectionY));
-            if (!section.MaybeHas(predicate))
+            if (!section.MaybeHas(sectionPredicate))
                 continue;
 
             BlockPos origin = SectionPos.Of(_chunkPos, sectionY).Origin();
@@ -164,7 +165,12 @@ public abstract class ChunkAccess : BlockGetter
         ArgumentNullException.ThrowIfNull(output);
 
         foreach (ChunkSection section in _sections)
-            section.GetBiomes().ForEachInPalette(output.Add);
+        {
+            section.GetBiomes().ForEachInPalette(biome =>
+            {
+                output.Add(biome);
+            });
+        }
     }
 
     public int GetHighestFilledSectionIndex()
