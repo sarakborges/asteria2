@@ -16,6 +16,9 @@ public abstract class ChunkAccess : LevelHeightAccessor
     private readonly ChunkPos _chunkPos;
     private readonly LevelHeightAccessor _levelHeightAccessor;
     private readonly ChunkSection[] _sections;
+    private volatile bool _unsaved;
+    private volatile bool _isLightCorrect;
+    private long _inhabitedTime;
     private readonly Dictionary<Heightmap.Types, Heightmap> _heightmaps = new();
     private readonly ReadOnlyDictionary<Heightmap.Types, Heightmap> _heightmapsView;
 
@@ -23,6 +26,7 @@ public abstract class ChunkAccess : LevelHeightAccessor
         ChunkPos chunkPos,
         LevelHeightAccessor levelHeightAccessor,
         PalettedContainerFactory containerFactory,
+        long inhabitedTime,
         ChunkSection?[]? sections = null)
     {
         ArgumentNullException.ThrowIfNull(levelHeightAccessor);
@@ -30,6 +34,7 @@ public abstract class ChunkAccess : LevelHeightAccessor
 
         _chunkPos = chunkPos;
         _levelHeightAccessor = levelHeightAccessor;
+        _inhabitedTime = inhabitedTime;
         _sections = new ChunkSection[levelHeightAccessor.GetSectionsCount()];
         _heightmapsView = new ReadOnlyDictionary<Heightmap.Types, Heightmap>(_heightmaps);
 
@@ -184,6 +189,37 @@ public abstract class ChunkAccess : LevelHeightAccessor
         }
 
         return heightmap.GetFirstAvailable(x & SectionPos.SectionMask, z & SectionPos.SectionMask) - 1;
+    }
+
+    public void MarkUnsaved() => _unsaved = true;
+
+    public bool TryMarkSaved()
+    {
+        if (_unsaved)
+        {
+            _unsaved = false;
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool IsUnsaved() => _unsaved;
+
+    public long GetInhabitedTime() => _inhabitedTime;
+
+    public void IncrementInhabitedTime() =>
+        _inhabitedTime = unchecked(_inhabitedTime + 1);
+
+    public void SetInhabitedTime(long inhabitedTime) =>
+        _inhabitedTime = inhabitedTime;
+
+    public bool IsLightCorrect() => _isLightCorrect;
+
+    public void SetLightCorrect(bool isLightCorrect)
+    {
+        _isLightCorrect = isLightCorrect;
+        MarkUnsaved();
     }
 
     public int GetHeight() => _levelHeightAccessor.GetHeight();
