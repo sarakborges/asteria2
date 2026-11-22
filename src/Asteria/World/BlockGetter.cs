@@ -1,6 +1,7 @@
 using Asteria.Content.Blocks;
 using Asteria.Content.Fluids;
 using Asteria.Core;
+using Asteria.Core.Shapes;
 
 namespace Asteria.World;
 
