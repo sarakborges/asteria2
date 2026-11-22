@@ -213,6 +213,14 @@ internal static class BlockPositionTransformChecks
             "BlockState.Rotate must dispatch through the owning block and preserve the base default state.");
         Require(ReferenceEquals(state, state.Mirror(Mirror.FRONT_BACK)),
             "BlockState.Mirror must dispatch through the owning block and preserve the base default state.");
+        Require(!state.IsSignalSource() && !state.HasAnalogOutputSignal(),
+            "Base block states must not emit redstone signals or analog output by default.");
+        Require(state.CanBeReplaced() == state.IsReplaceable,
+            "BlockState.CanBeReplaced must expose the state's configured replacement flag.");
+        Require(state.GetDestroySpeed(EmptyBlockGetter.Instance, BlockPos.Zero) == state.DestroySpeed,
+            "BlockState.GetDestroySpeed must return the configured destroy speed.");
+        Require(state.GetLightDampening() == state.LightDampening,
+            "BlockState.GetLightDampening must expose the cached light dampening value.");
     }
 
     private static void Require(bool condition, string message)
