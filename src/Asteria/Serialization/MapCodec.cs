@@ -73,8 +73,13 @@ public abstract class MapCodec<TValue>
         public override DataResult<TData> Encode<TData>(
             TSource input,
             DynamicOps<TData> ops,
-            TData prefix) =>
-            _source.Encode(input, ops, prefix);
+            TData prefix)
+        {
+            TData mapPrefix = ops.GetMap(prefix).IsSuccess
+                ? prefix
+                : ops.EmptyMap;
+            return _source.Encode(input, ops, mapPrefix);
+        }
 
         public override DataResult<Pair<TSource, TData>> Decode<TData>(
             DynamicOps<TData> ops,
