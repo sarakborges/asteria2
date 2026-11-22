@@ -213,6 +213,271 @@ public class BlockPos : Vec3i
         }
     }
 
+
+    public static IEnumerable<BlockPos> WithinManhattan(BlockPos origin, int reach)
+    {
+        ArgumentNullException.ThrowIfNull(origin);
+        return ManhattanOrdered(origin, reach, reach, reach, reach);
+    }
+
+    public static IEnumerable<BlockPos> WithinClippedManhattan(
+        BlockPos origin,
+        int reachX,
+        int reachY,
+        int reachZ)
+    {
+        ArgumentNullException.ThrowIfNull(origin);
+        return ManhattanOrdered(
+            origin,
+            reachX,
+            reachY,
+            reachZ,
+            Math.Max(reachX, Math.Max(reachY, reachZ)));
+    }
+
+    public static IEnumerable<BlockPos> WithinBoxByManhattanDistance(
+        BlockPos origin,
+        int reachX,
+        int reachY,
+        int reachZ)
+    {
+        ArgumentNullException.ThrowIfNull(origin);
+        return ManhattanOrdered(
+            origin,
+            reachX,
+            reachY,
+            reachZ,
+            unchecked(reachX + reachY + reachZ));
+    }
+
+    private static IEnumerable<BlockPos> ManhattanOrdered(
+        BlockPos origin,
+        int reachX,
+        int reachY,
+        int reachZ,
+        int maxDepth)
+    {
+        int originX = origin.GetX();
+        int originY = origin.GetY();
+        int originZ = origin.GetZ();
+        var cursor = new MutableBlockPos();
+        int currentDepth = 0;
+        int maxX = 0;
+        int maxY = 0;
+        int x = 0;
+        int y = 0;
+        bool zMirror = false;
+
+        while (true)
+        {
+            if (zMirror)
+            {
+                zMirror = false;
+                cursor.SetZ(unchecked(originZ - (cursor.GetZ() - originZ)));
+                yield return cursor;
+                continue;
+            }
+
+            bool found = false;
+            while (!found)
+            {
+                if (y > maxY)
+                {
+                    x++;
+                    if (x > maxX)
+                    {
+                        currentDepth++;
+                        if (currentDepth > maxDepth)
+                            yield break;
+
+                        maxX = Math.Min(reachX, currentDepth);
+                        x = unchecked(-maxX);
+                    }
+
+                    maxY = Math.Min(reachY, unchecked(currentDepth - AbsLikeReference(x)));
+                    y = unchecked(-maxY);
+                }
+
+                int xx = x;
+                int yy = y;
+                int zz = unchecked(currentDepth - AbsLikeReference(xx) - AbsLikeReference(yy));
+                if (zz <= reachZ)
+                {
+                    zMirror = zz != 0;
+                    cursor.Set(
+                        unchecked(originX + xx),
+                        unchecked(originY + yy),
+                        unchecked(originZ + zz));
+                    found = true;
+                }
+
+                y++;
+            }
+
+            yield return cursor;
+        }
+    }
+
+    private static int AbsLikeReference(int value) =>
+        value == int.MinValue ? int.MinValue : Math.Abs(value);
+
+    public static IEnumerable<BlockPos> BetweenClosed(AABB bounds)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        return BetweenClosed(
+            Containing(bounds.MinX, bounds.MinY, bounds.MinZ),
+            Containing(bounds.MaxX, bounds.MaxY, bounds.MaxZ));
+    }
+
+    public static IEnumerable<BlockPos> NeighborColumn(
+        int startX,
+        int startY,
+        int startZ,
+        int endY)
+    {
+        int yDirection = endY > startY ? 1 : -1;
+        int height = unchecked(AbsLikeReference(unchecked(endY - startY)) + 1);
+        (int X, int Z)[] steps =
+        {
+            (0, 0),
+            (0, -1),
+            (1, 0),
+            (0, 1),
+            (-1, 0)
+        };
+
+        return Enumerate();
+
+        IEnumerable<BlockPos> Enumerate()
+        {
+            var cursor = new MutableBlockPos();
+            for (int stepIndex = 0; stepIndex < steps.Length; stepIndex++)
+            {
+                (int offsetX, int offsetZ) = steps[stepIndex];
+                for (int y = 0; y < height; y++)
+                {
+                    yield return cursor.Set(
+                        unchecked(startX + offsetX),
+                        unchecked(startY + y * yDirection),
+                        unchecked(startZ + offsetZ));
+                }
+            }
+        }
+    }
+
+    public static IEnumerable<MutableBlockPos> SpiralAround(
+        BlockPos center,
+        int radius,
+        Direction firstDirection,
+        Direction secondDirection)
+    {
+        ArgumentNullException.ThrowIfNull(center);
+        ArgumentNullException.ThrowIfNull(firstDirection);
+        ArgumentNullException.ThrowIfNull(secondDirection);
+
+        if (ReferenceEquals(firstDirection.GetAxis(), secondDirection.GetAxis()))
+            throw new InvalidOperationException("The two directions cannot be on the same axis");
+
+        return Enumerate();
+
+        IEnumerable<MutableBlockPos> Enumerate()
+        {
+            Direction[] directions =
+            {
+                firstDirection,
+                secondDirection,
+                firstDirection.GetOpposite(),
+                secondDirection.GetOpposite()
+            };
+
+            MutableBlockPos cursor = center.Mutable().Move(
+                secondDirection.GetStepX(),
+                secondDirection.GetStepY(),
+                secondDirection.GetStepZ());
+            int legs = unchecked(4 * radius);
+            int leg = -1;
+            int legSize = 0;
+            int legIndex = 0;
+            int lastX = cursor.GetX();
+            int lastY = cursor.GetY();
+            int lastZ = cursor.GetZ();
+
+            while (true)
+            {
+                Direction direction = directions[unchecked(leg + 4) % 4];
+                cursor.Set(lastX, lastY, lastZ).Move(
+                    direction.GetStepX(),
+                    direction.GetStepY(),
+                    direction.GetStepZ());
+                lastX = cursor.GetX();
+                lastY = cursor.GetY();
+                lastZ = cursor.GetZ();
+
+                if (legIndex >= legSize)
+                {
+                    if (leg >= legs)
+                        yield break;
+
+                    leg++;
+                    legIndex = 0;
+                    legSize = leg / 2 + 1;
+                }
+
+                legIndex++;
+                yield return cursor;
+            }
+        }
+    }
+
+    public static int BreadthFirstTraversal(
+        BlockPos startPosition,
+        int maxDepth,
+        int maxCount,
+        Action<BlockPos, Action<BlockPos>> neighborProvider,
+        Func<BlockPos, TraversalNodeStatus> nodeProcessor)
+    {
+        ArgumentNullException.ThrowIfNull(startPosition);
+        ArgumentNullException.ThrowIfNull(neighborProvider);
+        ArgumentNullException.ThrowIfNull(nodeProcessor);
+
+        var nodes = new Queue<(BlockPos Position, int Depth)>();
+        var visited = new HashSet<long>();
+        nodes.Enqueue((startPosition, 0));
+        int count = 0;
+
+        while (nodes.Count > 0)
+        {
+            (BlockPos currentPosition, int depth) = nodes.Dequeue();
+            if (!visited.Add(currentPosition.AsLong()))
+                continue;
+
+            TraversalNodeStatus status = nodeProcessor(currentPosition);
+            if (status == TraversalNodeStatus.SKIP)
+                continue;
+            if (status == TraversalNodeStatus.STOP)
+                break;
+
+            count = unchecked(count + 1);
+            if (count >= maxCount)
+                return count;
+            if (depth >= maxDepth)
+                continue;
+
+            neighborProvider(
+                currentPosition,
+                position => nodes.Enqueue((position, unchecked(depth + 1))));
+        }
+
+        return count;
+    }
+
+    public enum TraversalNodeStatus
+    {
+        ACCEPT,
+        SKIP,
+        STOP
+    }
+
     public static IEnumerable<BlockPos> BetweenClosed(BlockPos first, BlockPos second)
     {
         ArgumentNullException.ThrowIfNull(first);
