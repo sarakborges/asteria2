@@ -1,5 +1,6 @@
 using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
+using Asteria.Content.Fluids;
 using Asteria.Content.Storage;
 using Asteria.Core;
 using Asteria.World;
@@ -13,6 +14,7 @@ internal static class ChunkChecks
 
         CheckHeightAccessor();
         CheckChunkAccessLifecycle();
+        CheckBlockGetterContract(fluidState);
         CheckChunkConstructionAndSections(nonAirState);
         CheckMismatchedSectionArray();
         CheckWorldSurfaceHeightmap(nonAirState);
@@ -50,6 +52,34 @@ internal static class ChunkChecks
         chunk.TryMarkSaved();
         chunk.SetLightCorrect(false);
         Require(!chunk.IsLightCorrect() && chunk.IsUnsaved(), "Changing light correctness must mark the chunk unsaved.");
+    }
+
+    private static void CheckBlockGetterContract(BlockState fluidState)
+    {
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        var chunk = new TestChunkAccess(
+            new ChunkPos(0, 0),
+            height,
+            PalettedContainerFactory.CreateBuiltIn());
+        BlockPos position = new(2, 7, 4);
+        chunk.GetSection(chunk.GetSectionIndex(position.GetY()))
+            .SetBlockState(2, 7, 4, fluidState);
+
+        BlockGetter blockGetter = chunk;
+        Require(
+            ReferenceEquals(blockGetter.GetBlockState(position), fluidState),
+            "ChunkAccess must expose block-state lookup through BlockGetter.");
+        Require(
+            ReferenceEquals(blockGetter.GetFluidState(position), fluidState.GetFluidState()),
+            "ChunkAccess must expose the block state's fluid through BlockGetter.");
+
+        BlockPos outsideBuildHeight = new(2, height.GetMinY() - 1, 4);
+        Require(
+            ReferenceEquals(blockGetter.GetBlockState(outsideBuildHeight), Blocks.AIR.DefaultState),
+            "The concrete chunk fixture must return air outside its section array.");
+        Require(
+            blockGetter.GetFluidState(outsideBuildHeight).IsEmpty(),
+            "Fluid lookup outside the section array must return the empty fluid state.");
     }
 
     private static void CheckHeightAccessor()
@@ -377,6 +407,33 @@ internal static class ChunkChecks
             : base(chunkPos, levelHeightAccessor, containerFactory, inhabitedTime, sections)
         {
         }
+
+        public override BlockState GetBlockState(BlockPos position)
+        {
+            ArgumentNullException.ThrowIfNull(position);
+
+            int x = position.GetX();
+            int y = position.GetY();
+            int z = position.GetZ();
+            int sectionIndex = GetSectionIndex(y);
+
+            if (sectionIndex >= 0 && sectionIndex < GetSections().Length)
+            {
+                ChunkSection section = GetSection(sectionIndex);
+                if (!section.HasOnlyAir)
+                {
+                    return section.GetBlockState(
+                        x & SectionPos.SectionMask,
+                        y & SectionPos.SectionMask,
+                        z & SectionPos.SectionMask);
+                }
+            }
+
+            return Blocks.AIR.DefaultState;
+        }
+
+        public override FluidState GetFluidState(BlockPos position) =>
+            GetBlockState(position).GetFluidState();
     }
 
     private static void Require(bool condition, string message)
