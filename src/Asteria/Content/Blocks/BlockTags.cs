@@ -18,6 +18,9 @@ public static class BlockTags
     public static TagKey<Block> Leaves { get; } =
         Create("leaves");
 
+    public static TagKey<Block> FallDamageResetting { get; } =
+        Create("fall_damage_resetting");
+
     private static TagKey<Block> Create(string path) =>
         TagKey<Block>.Create(
             BuiltInRegistries.Block.Key,
