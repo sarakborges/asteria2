@@ -30,6 +30,20 @@ public sealed class BlockProperties
 
     public Func<BlockState, BlockPos, Vec3>? OffsetFunctionValue { get; private set; }
 
+    public Func<BlockState, BlockGetter, BlockPos, bool> IsRedstoneConductorValue { get; private set; } =
+        static (state, level, position) => state.IsCollisionShapeFullBlock(level, position);
+
+    public Func<BlockState, BlockGetter, BlockPos, bool> IsSuffocatingValue { get; private set; } =
+        static (state, level, position) =>
+            state.Is(BlockTags.CausesSuffocation) &&
+            state.IsCollisionShapeFullBlock(level, position);
+
+    public Func<BlockState, BlockGetter, BlockPos, AABB, bool> IsViewBlockingValue { get; private set; } =
+        static (state, level, position, _) => state.IsSuffocating(level, position);
+
+    public Func<BlockState, BlockGetter, BlockPos, BlockPos?> PostProcessValue { get; private set; } =
+        static (_, _, _) => null;
+
     private BlockProperties()
     {
     }
@@ -128,6 +142,38 @@ public sealed class BlockProperties
             global::Asteria.Content.Blocks.OffsetType.XYZ => CalculateThreeAxisOffset,
             _ => throw new ArgumentOutOfRangeException(nameof(offsetType))
         };
+        return this;
+    }
+
+    public BlockProperties IsRedstoneConductor(
+        Func<BlockState, BlockGetter, BlockPos, bool> predicate)
+    {
+        IsRedstoneConductorValue = predicate ??
+            throw new ArgumentNullException(nameof(predicate));
+        return this;
+    }
+
+    public BlockProperties IsSuffocating(
+        Func<BlockState, BlockGetter, BlockPos, bool> predicate)
+    {
+        IsSuffocatingValue = predicate ??
+            throw new ArgumentNullException(nameof(predicate));
+        return this;
+    }
+
+    public BlockProperties IsViewBlocking(
+        Func<BlockState, BlockGetter, BlockPos, AABB, bool> predicate)
+    {
+        IsViewBlockingValue = predicate ??
+            throw new ArgumentNullException(nameof(predicate));
+        return this;
+    }
+
+    public BlockProperties PostProcess(
+        Func<BlockState, BlockGetter, BlockPos, BlockPos?> postProcess)
+    {
+        PostProcessValue = postProcess ??
+            throw new ArgumentNullException(nameof(postProcess));
         return this;
     }
 
