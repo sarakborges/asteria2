@@ -19,9 +19,9 @@ internal static class BlockPositionTransformChecks
     {
         AxisCycle[] cycles = Enum.GetValues<AxisCycle>();
         Require(cycles.Length == 3 &&
-                ReferenceEquals(cycles[0], AxisCycle.None) &&
-                ReferenceEquals(cycles[1], AxisCycle.Forward) &&
-                ReferenceEquals(cycles[2], AxisCycle.Backward),
+                cycles[0] == AxisCycle.None &&
+                cycles[1] == AxisCycle.Forward &&
+                cycles[2] == AxisCycle.Backward,
             "AxisCycle values must preserve NONE/FORWARD/BACKWARD source order.");
 
         Require(
@@ -45,15 +45,15 @@ internal static class BlockPositionTransformChecks
             ReferenceEquals(AxisCycle.Backward.Cycle(Direction.Axis.Z), Direction.Axis.Y),
             "AxisCycle axis mapping must wrap in X/Y/Z order.");
 
-        Require(ReferenceEquals(AxisCycle.None.Inverse(), AxisCycle.None) &&
-                ReferenceEquals(AxisCycle.Forward.Inverse(), AxisCycle.Backward) &&
-                ReferenceEquals(AxisCycle.Backward.Inverse(), AxisCycle.Forward),
+        Require(AxisCycle.None.Inverse() == AxisCycle.None &&
+                AxisCycle.Forward.Inverse() == AxisCycle.Backward &&
+                AxisCycle.Backward.Inverse() == AxisCycle.Forward,
             "AxisCycle inverse must map each permutation to its inverse.");
         Require(
-            ReferenceEquals(AxisCycleExtensions.Between(Direction.Axis.X, Direction.Axis.X), AxisCycle.None) &&
-            ReferenceEquals(AxisCycleExtensions.Between(Direction.Axis.X, Direction.Axis.Y), AxisCycle.Forward) &&
-            ReferenceEquals(AxisCycleExtensions.Between(Direction.Axis.Y, Direction.Axis.X), AxisCycle.Backward) &&
-            ReferenceEquals(AxisCycleExtensions.Between(Direction.Axis.Z, Direction.Axis.Y), AxisCycle.Forward),
+            AxisCycleExtensions.Between(Direction.Axis.X, Direction.Axis.X) == AxisCycle.None &&
+            AxisCycleExtensions.Between(Direction.Axis.X, Direction.Axis.Y) == AxisCycle.Forward &&
+            AxisCycleExtensions.Between(Direction.Axis.Y, Direction.Axis.X) == AxisCycle.Backward &&
+            AxisCycleExtensions.Between(Direction.Axis.Z, Direction.Axis.Y) == AxisCycle.Forward,
             "AxisCycle.Between must select the positive cyclic difference from source to target.");
 
         var mutable = new BlockPos.MutableBlockPos();
