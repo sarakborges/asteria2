@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Asteria.Content.Blocks;
 using Asteria.Core;
@@ -7,7 +6,7 @@ using Asteria.World;
 namespace Asteria.Content.Chunks;
 
 /// <summary>
-/// Vertical chunk storage and height mapping, limited to the block-state portion of ChunkAccess.
+/// Shared chunk storage and heightmap state.
 /// </summary>
 public abstract class ChunkAccess : LevelHeightAccessor
 {
@@ -20,7 +19,7 @@ public abstract class ChunkAccess : LevelHeightAccessor
     private volatile bool _isLightCorrect;
     private long _inhabitedTime;
     private readonly Dictionary<Heightmap.Types, Heightmap> _heightmaps = new();
-    private readonly ReadOnlyDictionary<Heightmap.Types, Heightmap> _heightmapsView;
+    private readonly IReadOnlyCollection<KeyValuePair<Heightmap.Types, Heightmap>> _heightmapEntries;
 
     public ChunkAccess(
         ChunkPos chunkPos,
@@ -36,7 +35,7 @@ public abstract class ChunkAccess : LevelHeightAccessor
         _levelHeightAccessor = levelHeightAccessor;
         _inhabitedTime = inhabitedTime;
         _sections = new ChunkSection[levelHeightAccessor.GetSectionsCount()];
-        _heightmapsView = new ReadOnlyDictionary<Heightmap.Types, Heightmap>(_heightmaps);
+        _heightmapEntries = new HeightmapEntries(_heightmaps);
 
         if (sections is not null)
         {
@@ -142,8 +141,8 @@ public abstract class ChunkAccess : LevelHeightAccessor
         return true;
     }
 
-    /// <summary>Returns a read-only view of the heightmaps currently owned by this chunk.</summary>
-    public IReadOnlyDictionary<Heightmap.Types, Heightmap> GetHeightmaps() => _heightmapsView;
+    public IReadOnlyCollection<KeyValuePair<Heightmap.Types, Heightmap>> GetHeightmaps() =>
+        _heightmapEntries;
 
     /// <summary>
     /// Loads serialized heightmap words. An incompatible word count falls back to a fresh
@@ -253,4 +252,22 @@ public abstract class ChunkAccess : LevelHeightAccessor
 
     public bool IsOutsideBuildHeight(int blockY) =>
         _levelHeightAccessor.IsOutsideBuildHeight(blockY);
+    private sealed class HeightmapEntries : IReadOnlyCollection<KeyValuePair<Heightmap.Types, Heightmap>>
+    {
+        private readonly Dictionary<Heightmap.Types, Heightmap> _heightmaps;
+
+        public HeightmapEntries(Dictionary<Heightmap.Types, Heightmap> heightmaps)
+        {
+            _heightmaps = heightmaps;
+        }
+
+        public int Count => _heightmaps.Count;
+
+        public IEnumerator<KeyValuePair<Heightmap.Types, Heightmap>> GetEnumerator() =>
+            _heightmaps.GetEnumerator();
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() =>
+            GetEnumerator();
+    }
+
 }
