@@ -7,6 +7,8 @@ using Asteria.Content.Storage;
 using Asteria.Core;
 using Asteria.World;
 using Asteria.World.Lighting;
+using Asteria.World.BlockScan;
+using Asteria.Util;
 
 internal static class ChunkChecks
 {
@@ -20,6 +22,7 @@ internal static class ChunkChecks
         CheckBlockGetterContract(fluidState);
         CheckChunkBiomeAccess();
         CheckChunkSkyLightSources(nonAirState);
+        CheckChunkBlockScanning(nonAirState);
         CheckChunkConstructionAndSections(nonAirState);
         CheckMismatchedSectionArray();
         CheckWorldSurfaceHeightmap(nonAirState);
@@ -186,6 +189,78 @@ internal static class ChunkChecks
         Require(
             sources.GetHighestLowestSourceY() == ChunkSkyLightSources.NegativeInfinity,
             "The chunk-wide highest source boundary must return to negative infinity after the final block is removed.");
+    }
+
+    private static void CheckChunkBlockScanning(BlockState lightEmittingState)
+    {
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        var position = new ChunkPos(-2, 3);
+        var chunk = new TestChunkAccess(
+            position,
+            height,
+            PalettedContainerFactory.CreateBuiltIn());
+
+        BlockPos lowerPosition = position.GetBlockAt(2, -23, 3);
+        BlockPos upperPosition = position.GetBlockAt(5, 31, 12);
+        chunk.GetSection(chunk.GetSectionIndex(lowerPosition.GetY()))
+            .SetBlockState(2, lowerPosition.GetY() & 15, 3, lightEmittingState);
+        chunk.GetSection(chunk.GetSectionIndex(upperPosition.GetY()))
+            .SetBlockState(5, upperPosition.GetY() & 15, 12, lightEmittingState);
+
+        var found = new List<(BlockPos Position, BlockState State)>();
+        chunk.FindBlocks(
+            state => ReferenceEquals(state, lightEmittingState),
+            (blockPosition, state) => found.Add((blockPosition.Immutable(), state)));
+
+        Require(
+            found.Count == 2 &&
+            found[0].Position.Equals(lowerPosition) &&
+            found[1].Position.Equals(upperPosition),
+            "Chunk block scanning must traverse sections from minimum Y upward and report world coordinates.");
+        Require(
+            found.All(entry => ReferenceEquals(entry.State, lightEmittingState)),
+            "Chunk block scanning must pass the exact matched block-state instances to the consumer.");
+
+        var lightSources = new List<BlockPos>();
+        chunk.FindBlockLightSources(
+            (blockPosition, _) => lightSources.Add(blockPosition.Immutable()));
+        Require(
+            lightSources.Count == 2 &&
+            lightSources[0].Equals(lowerPosition) &&
+            lightSources[1].Equals(upperPosition),
+            "Block-light source scanning must find states whose cached light emission is non-zero.");
+
+        ChunkSection lowerSection = chunk.GetSection(chunk.GetSectionIndex(lowerPosition.GetY()));
+        BlockPos lowerOrigin = SectionPos.Of(
+            position,
+            chunk.GetSectionYFromSectionIndex(chunk.GetSectionIndex(lowerPosition.GetY()))).Origin();
+        int callbacks = 0;
+        bool aborted = BlockScanUtils.FindBlocksInSection(
+            lowerSection,
+            lowerOrigin,
+            0, 0, 0,
+            15, 15, 15,
+            state => ReferenceEquals(state, lightEmittingState),
+            (_, _) =>
+            {
+                callbacks++;
+                return Continuation.Abort;
+            });
+        Require(
+            aborted && callbacks == 1,
+            "Section block scanning must stop immediately when its consumer returns ABORT.");
+
+        var alternatingResolver = new AlternatingBiomeResolver(
+            Biomes.PLAINS.BuiltInRegistryHolder!,
+            Biomes.DESERT.BuiltInRegistryHolder!);
+        chunk.FillBiomesFromNoise(alternatingResolver);
+        var biomes = new HashSet<Holder<Biome>>();
+        chunk.CollectBiomesInPalette(biomes);
+        Require(
+            biomes.Count == 2 &&
+            biomes.Contains(Biomes.PLAINS.BuiltInRegistryHolder!) &&
+            biomes.Contains(Biomes.DESERT.BuiltInRegistryHolder!),
+            "Chunk biome palette collection must aggregate distinct holders across every section.");
     }
 
     private static void CheckHeightAccessor()
