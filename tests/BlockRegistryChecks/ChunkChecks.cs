@@ -287,8 +287,7 @@ internal static class ChunkChecks
             Heightmap.Types.OCEAN_FLOOR_WG,
             Heightmap.Types.OCEAN_FLOOR,
             Heightmap.Types.MOTION_BLOCKING,
-            Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-            Heightmap.Types.WORLD_SURFACE
+            Heightmap.Types.MOTION_BLOCKING_NO_LEAVES
         });
 
         Require(chunk.GetHeightmaps().Count == 6, "Batch priming must create each of the six requested types once.");
