@@ -5,6 +5,7 @@ using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.World;
+using Asteria.World.Lighting;
 
 namespace Asteria.Content.Chunks;
 
@@ -23,6 +24,7 @@ public abstract class ChunkAccess : BlockGetter
     private long _inhabitedTime;
     private readonly Dictionary<Heightmap.Types, Heightmap> _heightmaps = new();
     private readonly IReadOnlyCollection<KeyValuePair<Heightmap.Types, Heightmap>> _heightmapEntries;
+    private readonly ChunkSkyLightSources _skyLightSources;
 
     public ChunkAccess(
         ChunkPos chunkPos,
@@ -39,6 +41,7 @@ public abstract class ChunkAccess : BlockGetter
         _inhabitedTime = inhabitedTime;
         _sections = new ChunkSection[levelHeightAccessor.GetSectionsCount()];
         _heightmapEntries = new HeightmapEntries(_heightmaps);
+        _skyLightSources = new ChunkSkyLightSources(levelHeightAccessor);
 
         if (sections is not null)
         {
@@ -226,6 +229,12 @@ public abstract class ChunkAccess : BlockGetter
         _inhabitedTime = inhabitedTime;
 
     public bool IsLightCorrect() => _isLightCorrect;
+
+    public void InitializeLightSources() =>
+        _skyLightSources.FillFrom(this);
+
+    public ChunkSkyLightSources GetSkyLightSources() =>
+        _skyLightSources;
 
     public void SetLightCorrect(bool isLightCorrect)
     {
