@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Asteria.Content.Identifiers;
 using Asteria.Content.Items;
 using Asteria.Content.Particles;
 using Asteria.Content.Registries;
