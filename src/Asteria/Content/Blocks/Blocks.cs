@@ -1,5 +1,8 @@
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
+using Asteria.Core;
+using Asteria.Core.Shapes;
+using Asteria.World;
 
 namespace Asteria.Content.Blocks;
 
@@ -8,8 +11,8 @@ namespace Asteria.Content.Blocks;
 /// </summary>
 public static class Blocks
 {
-    public static Block AIR { get; } = new(
-        BlockProperties.Of().Air());
+    public static Block AIR { get; } = new AirBlock(
+        BlockProperties.Of().Replaceable().NoCollision().Air());
 
     public static Block STONE { get; } = new(
         BlockProperties.Of().Strength(1.5f, 6.0f));
@@ -33,4 +36,15 @@ public static class Blocks
             BuiltInRegistries.Block,
             ResourceLocation.FromNamespaceAndPath("asteria", path),
             block);
+
+    private sealed class AirBlock : Block
+    {
+        public AirBlock(BlockProperties properties)
+            : base(properties)
+        {
+        }
+
+        public override VoxelShape GetShape(BlockState state, BlockGetter level, BlockPos position) =>
+            Shapes.Empty();
+    }
 }
