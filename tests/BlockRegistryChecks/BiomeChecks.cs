@@ -166,14 +166,14 @@ internal static class BiomeChecks
     }
     private static void CheckBiomeSectionPalette()
     {
-        BiomeContainerFactory biomeFactory = BiomeContainerFactory.CreateBuiltIn();
+        PalettedContainerFactory biomeFactory = PalettedContainerFactory.CreateBuiltIn();
         Require(
-            biomeFactory.Strategy.BitsPerAxis == 2 &&
+            biomeFactory.BiomeStrategy.BitsPerAxis == 2 &&
             biomeFactory.Strategy.EntryCount == ChunkSection.BiomeCount &&
             biomeFactory.Strategy.EntryCount == 64,
             "The biome palette must use a 4x4x4 quart grid with 64 entries.");
 
-        ChunkSection section = BlockStateContainerFactory.CreateBuiltIn().CreateSection();
+        ChunkSection section = new ChunkSection(PalettedContainerFactory.CreateBuiltIn());
         Require(section.GetBiomes().Size == 64,
             "LevelChunkSection biome storage must expose 64 quart cells.");
         Require(
