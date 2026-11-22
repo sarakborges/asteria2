@@ -2,6 +2,7 @@ using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
 using Asteria.Content.Storage;
 using Asteria.Core;
+using Asteria.Core.Shapes;
 using Asteria.World;
 
 namespace Asteria.World.Lighting;
