@@ -125,7 +125,14 @@ public static class BuiltInRegistries
         foreach (var loader in Loaders)
             loader.Bootstrap();
 
+        InitializeBlockStateCaches();
         Freeze();
+    }
+
+    private static void InitializeBlockStateCaches()
+    {
+        foreach (Block block in BuiltInRegistries.Block)
+            block.InitializeStateCaches();
     }
 
     private static void Freeze()
