@@ -192,15 +192,15 @@ public class BlockPos : Vec3i
             Mth.Clamp(
                 location.X,
                 (double)((float)GetX() + 1.0E-5f),
-                (double)GetX() + 1.0 - 1.0E-5),
+                (double)GetX() + 1.0 - (double)1.0E-5f),
             Mth.Clamp(
                 location.Y,
                 (double)((float)GetY() + 1.0E-5f),
-                (double)GetY() + 1.0 - 1.0E-5),
+                (double)GetY() + 1.0 - (double)1.0E-5f),
             Mth.Clamp(
                 location.Z,
                 (double)((float)GetZ() + 1.0E-5f),
-                (double)GetZ() + 1.0 - 1.0E-5));
+                (double)GetZ() + 1.0 - (double)1.0E-5f));
     }
 
     public virtual BlockPos Immutable() => this;
