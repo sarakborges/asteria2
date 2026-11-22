@@ -11,19 +11,22 @@ internal static class BlockTagChecks
     {
         Holder<Block>.Reference airHolder = Blocks.AIR.BuiltInRegistryHolder ??
             throw new InvalidOperationException("The built-in air block must own an intrusive registry holder.");
+        TagKey<Block> causesSuffocation = BlockTags.CausesSuffocation;
 
         Require(
             BlockTags.BlocksMotionInHeightmap.Registry == BuiltInRegistries.Block.Key &&
             BlockTags.BlocksMotionInHeightmapNoLeaves.Registry == BuiltInRegistries.Block.Key &&
             BlockTags.Leaves.Registry == BuiltInRegistries.Block.Key &&
-            BlockTags.FallDamageResetting.Registry == BuiltInRegistries.Block.Key,
+            BlockTags.FallDamageResetting.Registry == BuiltInRegistries.Block.Key &&
+            causesSuffocation.Registry == BuiltInRegistries.Block.Key,
             "Heightmap block tags must target the built-in block registry.");
 
         Require(
             BlockTags.BlocksMotionInHeightmap.Location == ResourceLocation.Parse("asteria:blocks_motion_in_heightmap") &&
             BlockTags.BlocksMotionInHeightmapNoLeaves.Location == ResourceLocation.Parse("asteria:blocks_motion_in_heightmap_no_leaves") &&
             BlockTags.Leaves.Location == ResourceLocation.Parse("asteria:leaves") &&
-            BlockTags.FallDamageResetting.Location == ResourceLocation.Parse("asteria:fall_damage_resetting"),
+            BlockTags.FallDamageResetting.Location == ResourceLocation.Parse("asteria:fall_damage_resetting") &&
+            causesSuffocation.Location == ResourceLocation.Parse("asteria:causes_suffocation"),
             "Block-tag locations must preserve the canonical tag paths in Asteria's namespace.");
 
         TagKey<Block> markerTag = TagKey<Block>.Create(
@@ -42,6 +45,9 @@ internal static class BlockTagChecks
                 Array.Empty<Holder<Block>>()),
             new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
                 BlockTags.FallDamageResetting,
+                Array.Empty<Holder<Block>>()),
+            new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
+                causesSuffocation,
                 Array.Empty<Holder<Block>>()),
             new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
                 markerTag,
@@ -84,7 +90,10 @@ internal static class BlockTagChecks
         {
             new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
                 BlockTags.FallDamageResetting,
-                new Holder<Block>[] { stoneHolder })
+                new Holder<Block>[] { stoneHolder }),
+            new KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>(
+                causesSuffocation,
+                Array.Empty<Holder<Block>>())
         };
         BuiltInRegistries.Block.PrepareTagReload(fallDamageDefinitions).Apply();
 
