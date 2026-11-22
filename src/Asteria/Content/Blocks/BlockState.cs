@@ -95,6 +95,18 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         return Block.MirrorState(this, mirror);
     }
 
+    public float GetDestroySpeed(BlockGetter level, BlockPos position) => DestroySpeed;
+
+    public bool CanBeReplaced() => IsReplaceable;
+
+    public bool HasAnalogOutputSignal() =>
+        Block.HasAnalogOutputSignalForState(this);
+
+    public bool IsSignalSource() =>
+        Block.IsSignalSourceForState(this);
+
+    public int GetLightDampening() => LightDampening;
+
     public VoxelShape GetCollisionShape(BlockGetter level, BlockPos position) =>
         _collisionShape ?? Block.GetCollisionShape(this, level, position);
 
