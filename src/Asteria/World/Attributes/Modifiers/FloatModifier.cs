@@ -8,8 +8,8 @@ public readonly record struct FloatWithAlpha(float Value, float Alpha)
     public static readonly Codec<FloatWithAlpha> CODEC =
         RecordCodecBuilder.Create<FloatWithAlpha>(instance =>
             instance.Group(
-                Codecs.FLOAT.FieldOf("value").ForGetter(static value => value.Value),
-                Codecs.FLOAT.FieldOf("alpha").ForGetter(static value => value.Alpha))
+                Codecs.FLOAT.FieldOf("value").ForGetter<FloatWithAlpha>(static value => value.Value),
+                Codecs.FLOAT.FieldOf("alpha").ForGetter<FloatWithAlpha>(static value => value.Alpha))
             .Apply(instance, static (value, alpha) => new FloatWithAlpha(value, alpha)));
 }
 
