@@ -12,6 +12,8 @@ internal static class ClockChecks
         CheckTimeMarkerKeys();
         CheckOneShotMarkers();
         CheckPeriodicMarkers();
+        ClockStateChecks.Run();
+        WorldClockManagerChecks.Run();
     }
 
     private static void CheckWorldClockCodecsAndRegistry()

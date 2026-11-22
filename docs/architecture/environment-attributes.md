@@ -32,7 +32,7 @@ Base de comparação: Minecraft Java 26.3.
 - AttributeTypes contém boolean, float, angle_degrees, rgb_color, argb_color, integer e moon_phase. RGB/ARGB usam System.Numerics.Vector3/Vector4 e as cinco operações de modificador da referência. INTEGER usa Int32, interpolação por piso e as cinco operações aritméticas da referência. MOON_PHASE usa os oito estados, índices, nomes serializados e início de fase da referência, sem interpolação ou modificadores. `LerpFunction<T>.OfListCrossFade` agora reproduz a composição ordenada e a escala complementar de cada elemento para cross-fade de listas; `PARTICLE` e `AMBIENT_PARTICLES` já possuem codecs locais e usam o catálogo de partículas genéricas mantido no escopo. `ACTIVITY` depende do registry e do domínio de schedules/AI, ainda não portado; as definições de atividade específicas de villagers permanecem fora do escopo atual. Áudio, bed rules, raid/illager, slime e atributos vinculados a blocos/entidades específicos estão fora do escopo, não são pendências.
 - Os registries built-in environment_attribute e attribute_type foram ligados ao root e ao bootstrap. As 19 definições ambientais genéricas dentro do escopo foram registradas por chave. Atributos de áudio, regras de cama, raid/illager, slime e atributos de blocos/entidades específicos não são requisitos; outros tipos ainda não implementados foram omitidos, portanto não se afirma paridade dos IDs numéricos.
 - `EnvironmentAttributeResolver` aplica mapas de fontes em ordem explícita de prioridade baixa para alta, iniciando pelo default registrado ou por um valor base fornecido pelo chamador. A ordem de 26.3 é dimensão → bioma → timeline → clima.
-- A resolução espacial/temporal ainda depende de provedores reais de dimensão, amostragem de biomas, timeline e clima. Este resolver não inventa essas fontes nem implementa interpolação entre biomas ou seleção de clocks; a amostragem temporal de keyframes passa a ser responsabilidade de `KeyframeTrackSampler`.
+- A resolução final por posição e contexto de dimensão/bioma/timeline/clima ainda depende do runtime do mundo. O resolver aplica os mapas fornecidos; `WorldClockManager` fornece estado temporal local e `Timeline` produz os samplers dos tracks.
 - Packet/network codec, sincronização remota e multiplayer estão fora do escopo. Persistência local permanece no escopo futuro.
 
 
@@ -128,8 +128,8 @@ Base de comparação: Minecraft Java 26.3.
 - Portados os 32 easing types built-in e Bézier cúbica. O codec aceita identificadores simples ou `{ "cubic_bezier": [x1, y1, x2, y2] }`; somente x1 e x2 são limitados a [0, 1], como na referência.
 - `AttributeTrack<TValue, TArgument>` escolhe o codec de keyframes a partir do modifier e do atributo. O campo `modifier` é opcional e usa override como padrão. A interpolação dos argumentos usa `ArgumentKeyframeLerp(attribute)`, preservando o interpolador específico do modifier.
 - `AttributeTrackSampler` reproduz o cache por `cacheTickId` e aplica o modifier ao valor-base após amostrar o argumento.
-- Adaptação explícita: como Asteria ainda não tem `WorldClock`/ `ClockManager`, o sampler recebe `totalTicks` no método `ApplyTimeBased`; não foi criado relógio fictício.
-- Ainda não portados: registro de clocks, `ClockManager`, registry de `Timeline`, markers e conexão de timelines às fontes de dimensão. Este incremento completa a camada genérica de tracks e amostragem, mas não declara o sistema de timelines inteiro concluído.
+- `AttributeTrackSampler` recebe `Holder<WorldClock>` e `ClockManager`; ao renovar o cache consulta `TotalTicks` do clock associado.
+- O registry de clocks, `ClockManager`, registry genérico de `Timeline` e markers foram portados em incrementos seguintes. A conexão com as fontes reais de dimensão/bioma e com o resolver do mundo permanece pendente.
 - Codec de rede e sincronização remota permanecem fora do escopo local.
 
 ## Incremento — clocks e time markers (22/11/2026)
@@ -152,3 +152,13 @@ Base de comparação: Minecraft Java 26.3.
 - Não foi criado `NETWORK_CODEC`: transporte/sincronização remota continuam fora do produto single-player. O registry fornece o ponto local de registro; a gestão/persistência de timeline no mundo ainda depende do carregamento local de dados.
 - `RecordCodecBuilder.Group4` foi acrescentado para montar fielmente o codec de quatro campos sem codecs manuais específicos de Timeline.
 - Referência: [Timeline.java — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/timeline/timeline/).
+
+## Incremento — runtime local de clocks (22/11/2026)
+
+- `ClockState` reproduz o estado persistível `total_ticks`, `partial_tick`, `rate` e `paused`; defaults omitidos são 0, 1 e false. `Codecs.LONG` mantém os 64 bits de `total_ticks`; `Codecs.POSITIVE_FLOAT` rejeita taxas não positivas durante o decode.
+- `PackedClockStates` codifica snapshots por holder registrado de `WorldClock`, mantém os mapas imutáveis e expõe `EMPTY`.
+- `WorldClockManager` inicializa um estado por clock registrado, registra os markers recebidos das timelines e restaura os estados fornecidos. `PackState()` entrega o snapshot para o ciclo de persistência local; a integração com o saved-data do mundo ainda depende do sistema de save.
+- O mundo chama `Tick(advanceTime)`: quando permitido, cada relógio acumula `rate` em `partial_tick`, transfere `floor(partial_tick)` para `total_ticks` e retém a fração. Relógios pausados não avançam.
+- Portadas operações de set/add ticks, pause, rate, move-to-marker, is-at-marker e seleção dos markers `show_in_commands`. Alterações explícitas marcam o estado dirty e disparam `StateChanged` para invalidar caches locais.
+- `ClockNetworkState`, pacotes, broadcast, full sync e gamerules globais de servidor foram omitidos: o runtime é local/single-player e recebe do mundo a decisão de avançar o tempo.
+- Referências: [ClockState](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/clock/clockstate/), [PackedClockStates](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/clock/packedclockstates/) e [ServerClockManager](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/clock/serverclockmanager/).

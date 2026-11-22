@@ -5,7 +5,12 @@ public static class Codecs
 {
     public static readonly Codec<bool> BOOL = new BooleanCodec();
     public static readonly Codec<int> INT = new IntegerCodec();
+    public static readonly Codec<long> LONG = new LongCodec();
     public static readonly Codec<float> FLOAT = new FloatCodec();
+    public static readonly Codec<float> POSITIVE_FLOAT = FLOAT.Validate(value =>
+        value > 0.0F
+            ? DataResult<float>.Success(value)
+            : DataResult<float>.Error(() => $"Value must be positive: {value}"));
     public static readonly Codec<double> DOUBLE = new DoubleCodec();
     public static readonly Codec<string> STRING = new StringCodec();
 
@@ -68,6 +73,17 @@ public static class Codecs
             ops.CreateInt(value);
 
         public override string ToString() => "Int";
+    }
+
+    private sealed class LongCodec : PrimitiveCodec<long>
+    {
+        public override DataResult<long> Read<TData>(DynamicOps<TData> ops, TData input) =>
+            ops.GetNumberValue(input).Map(number => number.LongValue);
+
+        public override TData Write<TData>(DynamicOps<TData> ops, long value) =>
+            ops.CreateLong(value);
+
+        public override string ToString() => "Long";
     }
 
     private sealed class FloatCodec : PrimitiveCodec<float>
