@@ -98,6 +98,14 @@ public class Block
 
     public virtual bool IsRandomlyTickingState(BlockState state) => IsRandomlyTicking;
 
+    protected virtual float GetMaxHorizontalOffset() => 0.25f;
+
+    protected virtual float GetMaxVerticalOffset() => 0.2f;
+
+    internal float GetMaxHorizontalOffsetForState() => GetMaxHorizontalOffset();
+
+    internal float GetMaxVerticalOffsetForState() => GetMaxVerticalOffset();
+
     public virtual RenderShape GetRenderShape(BlockState state) => RenderShape.MODEL;
 
     public virtual float GetShadeBrightness(
