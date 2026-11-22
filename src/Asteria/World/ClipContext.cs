@@ -15,7 +15,8 @@ public sealed class ClipContext
     {
         Collider,
         Outline,
-        Visual
+        Visual,
+        FallDamageResetting
     }
 
     public enum Fluid
@@ -56,6 +57,9 @@ public sealed class ClipContext
             Block.Collider => state.GetCollisionShape(level, position),
             Block.Outline => state.GetShape(level, position),
             Block.Visual => state.GetVisualShape(level, position),
+            Block.FallDamageResetting => state.Is(BlockTags.FallDamageResetting)
+                ? Shapes.Block()
+                : Shapes.Empty(),
             _ => throw new ArgumentOutOfRangeException(nameof(_block), _block, "Unsupported block clip mode.")
         };
     }
