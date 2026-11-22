@@ -301,6 +301,13 @@ internal static class ChunkChecks
             sourceOnlyHit.GetBlockPos().Equals(stonePosition),
             "Source-only clipping must ignore a non-source fluid state.");
 
+        BlockHitResult waterHit = getter.Clip(new ClipContext(
+            from, to, ClipContext.Block.Collider, ClipContext.Fluid.Water));
+        Require(
+            waterHit.GetHitType() == HitResult.Type.BLOCK &&
+            waterHit.GetBlockPos().Equals(stonePosition),
+            "Water clipping must ignore fluid types not bound to the water tag.");
+
         BlockHitResult miss = getter.Clip(new ClipContext(
             from, to, ClipContext.Block.Collider, ClipContext.Fluid.None));
         Require(
