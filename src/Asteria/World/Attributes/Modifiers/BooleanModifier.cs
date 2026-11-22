@@ -35,6 +35,7 @@ public static class BooleanModifier
     {
         public override AttributeOperationId OperationId { get; } = operationId;
         public override string GetSerializedName() => OperationId.GetSerializedName();
+        public override Asteria.Serialization.Codec<bool> ArgumentCodec => Asteria.Serialization.Codecs.BOOL;
         public override bool Apply(bool subject, bool argument) => apply(subject, argument);
         public override LerpFunction<bool> ArgumentKeyframeLerp(EnvironmentAttribute<bool> attribute) =>
             LerpFunction<bool>.OfConstant();
