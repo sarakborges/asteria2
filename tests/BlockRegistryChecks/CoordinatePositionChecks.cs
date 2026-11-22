@@ -91,6 +91,166 @@ internal static class CoordinatePositionChecks
         Require(
             box.SequenceEqual(new[] { new BlockPos(-1, 2, 4), new BlockPos(0, 2, 4) }),
             "BlockPos closed-box traversal must advance X before Y and Z.");
+
+        BlockPos[] bounds = BlockPos.BetweenClosed(
+            new AABB(-0.1, 0.2, -1.2, 1.0, 1.1, 0.2))
+            .Select(position => position.Immutable())
+            .ToArray();
+        Require(
+            bounds.Length == 18 &&
+            bounds[0].Equals(new BlockPos(-1, 0, -2)) &&
+            bounds[1].Equals(new BlockPos(0, 0, -2)) &&
+            bounds[3].Equals(new BlockPos(-1, 1, -2)) &&
+            bounds[^1].Equals(new BlockPos(1, 1, 0)),
+            "BlockPos closed AABB traversal must floor both inclusive corners and advance X, then Y, then Z.");
+
+        BlockPos[] neighborColumn = BlockPos.NeighborColumn(4, 2, 9, 0)
+            .Select(position => position.Immutable())
+            .ToArray();
+        Require(
+            neighborColumn.SequenceEqual(new[]
+            {
+                new BlockPos(4, 2, 9), new BlockPos(4, 1, 9), new BlockPos(4, 0, 9),
+                new BlockPos(4, 2, 8), new BlockPos(4, 1, 8), new BlockPos(4, 0, 8),
+                new BlockPos(5, 2, 9), new BlockPos(5, 1, 9), new BlockPos(5, 0, 9),
+                new BlockPos(4, 2, 10), new BlockPos(4, 1, 10), new BlockPos(4, 0, 10),
+                new BlockPos(3, 2, 9), new BlockPos(3, 1, 9), new BlockPos(3, 0, 9)
+            }),
+            "BlockPos neighborColumn must visit the center, north, east, south and west columns in source order.");
+
+        BlockPos[] manhattan = BlockPos.WithinManhattan(origin, 1)
+            .Select(position => position.Immutable())
+            .ToArray();
+        Require(
+            manhattan.SequenceEqual(new[]
+            {
+                new BlockPos(0, 0, 0), new BlockPos(-1, 0, 0),
+                new BlockPos(0, -1, 0), new BlockPos(0, 0, 1),
+                new BlockPos(0, 0, -1), new BlockPos(0, 1, 0),
+                new BlockPos(1, 0, 0)
+            }),
+            "BlockPos Manhattan traversal must emit positions by increasing distance in the source axis order.");
+        Require(
+            BlockPos.WithinClippedManhattan(origin, 1, 0, 0)
+                .Select(position => position.Immutable())
+                .SequenceEqual(new[]
+                {
+                    new BlockPos(0, 0, 0), new BlockPos(-1, 0, 0), new BlockPos(1, 0, 0)
+                }),
+            "BlockPos clipped Manhattan traversal must respect each axis reach.");
+        Require(
+            BlockPos.WithinBoxByManhattanDistance(origin, 1, 2, 0).Count() == 15,
+            "BlockPos box-by-Manhattan traversal must cover the complete inclusive rectangular reach.");
+        using (IEnumerator<BlockPos> manhattanCursor = BlockPos.WithinManhattan(origin, 1).GetEnumerator())
+        {
+            Require(manhattanCursor.MoveNext(), "BlockPos Manhattan traversal must produce its origin.");
+            BlockPos reusedManhattanCursor = manhattanCursor.Current;
+            Require(
+                manhattanCursor.MoveNext() && ReferenceEquals(reusedManhattanCursor, manhattanCursor.Current),
+                "BlockPos Manhattan traversal must reuse its mutable cursor.");
+        }
+
+        BlockPos[] spiral = BlockPos.SpiralAround(
+                origin, 1, Direction.EAST, Direction.NORTH)
+            .Take(3)
+            .Select(position => position.Immutable())
+            .ToArray();
+        Require(
+            spiral.SequenceEqual(new[]
+            {
+                new BlockPos(0, 0, 0),
+                new BlockPos(1, 0, 0),
+                new BlockPos(1, 0, -1)
+            }),
+            "BlockPos spiral traversal must begin at the center and follow the supplied direction order.");
+        using (IEnumerator<BlockPos.MutableBlockPos> spiralCursor =
+            BlockPos.SpiralAround(origin, 1, Direction.EAST, Direction.NORTH).GetEnumerator())
+        {
+            Require(spiralCursor.MoveNext(), "BlockPos spiral traversal must produce its center.");
+            BlockPos.MutableBlockPos reusedSpiralCursor = spiralCursor.Current;
+            Require(
+                spiralCursor.MoveNext() && ReferenceEquals(reusedSpiralCursor, spiralCursor.Current),
+                "BlockPos spiral traversal must reuse its mutable cursor.");
+        }
+        Require(
+            BlockPos.SpiralAround(origin, 0, Direction.EAST, Direction.NORTH).Count() == 1,
+            "BlockPos spiral traversal with radius zero must yield only the center.");
+        RequireThrows<InvalidOperationException>(
+            () => BlockPos.SpiralAround(origin, 1, Direction.EAST, Direction.WEST).GetEnumerator(),
+            "BlockPos spiral traversal must reject directions on the same axis.");
+
+        var graph = new Dictionary<long, BlockPos[]>
+        {
+            [BlockPos.AsLong(0, 0, 0)] = new[] { new BlockPos(1, 0, 0), new BlockPos(2, 0, 0) },
+            [BlockPos.AsLong(1, 0, 0)] = new[] { new BlockPos(2, 0, 0), new BlockPos(4, 0, 0) },
+            [BlockPos.AsLong(2, 0, 0)] = new[] { new BlockPos(3, 0, 0) }
+        };
+        var breadthFirstOrder = new List<BlockPos>();
+        int breadthFirstCount = BlockPos.BreadthFirstTraversal(
+            origin,
+            5,
+            20,
+            (position, addNeighbor) =>
+            {
+                if (graph.TryGetValue(position.AsLong(), out BlockPos[]? neighbors))
+                    foreach (BlockPos neighbor in neighbors)
+                        addNeighbor(neighbor);
+            },
+            position =>
+            {
+                breadthFirstOrder.Add(position.Immutable());
+                return BlockPos.TraversalNodeStatus.ACCEPT;
+            });
+        Require(
+            breadthFirstCount == 4 &&
+            breadthFirstOrder.SequenceEqual(new[]
+            {
+                new BlockPos(0, 0, 0), new BlockPos(1, 0, 0),
+                new BlockPos(2, 0, 0), new BlockPos(3, 0, 0)
+            }),
+            "BlockPos breadth-first traversal must process FIFO order and deduplicate packed positions.");
+
+        breadthFirstOrder.Clear();
+        int skipCount = BlockPos.BreadthFirstTraversal(
+            origin,
+            5,
+            20,
+            (position, addNeighbor) =>
+            {
+                if (graph.TryGetValue(position.AsLong(), out BlockPos[]? neighbors))
+                    foreach (BlockPos neighbor in neighbors)
+                        addNeighbor(neighbor);
+            },
+            position =>
+            {
+                breadthFirstOrder.Add(position.Immutable());
+                return position.GetX() == 1
+                    ? BlockPos.TraversalNodeStatus.SKIP
+                    : BlockPos.TraversalNodeStatus.ACCEPT;
+            });
+        Require(
+            skipCount == 3 &&
+            breadthFirstOrder.SequenceEqual(new[]
+            {
+                new BlockPos(0, 0, 0), new BlockPos(1, 0, 0),
+                new BlockPos(2, 0, 0), new BlockPos(3, 0, 0)
+            }),
+            "BlockPos breadth-first SKIP must count neither the node nor its outgoing neighbors.");
+
+        int stopCount = BlockPos.BreadthFirstTraversal(
+            origin,
+            5,
+            20,
+            (position, addNeighbor) =>
+            {
+                if (position.GetX() == 0)
+                    addNeighbor(new BlockPos(1, 0, 0));
+                addNeighbor(new BlockPos(2, 0, 0));
+            },
+            position => position.GetX() == 1
+                ? BlockPos.TraversalNodeStatus.STOP
+                : BlockPos.TraversalNodeStatus.ACCEPT);
+        Require(stopCount == 1, "BlockPos breadth-first STOP must terminate before counting the stop node.");
     }
 
     private static void CheckChunkPos()
