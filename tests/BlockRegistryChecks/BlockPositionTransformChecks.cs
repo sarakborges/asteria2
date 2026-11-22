@@ -239,6 +239,11 @@ internal static class BlockPositionTransformChecks
             "Default suffocation and view-blocking predicates must use the causes-suffocation tag.");
         Require(state.GetPostProcessPos(EmptyBlockGetter.Instance, BlockPos.Zero) is null,
             "The default post-process predicate must return no redirected position.");
+        Require(state.PistonPushReaction == PushReaction.PUSH_PULL &&
+                state.GetPistonPushReaction() == PushReaction.PUSH_PULL,
+            "Block states must use PUSH_PULL as the default piston reaction and expose its source getter.");
+        Require(BlockProperties.Of().PushReaction(PushReaction.IGNORE).PushReactionValue == PushReaction.IGNORE,
+            "Block properties must retain a configured piston push reaction.");
 
         bool customSuffocatingPredicate = BlockProperties.Of()
             .IsSuffocating(static (_, _, _) => true)
