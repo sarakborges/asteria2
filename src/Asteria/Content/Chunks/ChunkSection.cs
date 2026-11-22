@@ -42,7 +42,7 @@ public class ChunkSection
 
     private ChunkSection(
         PalettedContainer<BlockState> states,
-        PalettedContainer<Holder<Biome>> biomes,
+        IPalettedContainerReadOnly<Holder<Biome>> biomes,
         short nonAirBlockCount,
         short fluidCount,
         short tickingBlockCount,
