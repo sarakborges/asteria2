@@ -1,4 +1,5 @@
 using Asteria.Core;
+using Asteria.Content.Materials;
 using Asteria.World;
 
 namespace Asteria.Content.Blocks;
@@ -44,6 +45,8 @@ public sealed class BlockProperties
 
     public Func<BlockState, BlockGetter, BlockPos, BlockPos?> PostProcessValue { get; private set; } =
         static (_, _, _) => null;
+
+    public PushReaction PushReactionValue { get; private set; } = PushReaction.PUSH_PULL;
 
     private BlockProperties()
     {
@@ -175,6 +178,12 @@ public sealed class BlockProperties
     {
         PostProcessValue = postProcess ??
             throw new ArgumentNullException(nameof(postProcess));
+        return this;
+    }
+
+    public BlockProperties PushReaction(PushReaction pushReaction)
+    {
+        PushReactionValue = pushReaction;
         return this;
     }
 
