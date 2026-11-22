@@ -1,3 +1,5 @@
+using Asteria.Serialization;
+
 namespace Asteria.World.Attributes;
 
 public enum AttributeOperationId
