@@ -106,7 +106,7 @@ internal static class FluidChecks
     {
         TestFluid fluid = _tickFluid ?? throw new InvalidOperationException("Fluid checks must run first.");
         BlockState blockState = WaterloggedBlockState;
-        BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
+        PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
         var section = new ChunkSection(factory.CreateForBlockStates(), factory.CreateForBiomes());
 
         section.SetBlockState(1, 2, 3, blockState);
