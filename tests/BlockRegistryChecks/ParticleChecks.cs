@@ -29,12 +29,12 @@ internal static class ParticleChecks
 
         Require(registry.IsFrozen,
             "The particle type registry must be frozen after built-in bootstrap.");
-        Require(ParticleTypes.RegisteredTypeCount == 48 &&
-                ParticleTypes.SimpleTypeCount == 35 &&
+        Require(ParticleTypes.RegisteredTypeCount == 46 &&
+                ParticleTypes.SimpleTypeCount == 33 &&
                 ParticleTypes.ColorTypeCount == 3 &&
                 ParticleTypes.SpellOptionCount == 2 &&
                 ParticleTypes.NumericOptionCount == 0,
-            "The in-scope particle registry must contain 52 reusable types and no object-specific payload types.");
+            "The in-scope particle registry must contain 46 reusable types and no object-specific payload types.");
         Require(registry.Count == ParticleTypes.RegisteredTypeCount,
             "Every retained particle type must be registered.");
 
@@ -52,12 +52,13 @@ internal static class ParticleChecks
         Require(registry.GetId(ParticleTypes.INSTANT_EFFECT) < registry.GetId(ParticleTypes.ITEM) &&
                 registry.GetId(ParticleTypes.ITEM) < registry.GetId(ParticleTypes.VIBRATION) &&
                 registry.GetId(ParticleTypes.VIBRATION) < registry.GetId(ParticleTypes.TRAIL) &&
-                registry.GetId(ParticleTypes.TRAIL) < registry.GetId(ParticleTypes.PAUSE_MOB_GROWTH),
+                registry.GetId(ParticleTypes.TRAIL) < registry.GetId(ParticleTypes.LARGE_SMOKE),
             "Generic item, vibration and trail particle registrations must preserve their relative source order.");
 
         foreach (string excluded in new[]
         {
             "angry_villager", "dragon_breath", "sculk_charge", "shriek",
+            "pause_mob_growth", "reset_mob_growth",
             "trial_spawner_detection", "vault_connection", "raid_omen",
             "firefly", "totem_of_undying", "campfire_cosy_smoke",
             "falling_dripstone_water", "sulfur_bubbles", "noxious_gas",

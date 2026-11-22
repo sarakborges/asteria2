@@ -61,8 +61,6 @@ public static class ParticleTypes
     public static readonly ParticleType<TrailParticleOption> TRAIL =
         RegisterConfigured<TrailParticleOption>(
             "trail", false, static _ => TrailParticleOption.CODEC);
-    public static readonly SimpleParticleType PAUSE_MOB_GROWTH = Register("pause_mob_growth", false);
-    public static readonly SimpleParticleType RESET_MOB_GROWTH = Register("reset_mob_growth", false);
     public static readonly SimpleParticleType LARGE_SMOKE = Register("large_smoke", false);
     public static readonly SimpleParticleType LAVA = Register("lava", false);
     public static readonly SimpleParticleType POOF = Register("poof", true);
@@ -81,7 +79,7 @@ public static class ParticleTypes
     public static readonly SimpleParticleType SNOWFLAKE = Register("snowflake", false);
     public static readonly SimpleParticleType GLOW = Register("glow", true);
 
-    public const int SimpleTypeCount = 35;
+    public const int SimpleTypeCount = 33;
     public const int ColorTypeCount = 3;
     public const int SpellOptionCount = 2;
     public const int NumericOptionCount = 0;

@@ -235,7 +235,7 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `CanSpawn` consome uma amostra float de 24 bits e usa comparação inclusiva `<=`; testes cobrem a igualdade exata no limite, probabilidade zero/um e número de chamadas.
 - `AMBIENT_PARTICLES` usa listas cross-fade escalando somente a probabilidade e o modifier `append`; o atributo genérico `visual/ambient_particles` está registrado com default vazio e é syncable.
 - O registry `attribute_type` agora contém nove tipos no escopo: os sete anteriores, `particle` e `ambient_particles`.
-- Após a revisão de conteúdo específico, o registry `particle_type` contém 48 tipos reutilizáveis: 35 simples e 13 com opções genéricas (coloridas, spell, escalares, três tipos de partículas de bloco, ITEM, VIBRATION e TRAIL). `ItemStackTemplate` mantém apenas o sentinela `air`; patches de componentes não vazios ainda não são suportados. A lista global de itens permanece incompleta, então os IDs numéricos do registry de itens ainda não têm paridade total.
+- Após a revisão de conteúdo específico, o registry `particle_type` contém 46 tipos reutilizáveis: 33 simples e 13 com opções genéricas (coloridas, spell, escalares, três tipos de partículas de bloco, ITEM, VIBRATION e TRAIL). `ItemStackTemplate` mantém apenas o sentinela `air`; patches de componentes não vazios ainda não são suportados. A lista global de itens permanece incompleta, então os IDs numéricos do registry de itens ainda não têm paridade total.
 - Atributos específicos de blocos/objetos, áudio e regras de cama continuam excluídos. Stream codecs, buffers de pacote e multiplayer continuam excluídos pelo escopo offline.
 
 
@@ -361,4 +361,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Mantidos os modelos e codecs genéricos `BlockParticleOption`, `ItemParticleOption`, `ColorParticleOption`, `SpellParticleOption`, `DustParticleOptions`, `DustColorTransitionOptions`, `VibrationParticleOption` e `TrailParticleOption`. Presets de cor REDSTONE/SCULK foram removidos, mas os modelos RGB parametrizados permanecem.
 - O registry de itens agora contém somente `air` como sentinela; `stick` não é conteúdo de Asteria. `AIR`, `EMPTY` e outros sentinelas estruturais continuam válidos.
 - Removidas as definições ambientais `can_start_raid`, `surface_slime_spawn_chance` e `can_pillager_patrol_spawn`. O registry ambiental contém 19 definições genéricas.
-- O catálogo local de partículas agora tem 48 tipos. Os IDs globais continuam deliberadamente diferentes da tabela Minecraft completa porque as entradas específicas excluídas não são requisito de produto.
+- O catálogo local de partículas agora tem 46 tipos. Os IDs globais continuam deliberadamente diferentes da tabela Minecraft completa porque as entradas específicas excluídas não são requisito de produto.
+
+
+## Incremento — varredura residual de conteúdo específico (21/11/2026)
+
+- Revisados os arquivos C# de `src/Asteria`: catálogos e registries em Content, definições de World e as camadas genéricas Core, Serialization e Util. Não foram encontrados outros registros de item, bloco, entidade, mecânica ou efeito exclusivos de um único objeto além dos itens já excluídos nesta revisão.
+- Excluídos `pause_mob_growth` e `reset_mob_growth`: são emitidos pelo uso do item Golden Dandelion para pausar e retomar o crescimento de mobs. Não são partículas genéricas de crescimento; dependem desse item específico.
+- O catálogo de partículas agora contém 46 tipos reutilizáveis: 33 simples e 13 configurados por opções genéricas. Os testes verificam a ausência dos dois identificadores e preservam a ordem relativa dos registros restantes.
+- Permanecem no escopo as famílias genéricas: partículas parametrizadas de bloco e item, folhas, fluidos e efeitos de entidade; as sentinelas `air` e `empty`; tags de famílias de blocos; definições/clima de biomas; identificadores de famílias de fluidos ainda não registradas; atributos ambientais genéricos; e fontes de posição de bloco.
