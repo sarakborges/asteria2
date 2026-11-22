@@ -50,7 +50,7 @@ public interface BlockGetter : LevelHeightAccessor
         });
     }
 
-    static TResult? TraverseBlocks<TContext, TResult>(
+    static TResult TraverseBlocks<TContext, TResult>(
         Vec3 from,
         Vec3 to,
         TContext context,
