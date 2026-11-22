@@ -17,47 +17,47 @@ internal static class BlockPositionTransformChecks
 
     private static void CheckAxisCycles()
     {
-        AxisCycle[] cycles = AxisCycle.GetValues();
+        AxisCycle[] cycles = Enum.GetValues<AxisCycle>();
         Require(cycles.Length == 3 &&
-                ReferenceEquals(cycles[0], AxisCycle.NONE) &&
-                ReferenceEquals(cycles[1], AxisCycle.FORWARD) &&
-                ReferenceEquals(cycles[2], AxisCycle.BACKWARD),
+                ReferenceEquals(cycles[0], AxisCycle.None) &&
+                ReferenceEquals(cycles[1], AxisCycle.Forward) &&
+                ReferenceEquals(cycles[2], AxisCycle.Backward),
             "AxisCycle values must preserve NONE/FORWARD/BACKWARD source order.");
 
         Require(
-            AxisCycle.NONE.Cycle(2, 3, 5, Direction.Axis.X) == 2 &&
-            AxisCycle.FORWARD.Cycle(2, 3, 5, Direction.Axis.X) == 5 &&
-            AxisCycle.BACKWARD.Cycle(2, 3, 5, Direction.Axis.X) == 3,
+            AxisCycle.None.Cycle(2, 3, 5, Direction.Axis.X) == 2 &&
+            AxisCycle.Forward.Cycle(2, 3, 5, Direction.Axis.X) == 5 &&
+            AxisCycle.Backward.Cycle(2, 3, 5, Direction.Axis.X) == 3,
             "AxisCycle integer coordinate selection must match each source permutation.");
         Require(
-            AxisCycle.NONE.Cycle(2.5, 3.5, 5.5, Direction.Axis.Y) == 3.5 &&
-            AxisCycle.FORWARD.Cycle(2.5, 3.5, 5.5, Direction.Axis.Y) == 2.5 &&
-            AxisCycle.BACKWARD.Cycle(2.5, 3.5, 5.5, Direction.Axis.Y) == 5.5,
+            AxisCycle.None.Cycle(2.5, 3.5, 5.5, Direction.Axis.Y) == 3.5 &&
+            AxisCycle.Forward.Cycle(2.5, 3.5, 5.5, Direction.Axis.Y) == 2.5 &&
+            AxisCycle.Backward.Cycle(2.5, 3.5, 5.5, Direction.Axis.Y) == 5.5,
             "AxisCycle double coordinate selection must match each source permutation.");
 
         Require(
-            ReferenceEquals(AxisCycle.NONE.Cycle(Direction.Axis.Z), Direction.Axis.Z) &&
-            ReferenceEquals(AxisCycle.FORWARD.Cycle(Direction.Axis.X), Direction.Axis.Y) &&
-            ReferenceEquals(AxisCycle.FORWARD.Cycle(Direction.Axis.Y), Direction.Axis.Z) &&
-            ReferenceEquals(AxisCycle.FORWARD.Cycle(Direction.Axis.Z), Direction.Axis.X) &&
-            ReferenceEquals(AxisCycle.BACKWARD.Cycle(Direction.Axis.X), Direction.Axis.Z) &&
-            ReferenceEquals(AxisCycle.BACKWARD.Cycle(Direction.Axis.Y), Direction.Axis.X) &&
-            ReferenceEquals(AxisCycle.BACKWARD.Cycle(Direction.Axis.Z), Direction.Axis.Y),
+            ReferenceEquals(AxisCycle.None.Cycle(Direction.Axis.Z), Direction.Axis.Z) &&
+            ReferenceEquals(AxisCycle.Forward.Cycle(Direction.Axis.X), Direction.Axis.Y) &&
+            ReferenceEquals(AxisCycle.Forward.Cycle(Direction.Axis.Y), Direction.Axis.Z) &&
+            ReferenceEquals(AxisCycle.Forward.Cycle(Direction.Axis.Z), Direction.Axis.X) &&
+            ReferenceEquals(AxisCycle.Backward.Cycle(Direction.Axis.X), Direction.Axis.Z) &&
+            ReferenceEquals(AxisCycle.Backward.Cycle(Direction.Axis.Y), Direction.Axis.X) &&
+            ReferenceEquals(AxisCycle.Backward.Cycle(Direction.Axis.Z), Direction.Axis.Y),
             "AxisCycle axis mapping must wrap in X/Y/Z order.");
 
-        Require(ReferenceEquals(AxisCycle.NONE.Inverse(), AxisCycle.NONE) &&
-                ReferenceEquals(AxisCycle.FORWARD.Inverse(), AxisCycle.BACKWARD) &&
-                ReferenceEquals(AxisCycle.BACKWARD.Inverse(), AxisCycle.FORWARD),
+        Require(ReferenceEquals(AxisCycle.None.Inverse(), AxisCycle.None) &&
+                ReferenceEquals(AxisCycle.Forward.Inverse(), AxisCycle.Backward) &&
+                ReferenceEquals(AxisCycle.Backward.Inverse(), AxisCycle.Forward),
             "AxisCycle inverse must map each permutation to its inverse.");
         Require(
-            ReferenceEquals(AxisCycle.Between(Direction.Axis.X, Direction.Axis.X), AxisCycle.NONE) &&
-            ReferenceEquals(AxisCycle.Between(Direction.Axis.X, Direction.Axis.Y), AxisCycle.FORWARD) &&
-            ReferenceEquals(AxisCycle.Between(Direction.Axis.Y, Direction.Axis.X), AxisCycle.BACKWARD) &&
-            ReferenceEquals(AxisCycle.Between(Direction.Axis.Z, Direction.Axis.Y), AxisCycle.FORWARD),
+            ReferenceEquals(AxisCycleExtensions.Between(Direction.Axis.X, Direction.Axis.X), AxisCycle.None) &&
+            ReferenceEquals(AxisCycleExtensions.Between(Direction.Axis.X, Direction.Axis.Y), AxisCycle.Forward) &&
+            ReferenceEquals(AxisCycleExtensions.Between(Direction.Axis.Y, Direction.Axis.X), AxisCycle.Backward) &&
+            ReferenceEquals(AxisCycleExtensions.Between(Direction.Axis.Z, Direction.Axis.Y), AxisCycle.Forward),
             "AxisCycle.Between must select the positive cyclic difference from source to target.");
 
         var mutable = new BlockPos.MutableBlockPos();
-        mutable.Set(AxisCycle.FORWARD, 1, 2, 3);
+        mutable.Set(AxisCycle.Forward, 1, 2, 3);
         Require(mutable.Equals(new BlockPos(3, 1, 2)),
             "MutableBlockPos.Set(AxisCycle) must permute X/Y/Z using the source axis selectors.");
     }
