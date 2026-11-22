@@ -22,6 +22,7 @@ internal static class ChunkChecks
         CheckChunkAccessLifecycle();
         CheckBlockGetterContract(fluidState);
         CheckBlockGetterDefaultMethods(nonAirState);
+        CheckBlockGetterTraversal();
         CheckChunkBiomeAccess();
         CheckChunkSkyLightSources(nonAirState);
         CheckChunkBlockScanning(nonAirState);
@@ -136,6 +137,67 @@ internal static class ChunkChecks
             ReferenceEquals(states[0], Blocks.STONE.DefaultState) &&
             ReferenceEquals(states[1], Blocks.AIR.DefaultState),
             "BlockGetter block-state box queries must include both floored Y bounds in vertical order.");
+    }
+
+    private static void CheckBlockGetterTraversal()
+    {
+        var from = new Vec3(0.5, 0.5, 0.5);
+        var to = new Vec3(3.5, 0.5, 0.5);
+        var visited = new List<BlockPos>();
+
+        BlockPos? hit = BlockGetter.TraverseBlocks<object, BlockPos>(
+            from,
+            to,
+            new object(),
+            (_, position) =>
+            {
+                visited.Add(position.Immutable());
+                return position.GetX() == 2 ? position.Immutable() : null;
+            },
+            _ => new BlockPos(-1, -1, -1));
+
+        Require(
+            hit is not null && hit.GetX() == 2 &&
+            visited.Select(position => position.GetX()).SequenceEqual(new[] { 0, 1, 2 }),
+            "Block traversal must visit each crossed voxel in order and stop at the first returned hit.");
+
+        var reverseVisited = new List<int>();
+        BlockGetter.TraverseBlocks<object, BlockPos>(
+            to,
+            from,
+            new object(),
+            (_, position) =>
+            {
+                reverseVisited.Add(position.GetX());
+                return null;
+            },
+            _ => new BlockPos(-1, -1, -1));
+        Require(
+            reverseVisited.SequenceEqual(new[] { 3, 2, 1, 0 }),
+            "Block traversal must handle negative movement through voxel boundaries.");
+
+        int consumerCalls = 0;
+        BlockPos samePointMiss = BlockGetter.TraverseBlocks<object, BlockPos>(
+            from,
+            from,
+            new object(),
+            (_, _) =>
+            {
+                consumerCalls++;
+                return null;
+            },
+            _ => new BlockPos(9, 8, 7))!;
+
+        Require(
+            consumerCalls == 0 && samePointMiss.Equals(new BlockPos(9, 8, 7)),
+            "A zero-length traversal must return the miss result without visiting a block.");
+
+        Require(
+            Mth.Sign(-0.25) == -1 && Mth.Sign(0.0) == 0 && Mth.Sign(0.25) == 1,
+            "Mth.Sign must preserve the reference sign semantics.");
+        Require(
+            Mth.Frac(-0.25) == 0.75 && Mth.Frac(2.25) == 0.25,
+            "Mth.Frac must return the fractional part using floor semantics for negative coordinates.");
     }
 
     private static void CheckChunkBiomeAccess()
