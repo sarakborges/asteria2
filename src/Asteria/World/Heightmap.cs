@@ -10,6 +10,10 @@ public sealed class Heightmap
 {
     private const int ColumnCount = 256;
 
+    private static readonly Func<BlockState, bool> NotAir = static state => !state.IsAir;
+    private static readonly Func<BlockState, bool> MaterialMotionBlocking =
+        static state => state.Is(BlockTags.BlocksMotionInHeightmap);
+
     private readonly ChunkAccess _chunk;
     private readonly Func<BlockState, bool> _isOpaque;
     private readonly PackedBitStorage _data;
@@ -17,50 +21,31 @@ public sealed class Heightmap
     public Heightmap(ChunkAccess chunk, Types type)
     {
         ArgumentNullException.ThrowIfNull(chunk);
+        ArgumentNullException.ThrowIfNull(type);
 
-        _isOpaque = GetPredicate(type);
+        _isOpaque = type.IsOpaque();
         _chunk = chunk;
         int heightBits = PackedBitStorage.RequiredBitsForValueCount(unchecked(chunk.GetHeight() + 1));
         _data = new PackedBitStorage(heightBits, ColumnCount);
     }
 
-    private static Func<BlockState, bool> GetPredicate(Types type) =>
-        type switch
-        {
-            Types.WorldSurfaceWorldgen or Types.WorldSurface =>
-                static state => !state.IsAir,
-            Types.OceanFloorWorldgen or Types.OceanFloor =>
-                static state => state.Is(BlockTags.BlocksMotionInHeightmap),
-            Types.MotionBlocking =>
-                static state => state.Is(BlockTags.BlocksMotionInHeightmap) ||
-                    !state.GetFluidState().IsEmpty(),
-            Types.MotionBlockingNoLeaves =>
-                static state => state.Is(BlockTags.BlocksMotionInHeightmapNoLeaves) ||
-                    !state.GetFluidState().IsEmpty(),
-            _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown heightmap type.")
-        };
-
-    public static void PrimeHeightmaps(ChunkAccess chunk, IEnumerable<Types> types)
+    public static void PrimeHeightmaps(ChunkAccess chunk, IReadOnlySet<Types> types)
     {
         ArgumentNullException.ThrowIfNull(chunk);
         ArgumentNullException.ThrowIfNull(types);
 
-        var allHeightmaps = new List<Heightmap>();
-        var seen = new HashSet<Types>();
-        foreach (Types type in types)
-        {
-            if (seen.Add(type))
-                allHeightmaps.Add(chunk.GetOrCreateHeightmapUnprimed(type));
-        }
-
-        if (allHeightmaps.Count == 0)
+        if (types.Count == 0)
             return;
 
+        var allHeightmaps = new List<Heightmap>(types.Count);
+        foreach (Types type in types)
+            allHeightmaps.Add(chunk.GetOrCreateHeightmapUnprimed(type));
+
+        var remainingHeightmaps = new List<Heightmap>(types.Count);
 #pragma warning disable CS0618
         int highestSectionPosition = chunk.GetHighestSectionPosition() + 16;
 #pragma warning restore CS0618
         var position = new BlockPos.MutableBlockPos();
-        var remainingHeightmaps = new List<Heightmap>(allHeightmaps.Count);
 
         for (int x = 0; x < 16; x++)
         {
@@ -137,6 +122,10 @@ public sealed class Heightmap
 
     public void SetRawData(ChunkAccess chunk, Types type, ulong[] data)
     {
+        ArgumentNullException.ThrowIfNull(chunk);
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(data);
+
         ulong[] rawData = _data.GetRaw();
         if (rawData.Length == data.Length)
         {
@@ -149,7 +138,7 @@ public sealed class Heightmap
                 chunk.GetPos(),
                 rawData.Length,
                 data.Length);
-            PrimeHeightmaps(chunk, new[] { type });
+            PrimeHeightmaps(chunk, new HashSet<Types> { type });
         }
     }
 
@@ -163,62 +152,65 @@ public sealed class Heightmap
     private static int GetIndex(int x, int z) =>
         unchecked(x + z * 16);
 
-    public enum Types
+    public sealed class Types
     {
-        WorldSurfaceWorldgen = 0,
-        WorldSurface = 1,
-        OceanFloorWorldgen = 2,
-        OceanFloor = 3,
-        MotionBlocking = 4,
-        MotionBlockingNoLeaves = 5
+        private readonly int _id;
+        private readonly string _serializationKey;
+        private readonly Usage _usage;
+        private readonly Func<BlockState, bool> _isOpaque;
+
+        private Types(
+            int id,
+            string serializationKey,
+            Usage usage,
+            Func<BlockState, bool> isOpaque)
+        {
+            _id = id;
+            _serializationKey = serializationKey;
+            _usage = usage;
+            _isOpaque = isOpaque;
+        }
+
+        public static readonly Types WORLD_SURFACE_WG =
+            new(0, "WORLD_SURFACE_WG", Usage.WORLDGEN, NotAir);
+        public static readonly Types WORLD_SURFACE =
+            new(1, "WORLD_SURFACE", Usage.CLIENT, NotAir);
+        public static readonly Types OCEAN_FLOOR_WG =
+            new(2, "OCEAN_FLOOR_WG", Usage.WORLDGEN, MaterialMotionBlocking);
+        public static readonly Types OCEAN_FLOOR =
+            new(3, "OCEAN_FLOOR", Usage.LIVE_WORLD, MaterialMotionBlocking);
+        public static readonly Types MOTION_BLOCKING =
+            new(
+                4,
+                "MOTION_BLOCKING",
+                Usage.CLIENT,
+                static state => state.Is(BlockTags.BlocksMotionInHeightmap) ||
+                    !state.GetFluidState().IsEmpty());
+        public static readonly Types MOTION_BLOCKING_NO_LEAVES =
+            new(
+                5,
+                "MOTION_BLOCKING_NO_LEAVES",
+                Usage.CLIENT,
+                static state => state.Is(BlockTags.BlocksMotionInHeightmapNoLeaves) ||
+                    !state.GetFluidState().IsEmpty());
+
+        internal int Id => _id;
+
+        public string GetSerializationKey() => _serializationKey;
+
+        public bool SendToClient() => _usage == Usage.CLIENT;
+
+        public bool KeepAfterWorldgen() => _usage != Usage.WORLDGEN;
+
+        public Func<BlockState, bool> IsOpaque() => _isOpaque;
+
+        public string GetSerializedName() => _serializationKey;
     }
-}
 
-public static class HeightmapTypeExtensions
-{
-    private static readonly Heightmap.Types[] Values = Enum.GetValues<Heightmap.Types>();
-
-    public static Heightmap.Types ById(int id) =>
-        (uint)id < (uint)Values.Length ? Values[id] : Values[0];
-
-    public static int GetId(this Heightmap.Types type) => (int)type;
-
-    public static string GetSerializationKey(this Heightmap.Types type) =>
-        type switch
-        {
-            Heightmap.Types.WorldSurfaceWorldgen => "WORLD_SURFACE_WG",
-            Heightmap.Types.WorldSurface => "WORLD_SURFACE",
-            Heightmap.Types.OceanFloorWorldgen => "OCEAN_FLOOR_WG",
-            Heightmap.Types.OceanFloor => "OCEAN_FLOOR",
-            Heightmap.Types.MotionBlocking => "MOTION_BLOCKING",
-            Heightmap.Types.MotionBlockingNoLeaves => "MOTION_BLOCKING_NO_LEAVES",
-            _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown heightmap type.")
-        };
-
-    public static string GetSerializedName(this Heightmap.Types type) =>
-        type.GetSerializationKey();
-
-    public static bool SendToClient(this Heightmap.Types type) =>
-        type switch
-        {
-            Heightmap.Types.WorldSurface or
-            Heightmap.Types.MotionBlocking or
-            Heightmap.Types.MotionBlockingNoLeaves => true,
-            Heightmap.Types.WorldSurfaceWorldgen or
-            Heightmap.Types.OceanFloorWorldgen or
-            Heightmap.Types.OceanFloor => false,
-            _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown heightmap type.")
-        };
-
-    public static bool KeepAfterWorldgen(this Heightmap.Types type) =>
-        type switch
-        {
-            Heightmap.Types.WorldSurfaceWorldgen or
-            Heightmap.Types.OceanFloorWorldgen => false,
-            Heightmap.Types.WorldSurface or
-            Heightmap.Types.OceanFloor or
-            Heightmap.Types.MotionBlocking or
-            Heightmap.Types.MotionBlockingNoLeaves => true,
-            _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown heightmap type.")
-        };
+    public enum Usage
+    {
+        WORLDGEN,
+        LIVE_WORLD,
+        CLIENT
+    }
 }
