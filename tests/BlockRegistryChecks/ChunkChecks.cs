@@ -58,21 +58,21 @@ internal static class ChunkChecks
         {
             DefaultBlockState = nonAirState
         };
-        var defaultStateChunk = new Chunk(new ChunkPos(0, 0), height, nonAirDefaultFactory);
+        var defaultStateChunk = new TestChunkAccess(new ChunkPos(0, 0), height, nonAirDefaultFactory);
         Require(
             ReferenceEquals(
                 defaultStateChunk.GetBlockState(new BlockPos(0, -65, 0)),
                 Blocks.AIR.DefaultState),
             "Chunk block lookup must use the built-in air state even when the container factory has a different default state.");
 
-        var chunk = new Chunk(position, height, factory);
+        var chunk = new TestChunkAccess(position, height, factory);
         Require(chunk.GetPos() == position, "Chunk must retain its ChunkPos.");
         Require(chunk.GetHeight() == 384 && chunk.GetMinY() == -64, "Chunk must delegate vertical bounds to its height accessor.");
         Require(chunk.GetSections().Length == 24, "Chunk must allocate one section for each intersecting section Y.");
         Require(ReferenceEquals(chunk.GetSections(), chunk.GetSections()), "ChunkAccess section retrieval must expose its backing section array.");
         Require(ReferenceEquals(chunk.GetSection(0), chunk.GetSections()[0]), "Chunk section lookup must use the section-array index directly.");
         Require(!ReferenceEquals(chunk.GetSection(0), chunk.GetSection(1)), "Missing sections must be materialized independently.");
-        Require(chunk.GetHighestFilledSectionIndex() == Chunk.NoFilledSection, "An all-air chunk must report no filled section.");
+        Require(chunk.GetHighestFilledSectionIndex() == ChunkAccess.NoFilledSection, "An all-air chunk must report no filled section.");
 #pragma warning disable CS0618
         Require(chunk.GetHighestSectionPosition() == -64, "An all-air chunk's highest section position must fall back to minimum Y.");
 #pragma warning restore CS0618
@@ -96,7 +96,7 @@ internal static class ChunkChecks
         var suppliedSection = new ChunkSection(factory);
         var supplied = new ChunkSection?[24];
         supplied[4] = suppliedSection;
-        var fromSections = new Chunk(position, height, factory, supplied);
+        var fromSections = new TestChunkAccess(position, height, factory, supplied);
 
         Require(!ReferenceEquals(supplied, fromSections.GetSections()), "Chunk construction must copy the supplied sections array.");
         Require(ReferenceEquals(fromSections.GetSection(4), suppliedSection), "Chunk construction must retain supplied section instances.");
@@ -104,7 +104,7 @@ internal static class ChunkChecks
         supplied[4] = null;
         Require(ReferenceEquals(fromSections.GetSection(4), suppliedSection), "Later edits to the source array must not change the chunk's section references.");
 
-        var occupiedChunk = new Chunk(position, height, factory);
+        var occupiedChunk = new TestChunkAccess(position, height, factory);
         BlockPos occupiedPosition = position.GetBlockAt(15, 15, 9);
         occupiedChunk.GetSection(4).SetBlockState(15, 15, 9, nonAirState);
         Require(
@@ -135,7 +135,7 @@ internal static class ChunkChecks
         var supplied = new ChunkSection?[23];
         supplied[0] = new ChunkSection(factory);
 
-        var chunk = new Chunk(new ChunkPos(0, 0), height, factory, supplied);
+        var chunk = new TestChunkAccess(new ChunkPos(0, 0), height, factory, supplied);
         Require(chunk.GetSections().Length == 24, "Chunk section storage length must come from the height accessor.");
         Require(chunk.GetSection(0).HasOnlyAir, "A mismatched supplied section array must be discarded before missing sections are filled.");
         Require(!ReferenceEquals(chunk.GetSection(0), supplied[0]), "A mismatched supplied section array must not partially populate the chunk.");
@@ -145,7 +145,7 @@ internal static class ChunkChecks
     {
         LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
         PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
-        var chunk = new Chunk(new ChunkPos(-2, 3), height, factory);
+        var chunk = new TestChunkAccess(new ChunkPos(-2, 3), height, factory);
         Heightmap heightmap = chunk.GetOrCreateHeightmapUnprimed(Heightmap.Types.WorldSurface);
 
         Require(heightmap.GetRawData().Length == 37, "A 9-bit, 256-column heightmap must use 37 packed longs.");
@@ -188,7 +188,7 @@ internal static class ChunkChecks
     {
         LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
         PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
-        var chunk = new Chunk(new ChunkPos(2, -3), height, factory);
+        var chunk = new TestChunkAccess(new ChunkPos(2, -3), height, factory);
         const int x = 7;
         const int y = 23;
         const int z = 9;
@@ -235,7 +235,7 @@ internal static class ChunkChecks
         LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
         PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
         var position = new ChunkPos(-2, 3);
-        var chunk = new Chunk(position, height, factory);
+        var chunk = new TestChunkAccess(position, height, factory);
 
         Require(chunk.GetHeightmaps().Count == 0, "A new chunk must not eagerly allocate heightmaps.");
         Require(!chunk.HasPrimedHeightmap(Heightmap.Types.WorldSurface), "A missing heightmap must not be reported as present.");
@@ -303,7 +303,7 @@ internal static class ChunkChecks
             Heightmap.Types.MotionBlockingNoLeaves.KeepAfterWorldgen(),
             "Both motion-blocking heightmaps use CLIENT retention and visibility.");
 
-        var lazyChunk = new Chunk(position, height, factory);
+        var lazyChunk = new TestChunkAccess(position, height, factory);
         lazyChunk.GetSection(lazyChunk.GetSectionIndex(23)).SetBlockState(1, 7, 3, nonAirState);
         Require(
             lazyChunk.GetHeight(Heightmap.Types.WorldSurface, position.GetMinBlockX() + 1, position.GetMinBlockZ() + 3) == 23,
@@ -317,7 +317,7 @@ internal static class ChunkChecks
         PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
         var position = new ChunkPos(-4, 6);
 
-        var loadedChunk = new Chunk(position, height, factory);
+        var loadedChunk = new TestChunkAccess(position, height, factory);
         var sourceStorage = new PackedBitStorage(9, 256);
         sourceStorage.Set(3 + 5 * 16, 75);
         ulong[] sourceData = sourceStorage.GetRawCopy();
@@ -332,7 +332,7 @@ internal static class ChunkChecks
             loaded.GetFirstAvailable(3, 5) == 11,
             "Loading heightmap data must copy words rather than retain the caller's array.");
 
-        var fallbackChunk = new Chunk(position, height, factory);
+        var fallbackChunk = new TestChunkAccess(position, height, factory);
         fallbackChunk.GetSection(fallbackChunk.GetSectionIndex(42))
             .SetBlockState(2, 42 & 15, 4, nonAirState);
         fallbackChunk.SetHeightmap(Heightmap.Types.WorldSurface, Array.Empty<ulong>());
@@ -343,6 +343,18 @@ internal static class ChunkChecks
         Require(
             fallbackChunk.GetHeightmaps().Count == 1,
             "Raw-data fallback must reuse the heightmap created by SetHeightmap.");
+    }
+
+    private sealed class TestChunkAccess : ChunkAccess
+    {
+        public TestChunkAccess(
+            ChunkPos chunkPos,
+            LevelHeightAccessor levelHeightAccessor,
+            PalettedContainerFactory containerFactory,
+            ChunkSection?[]? sections = null)
+            : base(chunkPos, levelHeightAccessor, containerFactory, sections)
+        {
+        }
     }
 
     private static void Require(bool condition, string message)
