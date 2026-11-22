@@ -1,4 +1,6 @@
 using System.Numerics;
+using System.Text.Json;
+using Asteria.Serialization;
 using Asteria.Content.Identifiers;
 using Asteria.Content.Particles;
 using Asteria.Content.Registries;
@@ -23,6 +25,7 @@ internal static class EnvironmentAttributeChecks
         CheckTypedModifierLibraries();
         CheckEnvironmentAttributeMap();
         CheckEnvironmentAttributeResolution();
+        CheckModifierArgumentCodecs();
     }
 
     private static void CheckBuiltInAttributeTypeRegistry()
@@ -186,6 +189,49 @@ internal static class EnvironmentAttributeChecks
                 new UnregisteredFloatModifier(),
                 0.1F),
             "An attribute type must reject a modifier that is not part of its operation library.");
+    }
+
+    private static void CheckModifierArgumentCodecs()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+
+        foreach (AttributeModifier<bool, bool> modifier in new[]
+        {
+            BooleanModifier.AND, BooleanModifier.NAND, BooleanModifier.OR,
+            BooleanModifier.NOR, BooleanModifier.XOR, BooleanModifier.XNOR
+        })
+        {
+            JsonElement encoded = modifier.ArgumentCodec!.EncodeStart(ops, true).GetOrThrow();
+            Require(modifier.ArgumentCodec.Parse(ops, encoded).GetOrThrow(),
+                "Boolean modifier arguments must round-trip through their declared codec.");
+        }
+
+        foreach (AttributeModifier<int, int> modifier in new[]
+        {
+            IntegerModifier.ADD, IntegerModifier.SUBTRACT, IntegerModifier.MULTIPLY,
+            IntegerModifier.MINIMUM, IntegerModifier.MAXIMUM
+        })
+        {
+            JsonElement encoded = modifier.ArgumentCodec!.EncodeStart(ops, 17).GetOrThrow();
+            Require(modifier.ArgumentCodec.Parse(ops, encoded).GetOrThrow() == 17,
+                "Integer modifier arguments must round-trip through their declared codec.");
+        }
+
+        foreach (AttributeModifier<float, float> modifier in new[]
+        {
+            FloatModifier.ADD, FloatModifier.SUBTRACT, FloatModifier.MULTIPLY,
+            FloatModifier.MINIMUM, FloatModifier.MAXIMUM
+        })
+        {
+            JsonElement encoded = modifier.ArgumentCodec!.EncodeStart(ops, 1.25F).GetOrThrow();
+            Require(modifier.ArgumentCodec.Parse(ops, encoded).GetOrThrow() == 1.25F,
+                "Float modifier arguments must round-trip through their declared codec.");
+        }
+
+        FloatWithAlpha alpha = new(0.75F, 0.4F);
+        JsonElement alphaEncoded = FloatModifier.ALPHA_BLEND.ArgumentCodec!.EncodeStart(ops, alpha).GetOrThrow();
+        Require(FloatModifier.ALPHA_BLEND.ArgumentCodec.Parse(ops, alphaEncoded).GetOrThrow() == alpha,
+            "Alpha-blend modifier arguments must preserve both value and alpha fields.");
     }
 
     private static void CheckEnvironmentAttributeResolution()
