@@ -12,14 +12,7 @@ public sealed class Item
     private static class CodecHolder
     {
         public static readonly Codec<Holder<Item>> CODEC =
-            BuiltInRegistries.Item.ByNameCodec()
-                .XMap<Holder<Item>>(
-                    static item => item.BuiltInRegistryHolder,
-                    static holder => holder.Value)
-                .Validate(static holder =>
-                    ReferenceEquals(holder.Value, Items.AIR)
-                        ? DataResult<Holder<Item>>.Error("Item must not be asteria:air")
-                        : DataResult<Holder<Item>>.Success(holder));
+            CreateCodec(BuiltInRegistries.Item);
     }
 
     public Holder<Item>.Reference BuiltInRegistryHolder { get; }
@@ -27,8 +20,28 @@ public sealed class Item
     public static Codec<Holder<Item>> CODEC => CodecHolder.CODEC;
 
     public Item()
+        : this(BuiltInRegistries.Item)
     {
-        BuiltInRegistryHolder = BuiltInRegistries.Item.CreateIntrusiveHolder(this);
+    }
+
+    internal Item(Registry<Item> registry)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        BuiltInRegistryHolder = registry.CreateIntrusiveHolder(this);
+    }
+
+    internal static Codec<Holder<Item>> CreateCodec(Registry<Item> registry)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+
+        return registry.ByNameCodec()
+            .XMap<Holder<Item>>(
+                static item => item.BuiltInRegistryHolder,
+                static holder => holder.Value)
+            .Validate(static holder =>
+                ReferenceEquals(holder.Value, Items.AIR)
+                    ? DataResult<Holder<Item>>.Error("Item must not be asteria:air")
+                    : DataResult<Holder<Item>>.Success(holder));
     }
 
     public override string ToString() =>

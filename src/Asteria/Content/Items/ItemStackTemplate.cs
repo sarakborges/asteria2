@@ -17,9 +17,7 @@ public sealed class ItemStackTemplate
         CreateMapCodec(Item.CODEC);
 
     public static Codec<ItemStackTemplate> CODEC { get; } =
-        MAP_CODEC.Codec().WithAlternative(
-            Item.CODEC,
-            static item => new ItemStackTemplate(item));
+        CreateCodec(Item.CODEC);
 
     public Holder<Item> ItemHolder { get; }
     public int Count { get; }
@@ -73,6 +71,16 @@ public sealed class ItemStackTemplate
 
     public ItemStackTemplate WithCount(int count) =>
         Count == count ? this : new ItemStackTemplate(ItemHolder, count, Components);
+
+    internal static Codec<ItemStackTemplate> CreateCodec(
+        Codec<Holder<Item>> itemCodec)
+    {
+        ArgumentNullException.ThrowIfNull(itemCodec);
+
+        return CreateMapCodec(itemCodec).Codec().WithAlternative(
+            itemCodec,
+            static item => new ItemStackTemplate(item));
+    }
 
     private static MapCodec<ItemStackTemplate> CreateMapCodec(
         Codec<Holder<Item>> itemCodec) =>

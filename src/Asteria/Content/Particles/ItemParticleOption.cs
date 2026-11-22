@@ -25,10 +25,17 @@ public sealed class ItemParticleOption : IParticleOptions
     }
 
     public static MapCodec<ItemParticleOption> CreateCodec(
-        ParticleType<ItemParticleOption> type)
+        ParticleType<ItemParticleOption> type) =>
+        CreateCodec(type, ItemStackTemplate.CODEC);
+
+    internal static MapCodec<ItemParticleOption> CreateCodec(
+        ParticleType<ItemParticleOption> type,
+        Codec<ItemStackTemplate> itemStackCodec)
     {
         ArgumentNullException.ThrowIfNull(type);
-        return ItemStackTemplate.CODEC.FieldOf("item").XMap(
+        ArgumentNullException.ThrowIfNull(itemStackCodec);
+
+        return itemStackCodec.FieldOf("item").XMap(
             stack => new ItemParticleOption(type, stack),
             static options => options.ItemStack);
     }
