@@ -57,6 +57,10 @@ internal static class CoordinatePositionChecks
 
         Require(BlockPos.Containing(-0.01, 0.99, -16.0001).Equals(new BlockPos(-1, 0, -17)), "BlockPos containing must floor negative fractional coordinates.");
         Require(BlockPos.Containing(-1.0, -16.0, -17.0).Equals(new BlockPos(-1, -16, -17)), "BlockPos containing must preserve exact negative integers.");
+        Require(
+            BlockPos.Containing(new Vec3(-0.01, 0.99, -16.0001)).Equals(new BlockPos(-1, 0, -17)),
+            "BlockPos containing(Position) must delegate to the same negative-coordinate floor semantics.");
+
         Require(BlockPos.Min(new BlockPos(4, -3, 8), new BlockPos(-2, 7, 1)).Equals(new BlockPos(-2, -3, 1)), "BlockPos min must select the minimum per coordinate.");
         Require(BlockPos.Max(new BlockPos(4, -3, 8), new BlockPos(-2, 7, 1)).Equals(new BlockPos(4, 7, 8)), "BlockPos max must select the maximum per coordinate.");
 
