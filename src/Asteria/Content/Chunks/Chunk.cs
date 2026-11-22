@@ -22,7 +22,7 @@ public sealed class Chunk : LevelHeightAccessor
     public Chunk(
         ChunkPos chunkPos,
         LevelHeightAccessor levelHeightAccessor,
-        BlockStateContainerFactory containerFactory,
+        PalettedContainerFactory containerFactory,
         ChunkSection?[]? sections = null)
     {
         ArgumentNullException.ThrowIfNull(levelHeightAccessor);
@@ -52,12 +52,12 @@ public sealed class Chunk : LevelHeightAccessor
     }
 
     private static void ReplaceMissingSections(
-        BlockStateContainerFactory containerFactory,
+        PalettedContainerFactory containerFactory,
         ChunkSection?[] sections)
     {
         for (int index = 0; index < sections.Length; index++)
         {
-            sections[index] ??= containerFactory.CreateSection();
+            sections[index] ??= new ChunkSection(containerFactory);
         }
     }
 
