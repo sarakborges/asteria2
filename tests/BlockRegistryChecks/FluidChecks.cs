@@ -87,6 +87,9 @@ internal static class FluidChecks
         Require(
             empty.GetShape(EmptyBlockGetter.Instance, BlockPos.Zero).IsEmpty(),
             "The empty fluid shape must be empty.");
+        Require(
+            empty.GetAABB(EmptyBlockGetter.Instance, BlockPos.Zero) is null,
+            "An empty fluid must not have a bounding box.");
         Require(!empty.IsFull(), "The empty fluid state must not be full.");
 
         var fluid = new TestFluid();
@@ -111,6 +114,14 @@ internal static class FluidChecks
         Require(
             Math.Abs(full.GetShape(EmptyBlockGetter.Instance, BlockPos.Zero).Max(Direction.Axis.Y) - 8.0 / 9.0) < 1.0E-6,
             "Fluid shape must use the contextual fluid height.");
+        var fluidPosition = new BlockPos(4, 5, -2);
+        AABB? fluidBounds = full.GetAABB(EmptyBlockGetter.Instance, fluidPosition);
+        Require(
+            fluidBounds is not null &&
+            fluidBounds.MinX == 4.0 && fluidBounds.MinY == 5.0 && fluidBounds.MinZ == -2.0 &&
+            fluidBounds.MaxX == 5.0 && fluidBounds.MaxZ == -1.0 &&
+            Math.Abs(fluidBounds.MaxY - (5.0 + 8.0 / 9.0)) < 1.0E-6,
+            "A fluid bounding box must cover the block footprint up to its contextual height.");
         Require(full.IsRandomlyTicking(), "Fluid-state random ticking must delegate to the owning fluid.");
         Require(!full.IsEmpty(), "A non-empty fluid type must not report an empty state.");
 
