@@ -6,105 +6,61 @@ using Asteria.Core;
 
 namespace Asteria.World;
 
-/// <summary>
-/// Stores the first available world Y for each of a chunk's 16x16 columns.
-/// </summary>
 public sealed class Heightmap
 {
-    public const int ColumnCount = 16 * 16;
+    private const int ColumnCount = 256;
 
     private readonly Chunk _chunk;
     private readonly Func<BlockState, bool> _isOpaque;
     private readonly PackedBitStorage _data;
 
-    public HeightmapType? Type { get; }
-    public int BitsPerEntry => _data.BitsPerEntry;
-    public int StorageLongCount => _data.LongCount;
-
-    public Heightmap(Chunk chunk, Func<BlockState, bool> isOpaque)
-        : this(chunk, isOpaque, null)
+    public Heightmap(Chunk chunk, Types type)
     {
+        ArgumentNullException.ThrowIfNull(chunk);
+
+        _isOpaque = GetPredicate(type);
+        _chunk = chunk;
+        int heightBits = PackedBitStorage.RequiredBitsForValueCount(unchecked(chunk.GetHeight() + 1));
+        _data = new PackedBitStorage(heightBits, ColumnCount);
     }
 
-    public Heightmap(Chunk chunk, HeightmapType type)
-        : this(chunk, GetPredicate(type), type)
-    {
-    }
-
-    private Heightmap(Chunk chunk, Func<BlockState, bool> isOpaque, HeightmapType? type)
-    {
-        _chunk = chunk ?? throw new ArgumentNullException(nameof(chunk));
-        _isOpaque = isOpaque ?? throw new ArgumentNullException(nameof(isOpaque));
-        Type = type;
-
-        int height = _chunk.GetHeight();
-        if (height <= 0)
-            throw new ArgumentOutOfRangeException(nameof(chunk), "Chunk height must be positive.");
-
-        int bitsPerEntry = PackedBitStorage.RequiredBitsForValueCount(checked(height + 1));
-        if (bitsPerEntry == 0)
-            throw new ArgumentOutOfRangeException(nameof(chunk), "Chunk height must be positive.");
-
-        _data = new PackedBitStorage(bitsPerEntry, ColumnCount);
-    }
-
-    private static Func<BlockState, bool> GetPredicate(HeightmapType type) =>
+    private static Func<BlockState, bool> GetPredicate(Types type) =>
         type switch
         {
-            HeightmapType.WorldSurfaceWorldgen or HeightmapType.WorldSurface =>
+            Types.WorldSurfaceWorldgen or Types.WorldSurface =>
                 static state => !state.IsAir,
-            HeightmapType.OceanFloorWorldgen or HeightmapType.OceanFloor =>
+            Types.OceanFloorWorldgen or Types.OceanFloor =>
                 static state => state.Is(BlockTags.BlocksMotionInHeightmap),
-            HeightmapType.MotionBlocking =>
+            Types.MotionBlocking =>
                 static state => state.Is(BlockTags.BlocksMotionInHeightmap) ||
                     !state.GetFluidState().IsEmpty(),
-            HeightmapType.MotionBlockingNoLeaves =>
+            Types.MotionBlockingNoLeaves =>
                 static state => state.Is(BlockTags.BlocksMotionInHeightmapNoLeaves) ||
                     !state.GetFluidState().IsEmpty(),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown heightmap type.")
         };
 
-    public static Heightmap CreateWorldSurface(Chunk chunk) =>
-        new(chunk, HeightmapType.WorldSurface);
-
-    public static Heightmap CreateOceanFloor(Chunk chunk) =>
-        new(chunk, HeightmapType.OceanFloor);
-
-    /// <summary>
-    /// Primes several heightmaps together so each block column is scanned only once.
-    /// All maps must belong to the same chunk, matching Heightmap.primeHeightmaps.
-    /// </summary>
-    public static void PrimeAll(IEnumerable<Heightmap> heightmaps)
+    public static void PrimeHeightmaps(Chunk chunk, IEnumerable<Types> types)
     {
-        ArgumentNullException.ThrowIfNull(heightmaps);
+        ArgumentNullException.ThrowIfNull(chunk);
+        ArgumentNullException.ThrowIfNull(types);
 
-        Heightmap[] allHeightmaps = heightmaps.ToArray();
-        if (allHeightmaps.Length == 0)
-            return;
-
-        Heightmap firstHeightmap = allHeightmaps[0]
-            ?? throw new ArgumentException("Heightmap collection cannot contain null entries.", nameof(heightmaps));
-        Chunk chunk = firstHeightmap._chunk;
-
-        foreach (Heightmap? heightmap in allHeightmaps)
+        var allHeightmaps = new List<Heightmap>();
+        var seen = new HashSet<Types>();
+        foreach (Types type in types)
         {
-            ArgumentNullException.ThrowIfNull(heightmap);
-            if (!ReferenceEquals(heightmap._chunk, chunk))
-            {
-                throw new ArgumentException(
-                    "All heightmaps in a priming pass must belong to the same chunk.",
-                    nameof(heightmaps));
-            }
+            if (seen.Add(type))
+                allHeightmaps.Add(chunk.GetOrCreateHeightmapUnprimed(type));
         }
 
-        int highestSectionPosition;
-#pragma warning disable CS0618
-        highestSectionPosition = chunk.GetHighestSectionPosition() + 16;
-#pragma warning restore CS0618
+        if (allHeightmaps.Count == 0)
+            return;
 
+#pragma warning disable CS0618
+        int highestSectionPosition = chunk.GetHighestSectionPosition() + 16;
+#pragma warning restore CS0618
         var position = new BlockPos.MutableBlockPos();
-        var remainingHeightmaps = new List<Heightmap>(allHeightmaps.Length);
-        int minY = chunk.GetMinY();
+        var remainingHeightmaps = new List<Heightmap>(allHeightmaps.Count);
 
         for (int x = 0; x < 16; x++)
         {
@@ -113,60 +69,50 @@ public sealed class Heightmap
                 remainingHeightmaps.Clear();
                 remainingHeightmaps.AddRange(allHeightmaps);
 
-                for (int y = highestSectionPosition - 1; y >= minY; y--)
+                for (int y = highestSectionPosition - 1; y >= chunk.GetMinY(); y--)
                 {
                     position.Set(x, y, z);
                     BlockState state = chunk.GetBlockState(position);
-
                     if (!state.Is(global::Asteria.Content.Blocks.Blocks.AIR))
                     {
                         for (int index = 0; index < remainingHeightmaps.Count; index++)
                         {
                             Heightmap heightmap = remainingHeightmaps[index];
-                            if (!heightmap._isOpaque(state))
-                                continue;
-
-                            heightmap.SetHeight(x, z, unchecked(y + 1));
-                            remainingHeightmaps.RemoveAt(index);
-                            index--;
+                            if (heightmap._isOpaque(state))
+                            {
+                                heightmap.SetHeight(x, z, unchecked(y + 1));
+                                remainingHeightmaps.RemoveAt(index);
+                                index--;
+                            }
                         }
-                    }
 
-                    if (remainingHeightmaps.Count == 0)
-                        break;
+                        if (remainingHeightmaps.Count == 0)
+                            break;
+                    }
                 }
             }
         }
     }
 
-    /// <summary>Primes this heightmap using the shared multi-map scan.</summary>
-    public void Prime() => PrimeAll(new[] { this });
-
-    /// <summary>
-    /// Applies one block-state change to a column. blockY is world Y; X and Z are section-local.
-    /// Returns true when the stored column height changes.
-    /// </summary>
-    public bool Update(int localX, int blockY, int localZ, BlockState state)
+    public bool Update(int localX, int localY, int localZ, BlockState state)
     {
-        ArgumentNullException.ThrowIfNull(state);
-
         int firstAvailable = GetFirstAvailable(localX, localZ);
-        if (blockY <= firstAvailable - 2)
+        if (localY <= firstAvailable - 2)
             return false;
 
         if (_isOpaque(state))
         {
-            if (blockY >= firstAvailable)
+            if (localY >= firstAvailable)
             {
-                SetHeight(localX, localZ, unchecked(blockY + 1));
+                SetHeight(localX, localZ, unchecked(localY + 1));
                 return true;
             }
         }
-        else if (firstAvailable - 1 == blockY)
+        else if (firstAvailable - 1 == localY)
         {
             var position = new BlockPos.MutableBlockPos();
 
-            for (int y = blockY - 1; y >= _chunk.GetMinY(); y--)
+            for (int y = localY - 1; y >= _chunk.GetMinY(); y--)
             {
                 position.Set(localX, y, localZ);
                 if (_isOpaque(_chunk.GetBlockState(position)))
@@ -174,9 +120,6 @@ public sealed class Heightmap
                     SetHeight(localX, localZ, unchecked(y + 1));
                     return true;
                 }
-
-                if (y == int.MinValue)
-                    break;
             }
 
             SetHeight(localX, localZ, _chunk.GetMinY());
@@ -186,44 +129,96 @@ public sealed class Heightmap
         return false;
     }
 
-    public int GetFirstAvailable(int localX, int localZ) =>
-        unchecked(_data.Get(GetIndex(localX, localZ)) + _chunk.GetMinY());
+    public int GetFirstAvailable(int x, int z) =>
+        unchecked(_data.Get(GetIndex(x, z)) + _chunk.GetMinY());
 
-    public int GetHighestTaken(int localX, int localZ) =>
-        unchecked(GetFirstAvailable(localX, localZ) - 1);
+    public int GetHighestTaken(int x, int z) =>
+        unchecked(GetFirstAvailable(x, z) - 1);
 
-    /// <summary>
-    /// Loads packed data when its word count matches this heightmap. Incompatible data is
-    /// discarded and this map is recomputed from the owning chunk, matching 26.3.
-    /// </summary>
-    public void SetRawData(Chunk chunk, HeightmapType type, ulong[] data)
+    public void SetRawData(Chunk chunk, Types type, ulong[] data)
     {
-        ArgumentNullException.ThrowIfNull(chunk);
-        ArgumentNullException.ThrowIfNull(data);
-
         ulong[] rawData = _data.GetRaw();
         if (rawData.Length == data.Length)
         {
             Array.Copy(data, rawData, data.Length);
-            return;
         }
-
-        Trace.TraceWarning(
-            "Ignoring heightmap data for chunk {0}: size mismatch, expected {1}, got {2}",
-            chunk.GetPos(),
-            rawData.Length,
-            data.Length);
-        PrimeAll(new[] { chunk.GetOrCreateHeightmapUnprimed(type) });
+        else
+        {
+            Trace.TraceWarning(
+                "Ignoring heightmap data for chunk {0}, size does not match; expected: {1}, got: {2}",
+                chunk.GetPos(),
+                rawData.Length,
+                data.Length);
+            PrimeHeightmaps(chunk, new[] { type });
+        }
     }
 
-    /// <summary>Returns the backing packed words, matching Heightmap.getRawData().</summary>
     public ulong[] GetRawData() => _data.GetRaw();
 
-    private void SetHeight(int localX, int localZ, int height) =>
+    private void SetHeight(int x, int z, int height) =>
         _data.Set(
-            GetIndex(localX, localZ),
+            GetIndex(x, z),
             unchecked(height - _chunk.GetMinY()));
 
-    private static int GetIndex(int localX, int localZ) =>
-        unchecked(localX + localZ * 16);
+    private static int GetIndex(int x, int z) =>
+        unchecked(x + z * 16);
+
+    public enum Types
+    {
+        WorldSurfaceWorldgen = 0,
+        WorldSurface = 1,
+        OceanFloorWorldgen = 2,
+        OceanFloor = 3,
+        MotionBlocking = 4,
+        MotionBlockingNoLeaves = 5
+    }
+}
+
+public static class HeightmapTypeExtensions
+{
+    private static readonly Heightmap.Types[] Values = Enum.GetValues<Heightmap.Types>();
+
+    public static Heightmap.Types ById(int id) =>
+        (uint)id < (uint)Values.Length ? Values[id] : Values[0];
+
+    public static int GetId(this Heightmap.Types type) => (int)type;
+
+    public static string GetSerializationKey(this Heightmap.Types type) =>
+        type switch
+        {
+            Heightmap.Types.WorldSurfaceWorldgen => "WORLD_SURFACE_WG",
+            Heightmap.Types.WorldSurface => "WORLD_SURFACE",
+            Heightmap.Types.OceanFloorWorldgen => "OCEAN_FLOOR_WG",
+            Heightmap.Types.OceanFloor => "OCEAN_FLOOR",
+            Heightmap.Types.MotionBlocking => "MOTION_BLOCKING",
+            Heightmap.Types.MotionBlockingNoLeaves => "MOTION_BLOCKING_NO_LEAVES",
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown heightmap type.")
+        };
+
+    public static string GetSerializedName(this Heightmap.Types type) =>
+        type.GetSerializationKey();
+
+    public static bool SendToClient(this Heightmap.Types type) =>
+        type switch
+        {
+            Heightmap.Types.WorldSurface or
+            Heightmap.Types.MotionBlocking or
+            Heightmap.Types.MotionBlockingNoLeaves => true,
+            Heightmap.Types.WorldSurfaceWorldgen or
+            Heightmap.Types.OceanFloorWorldgen or
+            Heightmap.Types.OceanFloor => false,
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown heightmap type.")
+        };
+
+    public static bool KeepAfterWorldgen(this Heightmap.Types type) =>
+        type switch
+        {
+            Heightmap.Types.WorldSurfaceWorldgen or
+            Heightmap.Types.OceanFloorWorldgen => false,
+            Heightmap.Types.WorldSurface or
+            Heightmap.Types.OceanFloor or
+            Heightmap.Types.MotionBlocking or
+            Heightmap.Types.MotionBlockingNoLeaves => true,
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown heightmap type.")
+        };
 }
