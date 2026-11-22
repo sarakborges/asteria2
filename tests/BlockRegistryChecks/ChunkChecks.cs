@@ -54,9 +54,10 @@ internal static class ChunkChecks
         PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
         var position = new ChunkPos(-3, 7);
 
-        var nonAirDefaultFactory = new PalettedContainerFactory(
-            factory.BlockStatesStrategy,
-            nonAirState);
+        PalettedContainerFactory nonAirDefaultFactory = factory with
+        {
+            DefaultBlockState = nonAirState
+        };
         var defaultStateChunk = new Chunk(new ChunkPos(0, 0), height, nonAirDefaultFactory);
         Require(
             ReferenceEquals(
@@ -92,7 +93,7 @@ internal static class ChunkChecks
                 Blocks.AIR.DefaultState),
             "Block lookup above the section array must return the default air state.");
 
-        var suppliedSection = factory.CreateSection();
+        var suppliedSection = new ChunkSection(factory);
         var supplied = new ChunkSection?[24];
         supplied[4] = suppliedSection;
         var fromSections = new Chunk(position, height, factory, supplied);
@@ -132,7 +133,7 @@ internal static class ChunkChecks
         LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
         PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
         var supplied = new ChunkSection?[23];
-        supplied[0] = factory.CreateSection();
+        supplied[0] = new ChunkSection(factory);
 
         var chunk = new Chunk(new ChunkPos(0, 0), height, factory, supplied);
         Require(chunk.GetSections().Length == 24, "Chunk section storage length must come from the height accessor.");
