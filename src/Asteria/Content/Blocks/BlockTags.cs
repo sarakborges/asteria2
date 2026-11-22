@@ -21,6 +21,9 @@ public static class BlockTags
     public static TagKey<Block> FallDamageResetting { get; } =
         Create("fall_damage_resetting");
 
+    public static TagKey<Block> CausesSuffocation { get; } =
+        Create("causes_suffocation");
+
     private static TagKey<Block> Create(string path) =>
         TagKey<Block>.Create(
             BuiltInRegistries.Block.Key,
