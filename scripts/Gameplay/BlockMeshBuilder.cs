@@ -1,5 +1,6 @@
 using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
+using Asteria.World;
 using Godot;
 
 namespace Asteria.Gameplay;
