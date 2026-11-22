@@ -54,6 +54,17 @@ public abstract class Fluid
 
     public abstract VoxelShape GetShape(FluidState state, BlockGetter level, BlockPos position);
 
+    public virtual AABB? GetAABB(FluidState state, BlockGetter level, BlockPos position)
+    {
+        if (IsEmpty)
+            return null;
+
+        float height = state.GetHeight(level, position);
+        return new AABB(
+            position.GetX(), position.GetY(), position.GetZ(),
+            position.GetX() + 1.0, (float)position.GetY() + height, position.GetZ() + 1.0);
+    }
+
     public virtual bool IsSame(Fluid other)
     {
         ArgumentNullException.ThrowIfNull(other);
