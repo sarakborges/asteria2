@@ -1,4 +1,6 @@
 using Asteria.Serialization;
+using Asteria.Content.Registries;
+using Asteria.World.Clocks;
 using Asteria.World.Timelines;
 
 namespace Asteria.World.Attributes;
@@ -23,10 +25,15 @@ public sealed record AttributeTrack<TValue, TArgument>(
 
     public AttributeTrackSampler<TValue, TArgument> BakeSampler(
         EnvironmentAttribute<TValue> attribute,
-        int? periodTicks)
+        Holder<WorldClock> clock,
+        int? periodTicks,
+        ClockManager clockManager)
     {
         ArgumentNullException.ThrowIfNull(attribute);
-        return new AttributeTrackSampler<TValue, TArgument>(this, attribute, periodTicks);
+        ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(clockManager);
+        return new AttributeTrackSampler<TValue, TArgument>(
+            this, attribute, clock, periodTicks, clockManager);
     }
 }
 

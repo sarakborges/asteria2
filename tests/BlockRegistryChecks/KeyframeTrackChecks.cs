@@ -2,10 +2,34 @@ using System.Text.Json;
 using Asteria.Serialization;
 using Asteria.World.Attributes;
 using Asteria.World.Attributes.Modifiers;
+using Asteria.Content.Registries;
+using Asteria.World.Clocks;
 using Asteria.World.Timelines;
 
 internal static class KeyframeTrackChecks
 {
+    private sealed class MutableClockInstance : ClockInstance
+    {
+        public long TotalTicks { get; set; }
+        public float PartialTick { get; set; }
+        public float Rate { get; set; } = 1.0F;
+        public bool IsPaused { get; set; }
+    }
+
+    private sealed class TestClockManager : ClockManager
+    {
+        private readonly ClockInstance _instance;
+
+        public TestClockManager(ClockInstance instance) =>
+            _instance = instance ?? throw new ArgumentNullException(nameof(instance));
+
+        public ClockInstance GetInstance(Holder<WorldClock> clock)
+        {
+            ArgumentNullException.ThrowIfNull(clock);
+            return _instance;
+        }
+    }
+
     public static void Run()
     {
         CheckKeyframeCodec();
@@ -196,6 +220,10 @@ internal static class KeyframeTrackChecks
         Codec<IAttributeTrack<float>> codec =
             AttributeTrack.CreateCodec(EnvironmentAttributes.FOG_END_DISTANCE);
 
+        var clockInstance = new MutableClockInstance { TotalTicks = 5 };
+        var clockManager = new TestClockManager(clockInstance);
+        Holder<WorldClock> clock = Holder<WorldClock>.Direct(new WorldClock());
+
         AttributeTrack<float, float> overrideTrack = new(
             AttributeModifiers.Override<float>(),
             KeyframeTrack<float>.CreateBuilder()
@@ -210,8 +238,8 @@ internal static class KeyframeTrackChecks
         IAttributeTrack<float> overrideDecoded = codec.Parse(ops, overrideEncoded).GetOrThrow();
         var overrideTyped = (AttributeTrack<float, float>)overrideDecoded;
         AttributeTrackSampler<float, float> overrideSampler =
-            overrideTyped.BakeSampler(EnvironmentAttributes.FOG_END_DISTANCE, null);
-        Require(overrideSampler.ApplyTimeBased(999.0F, 5, 1) == 15.0F,
+            overrideTyped.BakeSampler(EnvironmentAttributes.FOG_END_DISTANCE, clock, null, clockManager);
+        Require(overrideSampler.ApplyTimeBased(999.0F, 1) == 15.0F,
             "Override tracks must interpolate attribute values and replace the base value.");
 
         AttributeTrack<float, float> addTrack = new(
@@ -226,8 +254,8 @@ internal static class KeyframeTrackChecks
 
         IAttributeTrack<float> addDecoded = codec.Parse(ops, addEncoded).GetOrThrow();
         var addSampler = ((AttributeTrack<float, float>)addDecoded)
-            .BakeSampler(EnvironmentAttributes.FOG_END_DISTANCE, null);
-        Require(addSampler.ApplyTimeBased(100.0F, 5, 1) == 104.0F,
+            .BakeSampler(EnvironmentAttributes.FOG_END_DISTANCE, clock, null, clockManager);
+        Require(addSampler.ApplyTimeBased(100.0F, 1) == 104.0F,
             "Non-override tracks must interpolate their modifier arguments before applying the modifier.");
 
         var alphaTrack = new AttributeTrack<float, FloatWithAlpha>(
@@ -236,13 +264,15 @@ internal static class KeyframeTrackChecks
                 .AddKeyframe(0, new FloatWithAlpha(10.0F, 0.0F))
                 .AddKeyframe(10, new FloatWithAlpha(20.0F, 1.0F))
                 .Build());
-        var alphaSampler = alphaTrack.BakeSampler(EnvironmentAttributes.FOG_END_DISTANCE, null);
-        Require(Math.Abs(alphaSampler.ApplyTimeBased(100.0F, 5, 10) - 57.5F) < 0.000001F,
+        var alphaSampler = alphaTrack.BakeSampler(EnvironmentAttributes.FOG_END_DISTANCE, clock, null, clockManager);
+        Require(Math.Abs(alphaSampler.ApplyTimeBased(100.0F, 10) - 57.5F) < 0.000001F,
             "Modifier-specific keyframe interpolation must interpolate both alpha-blend argument fields.");
 
-        Require(addSampler.ApplyTimeBased(100.0F, 9, 1) == 104.0F &&
-                Math.Abs(addSampler.ApplyTimeBased(100.0F, 9, 2) - 105.6F) < 0.000001F,
-            "An attribute-track sampler must reuse its cached argument for the same tick ID and resample for a new tick ID.");
+        clockInstance.TotalTicks = 9;
+        Require(addSampler.ApplyTimeBased(100.0F, 1) == 104.0F,
+            "An attribute-track sampler must reuse its cached argument for the same tick ID, even if the clock has advanced.");
+        Require(Math.Abs(addSampler.ApplyTimeBased(100.0F, 2) - 105.6F) < 0.000001F,
+            "An attribute-track sampler must read the clock again when the cache tick ID changes.");
     }
 
     private static void Require(bool condition, string message)

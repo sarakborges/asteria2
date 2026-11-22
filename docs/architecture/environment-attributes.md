@@ -131,3 +131,12 @@ Base de comparação: Minecraft Java 26.3.
 - Adaptação explícita: como Asteria ainda não tem `WorldClock`/ `ClockManager`, o sampler recebe `totalTicks` no método `ApplyTimeBased`; não foi criado relógio fictício.
 - Ainda não portados: registro de clocks, `ClockManager`, registry de `Timeline`, markers e conexão de timelines às fontes de dimensão. Este incremento completa a camada genérica de tracks e amostragem, mas não declara o sistema de timelines inteiro concluído.
 - Codec de rede e sincronização remota permanecem fora do escopo local.
+
+## Incremento — clocks e time markers (22/11/2026)
+
+- Portados `WorldClock`, `ClockInstance` e o contrato `ClockManager`. O registry local `world_clock` registra `asteria:overworld` e `asteria:the_end`; o codec de holder usa somente chaves registradas e o codec direto do relógio é um mapa vazio, como na referência.
+- `ClockTimeMarker` preserva a associação ao holder do clock, o tick, o período opcional e a flag de exibição. Foram portados `GetRepetitionCount`, `ResolveTimeToMoveTo` e `OccursAt`, incluindo a semântica de módulo e a resolução para a próxima ocorrência quando o tick atual coincide com o marcador.
+- `ClockTimeMarkers` mantém somente os identificadores genéricos DAY, NOON, NIGHT e MIDNIGHT. Marcadores ligados a sono ou a mecânicas de raid não entram no produto.
+- `AttributeTrackSampler` agora recebe `Holder<WorldClock>` e `ClockManager`, lê `TotalTicks` ao atualizar o cache e mantém a amostragem por `cacheTickId`, reproduzindo o contrato de 26.3. O teste usa um clock controlado em memória, sem criar implementação de relógio de produção.
+- Ainda não portados: implementação de avanço/persistência de clocks, registry e codec de `Timeline`, builder de tracks/time markers e validação de duplicidade de markers por clock. `ClockManager` permanece como contrato para a camada de mundo local que será integrada em seguida; não foi adicionado relógio simulado de produção.
+- Referências: [WorldClock](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/clock/worldclock/), [WorldClocks](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/clock/worldclocks/), [ClockInstance](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/clock/clockinstance/), [ClockTimeMarker](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/clock/clocktimemarker/) e [AttributeTrackSampler](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/timeline/attributetracksampler/).

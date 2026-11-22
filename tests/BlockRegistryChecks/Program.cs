@@ -9,6 +9,7 @@ using Asteria.Content.Identifiers;
 using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
 using Asteria.Content.Storage;
+using Asteria.World.Clocks;
 
 internal static class Program
 {
@@ -196,7 +197,7 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 8, "The root registry must contain the built-in block, fluid, item, biome, particle, environment-attribute, attribute-type and position-source-type registries.");
+        Require(BuiltInRegistries.Root.Count == 9, "The root registry must contain the built-in block, fluid, item, biome, particle, environment-attribute, attribute-type, position-source-type and world-clock registries.");
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
@@ -224,6 +225,7 @@ internal static class Program
         BiomeChecks.Run();
         EnvironmentAttributeChecks.Run();
         KeyframeTrackChecks.Run();
+        ClockChecks.Run();
         ParticleChecks.Run();
         AmbientParticleChecks.Run();
         AttributeValueCodecChecks.Run();
@@ -271,8 +273,8 @@ internal static class Program
             BuiltInRegistries.RootLocation == ResourceLocation.Parse("asteria:root"),
             "The root registry must use the Asteria namespace.");
         Require(
-            BuiltInRegistries.Root.Count == 8 && !BuiltInRegistries.Root.IsFrozen,
-            "The root registry must register all eight built-in registries before bootstrap freezes it.");
+            BuiltInRegistries.Root.Count == 9 && !BuiltInRegistries.Root.IsFrozen,
+            "The root registry must register all nine built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =
             RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Block.Location);

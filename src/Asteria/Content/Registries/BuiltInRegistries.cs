@@ -13,6 +13,7 @@ using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Content.Identifiers;
 using Asteria.World.Attributes;
 using Asteria.World.GameEvents;
+using Asteria.World.Clocks;
 
 namespace Asteria.Content.Registries;
 
@@ -71,6 +72,11 @@ public static class BuiltInRegistries
         RegisterSimple<PositionSourceType>(
             ResourceLocation.FromNamespaceAndPath("asteria", "position_source_type"),
             static () => PositionSourceTypes.RegisterAll());
+
+    public static Registry<WorldClock> WorldClock { get; } =
+        RegisterSimple<WorldClock>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "world_clock"),
+            static () => WorldClocks.RegisterAll());
 
     private static Registry<T> RegisterSimple<T>(
         ResourceLocation location,
