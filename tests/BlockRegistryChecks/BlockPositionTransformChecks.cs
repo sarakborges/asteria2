@@ -228,6 +228,34 @@ internal static class BlockPositionTransformChecks
             "Block emissive rendering must be disabled by default.");
         Require(state.GetShadeBrightness(EmptyBlockGetter.Instance, BlockPos.Zero) == 1.0f,
             "Block shade brightness must be one for a non-full collision shape.");
+        Require(!state.HasOffsetFunction && state.GetOffset(new BlockPos(10, 20, -20)).Equals(Vec3.Zero),
+            "A block state without an offset function must return Vec3.ZERO.");
+        Require(Mth.GetSeed(10, 0, -20) == 25548880278638L,
+            "Mth.GetSeed must preserve Java's 32-bit coordinate product and signed 64-bit overflow behavior.");
+
+        BlockProperties horizontalOffsetProperties = BlockProperties.Of().OffsetType(OffsetType.XZ);
+        Vec3 horizontalOffset = horizontalOffsetProperties.OffsetFunctionValue!(
+            state, new BlockPos(10, 99, -20));
+        Vec3 sameHorizontalOffset = horizontalOffsetProperties.OffsetFunctionValue!(
+            state, new BlockPos(10, -35, -20));
+        Require(horizontalOffset == sameHorizontalOffset &&
+                horizontalOffset.Y == 0.0 &&
+                Math.Abs(horizontalOffset.X) <= 0.25 &&
+                Math.Abs(horizontalOffset.Z) <= 0.25,
+            "XZ block offsets must be deterministic from X/Z and remain within the configured horizontal range.");
+
+        BlockProperties threeAxisOffsetProperties = BlockProperties.Of().OffsetType(OffsetType.XYZ);
+        Vec3 threeAxisOffset = threeAxisOffsetProperties.OffsetFunctionValue!(
+            state, new BlockPos(10, 99, -20));
+        Require(threeAxisOffset == horizontalOffset with { Y = threeAxisOffset.Y } &&
+                threeAxisOffset.Y <= 0.0 &&
+                threeAxisOffset.Y >= -0.2 &&
+                threeAxisOffset.X == horizontalOffset.X &&
+                threeAxisOffset.Z == horizontalOffset.Z,
+            "XYZ block offsets must reuse the XZ offsets and apply the bounded negative vertical offset.");
+
+        Require(BlockProperties.Of().OffsetType(OffsetType.NONE).OffsetFunctionValue is null,
+            "NONE block offset type must not install an offset function.");
         Require(!state.ShouldRedstoneWireConnectTo(EmptyBlockGetter.Instance, BlockPos.Zero, null) &&
                 !state.ShouldRedstoneWireConnectTo(EmptyBlockGetter.Instance, BlockPos.Zero, Direction.UP),
             "BlockState should not connect redstone wire by default, including when a direction is supplied.");
