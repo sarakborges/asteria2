@@ -33,7 +33,7 @@ public readonly record struct FloatWithAlpha(float Value, float Alpha)
             DataResult<Pair<float, TData>> scalar = Codecs.FLOAT.Decode(ops, input);
             if (scalar.TryGetResult(out Pair<float, TData> value))
                 return DataResult<Pair<FloatWithAlpha, TData>>.Success(
-                    new Pair<FloatWithAlpha, TData>(new FloatWithAlpha(value.First), value.Second),
+                    new Pair<FloatWithAlpha, TData>(new FloatWithAlpha(value.First, 1.0F), value.Second),
                     scalar.Lifecycle);
 
             return FULL_CODEC.Decode(ops, input).Map(pair =>
