@@ -10,8 +10,8 @@ public readonly record struct BlendToGray(float Brightness, float Factor)
     public static readonly Codec<BlendToGray> CODEC =
         RecordCodecBuilder.Create<BlendToGray>(instance =>
             instance.Group(
-                Codecs.FLOAT.FieldOf("brightness").ForGetter<BlendToGray>(static value => value.Brightness),
-                Codecs.FLOAT.FieldOf("factor").ForGetter<BlendToGray>(static value => value.Factor))
+                Codecs.FloatRange(0.0F, 1.0F).FieldOf("brightness").ForGetter<BlendToGray>(static value => value.Brightness),
+                Codecs.FloatRange(0.0F, 1.0F).FieldOf("factor").ForGetter<BlendToGray>(static value => value.Factor))
             .Apply(instance, static (brightness, factor) => new BlendToGray(brightness, factor)));
 }
 
@@ -19,9 +19,9 @@ public readonly record struct BlendToGray(float Brightness, float Factor)
 public static class ColorModifier
 {
     public static readonly AttributeModifier<Vector3, Vector4> ALPHA_BLEND_RGB =
-        Create<Vector3, Vector4>(AttributeOperationId.ALPHA_BLEND, AlphaBlendRgb, LerpFunction<Vector4>.OfColorVec4(), ExtraCodecs.VECTOR4F);
+        Create<Vector3, Vector4>(AttributeOperationId.ALPHA_BLEND, AlphaBlendRgb, LerpFunction<Vector4>.OfColorVec4(), ExtraCodecs.STRING_ARGB_VEC4_COLOR);
     public static readonly AttributeModifier<Vector3, Vector3> ADD_RGB =
-        Create<Vector3, Vector3>(AttributeOperationId.ADD, AddRgb, LerpFunction<Vector3>.OfColorVec3(), ExtraCodecs.VECTOR3F);
+        Create<Vector3, Vector3>(AttributeOperationId.ADD, AddRgb, LerpFunction<Vector3>.OfColorVec3(), ExtraCodecs.STRING_RGB_VEC3_COLOR);
     public static readonly AttributeModifier<Vector3, Vector3> SUBTRACT_RGB =
         Create<Vector3, Vector3>(AttributeOperationId.SUBTRACT, SubtractRgb, LerpFunction<Vector3>.OfColorVec3(), ExtraCodecs.VECTOR3F);
     public static readonly AttributeModifier<Vector3, Vector3> MULTIPLY_RGB =
