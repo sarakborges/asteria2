@@ -53,6 +53,12 @@ public class BlockPos : Vec3i
     public static BlockPos Containing(double x, double y, double z) =>
         new(FloorToInt(x), FloorToInt(y), FloorToInt(z));
 
+    public static BlockPos Containing(Vec3 position)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        return Containing(position.X, position.Y, position.Z);
+    }
+
     public static BlockPos Min(BlockPos a, BlockPos b)
     {
         ArgumentNullException.ThrowIfNull(a);
