@@ -192,6 +192,7 @@ internal static class TimelineChecks
             registry.Key, ResourceLocation.WithDefaultNamespace("second"));
         registry.Register(firstKey, first, RegistrationInfo.BuiltIn);
         registry.Register(secondKey, second, RegistrationInfo.BuiltIn);
+        registry.Freeze();
 
         var errors = new Dictionary<RegistryKey<Timeline>, Exception>();
         Timeline.ValidateRegistry(registry, errors);
