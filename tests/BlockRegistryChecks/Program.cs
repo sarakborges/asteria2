@@ -197,7 +197,7 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 9, "The root registry must contain the built-in block, fluid, item, biome, particle, environment-attribute, attribute-type, position-source-type and world-clock registries.");
+        Require(BuiltInRegistries.Root.Count == 10, "The root registry must contain the built-in block, fluid, item, biome, particle, environment-attribute, attribute-type, position-source-type, world-clock and timeline registries.");
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
@@ -215,6 +215,7 @@ internal static class Program
         Require(BuiltInRegistries.Fluid.Count == 1, "Only the empty fluid should be registered.");
         Require(BuiltInRegistries.Biome.Count == 2, "The built-in biome registry must contain plains and desert.");
         Require(BuiltInRegistries.PositionSourceType.Count == 1, "The local position-source registry must contain only the block variant.");
+        Require(BuiltInRegistries.Timeline.Count == 0, "No built-in timelines should be registered until their complete attribute content is in scope.");
         Require(BuiltInRegistries.AttributeType.Count == 9, "The attribute-type registry must contain the seven existing value types plus particle and ambient-particle types.");
         Require(Fluid.FluidStateRegistry.Count == 1, "The fluid-state ID map must contain every registered fluid state.");
         Require(ReferenceEquals(Blocks.AIR.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState), "Air must contain the empty fluid state.");
@@ -226,6 +227,7 @@ internal static class Program
         EnvironmentAttributeChecks.Run();
         KeyframeTrackChecks.Run();
         ClockChecks.Run();
+        TimelineChecks.Run();
         ParticleChecks.Run();
         AmbientParticleChecks.Run();
         AttributeValueCodecChecks.Run();
@@ -273,8 +275,8 @@ internal static class Program
             BuiltInRegistries.RootLocation == ResourceLocation.Parse("asteria:root"),
             "The root registry must use the Asteria namespace.");
         Require(
-            BuiltInRegistries.Root.Count == 9 && !BuiltInRegistries.Root.IsFrozen,
-            "The root registry must register all nine built-in registries before bootstrap freezes it.");
+            BuiltInRegistries.Root.Count == 10 && !BuiltInRegistries.Root.IsFrozen,
+            "The root registry must register all ten built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =
             RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Block.Location);
