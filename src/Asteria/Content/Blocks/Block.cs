@@ -98,6 +98,14 @@ public class Block
 
     public virtual bool IsRandomlyTickingState(BlockState state) => IsRandomlyTicking;
 
+    public virtual RenderShape GetRenderShape(BlockState state) => RenderShape.MODEL;
+
+    public virtual float GetShadeBrightness(
+        BlockState state,
+        BlockGetter level,
+        BlockPos position) =>
+        state.IsCollisionShapeFullBlock(level, position) ? 0.2f : 1.0f;
+
     public virtual VoxelShape GetShape(BlockState state, BlockGetter level, BlockPos position) =>
         Shapes.Block();
 
