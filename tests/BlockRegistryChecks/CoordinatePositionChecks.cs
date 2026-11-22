@@ -240,7 +240,7 @@ internal static class CoordinatePositionChecks
             "BlockPos clampLocationWithin must keep each component inside the block with the source epsilon.");
 
         Vec3 clampedMaximum = new BlockPos(-2, 3, 5)
-            .ClampLocationWithin(new Vec3(100.0, -100.0, 100.0));
+            .ClampLocationWithin(new Vec3(100.0, 100.0, 100.0));
         Require(
             clampedMaximum.X < -1.0 && clampedMaximum.X > -1.0001 &&
             clampedMaximum.Y < 4.0 && clampedMaximum.Y > 3.9999 &&
