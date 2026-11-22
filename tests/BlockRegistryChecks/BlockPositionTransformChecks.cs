@@ -238,7 +238,7 @@ internal static class BlockPositionTransformChecks
             state, new BlockPos(10, 99, -20));
         Vec3 sameHorizontalOffset = horizontalOffsetProperties.OffsetFunctionValue!(
             state, new BlockPos(10, -35, -20));
-        Require(horizontalOffset == sameHorizontalOffset &&
+        Require(horizontalOffset.Equals(sameHorizontalOffset) &&
                 horizontalOffset.Y == 0.0 &&
                 Math.Abs(horizontalOffset.X) <= 0.25 &&
                 Math.Abs(horizontalOffset.Z) <= 0.25,
@@ -247,8 +247,7 @@ internal static class BlockPositionTransformChecks
         BlockProperties threeAxisOffsetProperties = BlockProperties.Of().OffsetType(OffsetType.XYZ);
         Vec3 threeAxisOffset = threeAxisOffsetProperties.OffsetFunctionValue!(
             state, new BlockPos(10, 99, -20));
-        Require(threeAxisOffset == horizontalOffset with { Y = threeAxisOffset.Y } &&
-                threeAxisOffset.Y <= 0.0 &&
+        Require(threeAxisOffset.Y <= 0.0 &&
                 threeAxisOffset.Y >= -0.2 &&
                 threeAxisOffset.X == horizontalOffset.X &&
                 threeAxisOffset.Z == horizontalOffset.Z,
