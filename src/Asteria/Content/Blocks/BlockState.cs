@@ -134,7 +134,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public Vec3 GetOffset(BlockPos position)
     {
         ArgumentNullException.ThrowIfNull(position);
-        return _offsetFunction?.Invoke(this, position) ?? Vec3.Zero;
+        return _offsetFunction?.Invoke(this, position) ?? Vec3.ZERO;
     }
 
     public bool HasOffsetFunction => _offsetFunction is not null;
