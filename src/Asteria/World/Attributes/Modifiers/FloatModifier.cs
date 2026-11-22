@@ -5,12 +5,41 @@ namespace Asteria.World.Attributes.Modifiers;
 
 public readonly record struct FloatWithAlpha(float Value, float Alpha)
 {
-    public static readonly Codec<FloatWithAlpha> CODEC =
+    private static readonly Codec<FloatWithAlpha> FULL_CODEC =
         RecordCodecBuilder.Create<FloatWithAlpha>(instance =>
             instance.Group(
                 Codecs.FLOAT.FieldOf("value").ForGetter<FloatWithAlpha>(static value => value.Value),
-                Codecs.FLOAT.FieldOf("alpha").ForGetter<FloatWithAlpha>(static value => value.Alpha))
+                Codecs.FloatRange(0.0F, 1.0F)
+                    .OptionalFieldOf("alpha", 1.0F)
+                    .ForGetter<FloatWithAlpha>(static value => value.Alpha))
             .Apply(instance, static (value, alpha) => new FloatWithAlpha(value, alpha)));
+
+    public static readonly Codec<FloatWithAlpha> CODEC = new FloatWithAlphaCodec();
+
+    private sealed class FloatWithAlphaCodec : Codec<FloatWithAlpha>
+    {
+        public override DataResult<TData> Encode<TData>(
+            FloatWithAlpha input,
+            DynamicOps<TData> ops,
+            TData prefix) =>
+            input.Alpha == 1.0F
+                ? Codecs.FLOAT.Encode(input.Value, ops, prefix)
+                : FULL_CODEC.Encode(input, ops, prefix);
+
+        public override DataResult<Pair<FloatWithAlpha, TData>> Decode<TData>(
+            DynamicOps<TData> ops,
+            TData input)
+        {
+            DataResult<Pair<float, TData>> scalar = Codecs.FLOAT.Decode(ops, input);
+            if (scalar.TryGetResult(out Pair<float, TData> value))
+                return DataResult<Pair<FloatWithAlpha, TData>>.Success(
+                    new Pair<FloatWithAlpha, TData>(new FloatWithAlpha(value.First), value.Second),
+                    scalar.Lifecycle);
+
+            return FULL_CODEC.Decode(ops, input).Map(pair =>
+                new Pair<FloatWithAlpha, TData>(pair.First, pair.Second));
+        }
+    }
 }
 
 public static class FloatModifier
