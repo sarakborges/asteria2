@@ -1,6 +1,8 @@
+using Asteria.Content.Biomes;
 using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
 using Asteria.Content.Fluids;
+using Asteria.Content.Registries;
 using Asteria.Content.Storage;
 using Asteria.Core;
 using Asteria.World;
@@ -15,6 +17,7 @@ internal static class ChunkChecks
         CheckHeightAccessor();
         CheckChunkAccessLifecycle();
         CheckBlockGetterContract(fluidState);
+        CheckChunkBiomeAccess();
         CheckChunkConstructionAndSections(nonAirState);
         CheckMismatchedSectionArray();
         CheckWorldSurfaceHeightmap(nonAirState);
@@ -80,6 +83,55 @@ internal static class ChunkChecks
         Require(
             blockGetter.GetFluidState(outsideBuildHeight).IsEmpty(),
             "Fluid lookup outside the section array must return the empty fluid state.");
+    }
+
+    private static void CheckChunkBiomeAccess()
+    {
+        var position = new ChunkPos(-2, 3);
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        var chunk = new TestChunkAccess(position, height, PalettedContainerFactory.CreateBuiltIn());
+        var resolver = new AlternatingBiomeResolver(
+            Biomes.PLAINS.BuiltInRegistryHolder!,
+            Biomes.DESERT.BuiltInRegistryHolder!);
+
+        chunk.FillBiomesFromNoise(resolver);
+
+        Require(
+            resolver.CallCount == height.GetSectionsCount() * ChunkSection.BiomeCount,
+            "Chunk biome filling must resolve all 64 quart cells in every vertical section.");
+        Require(
+            ReferenceEquals(chunk.GetHeightAccessorForGeneration(), chunk),
+            "Chunk generation must use the chunk itself as its height accessor.");
+
+        int quartMinX = QuartPos.FromBlock(position.GetMinBlockX());
+        int quartMinZ = QuartPos.FromBlock(position.GetMinBlockZ());
+        int quartY = QuartPos.FromSection(height.GetMinSectionY()) + 2;
+        Holder<Biome> expected = resolver.GetNoiseBiome(quartMinX + 1, quartY, quartMinZ + 3);
+
+        Require(
+            ReferenceEquals(
+                chunk.GetNoiseBiome(quartMinX + 1, quartY, quartMinZ + 3),
+                expected),
+            "Chunk biome lookup must map world quart coordinates into the correct section-local cell.");
+
+        int quartMinY = QuartPos.FromBlock(height.GetMinY());
+        int quartMaxY = unchecked(quartMinY + QuartPos.FromBlock(height.GetHeight()) - 1);
+        Require(
+            ReferenceEquals(
+                chunk.GetNoiseBiome(quartMinX, int.MinValue, quartMinZ),
+                chunk.GetNoiseBiome(quartMinX, quartMinY, quartMinZ)),
+            "Chunk biome lookup must clamp quart Y below the build height.");
+        Require(
+            ReferenceEquals(
+                chunk.GetNoiseBiome(quartMinX, int.MaxValue, quartMinZ),
+                chunk.GetNoiseBiome(quartMinX, quartMaxY, quartMinZ)),
+            "Chunk biome lookup must clamp quart Y above the build height.");
+
+        Require(QuartPos.FromBlock(-1) == -1, "Block-to-quart conversion must floor negative coordinates.");
+        Require(QuartPos.QuartLocal(-1) == 3, "Local quart coordinates must use the low two bits.");
+        Require(QuartPos.ToBlock(-2) == -8, "Quart-to-block conversion must preserve negative coordinates.");
+        Require(QuartPos.FromSection(-4) == -16, "Section-to-quart conversion must multiply by four.");
+        Require(QuartPos.ToSection(-16) == -4, "Quart-to-section conversion must floor negative coordinates.");
     }
 
     private static void CheckHeightAccessor()
@@ -434,6 +486,26 @@ internal static class ChunkChecks
 
         public override FluidState GetFluidState(BlockPos position) =>
             GetBlockState(position).GetFluidState();
+    }
+
+    private sealed class AlternatingBiomeResolver : BiomeResolver
+    {
+        private readonly Holder<Biome> _plains;
+        private readonly Holder<Biome> _desert;
+
+        public int CallCount { get; private set; }
+
+        public AlternatingBiomeResolver(Holder<Biome> plains, Holder<Biome> desert)
+        {
+            _plains = plains;
+            _desert = desert;
+        }
+
+        public Holder<Biome> GetNoiseBiome(int quartX, int quartY, int quartZ)
+        {
+            CallCount++;
+            return ((quartX + quartY + quartZ) & 1) == 0 ? _plains : _desert;
+        }
     }
 
     private static void Require(bool condition, string message)
