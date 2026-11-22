@@ -230,6 +230,29 @@ internal static class BlockPositionTransformChecks
             "Block shade brightness must be one for a non-full collision shape.");
         Require(!state.HasOffsetFunction && state.GetOffset(new BlockPos(10, 20, -20)).Equals(Vec3.ZERO),
             "A block state without an offset function must return Vec3.ZERO.");
+        BlockState stone = Blocks.STONE.DefaultState;
+        Require(stone.IsRedstoneConductor(EmptyBlockGetter.Instance, BlockPos.Zero) &&
+                !state.IsRedstoneConductor(EmptyBlockGetter.Instance, BlockPos.Zero),
+            "The default redstone-conductor predicate must follow full collision-shape occupancy.");
+        Require(!state.IsSuffocating(EmptyBlockGetter.Instance, BlockPos.Zero) &&
+                !state.IsViewBlocking(EmptyBlockGetter.Instance, BlockPos.Zero, new AABB(0, 0, 0, 1, 1, 1)),
+            "Default suffocation and view-blocking predicates must use the causes-suffocation tag.");
+        Require(state.GetPostProcessPos(EmptyBlockGetter.Instance, BlockPos.Zero) is null,
+            "The default post-process predicate must return no redirected position.");
+
+        bool customSuffocatingPredicate = BlockProperties.Of()
+            .IsSuffocating(static (_, _, _) => true)
+            .IsSuffocatingValue(state, EmptyBlockGetter.Instance, BlockPos.Zero);
+        bool customViewBlockingPredicate = BlockProperties.Of()
+            .IsViewBlocking(static (_, _, _, box) => box.MaxX > box.MinX)
+            .IsViewBlockingValue(state, EmptyBlockGetter.Instance, BlockPos.Zero, new AABB(0, 0, 0, 1, 1, 1));
+        BlockPos redirectedPosition = new BlockPos(3, 4, 5);
+        BlockPos? customPostProcessPosition = BlockProperties.Of()
+            .PostProcess((_, _, _) => redirectedPosition)
+            .PostProcessValue(state, EmptyBlockGetter.Instance, BlockPos.Zero);
+        Require(customSuffocatingPredicate && customViewBlockingPredicate &&
+                ReferenceEquals(customPostProcessPosition, redirectedPosition),
+            "Block properties must preserve custom state predicate and post-process delegates.");
         Require(Mth.GetSeed(10, 0, -20) == 25548880278638L,
             "Mth.GetSeed must preserve Java's 32-bit coordinate product and signed 64-bit overflow behavior.");
 
