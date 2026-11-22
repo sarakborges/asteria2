@@ -109,3 +109,13 @@ Base de comparação: Minecraft Java 26.3.
 - `BlendToGray` valida brightness/factor em [0, 1].
 - `FloatWithAlpha` agora reproduz a forma compacta escalar quando alpha é 1, a forma expandida com alpha opcional e default 1, e a validação de alpha em [0, 1].
 - O codec do mapa ambiental ainda precisa conectar o registry de atributos ao codec de cada entrada; `CODEC_ONLY_POSITIONAL` depende desse codec. Network codec permanece fora do escopo.
+
+
+## Codec de EnvironmentAttributeMap
+
+- `EnvironmentAttributeMap.CODEC` serializa mapas como objetos cujas chaves são identificadores resolvidos por `BuiltInRegistries.EnvironmentAttribute`.
+- Entradas `override` usam o valor direto e compacto. Outros modificadores usam objeto com `modifier` e `argument`, selecionando o codec do argumento a partir da biblioteca permitida pelo `AttributeType`.
+- O codec do valor direto e o argumento de `override` aplicam o `AttributeRange` da definição do atributo; os argumentos dos demais modificadores usam os codecs específicos declarados por cada operação.
+- `CODEC_ONLY_POSITIONAL` valida o mapa completo e rejeita atributos com `IsPositional == false`, tanto na decodificação quanto na codificação.
+- A resolução do codec da entrada é memoizada por definição de atributo. O codec de rede não foi portado porque a execução remota/sincronização entre jogadores está fora do escopo local.
+- A infraestrutura genérica `Codecs.DispatchedMap` faz despacho por chave registrada e mantém a acumulação de erros/parciais de `DataResult` e os contratos de `DynamicOps`.

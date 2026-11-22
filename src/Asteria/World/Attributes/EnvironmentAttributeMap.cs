@@ -1,16 +1,52 @@
 using System.Collections.ObjectModel;
+using Asteria.Content.Registries;
+using Asteria.Serialization;
 
 namespace Asteria.World.Attributes;
 
 /// <summary>Immutable typed attribute modifiers contributed by one environment source.</summary>
 public sealed class EnvironmentAttributeMap : IEquatable<EnvironmentAttributeMap>
 {
+    private static readonly Lazy<Codec<EnvironmentAttributeMap>> CodecValue =
+        new(CreateCodec, LazyThreadSafetyMode.ExecutionAndPublication);
+    private static readonly Lazy<Codec<EnvironmentAttributeMap>> PositionalCodecValue =
+        new(CreatePositionalCodec, LazyThreadSafetyMode.ExecutionAndPublication);
+
     private readonly IReadOnlyDictionary<IEnvironmentAttribute, IEnvironmentAttributeEntry> _entries;
+
+    public static Codec<EnvironmentAttributeMap> CODEC => CodecValue.Value;
+    public static Codec<EnvironmentAttributeMap> CODEC_ONLY_POSITIONAL => PositionalCodecValue.Value;
 
     public static EnvironmentAttributeMap Empty { get; } =
         new(new Dictionary<IEnvironmentAttribute, IEnvironmentAttributeEntry>());
 
     public IReadOnlyDictionary<IEnvironmentAttribute, IEnvironmentAttributeEntry> Entries => _entries;
+
+    private static Codec<EnvironmentAttributeMap> CreateCodec()
+    {
+        Codec<IReadOnlyDictionary<IEnvironmentAttribute, IEnvironmentAttributeEntry>> dispatched =
+            Codecs.DispatchedMap(
+                BuiltInRegistries.EnvironmentAttribute.ByNameCodec(),
+                static attribute => attribute.CreateEntryCodec());
+
+        return dispatched.XMap(
+            entries => entries.Count == 0
+                ? Empty
+                : new EnvironmentAttributeMap(entries.ToDictionary(pair => pair.Key, pair => pair.Value)),
+            map => map._entries);
+    }
+
+    private static Codec<EnvironmentAttributeMap> CreatePositionalCodec() =>
+        CODEC.Validate(map =>
+        {
+            IEnvironmentAttribute[] illegalAttributes =
+                map.KeySet.Where(attribute => !attribute.IsPositional).ToArray();
+
+            return illegalAttributes.Length == 0
+                ? DataResult<EnvironmentAttributeMap>.Success(map)
+                : DataResult<EnvironmentAttributeMap>.Error(
+                    () => $"The following attributes cannot be positional: [{string.Join(", ", illegalAttributes)}]");
+        });
     public IReadOnlyCollection<IEnvironmentAttribute> KeySet => _entries.Keys.ToArray();
 
     private EnvironmentAttributeMap(
@@ -106,8 +142,9 @@ public sealed class EnvironmentAttributeMap : IEquatable<EnvironmentAttributeMap
         object? ApplyModifierObject(object? subject);
     }
 
-    public interface IEnvironmentAttributeEntry<T>
+    public interface IEnvironmentAttributeEntry<T> : IEnvironmentAttributeEntry
     {
+        IAttributeModifier<T> Modifier { get; }
         T ApplyModifier(T subject);
     }
 
@@ -124,6 +161,8 @@ public sealed class EnvironmentAttributeMap : IEquatable<EnvironmentAttributeMap
             Argument = argument;
             Modifier = modifier;
         }
+
+        IAttributeModifier<TValue> IEnvironmentAttributeEntry<TValue>.Modifier => Modifier;
 
         public TValue ApplyModifier(TValue subject) =>
             Modifier.Apply(subject, Argument);

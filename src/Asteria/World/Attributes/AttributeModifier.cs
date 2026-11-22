@@ -51,6 +51,8 @@ public interface IAttributeModifier<TSubject>
 {
     AttributeOperationId OperationId { get; }
     string GetSerializedName();
+    DataResult<MapCodec<EnvironmentAttributeMap.IEnvironmentAttributeEntry<TSubject>>> CreateEntryCodec(
+        EnvironmentAttribute<TSubject> attribute);
     TSubject ApplyObject(TSubject subject, object? argument);
 }
 
@@ -60,6 +62,36 @@ public abstract class AttributeModifier<TSubject, TArgument> : IAttributeModifie
     public abstract AttributeOperationId OperationId { get; }
     public abstract string GetSerializedName();
     public virtual Codec<TArgument>? ArgumentCodec => null;
+
+    public virtual Codec<TArgument>? GetArgumentCodec(EnvironmentAttribute<TSubject> attribute)
+    {
+        ArgumentNullException.ThrowIfNull(attribute);
+        return ArgumentCodec;
+    }
+
+    public DataResult<MapCodec<EnvironmentAttributeMap.IEnvironmentAttributeEntry<TSubject>>> CreateEntryCodec(
+        EnvironmentAttribute<TSubject> attribute)
+    {
+        ArgumentNullException.ThrowIfNull(attribute);
+        Codec<TArgument>? argumentCodec = GetArgumentCodec(attribute);
+        if (argumentCodec is null)
+        {
+            return DataResult<MapCodec<EnvironmentAttributeMap.IEnvironmentAttributeEntry<TSubject>>>.Error(
+                () => $"Modifier '{GetSerializedName()}' has no argument codec for attribute '{attribute}'.");
+        }
+
+        MapCodec<EnvironmentAttributeMap.IEnvironmentAttributeEntry<TSubject>> codec =
+            argumentCodec.FieldOf("argument").XMap<EnvironmentAttributeMap.IEnvironmentAttributeEntry<TSubject>>(
+                argument => new EnvironmentAttributeMap.Entry<TSubject, TArgument>(argument, this),
+                entry => entry is EnvironmentAttributeMap.Entry<TSubject, TArgument> typed &&
+                         ReferenceEquals(typed.Modifier, this)
+                    ? typed.Argument
+                    : throw new InvalidOperationException(
+                        $"Entry does not belong to modifier '{GetSerializedName()}'."));
+
+        return DataResult<MapCodec<EnvironmentAttributeMap.IEnvironmentAttributeEntry<TSubject>>>.Success(codec);
+    }
+
     public abstract TSubject Apply(TSubject subject, TArgument argument);
     public abstract LerpFunction<TArgument> ArgumentKeyframeLerp(
         EnvironmentAttribute<TSubject> attribute);
@@ -95,6 +127,9 @@ public static class AttributeModifiers
         public override AttributeOperationId OperationId => AttributeOperationId.OVERRIDE;
         public override string GetSerializedName() => OperationId.GetSerializedName();
         public override T Apply(T subject, T argument) => argument;
+
+        public override Codec<T>? GetArgumentCodec(EnvironmentAttribute<T> attribute) =>
+            attribute.ValueCodec;
 
         public override LerpFunction<T> ArgumentKeyframeLerp(
             EnvironmentAttribute<T> attribute) =>

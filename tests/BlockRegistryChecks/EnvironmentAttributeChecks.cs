@@ -26,6 +26,7 @@ internal static class EnvironmentAttributeChecks
         CheckEnvironmentAttributeMap();
         CheckEnvironmentAttributeResolution();
         CheckModifierArgumentCodecs();
+        CheckEnvironmentAttributeMapCodecs();
     }
 
     private static void CheckBuiltInAttributeTypeRegistry()
@@ -334,6 +335,149 @@ internal static class EnvironmentAttributeChecks
                 !AttributeTypes.FLOAT.ModifierCodec.Parse(
                     ops, JsonDocument.Parse("\"unknown\"").RootElement).IsSuccess,
             "Modifier dispatch must include override and reject unknown operation names.");
+    }
+
+
+    private static void CheckEnvironmentAttributeMapCodecs()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        const string fogEndKey = "asteria:visual/fog_end_distance";
+        const string fastLavaKey = "asteria:gameplay/fast_lava";
+        const string ambientParticlesKey = "asteria:visual/ambient_particles";
+
+        EnvironmentAttributeMap empty = EnvironmentAttributeMap.CODEC
+            .Parse(ops, ops.EmptyMap)
+            .GetOrThrow();
+        Require(ReferenceEquals(empty, EnvironmentAttributeMap.Empty),
+            "The environment-attribute map codec must canonicalize an empty map.");
+
+        EnvironmentAttributeMap overrideMap = EnvironmentAttributeMap.CreateBuilder()
+            .Set(EnvironmentAttributes.FOG_END_DISTANCE, 768.0F)
+            .Build();
+        JsonElement compact = EnvironmentAttributeMap.CODEC
+            .EncodeStart(ops, overrideMap)
+            .GetOrThrow();
+        Require(ops.Get(compact, fogEndKey).GetOrThrow().GetSingle() == 768.0F,
+            "Override entries must use the compact direct-value representation.");
+        Require(EnvironmentAttributeMap.CODEC.Parse(ops, compact).GetOrThrow().Equals(overrideMap),
+            "Compact environment attribute entries must round-trip.");
+
+        EnvironmentAttributeMap addMap = EnvironmentAttributeMap.CreateBuilder()
+            .Modify(EnvironmentAttributes.FOG_END_DISTANCE, FloatModifier.ADD, 128.0F)
+            .Build();
+        JsonElement expanded = EnvironmentAttributeMap.CODEC
+            .EncodeStart(ops, addMap)
+            .GetOrThrow();
+        JsonElement expandedEntry = ops.Get(expanded, fogEndKey).GetOrThrow();
+        Require(ops.Get(expandedEntry, "modifier").GetOrThrow().GetString() == "add" &&
+                ops.Get(expandedEntry, "argument").GetOrThrow().GetSingle() == 128.0F,
+            "Non-override modifiers must use the expanded modifier/argument representation.");
+        Require(EnvironmentAttributeMap.CODEC.Parse(ops, expanded).GetOrThrow().Equals(addMap),
+            "Expanded environment attribute entries must round-trip.");
+
+        EnvironmentAttributeMap alphaBlendMap = EnvironmentAttributeMap.CreateBuilder()
+            .Modify(EnvironmentAttributes.FOG_END_DISTANCE, FloatModifier.ALPHA_BLEND,
+                new FloatWithAlpha(256.0F, 0.25F))
+            .Build();
+        JsonElement alphaBlend = EnvironmentAttributeMap.CODEC
+            .EncodeStart(ops, alphaBlendMap)
+            .GetOrThrow();
+        JsonElement alphaEntry = ops.Get(alphaBlend, fogEndKey).GetOrThrow();
+        JsonElement alphaArgument = ops.Get(alphaEntry, "argument").GetOrThrow();
+        Require(ops.Get(alphaEntry, "modifier").GetOrThrow().GetString() == "alpha_blend" &&
+                ops.Get(alphaArgument, "value").GetOrThrow().GetSingle() == 256.0F &&
+                ops.Get(alphaArgument, "alpha").GetOrThrow().GetSingle() == 0.25F,
+            "Attribute-specific modifier dispatch must preserve the full alpha-blend argument codec.");
+        Require(EnvironmentAttributeMap.CODEC.Parse(ops, alphaBlend).GetOrThrow().Equals(alphaBlendMap),
+            "Expanded compound modifier arguments must round-trip.");
+
+        EnvironmentAttributeMap booleanMap = EnvironmentAttributeMap.CreateBuilder()
+            .Modify(EnvironmentAttributes.WATER_EVAPORATES, BooleanModifier.OR, true)
+            .Build();
+        JsonElement booleanEncoded = EnvironmentAttributeMap.CODEC
+            .EncodeStart(ops, booleanMap)
+            .GetOrThrow();
+        JsonElement booleanEntry = ops.Get(
+            booleanEncoded, "asteria:gameplay/water_evaporates").GetOrThrow();
+        Require(ops.Get(booleanEntry, "modifier").GetOrThrow().GetString() == "or" &&
+                ops.Get(booleanEntry, "argument").GetOrThrow().GetBoolean(),
+            "Boolean environment attributes must dispatch their own modifier and argument codecs.");
+        Require(EnvironmentAttributeMap.CODEC.Parse(ops, booleanEncoded).GetOrThrow().Equals(booleanMap),
+            "Boolean modifier entries must round-trip.");
+
+        IReadOnlyList<AmbientParticle> ambientArgument = Array.AsReadOnly(new[]
+        {
+            new AmbientParticle(ParticleTypes.ASH, 0.35F)
+        });
+        EnvironmentAttributeMap ambientMap = EnvironmentAttributeMap.CreateBuilder()
+            .Modify(EnvironmentAttributes.AMBIENT_PARTICLES, ListModifier<AmbientParticle>.APPEND, ambientArgument)
+            .Build();
+        JsonElement ambientEncoded = EnvironmentAttributeMap.CODEC
+            .EncodeStart(ops, ambientMap)
+            .GetOrThrow();
+        JsonElement ambientEntry = ops.Get(ambientEncoded, ambientParticlesKey).GetOrThrow();
+        Require(ops.Get(ambientEntry, "modifier").GetOrThrow().GetString() == "append",
+            "List-valued environment attributes must use the registered append modifier.");
+        EnvironmentAttributeMap ambientDecoded = EnvironmentAttributeMap.CODEC
+            .Parse(ops, ambientEncoded)
+            .GetOrThrow();
+        IReadOnlyList<AmbientParticle> appliedAmbient =
+            (IReadOnlyList<AmbientParticle>)ambientDecoded.ApplyModifier(
+                EnvironmentAttributes.AMBIENT_PARTICLES, Array.Empty<AmbientParticle>());
+        Require(appliedAmbient.Count == 1 &&
+                ReferenceEquals(appliedAmbient[0].Particle, ParticleTypes.ASH) &&
+                appliedAmbient[0].Probability == 0.35F,
+            "Ambient-particle modifier arguments must round-trip through the registered element codec.");
+
+        JsonElement invalidRange = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString(fogEndKey),
+                ops.CreateFloat(-1.0F))
+        });
+        Require(EnvironmentAttributeMap.CODEC.Parse(ops, invalidRange).IsError,
+            "Compact override values must pass the environment attribute's value range.");
+
+        JsonElement unknownModifierEntry = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("modifier"), ops.CreateString("unknown")),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("argument"), ops.CreateFloat(1.0F))
+        });
+        JsonElement unknownModifierMap = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString(fogEndKey), unknownModifierEntry)
+        });
+        Require(EnvironmentAttributeMap.CODEC.Parse(ops, unknownModifierMap).IsError,
+            "Expanded entries must reject modifier names outside the attribute type's library.");
+
+        JsonElement unknownAttributeMap = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("asteria:visual/not_registered"), ops.CreateFloat(1.0F))
+        });
+        Require(EnvironmentAttributeMap.CODEC.Parse(ops, unknownAttributeMap).IsError,
+            "Environment attribute maps must reject unknown registry keys.");
+
+        JsonElement nonPositionalMap = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString(fastLavaKey), ops.CreateBoolean(true))
+        });
+        Require(EnvironmentAttributeMap.CODEC.Parse(ops, nonPositionalMap).IsSuccess &&
+                EnvironmentAttributeMap.CODEC_ONLY_POSITIONAL.Parse(ops, nonPositionalMap).IsError,
+            "The positional map codec must accept positional entries and reject non-positional attributes.");
+        Require(EnvironmentAttributeMap.CODEC_ONLY_POSITIONAL.EncodeStart(ops, booleanMap).IsSuccess &&
+                EnvironmentAttributeMap.CODEC_ONLY_POSITIONAL.EncodeStart(
+                    ops,
+                    EnvironmentAttributeMap.CreateBuilder()
+                        .Set(EnvironmentAttributes.FAST_LAVA, true)
+                        .Build()).IsError,
+            "The positional codec must validate both decoded and encoded maps.");
+        Require(EnvironmentAttributeMap.CODEC_ONLY_POSITIONAL.Parse(ops, compact).IsSuccess,
+            "The positional map codec must accept registered positional attributes.");
     }
 
     private static void CheckEnvironmentAttributeResolution()

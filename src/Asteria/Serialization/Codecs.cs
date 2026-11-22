@@ -9,6 +9,20 @@ public static class Codecs
     public static readonly Codec<double> DOUBLE = new DoubleCodec();
     public static readonly Codec<string> STRING = new StringCodec();
 
+    /// <summary>
+    /// Creates a codec for a map whose value codec is selected independently for each decoded key.
+    /// Keys and values retain the DynamicOps map and DataResult lifecycle contracts.
+    /// </summary>
+    public static Codec<IReadOnlyDictionary<TKey, TValue>> DispatchedMap<TKey, TValue>(
+        Codec<TKey> keyCodec,
+        Func<TKey, Codec<TValue>> valueCodec)
+        where TKey : notnull
+    {
+        ArgumentNullException.ThrowIfNull(keyCodec);
+        ArgumentNullException.ThrowIfNull(valueCodec);
+        return new DispatchedMapCodec<TKey, TValue>(keyCodec, valueCodec);
+    }
+
     public static Codec<int> IntRange(int minInclusive, int maxInclusive)
     {
         if (maxInclusive < minInclusive)

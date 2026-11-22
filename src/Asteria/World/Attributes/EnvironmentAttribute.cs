@@ -1,3 +1,6 @@
+using Asteria.Content.Registries;
+using Asteria.Serialization;
+
 namespace Asteria.World.Attributes;
 
 public interface IEnvironmentAttribute
@@ -6,6 +9,7 @@ public interface IEnvironmentAttribute
     bool IsPositional { get; }
     bool IsSpatiallyInterpolated { get; }
     bool IsFullResolutionBiomes { get; }
+    Codec<EnvironmentAttributeMap.IEnvironmentAttributeEntry> CreateEntryCodec();
 }
 
 /// <summary>A registered, typed environment value definition and its runtime policy flags.</summary>
@@ -14,6 +18,7 @@ public sealed class EnvironmentAttribute<T> : IEnvironmentAttribute
     public AttributeType<T> Type { get; }
     public T DefaultValue { get; }
     public AttributeRange<T> ValueRange { get; }
+    public Codec<T>? ValueCodec { get; }
     public bool IsSyncable { get; }
     public bool IsPositional { get; }
     public bool IsSpatiallyInterpolated { get; }
@@ -31,6 +36,10 @@ public sealed class EnvironmentAttribute<T> : IEnvironmentAttribute
         Type = type;
         DefaultValue = defaultValue;
         ValueRange = valueRange;
+        ValueCodec = type.ValueCodec?.Validate(value =>
+            ValueRange.TryValidate(value, out string? error)
+                ? DataResult<T>.Success(value)
+                : DataResult<T>.Error(error ?? "Value is outside the allowed range."));
         IsSyncable = isSyncable;
         IsPositional = isPositional;
         IsSpatiallyInterpolated = isSpatiallyInterpolated;
@@ -40,6 +49,17 @@ public sealed class EnvironmentAttribute<T> : IEnvironmentAttribute
     public static Builder CreateBuilder(AttributeType<T> type) => new(type);
 
     public T SanitizeValue(T value) => ValueRange.Sanitize(value);
+
+    Codec<EnvironmentAttributeMap.IEnvironmentAttributeEntry> IEnvironmentAttribute.CreateEntryCodec() =>
+        new EnvironmentAttributeEntryCodec<T>(this).XMap<EnvironmentAttributeMap.IEnvironmentAttributeEntry>(
+            static entry => entry,
+            entry => entry is EnvironmentAttributeMap.IEnvironmentAttributeEntry<T> typed
+                ? typed
+                : throw new InvalidOperationException(
+                    $"Entry does not contain a {typeof(T).Name} environment attribute value."));
+
+    public override string ToString() =>
+        BuiltInRegistries.EnvironmentAttribute.GetKey(this)?.ToString() ?? base.ToString()!;
 
     public sealed class Builder
     {
