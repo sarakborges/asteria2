@@ -1,3 +1,5 @@
+using Asteria.Core;
+
 namespace Asteria.Content.Blocks;
 
 /// <summary>
