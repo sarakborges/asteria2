@@ -211,6 +211,193 @@ public interface BlockGetter : LevelHeightAccessor
             });
     }
 
+    public delegate bool BlockStepVisitor(BlockPos position, int step);
+
+    static bool ForEachBlockIntersectedBetween(
+        Vec3 from,
+        Vec3 to,
+        AABB aabbAtTarget,
+        BlockStepVisitor visitor)
+    {
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(to);
+        ArgumentNullException.ThrowIfNull(aabbAtTarget);
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        Vec3 travel = to.Subtract(from);
+        if (travel.LengthSquared() < Mth.Square(1.0E-5f))
+        {
+            foreach (BlockPos position in BlockPos.BetweenClosed(
+                Mth.Floor(aabbAtTarget.MinX),
+                Mth.Floor(aabbAtTarget.MinY),
+                Mth.Floor(aabbAtTarget.MinZ),
+                Mth.Floor(aabbAtTarget.MaxX),
+                Mth.Floor(aabbAtTarget.MaxY),
+                Mth.Floor(aabbAtTarget.MaxZ)))
+            {
+                if (!visitor(position, 0))
+                    return false;
+            }
+
+            return true;
+        }
+
+        var visitedBlocks = new HashSet<long>();
+        AABB startBounds = aabbAtTarget.Move(travel.Scale(-1.0));
+        foreach (BlockPos position in BlockPos.BetweenCornersInDirection(startBounds, travel))
+        {
+            if (!visitor(position, 0))
+                return false;
+
+            visitedBlocks.Add(position.AsLong());
+        }
+
+        int iterations = AddCollisionsAlongTravel(visitedBlocks, travel, aabbAtTarget, visitor);
+        if (iterations < 0)
+            return false;
+
+        foreach (BlockPos position in BlockPos.BetweenCornersInDirection(aabbAtTarget, travel))
+        {
+            if (!visitedBlocks.Add(position.AsLong()))
+                continue;
+
+            if (!visitor(position, iterations + 1))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static int AddCollisionsAlongTravel(
+        HashSet<long> visitedBlocks,
+        Vec3 travel,
+        AABB aabbAtTarget,
+        BlockStepVisitor visitor)
+    {
+        double boxSizeX = aabbAtTarget.GetXSize();
+        double boxSizeY = aabbAtTarget.GetYSize();
+        double boxSizeZ = aabbAtTarget.GetZSize();
+
+        Vec3i cornerDirection = GetFurthestCorner(travel);
+        Vec3 targetCenter = aabbAtTarget.GetCenter();
+        Vec3 targetCorner = new(
+            targetCenter.X + boxSizeX * 0.5 * cornerDirection.GetX(),
+            targetCenter.Y + boxSizeY * 0.5 * cornerDirection.GetY(),
+            targetCenter.Z + boxSizeZ * 0.5 * cornerDirection.GetZ());
+        Vec3 startCorner = targetCorner.Subtract(travel);
+
+        int currentBlockX = Mth.Floor(startCorner.X);
+        int currentBlockY = Mth.Floor(startCorner.Y);
+        int currentBlockZ = Mth.Floor(startCorner.Z);
+
+        int signX = Mth.Sign(travel.X);
+        int signY = Mth.Sign(travel.Y);
+        int signZ = Mth.Sign(travel.Z);
+
+        double tDeltaX = signX == 0 ? double.MaxValue : (double)signX / travel.X;
+        double tDeltaY = signY == 0 ? double.MaxValue : (double)signY / travel.Y;
+        double tDeltaZ = signZ == 0 ? double.MaxValue : (double)signZ / travel.Z;
+
+        double tX = tDeltaX * (signX > 0 ? 1.0 - Mth.Frac(startCorner.X) : Mth.Frac(startCorner.X));
+        double tY = tDeltaY * (signY > 0 ? 1.0 - Mth.Frac(startCorner.Y) : Mth.Frac(startCorner.Y));
+        double tZ = tDeltaZ * (signZ > 0 ? 1.0 - Mth.Frac(startCorner.Z) : Mth.Frac(startCorner.Z));
+
+        int iterations = 0;
+        while (tX <= 1.0 || tY <= 1.0 || tZ <= 1.0)
+        {
+            if (tX < tY)
+            {
+                if (tX < tZ)
+                {
+                    currentBlockX += signX;
+                    tX += tDeltaX;
+                }
+                else
+                {
+                    currentBlockZ += signZ;
+                    tZ += tDeltaZ;
+                }
+            }
+            else if (tY < tZ)
+            {
+                currentBlockY += signY;
+                tY += tDeltaY;
+            }
+            else
+            {
+                currentBlockZ += signZ;
+                tZ += tDeltaZ;
+            }
+
+            Vec3? hitPoint = AABB.Clip(
+                currentBlockX,
+                currentBlockY,
+                currentBlockZ,
+                currentBlockX + 1.0,
+                currentBlockY + 1.0,
+                currentBlockZ + 1.0,
+                startCorner,
+                targetCorner);
+            if (hitPoint is null)
+                continue;
+
+            double cornerHitX = Mth.Clamp(
+                hitPoint.X,
+                currentBlockX + 1.0E-5f,
+                currentBlockX + 1.0 - 1.0E-5f);
+            double cornerHitY = Mth.Clamp(
+                hitPoint.Y,
+                currentBlockY + 1.0E-5f,
+                currentBlockY + 1.0 - 1.0E-5f);
+            double cornerHitZ = Mth.Clamp(
+                hitPoint.Z,
+                currentBlockZ + 1.0E-5f,
+                currentBlockZ + 1.0 - 1.0E-5f);
+
+            int oppositeCornerX = Mth.Floor(cornerHitX - boxSizeX * cornerDirection.GetX());
+            int oppositeCornerY = Mth.Floor(cornerHitY - boxSizeY * cornerDirection.GetY());
+            int oppositeCornerZ = Mth.Floor(cornerHitZ - boxSizeZ * cornerDirection.GetZ());
+
+            int currentIteration = ++iterations;
+            foreach (BlockPos position in BlockPos.BetweenCornersInDirection(
+                currentBlockX,
+                currentBlockY,
+                currentBlockZ,
+                oppositeCornerX,
+                oppositeCornerY,
+                oppositeCornerZ,
+                travel))
+            {
+                if (!visitedBlocks.Add(position.AsLong()))
+                    continue;
+
+                if (!visitor(position, currentIteration))
+                    return -1;
+            }
+        }
+
+        return iterations;
+    }
+
+    private static Vec3i GetFurthestCorner(Vec3 direction)
+    {
+        double xDot = Math.Abs(Vec3.X_AXIS.Dot(direction));
+        double yDot = Math.Abs(Vec3.Y_AXIS.Dot(direction));
+        double zDot = Math.Abs(Vec3.Z_AXIS.Dot(direction));
+
+        int xSign = direction.X >= 0.0 ? 1 : -1;
+        int ySign = direction.Y >= 0.0 ? 1 : -1;
+        int zSign = direction.Z >= 0.0 ? 1 : -1;
+
+        if (xDot <= yDot && xDot <= zDot)
+            return new Vec3i(-xSign, -zSign, ySign);
+
+        if (yDot <= zDot)
+            return new Vec3i(zSign, -ySign, -xSign);
+
+        return new Vec3i(-ySign, xSign, -zSign);
+    }
+
     BlockHitResult? ClipWithInteractionOverride(
         Vec3 from,
         Vec3 to,
