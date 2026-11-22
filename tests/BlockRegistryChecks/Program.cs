@@ -186,7 +186,7 @@ internal static class Program
 
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&
-            Block.BlockStateRegistry.Count == 7 &&
+            Block.BlockStateRegistry.Count == 10 &&
             !BuiltInRegistries.AreFrozen,
             "Block states must receive IDs during block construction, before registry bootstrap.");
         CheckBuiltInRegistryRoot();
@@ -210,7 +210,12 @@ internal static class Program
                     RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Item.Location)),
                 BuiltInRegistries.Item),
             "The root registry must resolve the item registry by its registry key.");
-        Require(BuiltInRegistries.Block.Count == 1, "Only the production air block should be registered.");
+        Require(BuiltInRegistries.Block.Count == 4, "The four initial production blocks should be registered.");
+        Require(
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("asteria:stone")), Blocks.STONE) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("asteria:dirt")), Blocks.DIRT) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("asteria:grass_block")), Blocks.GRASS_BLOCK),
+            "Stone, dirt and grass block must be present in the production block registry.");
         Require(BuiltInRegistries.Item.Count == 1, "The built-in item registry must contain only the air sentinel.");
         Require(BuiltInRegistries.Fluid.Count == 1, "Only the empty fluid should be registered.");
         Require(BuiltInRegistries.Biome.Count == 2, "The built-in biome registry must contain plains and desert.");
@@ -219,7 +224,7 @@ internal static class Program
         Require(BuiltInRegistries.AttributeType.Count == 9, "The attribute-type registry must contain the seven existing value types plus particle and ambient-particle types.");
         Require(Fluid.FluidStateRegistry.Count == 1, "The fluid-state ID map must contain every registered fluid state.");
         Require(ReferenceEquals(Blocks.AIR.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState), "Air must contain the empty fluid state.");
-        Require(Block.BlockStateRegistry.Count == 7, "Expected one air state and six test states.");
+        Require(Block.BlockStateRegistry.Count == 10, "Expected one air state and six test states.");
         FluidChecks.Run();
         BlockTagChecks.Run();
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState);
@@ -495,15 +500,15 @@ internal static class Program
             BuiltInRegistries.Block.GetHolder(missingKey) is null,
             "Defaulted registries must keep resource-key, optional, and holder lookups exact rather than falling back.");
         Require(
-            BuiltInRegistries.Block.Count == 1 &&
+            BuiltInRegistries.Block.Count == 4 &&
             ReferenceEquals(BuiltInRegistries.Block.GetValue(airKey), Blocks.AIR) &&
             ReferenceEquals(BuiltInRegistries.Block.GetOptional(airKey), Blocks.AIR),
-            "The production block registry must contain only built-in content; test fixtures must stay outside it.");
+            "The production block registry must contain the four built-in gameplay blocks; test fixtures must stay outside it.");
         Require(ReferenceEquals(BuiltInRegistries.Block.GetAny(), Blocks.AIR.BuiltInRegistryHolder), "DefaultedMappedRegistry.getAny must return its default holder.");
         Holder<Block>.Reference? randomDefaultedHolder = BuiltInRegistries.Block.GetRandom(new Random(0));
         Require(
-            ReferenceEquals(randomDefaultedHolder, Blocks.AIR.BuiltInRegistryHolder),
-            "DefaultedMappedRegistry.getRandom must return a registered holder.");
+            randomDefaultedHolder is not null && randomDefaultedHolder.IsBound,
+            "DefaultedMappedRegistry.getRandom must return a registered, bound holder.");
         Require(BuiltInRegistries.Block.GetHolder(missingId) is null, "Exact holder lookups must not hide missing keys.");
         Require(BuiltInRegistries.Block.GetId(new TestBlockDefinition(BlockProperties.Of())) == 0, "Unknown objects must resolve to the default block ID.");
         Require(BuiltInRegistries.Block.GetId(null!) == 0, "Null reverse lookups in a defaulted registry must resolve to the default ID.");
