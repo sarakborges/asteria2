@@ -83,6 +83,18 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public VoxelShape GetShape(BlockGetter level, BlockPos position) =>
         Block.GetShape(this, level, position);
 
+    public BlockState Rotate(Rotation rotation)
+    {
+        ArgumentNullException.ThrowIfNull(rotation);
+        return Block.RotateState(this, rotation);
+    }
+
+    public BlockState Mirror(Mirror mirror)
+    {
+        ArgumentNullException.ThrowIfNull(mirror);
+        return Block.MirrorState(this, mirror);
+    }
+
     public VoxelShape GetCollisionShape(BlockGetter level, BlockPos position) =>
         _collisionShape ?? Block.GetCollisionShape(this, level, position);
 
