@@ -6,6 +6,8 @@ using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.World;
 using Asteria.World.Lighting;
+using Asteria.World.BlockScan;
+using Asteria.Util;
 
 namespace Asteria.Content.Chunks;
 
@@ -118,6 +120,52 @@ public abstract class ChunkAccess : BlockGetter
 
     public ChunkSection GetSection(int sectionIndex) =>
         _sections[sectionIndex];
+
+    public void FindBlockLightSources(Action<BlockPos, BlockState> consumer)
+    {
+        ArgumentNullException.ThrowIfNull(consumer);
+        FindBlocks(static state => state.GetLightEmission() != 0, consumer);
+    }
+
+    public void FindBlocks(
+        Predicate<BlockState> predicate,
+        Action<BlockPos, BlockState> consumer)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+        ArgumentNullException.ThrowIfNull(consumer);
+
+        BlockStateConsumer blockStateConsumer = (position, state) =>
+        {
+            consumer(position, state);
+            return Continuation.Continue;
+        };
+
+        for (int sectionY = GetMinSectionY(); sectionY <= GetMaxSectionY(); sectionY++)
+        {
+            ChunkSection section = GetSection(GetSectionIndexFromSectionY(sectionY));
+            if (!section.MaybeHas(predicate))
+                continue;
+
+            BlockPos origin = SectionPos.Of(_chunkPos, sectionY).Origin();
+            BlockScanUtils.FindBlocksInSection(
+                section,
+                origin,
+                0, 0, 0,
+                ChunkSection.Width - 1,
+                ChunkSection.Height - 1,
+                ChunkSection.Depth - 1,
+                predicate,
+                blockStateConsumer);
+        }
+    }
+
+    public void CollectBiomesInPalette(ISet<Holder<Biome>> output)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+
+        foreach (ChunkSection section in _sections)
+            section.GetBiomes().ForEachInPalette(output.Add);
+    }
 
     public int GetHighestFilledSectionIndex()
     {
