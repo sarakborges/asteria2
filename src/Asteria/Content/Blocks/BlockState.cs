@@ -2,6 +2,7 @@ using Asteria.Content.Registries;
 using Asteria.Serialization;
 using Asteria.Content.Fluids;
 using Asteria.Core;
+using Asteria.Content.Materials;
 using Asteria.Core.Shapes;
 using Asteria.World;
 
