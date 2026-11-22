@@ -233,6 +233,19 @@ internal static class EnvironmentAttributeChecks
         Require(FloatModifier.ALPHA_BLEND.ArgumentCodec.Parse(ops, alphaEncoded).GetOrThrow() == alpha,
             "Alpha-blend modifier arguments must preserve both value and alpha fields.");
 
+        FloatWithAlpha compactAlpha = new(0.75F, 1.0F);
+        JsonElement compactAlphaEncoded =
+            FloatModifier.ALPHA_BLEND.ArgumentCodec.EncodeStart(ops, compactAlpha).GetOrThrow();
+        Require(compactAlphaEncoded.ValueKind == JsonValueKind.Number &&
+                FloatModifier.ALPHA_BLEND.ArgumentCodec.Parse(ops, compactAlphaEncoded).GetOrThrow() == compactAlpha,
+            "A full-alpha float modifier argument must use the compact scalar representation.");
+        FloatWithAlpha defaultAlpha = FloatModifier.ALPHA_BLEND.ArgumentCodec.Parse(
+            ops, JsonDocument.Parse("{\"value\":0.75}").RootElement).GetOrThrow();
+        Require(defaultAlpha == compactAlpha &&
+                !FloatModifier.ALPHA_BLEND.ArgumentCodec.Parse(
+                    ops, JsonDocument.Parse("{\"value\":0.75,\"alpha\":1.1}").RootElement).IsSuccess,
+            "Expanded float alpha arguments must default alpha to one and reject values outside [0, 1].");
+
         Vector3 rgb = new(0.2F, 0.4F, 0.6F);
         foreach (AttributeModifier<Vector3, Vector3> modifier in new[]
         {
