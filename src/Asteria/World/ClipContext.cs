@@ -22,7 +22,8 @@ public sealed class ClipContext
     {
         None,
         SourceOnly,
-        Any
+        Any,
+        Water
     }
 
     private readonly Block _block;
@@ -70,6 +71,7 @@ public sealed class ClipContext
             Fluid.None => false,
             Fluid.SourceOnly => state.IsSource(),
             Fluid.Any => !state.IsEmpty(),
+            Fluid.Water => state.Fluid.Is(FluidTags.Water),
             _ => throw new ArgumentOutOfRangeException(nameof(_fluid), _fluid, "Unsupported fluid clip mode.")
         };
 
