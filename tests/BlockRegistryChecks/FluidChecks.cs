@@ -62,6 +62,10 @@ internal static class FluidChecks
     {
         Require(BuiltInRegistries.Fluid.Count == 1, "The built-in fluid registry must contain the empty fluid.");
         Require(
+            FluidTags.Water.Registry == BuiltInRegistries.Fluid.Key &&
+            FluidTags.Water.Location == ResourceLocation.Parse("asteria:water"),
+            "The water tag must target the built-in fluid registry using its canonical namespace and path.");
+        Require(
             ReferenceEquals(BuiltInRegistries.Fluid.GetValue(FluidIds.EMPTY), Fluids.EMPTY),
             "The fluid registry must resolve the empty fluid by its built-in identifier.");
         Require(
@@ -76,6 +80,7 @@ internal static class FluidChecks
 
         FluidState empty = Fluids.EMPTY.DefaultFluidState;
         Require(empty.IsEmpty(), "The empty fluid state must report empty.");
+        Require(!empty.Fluid.Is(FluidTags.Water), "The empty fluid must not be a member of the water tag by default.");
         Require(!empty.IsSource(), "The empty fluid state must not report a source.");
         Require(!empty.IsSourceOfType(Fluids.EMPTY), "An empty fluid state is not a source of its own type.");
         Require(!empty.IsRandomlyTicking(), "The empty fluid must not randomly tick.");
