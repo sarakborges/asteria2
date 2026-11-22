@@ -232,7 +232,7 @@ internal static class CoordinatePositionChecks
             "MutableBlockPos directional offset and movement must update each selected axis.");
 
         Vec3 clampedLocation = new BlockPos(-2, 3, 5)
-            .ClampLocationWithin(new Vec3(-100.0, 100.0, -100.0));
+            .ClampLocationWithin(new Vec3(-100.0, -100.0, -100.0));
         Require(
             clampedLocation.X > -2.0 && clampedLocation.X < -1.9999 &&
             clampedLocation.Y > 3.0 && clampedLocation.Y < 3.0001 &&
