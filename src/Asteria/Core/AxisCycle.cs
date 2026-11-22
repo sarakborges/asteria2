@@ -1,84 +1,103 @@
 namespace Asteria.Core;
 
 /// <summary>
-/// Cyclic permutation of the X/Y/Z coordinate axes, matching the 26.3 AxisCycle values.
+/// Cyclic permutation of the three spatial axes.
 /// </summary>
-public sealed class AxisCycle
+public enum AxisCycle
 {
-    public static readonly AxisCycle NONE = new("none", 0);
-    public static readonly AxisCycle FORWARD = new("forward", 1);
-    public static readonly AxisCycle BACKWARD = new("backward", 2);
+    None,
+    Forward,
+    Backward
+}
 
-    private static readonly AxisCycle[] VALUES = { NONE, FORWARD, BACKWARD };
-    private static readonly Direction.Axis[] AXIS_VALUES = Direction.Axis.GetValues();
-
-    public string Name { get; }
-    private readonly int _cycle;
-
-    private AxisCycle(string name, int cycle)
-    {
-        Name = name;
-        _cycle = cycle;
-    }
-
-    public static AxisCycle[] GetValues() => (AxisCycle[])VALUES.Clone();
-
-    public int Cycle(int x, int y, int z, Direction.Axis axis)
+public static class AxisCycleExtensions
+{
+    public static Direction.Axis Cycle(this AxisCycle cycle, Direction.Axis axis)
     {
         ArgumentNullException.ThrowIfNull(axis);
-        return _cycle switch
+        return cycle switch
         {
-            0 => axis.Choose(x, y, z),
-            1 => axis.Choose(z, x, y),
-            2 => axis.Choose(y, z, x),
-            _ => throw new InvalidOperationException()
+            AxisCycle.None => axis,
+            AxisCycle.Forward => axis switch
+            {
+                var value when ReferenceEquals(value, Direction.Axis.X) => Direction.Axis.Y,
+                var value when ReferenceEquals(value, Direction.Axis.Y) => Direction.Axis.Z,
+                _ => Direction.Axis.X
+            },
+            AxisCycle.Backward => axis switch
+            {
+                var value when ReferenceEquals(value, Direction.Axis.X) => Direction.Axis.Z,
+                var value when ReferenceEquals(value, Direction.Axis.Y) => Direction.Axis.X,
+                _ => Direction.Axis.Y
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(cycle))
         };
     }
 
-    public double Cycle(double x, double y, double z, Direction.Axis axis)
+    public static int Cycle(
+        this AxisCycle cycle,
+        int x,
+        int y,
+        int z,
+        Direction.Axis axis)
     {
         ArgumentNullException.ThrowIfNull(axis);
-        return _cycle switch
+        return cycle switch
         {
-            0 => axis.Choose(x, y, z),
-            1 => axis.Choose(z, x, y),
-            2 => axis.Choose(y, z, x),
-            _ => throw new InvalidOperationException()
+            AxisCycle.None => axis.Choose(x, y, z),
+            AxisCycle.Forward => axis.Choose(z, x, y),
+            AxisCycle.Backward => axis.Choose(y, z, x),
+            _ => throw new ArgumentOutOfRangeException(nameof(cycle))
         };
     }
 
-    public Direction.Axis Cycle(Direction.Axis axis)
-    {
-        int index = GetAxisIndex(axis);
-        return AXIS_VALUES[PositiveModulo(index + _cycle, AXIS_VALUES.Length)];
-    }
-
-    public AxisCycle Inverse() =>
-        _cycle switch
-        {
-            0 => NONE,
-            1 => BACKWARD,
-            2 => FORWARD,
-            _ => throw new InvalidOperationException()
-        };
-
-    public static AxisCycle Between(Direction.Axis from, Direction.Axis to)
-    {
-        int difference = GetAxisIndex(to) - GetAxisIndex(from);
-        return VALUES[PositiveModulo(difference, VALUES.Length)];
-    }
-
-    private static int GetAxisIndex(Direction.Axis axis)
+    public static double Cycle(
+        this AxisCycle cycle,
+        double x,
+        double y,
+        double z,
+        Direction.Axis axis)
     {
         ArgumentNullException.ThrowIfNull(axis);
-        if (ReferenceEquals(axis, Direction.Axis.X)) return 0;
-        if (ReferenceEquals(axis, Direction.Axis.Y)) return 1;
-        if (ReferenceEquals(axis, Direction.Axis.Z)) return 2;
-        throw new ArgumentException("Unknown direction axis.", nameof(axis));
+        return cycle switch
+        {
+            AxisCycle.None => axis.Choose(x, y, z),
+            AxisCycle.Forward => axis.Choose(z, x, y),
+            AxisCycle.Backward => axis.Choose(y, z, x),
+            _ => throw new ArgumentOutOfRangeException(nameof(cycle))
+        };
     }
 
-    private static int PositiveModulo(int value, int modulus) =>
-        (value % modulus + modulus) % modulus;
+    public static AxisCycle Inverse(this AxisCycle cycle) =>
+        cycle switch
+        {
+            AxisCycle.None => AxisCycle.None,
+            AxisCycle.Forward => AxisCycle.Backward,
+            AxisCycle.Backward => AxisCycle.Forward,
+            _ => throw new ArgumentOutOfRangeException(nameof(cycle))
+        };
 
-    public override string ToString() => Name;
+    public static (T X, T Y, T Z) Cycle<T>(this AxisCycle cycle, T x, T y, T z) =>
+        cycle switch
+        {
+            AxisCycle.None => (x, y, z),
+            AxisCycle.Forward => (z, x, y),
+            AxisCycle.Backward => (y, z, x),
+            _ => throw new ArgumentOutOfRangeException(nameof(cycle))
+        };
+
+    public static AxisCycle Between(Direction.Axis first, Direction.Axis second)
+    {
+        ArgumentNullException.ThrowIfNull(first);
+        ArgumentNullException.ThrowIfNull(second);
+
+        if (ReferenceEquals(first, second))
+            return AxisCycle.None;
+        if (ReferenceEquals(first, Direction.Axis.X) && ReferenceEquals(second, Direction.Axis.Y) ||
+            ReferenceEquals(first, Direction.Axis.Y) && ReferenceEquals(second, Direction.Axis.Z) ||
+            ReferenceEquals(first, Direction.Axis.Z) && ReferenceEquals(second, Direction.Axis.X))
+            return AxisCycle.Forward;
+
+        return AxisCycle.Backward;
+    }
 }
