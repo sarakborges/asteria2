@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Numerics;
+using Asteria.Serialization;
 
 namespace Asteria.World.Attributes.Modifiers;
 
