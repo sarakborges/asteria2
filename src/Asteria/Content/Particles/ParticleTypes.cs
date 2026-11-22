@@ -27,6 +27,12 @@ public static class ParticleTypes
     public static readonly SimpleParticleType LANDING_LAVA = Register("landing_lava", false);
     public static readonly SimpleParticleType DRIPPING_WATER = Register("dripping_water", false);
     public static readonly SimpleParticleType FALLING_WATER = Register("falling_water", false);
+    public static readonly ParticleType<DustParticleOptions> DUST =
+        RegisterConfigured<DustParticleOptions>(
+            "dust", false, static _ => DustParticleOptions.CODEC);
+    public static readonly ParticleType<DustColorTransitionOptions> DUST_COLOR_TRANSITION =
+        RegisterConfigured<DustColorTransitionOptions>(
+            "dust_color_transition", false, static _ => DustColorTransitionOptions.CODEC);
     public static readonly ParticleType<SpellParticleOption> EFFECT =
         RegisterConfigured<SpellParticleOption>("effect", false, SpellParticleOption.CreateCodec);
     public static readonly SimpleParticleType ELDER_GUARDIAN = Register("elder_guardian", true);
@@ -144,8 +150,10 @@ public static class ParticleTypes
     public const int SpellOptionCount = 2;
     public const int NumericOptionCount = 3;
     public const int RecordOptionCount = 1;
+    public const int ScalableOptionCount = 2;
     public const int RegisteredTypeCount =
-        SimpleTypeCount + ColorTypeCount + SpellOptionCount + NumericOptionCount + RecordOptionCount;
+        SimpleTypeCount + ColorTypeCount + SpellOptionCount + NumericOptionCount +
+        RecordOptionCount + ScalableOptionCount;
 
     public static Codec<IParticleOptions> CODEC { get; } =
         MapCodec<IParticleOptions>.Dispatch(

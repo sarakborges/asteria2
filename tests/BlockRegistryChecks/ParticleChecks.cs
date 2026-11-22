@@ -19,6 +19,7 @@ internal static class ParticleChecks
         CheckSculkChargeParticleOptionsCodec();
         CheckShriekParticleOptionCodec();
         CheckTrailParticleOptionCodec();
+        DustParticleChecks.Run();
         CheckByNameCodecFailures();
     }
 
@@ -28,8 +29,8 @@ internal static class ParticleChecks
 
         Require(registry.IsFrozen,
             "The particle type registry must be frozen after built-in bootstrap.");
-        Require(ParticleTypes.RegisteredTypeCount == 115,
-            "The local particle registry must include 106 simple, three color, two spell, three numeric and one record option type.");
+        Require(ParticleTypes.RegisteredTypeCount == 117,
+            "The local particle registry must include 106 simple, three color, two spell, three numeric, one record and two scalable option types.");
         Require(registry.Count == ParticleTypes.RegisteredTypeCount,
             "Every implemented simple particle type must be registered.");
         Require(ReferenceEquals(

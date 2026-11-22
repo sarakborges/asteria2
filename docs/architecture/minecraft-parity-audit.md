@@ -217,7 +217,7 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 
 - `LerpFunction<T>.OfListCrossFade` reproduz `LerpFunction.ofListCrossFade`: endpoints retornam a lista original; no intervalo, percorre a lista anterior com peso `1 - alpha` e a nova com peso `alpha`, mantendo a concatenação e a ordem.
 - O resultado intermediário é um snapshot somente leitura. Não há clamp, ordenação ou deduplicação adicional.
-- `PARTICLE` e `AMBIENT_PARTICLES` não foram registrados: a referência depende de `ParticleOptions`, `ParticleTypes.CODEC`, `AmbientParticle.CODEC` e da infraestrutura de codecs locais ainda inexistente.
+- `PARTICLE` e `AMBIENT_PARTICLES` estavam pendentes nesta etapa inicial; ambos foram posteriormente implementados com `ParticleOptions`, `ParticleTypes.CODEC`, `AmbientParticle.CODEC` e codecs locais, conforme os incrementos registrados abaixo.
 - `ACTIVITY` também não foi registrado: requer o registry de activities e o domínio de schedules/AI; não há definição de atividade genérica atualmente mantida no catálogo ambiental do produto.
 
 
@@ -225,7 +225,7 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 
 - `ListModifier<T>.APPEND` reproduz os casos de identidade e concatenação do `ListModifier.append` de 26.3, preservando a ordem subject → argumento.
 - O catálogo de modificadores de lista contém exclusivamente `append`.
-- Não registra ainda `AMBIENT_PARTICLES`: o tipo depende do domínio de partículas e dos codecs, que não foram simulados com placeholders.
+- `AMBIENT_PARTICLES` foi posteriormente registrado com o modelo e codec concretos, sem placeholders.
 
 
 ## Incremento — AmbientParticle e codecs de atributo (21/11/2026)
@@ -235,7 +235,7 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `CanSpawn` consome uma amostra float de 24 bits e usa comparação inclusiva `<=`; testes cobrem a igualdade exata no limite, probabilidade zero/um e número de chamadas.
 - `AMBIENT_PARTICLES` usa listas cross-fade escalando somente a probabilidade e o modifier `append`; o atributo genérico `visual/ambient_particles` está registrado com default vazio e é syncable.
 - O registry `attribute_type` agora contém nove tipos no escopo: os sete anteriores, `particle` e `ambient_particles`.
-- O registry `particle_type` contém 106 tipos simples com identificadores, ordem relativa e `overrideLimiter` conferidos. Tipos com opções especializadas seguem pendentes até seus modelos/codecs próprios; IDs numéricos não têm paridade enquanto essas entradas estiverem ausentes.
+- O registry `particle_type` agora contém 117 tipos locais: 106 simples e 11 com opções especializadas (coloridas, spell, numéricas, record e escalares). `dust` e `dust_color_transition` já têm modelos/codecs; `item` e `vibration`, além de opções de bloco/objeto fora do escopo, seguem ausentes. Os IDs numéricos não têm paridade completa enquanto entradas anteriores na ordem de referência estiverem ausentes.
 - Atributos específicos de blocos/objetos, áudio e regras de cama continuam excluídos. Stream codecs, buffers de pacote e multiplayer continuam excluídos pelo escopo offline.
 
 
@@ -279,3 +279,20 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Portado `TrailParticleOption(target, color, duration)`: campos obrigatórios `target` (Vec3), `color` (RGB inteiro, com vetor RGB como alternativa) e `duration` (inteiro positivo).
 - Registrado `trail` com `overrideLimiter=false`. A ordem local mantém `instant_effect < trail < pause_mob_growth`; os tipos de payload `item` e `vibration`, que antecedem `trail` na referência, ainda não foram portados. Portanto, os IDs numéricos do registro continuam sem paridade completa.
 - O stream codec de `Vec3` e o stream codec de `TrailParticleOption` permanecem fora do escopo single-player/offline.
+
+## Incremento — `DustParticleOptions` e `DustColorTransitionOptions` (21/11/2026)
+
+- Portada a base `ScalableParticleOptionsBase`, compartilhada pelos dois tipos: o construtor limita `scale` a [0,01; 4,0], enquanto o codec rejeita valores fora do intervalo com a mensagem de validação da referência.
+- `DustParticleOptions` usa os campos obrigatórios `color` (RGB inteiro ou vetor RGB alternativo) e `scale`; inclui a cor padrão `REDSTONE` e retorna os canais RGB normalizados.
+- `DustColorTransitionOptions` usa `from_color`, `to_color` e `scale`, todos obrigatórios; inclui `SCULK_PARTICLE_COLOR`, `SCULK_TO_REDSTONE` e getters separados para as duas cores.
+- Registrados `dust` e `dust_color_transition` imediatamente após `falling_water` e antes de `effect`, ambos com `overrideLimiter=false`, preservando a ordem relativa da referência.
+- O registry local passa a conter 117 tipos: 106 simples, 3 coloridos, 2 spell, 3 numéricos, 1 record e 2 opções com escala.
+- Testes cobrem round-trip, alternativas vetoriais RGB, campos obrigatórios, limites do codec, clamp do construtor, cores padrão e ordem de registro.
+- Stream codecs continuam omitidos por decisão de produto single-player/offline. A ausência de `item`, `vibration` e tipos de bloco/objeto fora do escopo ainda impede paridade dos IDs numéricos globais.
+
+### Fontes específicas
+
+- [DustParticleOptions](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/dustparticleoptions/)
+- [DustColorTransitionOptions](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/dustcolortransitionoptions/)
+- [ScalableParticleOptionsBase](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/scalableparticleoptionsbase/)
+- [ParticleTypes](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/core/particles/particletypes/)
