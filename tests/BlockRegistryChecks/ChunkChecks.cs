@@ -51,10 +51,10 @@ internal static class ChunkChecks
     private static void CheckChunkConstructionAndSections(BlockState nonAirState)
     {
         LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
-        BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
+        PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
         var position = new ChunkPos(-3, 7);
 
-        var nonAirDefaultFactory = new BlockStateContainerFactory(
+        var nonAirDefaultFactory = new PalettedContainerFactory(
             factory.BlockStatesStrategy,
             nonAirState);
         var defaultStateChunk = new Chunk(new ChunkPos(0, 0), height, nonAirDefaultFactory);
@@ -130,7 +130,7 @@ internal static class ChunkChecks
     private static void CheckMismatchedSectionArray()
     {
         LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
-        BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
+        PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
         var supplied = new ChunkSection?[23];
         supplied[0] = factory.CreateSection();
 
@@ -143,7 +143,7 @@ internal static class ChunkChecks
     private static void CheckWorldSurfaceHeightmap(BlockState nonAirState)
     {
         LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
-        BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
+        PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
         var chunk = new Chunk(new ChunkPos(-2, 3), height, factory);
         Heightmap heightmap = chunk.GetOrCreateHeightmapUnprimed(Heightmap.Types.WorldSurface);
 
@@ -186,7 +186,7 @@ internal static class ChunkChecks
     private static void CheckMotionBlockingHeightmaps(BlockState fluidState)
     {
         LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
-        BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
+        PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
         var chunk = new Chunk(new ChunkPos(2, -3), height, factory);
         const int x = 7;
         const int y = 23;
@@ -232,7 +232,7 @@ internal static class ChunkChecks
     private static void CheckHeightmapOwnershipAndBatchPriming(BlockState nonAirState)
     {
         LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
-        BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
+        PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
         var position = new ChunkPos(-2, 3);
         var chunk = new Chunk(position, height, factory);
 
@@ -313,7 +313,7 @@ internal static class ChunkChecks
     private static void CheckHeightmapRawData(BlockState nonAirState)
     {
         LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
-        BlockStateContainerFactory factory = BlockStateContainerFactory.CreateBuiltIn();
+        PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
         var position = new ChunkPos(-4, 6);
 
         var loadedChunk = new Chunk(position, height, factory);
