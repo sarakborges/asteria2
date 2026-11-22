@@ -11,12 +11,15 @@ public sealed class BlockState : StateHolder<Block, BlockState>
 {
     private static readonly VoxelShape[] EMPTY_OCCLUSION_SHAPES = CreateOcclusionShapes(Shapes.Empty());
     private static readonly VoxelShape[] FULL_BLOCK_OCCLUSION_SHAPES = CreateOcclusionShapes(Shapes.Block());
+    private static readonly Direction[] DIRECTIONS = Direction.GetValues();
+    private static readonly SupportType[] SUPPORT_TYPES = Enum.GetValues<SupportType>();
 
     private FluidState? _fluidState;
     private VoxelShape? _collisionShape;
     private VoxelShape _occlusionShape = Shapes.Empty();
     private VoxelShape[] _occlusionShapesByFace = EMPTY_OCCLUSION_SHAPES;
     private bool _hasLargeCollisionShape;
+    private bool[]? _faceSturdy;
     private bool _cacheInitialized;
     private readonly int _lightEmission;
 
@@ -99,7 +102,9 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         BlockPos position,
         Direction direction,
         SupportType supportType) =>
-        supportType.IsSupporting(this, level, position, direction);
+        _faceSturdy is null
+            ? supportType.IsSupporting(this, level, position, direction)
+            : _faceSturdy[direction.Get3DDataValue() * SUPPORT_TYPES.Length + (int)supportType];
 
     public bool HasLargeCollisionShape => _collisionShape is null || _hasLargeCollisionShape;
 
@@ -132,6 +137,19 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         {
             _collisionShape = Block.GetCollisionShape(this, EmptyBlockGetter.Instance, BlockPos.Zero);
             _hasLargeCollisionShape = IsLargeCollisionShape(_collisionShape);
+            _faceSturdy = new bool[DIRECTIONS.Length * SUPPORT_TYPES.Length];
+            foreach (Direction direction in DIRECTIONS)
+            {
+                foreach (SupportType supportType in SUPPORT_TYPES)
+                {
+                    int index = direction.Get3DDataValue() * SUPPORT_TYPES.Length + (int)supportType;
+                    _faceSturdy[index] = supportType.IsSupporting(
+                        this,
+                        EmptyBlockGetter.Instance,
+                        BlockPos.Zero,
+                        direction);
+                }
+            }
         }
 
         _occlusionShape = CanOcclude ? Block.GetOcclusionShape(this) : Shapes.Empty();
