@@ -23,6 +23,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     private bool[]? _faceSturdy;
     private bool _cacheInitialized;
     private readonly int _lightEmission;
+    private readonly Func<BlockState, bool> _emissiveRendering;
 
     private static VoxelShape[] CreateOcclusionShapes(VoxelShape shape)
     {
@@ -122,6 +123,13 @@ public sealed class BlockState : StateHolder<Block, BlockState>
 
     public int GetLightDampening() => LightDampening;
 
+    public RenderShape GetRenderShape() => Block.GetRenderShape(this);
+
+    public float GetShadeBrightness(BlockGetter level, BlockPos position) =>
+        Block.GetShadeBrightness(this, level, position);
+
+    public bool IsEmissiveRendering => _emissiveRendering(this);
+
     public VoxelShape GetCollisionShape(BlockGetter level, BlockPos position) =>
         _collisionShape ?? Block.GetCollisionShape(this, level, position);
 
@@ -167,6 +175,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         ShouldSpawnTerrainParticles = properties.SpawnTerrainParticlesValue;
         UseShapeForLightOcclusion = Block.UseShapeForLightOcclusion(this);
         _lightEmission = properties.LightEmissionValue(this);
+        _emissiveRendering = properties.EmissiveRenderingValue;
         global::Asteria.Content.Blocks.Block.BlockStateRegistry.Add(this);
     }
 
