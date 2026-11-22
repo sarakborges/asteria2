@@ -24,6 +24,7 @@ internal static class ChunkChecks
         CheckBlockGetterContract(fluidState);
         CheckBlockGetterDefaultMethods(nonAirState);
         CheckBlockGetterTraversal();
+        CheckBlockGetterSweptTraversal();
         CheckBlockGetterLineQueries();
         CheckBlockGetterClip(fluidState);
         CheckFluidStateGeometry(fluidState, sourceFluidState);
@@ -202,6 +203,108 @@ internal static class ChunkChecks
         Require(
             Mth.Frac(-0.25) == 0.75 && Mth.Frac(2.25) == 0.25,
             "Mth.Frac must return the fractional part using floor semantics for negative coordinates.");
+    }
+
+    private static void CheckBlockGetterSweptTraversal()
+    {
+        BlockPos[] directionalCorners = BlockPos.BetweenCornersInDirection(
+            0, 0, 0, 1, 1, 1, Vec3.X_AXIS)
+            .Select(position => position.Immutable())
+            .ToArray();
+        BlockPos[] expectedDirectionalOrder =
+        {
+            new(0, 0, 0),
+            new(0, 0, 1),
+            new(1, 0, 0),
+            new(1, 0, 1),
+            new(0, 1, 0),
+            new(0, 1, 1),
+            new(1, 1, 0),
+            new(1, 1, 1)
+        };
+        Require(
+            directionalCorners.SequenceEqual(expectedDirectionalOrder),
+            "Directional corner enumeration must preserve the reference axis-step and nested-loop order.");
+
+        var targetBounds = new AABB(2.0, 0.0, 0.0, 3.0, 1.0, 1.0);
+        var traversed = new List<(BlockPos Position, int Step)>();
+        bool completed = BlockGetter.ForEachBlockIntersectedBetween(
+            new Vec3(0.0, 0.5, 0.5),
+            new Vec3(2.0, 0.5, 0.5),
+            targetBounds,
+            (position, step) =>
+            {
+                traversed.Add((position.Immutable(), step));
+                return true;
+            });
+
+        var expectedVolume = new HashSet<(int X, int Y, int Z)>();
+        for (int x = 0; x <= 3; x++)
+        {
+            for (int y = 0; y <= 1; y++)
+            {
+                for (int z = 0; z <= 1; z++)
+                    expectedVolume.Add((x, y, z));
+            }
+        }
+
+        var actualVolume = traversed
+            .Select(entry => (
+                entry.Position.GetX(),
+                entry.Position.GetY(),
+                entry.Position.GetZ()))
+            .ToHashSet();
+        Require(
+            completed &&
+            actualVolume.SetEquals(expectedVolume) &&
+            traversed.Count == expectedVolume.Count,
+            "Swept-box traversal must visit every crossed block exactly once across the complete path.");
+        Require(
+            traversed.Where(entry => entry.Position.GetX() <= 1).All(entry => entry.Step == 0) &&
+            traversed.Where(entry => entry.Position.GetX() == 2).All(entry => entry.Step > 0) &&
+            traversed.Any(entry => entry.Position.GetX() == 3 && entry.Step > 0),
+            "Swept-box traversal must distinguish the initial bounds, intermediate collision steps and final bounds.");
+
+        var reverseTraversed = new HashSet<(int X, int Y, int Z)>();
+        bool reverseCompleted = BlockGetter.ForEachBlockIntersectedBetween(
+            new Vec3(2.0, 0.5, 0.5),
+            new Vec3(0.0, 0.5, 0.5),
+            new AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0),
+            (position, _) =>
+            {
+                reverseTraversed.Add((position.GetX(), position.GetY(), position.GetZ()));
+                return true;
+            });
+        Require(
+            reverseCompleted && reverseTraversed.SetEquals(expectedVolume),
+            "Swept-box traversal must visit the same covered volume for negative movement.");
+
+        var stationary = new List<BlockPos>();
+        bool stationaryCompleted = BlockGetter.ForEachBlockIntersectedBetween(
+            Vec3.ZERO,
+            Vec3.ZERO,
+            targetBounds,
+            (position, step) =>
+            {
+                Require(step == 0, "Stationary swept-box traversal must report step zero.");
+                stationary.Add(position.Immutable());
+                return true;
+            });
+        Require(
+            stationaryCompleted && stationary.Count == 8 &&
+            stationary.Select(position => (position.GetX(), position.GetY(), position.GetZ())).ToHashSet()
+                .SetEquals(expectedVolume.Where(position => position.X >= 2 && position.X <= 3)),
+            "A stationary swept box must enumerate the target bounds once.");
+
+        int calls = 0;
+        bool stopped = BlockGetter.ForEachBlockIntersectedBetween(
+            new Vec3(0.0, 0.5, 0.5),
+            new Vec3(2.0, 0.5, 0.5),
+            targetBounds,
+            (_, _) => ++calls < 2);
+        Require(
+            !stopped && calls == 2,
+            "Swept-box traversal must stop immediately when the visitor returns false.");
     }
 
     private static void CheckBlockGetterLineQueries()
