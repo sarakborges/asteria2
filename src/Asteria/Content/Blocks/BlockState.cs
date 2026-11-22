@@ -26,6 +26,11 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     private readonly Func<BlockState, bool> _emissiveRendering;
     private readonly Func<BlockState, BlockPos, Vec3>? _offsetFunction;
 
+    private readonly Func<BlockState, BlockGetter, BlockPos, bool> _isRedstoneConductor;
+    private readonly Func<BlockState, BlockGetter, BlockPos, bool> _isSuffocating;
+    private readonly Func<BlockState, BlockGetter, BlockPos, AABB, bool> _isViewBlocking;
+    private readonly Func<BlockState, BlockGetter, BlockPos, BlockPos?> _postProcess;
+
     private static VoxelShape[] CreateOcclusionShapes(VoxelShape shape)
     {
         var result = new VoxelShape[6];
@@ -139,6 +144,18 @@ public sealed class BlockState : StateHolder<Block, BlockState>
 
     public bool HasOffsetFunction => _offsetFunction is not null;
 
+    public bool IsRedstoneConductor(BlockGetter level, BlockPos position) =>
+        _isRedstoneConductor(this, level, position);
+
+    public bool IsSuffocating(BlockGetter level, BlockPos position) =>
+        _isSuffocating(this, level, position);
+
+    public bool IsViewBlocking(BlockGetter level, BlockPos position, AABB nearPlaneBox) =>
+        _isViewBlocking(this, level, position, nearPlaneBox);
+
+    public BlockPos? GetPostProcessPos(BlockGetter level, BlockPos position) =>
+        _postProcess(this, level, position);
+
     public VoxelShape GetCollisionShape(BlockGetter level, BlockPos position) =>
         _collisionShape ?? Block.GetCollisionShape(this, level, position);
 
@@ -186,6 +203,10 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         _lightEmission = properties.LightEmissionValue(this);
         _emissiveRendering = properties.EmissiveRenderingValue;
         _offsetFunction = properties.OffsetFunctionValue;
+        _isRedstoneConductor = properties.IsRedstoneConductorValue;
+        _isSuffocating = properties.IsSuffocatingValue;
+        _isViewBlocking = properties.IsViewBlockingValue;
+        _postProcess = properties.PostProcessValue;
         global::Asteria.Content.Blocks.Block.BlockStateRegistry.Add(this);
     }
 
