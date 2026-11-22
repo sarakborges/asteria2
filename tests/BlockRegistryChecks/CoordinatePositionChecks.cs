@@ -239,6 +239,14 @@ internal static class CoordinatePositionChecks
             clampedLocation.Z > 5.0 && clampedLocation.Z < 5.0001,
             "BlockPos clampLocationWithin must keep each component inside the block with the source epsilon.");
 
+        Vec3 clampedMaximum = new BlockPos(-2, 3, 5)
+            .ClampLocationWithin(new Vec3(100.0, -100.0, 100.0));
+        Require(
+            clampedMaximum.X < -1.0 && clampedMaximum.X > -1.0001 &&
+            clampedMaximum.Y < 4.0 && clampedMaximum.Y > 3.9999 &&
+            clampedMaximum.Z < 6.0 && clampedMaximum.Z > 5.9999,
+            "BlockPos clampLocationWithin must preserve the upper float-epsilon boundary on every axis.");
+
         var random = new WorldgenRandom(new LegacyRandomSource(123));
         BlockPos[] randomPositions = BlockPos.RandomBetweenClosed(
                 random, 3, -2, 10, 3, 1, 17, 4)
