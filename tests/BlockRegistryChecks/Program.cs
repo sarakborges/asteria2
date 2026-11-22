@@ -84,6 +84,7 @@ internal static class Program
                 createIntrusiveRegistryHolder: false,
                 configureState: configureState)
         {
+            InitializeStateCaches();
         }
 
         protected override void CreateBlockStateDefinition(StateDefinitionBuilder builder) =>
@@ -191,6 +192,7 @@ internal static class Program
             "Block states must receive IDs during block construction, before registry bootstrap.");
         CheckBuiltInRegistryRoot();
         RegistryBootstrap.Initialize();
+        BlockStateCacheChecks.Run();
         RegistryBootstrap.Initialize();
         Require(RegistryBootstrap.IsInitialized, "Bootstrap must complete and remain idempotent.");
         Require(BuiltInRegistries.AreFrozen, "Built-in registries must be frozen.");
