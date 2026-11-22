@@ -184,7 +184,7 @@ public abstract class ChunkAccess : LevelHeightAccessor
     {
         if (!_heightmaps.TryGetValue(type, out Heightmap? heightmap))
         {
-            Heightmap.PrimeHeightmaps(this, new[] { type });
+            Heightmap.PrimeHeightmaps(this, new HashSet<Heightmap.Types> { type });
             heightmap = _heightmaps[type];
         }
 
