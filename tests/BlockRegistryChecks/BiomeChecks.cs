@@ -169,8 +169,8 @@ internal static class BiomeChecks
         PalettedContainerFactory biomeFactory = PalettedContainerFactory.CreateBuiltIn();
         Require(
             biomeFactory.BiomeStrategy.BitsPerAxis == 2 &&
-            biomeFactory.Strategy.EntryCount == ChunkSection.BiomeCount &&
-            biomeFactory.Strategy.EntryCount == 64,
+            biomeFactory.BiomeStrategy.EntryCount == ChunkSection.BiomeCount &&
+            biomeFactory.BiomeStrategy.EntryCount == 64,
             "The biome palette must use a 4x4x4 quart grid with 64 entries.");
 
         ChunkSection section = new ChunkSection(PalettedContainerFactory.CreateBuiltIn());
