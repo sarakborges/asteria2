@@ -116,6 +116,13 @@ internal static class AmbientParticleChecks
 
     private sealed class FixedRandomSource(float value) : IRandomSource
     {
+        public int NextInt(int bound)
+        {
+            if (bound <= 0)
+                throw new ArgumentOutOfRangeException(nameof(bound), "bound must be positive");
+            return 0;
+        }
+
         public float NextFloat() => value;
     }
 
