@@ -31,6 +31,13 @@ public class ChunkSection
     public bool IsRandomlyTickingBlocks => _tickingBlockCount > 0;
     public bool IsRandomlyTickingFluids => _tickingFluidCount > 0;
     public bool IsRandomlyTicking => IsRandomlyTickingBlocks || IsRandomlyTickingFluids;
+    public ChunkSection(PalettedContainerFactory containerFactory)
+        : this(
+            (containerFactory ?? throw new ArgumentNullException(nameof(containerFactory))).CreateForBlockStates(),
+            containerFactory.CreateForBiomes())
+    {
+    }
+
     public ChunkSection(
         PalettedContainer<BlockState> states,
         IPalettedContainerReadOnly<Holder<Biome>> biomes)
