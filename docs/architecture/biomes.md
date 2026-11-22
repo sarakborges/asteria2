@@ -6,17 +6,17 @@ Implemented runtime slice:
 
 - Registry-backed biome climate settings and stable holders.
 - Biome special effects: required water color, optional foliage/dry-foliage/grass overrides and grass color modifier.
-- Builder semantics, including the required-water-color failure.
+- `BiomeSpecialEffects.Builder` requires water color and preserves the reference missing-water failure.
 - Grass modifier serialized names and exact integer behavior for NONE and DARK_FOREST.
-- SWAMP grass color threshold and output colors. Its BIOME_INFO_NOISE source dependency is injected as a sampler until the matching noise stack is ported; omitting it throws rather than substituting a value.
+- SWAMP grass color threshold and output colors use the fixed-seed BIOME_INFO_NOISE sampler (seed 2345); the shared two-dimensional noise dependency is implemented.
+- Each `Biome` stores an immutable typed `EnvironmentAttributeMap`, defaults to the shared empty map, and exposes it through `GetAttributes`; modifiers are applied to the value supplied by the lower-priority environment layer.
 - A 4x4x4 quart-resolution biome palette in each chunk section.
 
 Base overworld Plains and Desert use the reference normal water color 4159204.
 
 ## Deferred dependencies
 
-- Exact BIOME_INFO_NOISE generator and its legacy random/simplex-noise dependency chain; production SWAMP color sampling is not wired yet.
-- Biome environmental attributes and their typed modifier system.
+- Environment attribute source layering/resolution across dimensions, biome position, timelines and weather; the biome-local map is now stored but is not yet consumed by a world-level resolver.
 - MobSpawnSettings and entity-type/spawn-cost domains.
 - BiomeGenerationSettings, carver and placed-feature registries.
 - Position-dependent frozen temperature modification and its noise dependencies.

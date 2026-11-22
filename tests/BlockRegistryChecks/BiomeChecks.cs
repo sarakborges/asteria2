@@ -2,12 +2,16 @@ using Asteria.Content.Biomes;
 using Asteria.Content.Chunks;
 using Asteria.Content.Registries;
 using Asteria.Core;
+using Asteria.Content.Identifiers;
+using Asteria.World.Attributes;
+using Asteria.World.Attributes.Modifiers;
 
 internal static class BiomeChecks
 {
     public static void Run()
     {
         CheckBuiltInBiomeRegistry();
+        CheckEnvironmentAttributeMap();
         CheckSpecialEffects();
         CheckTemperatureModifiers();
         CheckBiomeSectionPalette();
@@ -53,6 +57,54 @@ internal static class BiomeChecks
             Biome.Precipitation.NONE.GetSerializedName() == "none" &&
             Biome.TemperatureModifier.FROZEN.GetSerializedName() == "frozen",
             "Biome climate enums must preserve their serialized names.");
+    }
+
+    private static void CheckEnvironmentAttributeMap()
+    {
+        var registry = new Registry<Biome>(
+            ResourceLocation.Parse("asteria:biome_attribute_test"),
+            allowIntrusiveHolders: true);
+
+        EnvironmentAttributeMap.Builder builder = EnvironmentAttributeMap.CreateBuilder()
+            .Modify(EnvironmentAttributes.FOG_END_DISTANCE, FloatModifier.MULTIPLY, 0.5F)
+            .Set(EnvironmentAttributes.WATER_EVAPORATES, true);
+        EnvironmentAttributeMap attributes = builder.Build();
+
+        // Mutating the builder after Build must not affect the biome's attribute snapshot.
+        builder.Set(EnvironmentAttributes.WATER_EVAPORATES, false);
+
+        Biome biome = new(
+            new Biome.ClimateSettings(true, 0.6F, Biome.TemperatureModifier.NONE, 0.7F),
+            attributes,
+            new BiomeSpecialEffects.Builder().WaterColor(4159204).Build(),
+            registry);
+
+        RegistryKey<Biome> key = RegistryKey<Biome>.Create(
+            registry.Key,
+            ResourceLocation.Parse("asteria:attribute_fixture"));
+        registry.Register(key, biome, RegistrationInfo.BuiltIn);
+        registry.BindAllTagsToEmpty();
+        registry.Freeze();
+
+        Require(registry.IsFrozen &&
+                ReferenceEquals(registry.GetValue(key), biome) &&
+                ReferenceEquals(registry.GetValue(key)?.BuiltInRegistryHolder, biome.BuiltInRegistryHolder),
+            "A biome carrying environment attributes must retain its normal intrusive registry-holder lifecycle.");
+        Require(ReferenceEquals(biome.Attributes, attributes) &&
+                ReferenceEquals(biome.GetAttributes(), attributes),
+            "Biome must expose the exact immutable EnvironmentAttributeMap supplied at construction.");
+        Require(biome.GetAttributes().ApplyModifier(EnvironmentAttributes.FOG_END_DISTANCE, 1024.0F) == 512.0F,
+            "Biome attributes must apply their typed modifier to the lower-priority environment value.");
+        Require(biome.GetAttributes().ApplyModifier(EnvironmentAttributes.WATER_EVAPORATES, false),
+            "Biome attributes must preserve boolean override values after the builder has changed.");
+        Require(!biome.GetAttributes().ApplyModifier(EnvironmentAttributes.FAST_LAVA, false),
+            "A biome without an entry for an attribute must leave the lower-priority value unchanged.");
+
+        Require(ReferenceEquals(Biomes.PLAINS.GetAttributes(), EnvironmentAttributeMap.Empty) &&
+                ReferenceEquals(Biomes.DESERT.GetAttributes(), EnvironmentAttributeMap.Empty),
+            "Built-in biomes without explicit environment data must use the shared empty attribute map.");
+        Require(BuiltInRegistries.Biome.Count == 2,
+            "The isolated biome test registry must not add fixture content to the production biome registry.");
     }
 
     private static void CheckSpecialEffects()

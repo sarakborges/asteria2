@@ -2,6 +2,7 @@ using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.Synth;
+using Asteria.World.Attributes;
 
 namespace Asteria.Content.Biomes;
 
@@ -33,6 +34,7 @@ public sealed class Biome
     public static float GetBiomeInfoNoise(double x, double z) => BiomeInfoNoise.Get(x, z);
     public Holder<Biome>.Reference BuiltInRegistryHolder { get; }
     public ClimateSettings Climate { get; }
+    public EnvironmentAttributeMap Attributes { get; }
     public BiomeSpecialEffects SpecialEffects { get; }
     public bool HasPrecipitation => Climate.HasPrecipitation;
     public float GetBaseTemperature() => Climate.Temperature;
@@ -85,11 +87,35 @@ public sealed class Biome
         GetTemperature(position, seaLevel) > 0.1F;
 
     public Biome(ClimateSettings climate, BiomeSpecialEffects specialEffects)
+        : this(climate, EnvironmentAttributeMap.Empty, specialEffects)
     {
-        Climate = climate;
-        SpecialEffects = specialEffects ?? throw new ArgumentNullException(nameof(specialEffects));
-        BuiltInRegistryHolder = BuiltInRegistries.Biome.CreateIntrusiveHolder(this);
     }
+
+    public Biome(
+        ClimateSettings climate,
+        EnvironmentAttributeMap attributes,
+        BiomeSpecialEffects specialEffects)
+        : this(climate, attributes, specialEffects, BuiltInRegistries.Biome)
+    {
+    }
+
+    internal Biome(
+        ClimateSettings climate,
+        EnvironmentAttributeMap attributes,
+        BiomeSpecialEffects specialEffects,
+        Registry<Biome> registry)
+    {
+        ArgumentNullException.ThrowIfNull(attributes);
+        ArgumentNullException.ThrowIfNull(specialEffects);
+        ArgumentNullException.ThrowIfNull(registry);
+
+        Climate = climate;
+        Attributes = attributes;
+        SpecialEffects = specialEffects;
+        BuiltInRegistryHolder = registry.CreateIntrusiveHolder(this);
+    }
+
+    public EnvironmentAttributeMap GetAttributes() => Attributes;
 
     private sealed class TemperatureCache
     {
