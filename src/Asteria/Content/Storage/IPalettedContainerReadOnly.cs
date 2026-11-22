@@ -10,6 +10,10 @@ public interface IPalettedContainerReadOnly<T> where T : class
 
     T Get(int x, int y, int z);
 
+    PalettedContainer<T> Recreate();
+
+    IPalettedContainerReadOnly<T> Copy();
+
     bool MaybeHas(Func<T, bool> predicate);
 
     void ForEachInPalette(Action<T> action);
