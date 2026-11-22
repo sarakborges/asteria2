@@ -134,7 +134,7 @@ internal static class ChunkChecks
         Require(
             states.Count == 2 &&
             ReferenceEquals(states[0], Blocks.STONE.DefaultState) &&
-            ReferenceEquals(states[1], lightEmittingState),
+            ReferenceEquals(states[1], Blocks.AIR.DefaultState),
             "BlockGetter block-state box queries must include both floored Y bounds in vertical order.");
     }
 
