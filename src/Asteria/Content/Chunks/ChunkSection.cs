@@ -9,7 +9,7 @@ namespace Asteria.Content.Chunks;
 /// <summary>
 /// A 16x16x16 block-state section paired with the vanilla 4x4x4 quart-resolution biome palette.
 /// </summary>
-public sealed class ChunkSection
+public class ChunkSection
 {
     public const int Width = 16;
     public const int Height = 16;
@@ -26,24 +26,11 @@ public sealed class ChunkSection
     private short _tickingBlockCount;
     private short _tickingFluidCount;
 
-    public int NonAirBlockCount => _nonAirBlockCount;
-    public int FluidCount => _fluidCount;
-    public int TickingBlockCount => _tickingBlockCount;
-    public int TickingFluidCount => _tickingFluidCount;
     public bool HasOnlyAir => _nonAirBlockCount == 0;
     public bool HasFluid => _fluidCount > 0;
     public bool IsRandomlyTickingBlocks => _tickingBlockCount > 0;
     public bool IsRandomlyTickingFluids => _tickingFluidCount > 0;
     public bool IsRandomlyTicking => IsRandomlyTickingBlocks || IsRandomlyTickingFluids;
-    public PaletteMode PaletteMode => _states.Mode;
-    public int BitsPerEntry => _states.BitsPerEntry;
-    public int PaletteSize => _states.PaletteSize;
-
-    public ChunkSection(PalettedContainer<BlockState> states)
-        : this(states, BiomeContainerFactory.CreateBuiltIn().CreateForBiomes())
-    {
-    }
-
     public ChunkSection(
         PalettedContainer<BlockState> states,
         PalettedContainer<Holder<Biome>> biomes)
