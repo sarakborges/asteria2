@@ -12,12 +12,44 @@ internal static class ChunkChecks
         ArgumentNullException.ThrowIfNull(fluidState);
 
         CheckHeightAccessor();
+        CheckChunkAccessLifecycle();
         CheckChunkConstructionAndSections(nonAirState);
         CheckMismatchedSectionArray();
         CheckWorldSurfaceHeightmap(nonAirState);
         CheckMotionBlockingHeightmaps(fluidState);
         CheckHeightmapOwnershipAndBatchPriming(nonAirState);
         CheckHeightmapRawData(nonAirState);
+    }
+
+    private static void CheckChunkAccessLifecycle()
+    {
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        TestChunkAccess chunk = new(
+            new ChunkPos(0, 0),
+            height,
+            PalettedContainerFactory.CreateBuiltIn(),
+            inhabitedTime: 120);
+
+        Require(chunk.GetInhabitedTime() == 120, "ChunkAccess must retain the constructor's inhabited time.");
+        chunk.IncrementInhabitedTime();
+        Require(chunk.GetInhabitedTime() == 121, "IncrementInhabitedTime must increment by one.");
+        chunk.SetInhabitedTime(0);
+        Require(chunk.GetInhabitedTime() == 0, "SetInhabitedTime must replace the inhabited time.");
+
+        Require(!chunk.IsUnsaved(), "A new ChunkAccess must start saved.");
+        Require(!chunk.TryMarkSaved(), "Trying to save a clean ChunkAccess must return false.");
+        chunk.MarkUnsaved();
+        Require(chunk.IsUnsaved(), "MarkUnsaved must set the dirty state.");
+        Require(chunk.TryMarkSaved(), "Trying to save a dirty ChunkAccess must return true.");
+        Require(!chunk.IsUnsaved() && !chunk.TryMarkSaved(), "TryMarkSaved must clear the dirty state after a successful transition.");
+
+        Require(!chunk.IsLightCorrect(), "A new ChunkAccess must start with lighting marked incorrect.");
+        chunk.SetLightCorrect(true);
+        Require(chunk.IsLightCorrect(), "SetLightCorrect must update the lighting state.");
+        Require(chunk.IsUnsaved(), "SetLightCorrect must mark the chunk unsaved.");
+        chunk.TryMarkSaved();
+        chunk.SetLightCorrect(false);
+        Require(!chunk.IsLightCorrect() && chunk.IsUnsaved(), "Changing light correctness must mark the chunk unsaved.");
     }
 
     private static void CheckHeightAccessor()
@@ -351,8 +383,9 @@ internal static class ChunkChecks
             ChunkPos chunkPos,
             LevelHeightAccessor levelHeightAccessor,
             PalettedContainerFactory containerFactory,
-            ChunkSection?[]? sections = null)
-            : base(chunkPos, levelHeightAccessor, containerFactory, sections)
+            ChunkSection?[]? sections = null,
+            long inhabitedTime = 0)
+            : base(chunkPos, levelHeightAccessor, containerFactory, inhabitedTime, sections)
         {
         }
     }
