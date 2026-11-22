@@ -152,17 +152,17 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
                     return DataResult<T>.Error(() =>
                         $"Invalid registry key '{name}' for {Key}");
 
-                T? value = GetValue(location.Value);
-                return value is not null
-                    ? DataResult<T>.Success(value, RegistryLifecycle)
+                Holder<T>.Reference? holder = GetHolder(location.Value);
+                return holder is not null
+                    ? DataResult<T>.Success(holder.Value, RegistryLifecycle)
                     : DataResult<T>.Error(() =>
                         $"Unknown registry key '{name}' in {Key}");
             },
             value =>
             {
-                ResourceLocation? location = GetKey(value);
-                return location.HasValue
-                    ? DataResult<string>.Success(location.Value.ToString(), RegistryLifecycle)
+                RegistryKey<T>? key = GetResourceKey(value);
+                return key.HasValue
+                    ? DataResult<string>.Success(key.Value.Location.ToString(), RegistryLifecycle)
                     : DataResult<string>.Error(() =>
                         $"Unregistered value '{value}' in {Key}");
             })
