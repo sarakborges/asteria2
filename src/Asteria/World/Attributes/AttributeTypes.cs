@@ -60,7 +60,7 @@ public static class AttributeTypes
             LerpFunction<AmbientParticle>.OfListCrossFade(
                 static (particle, alpha) =>
                     particle with { Probability = particle.Probability * alpha }),
-            ListModifier<AmbientParticle>.LIBRARY);
+            ListModifier<AmbientParticle>.CreateLibrary(AmbientParticle.CODEC));
 
     internal static void RegisterAll()
     {
