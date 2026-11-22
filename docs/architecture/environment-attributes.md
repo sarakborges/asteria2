@@ -28,7 +28,7 @@ Base de comparação: Minecraft Java 26.3.
 
 ## Limites deste incremento
 
-- O projeto ainda não possui infraestrutura de codecs. Os codecs de valor e modificador, CODEC, NETWORK_CODEC e CODEC_ONLY_POSITIONAL não foram simulados; serão portados junto ao pipeline de dados/save-load local.
+- O codec do argumento do modificador já está exposto para operações booleanas, inteiras e float, incluindo o registro `{ value, alpha }` de `alpha_blend`. Os argumentos de operações de cor e lista ainda não possuem codecs declarados. O codec completo do mapa ambiental e `CODEC_ONLY_POSITIONAL` continuam pendentes; codecs de rede permanecem fora do escopo.
 - AttributeTypes contém boolean, float, angle_degrees, rgb_color, argb_color, integer e moon_phase. RGB/ARGB usam System.Numerics.Vector3/Vector4 e as cinco operações de modificador da referência. INTEGER usa Int32, interpolação por piso e as cinco operações aritméticas da referência. MOON_PHASE usa os oito estados, índices, nomes serializados e início de fase da referência, sem interpolação ou modificadores. `LerpFunction<T>.OfListCrossFade` agora reproduz a composição ordenada e a escala complementar de cada elemento para cross-fade de listas; `PARTICLE` e `AMBIENT_PARTICLES` já possuem codecs locais e usam o catálogo de partículas genéricas mantido no escopo. `ACTIVITY` depende do registry e do domínio de schedules/AI, ainda não portado; as definições de atividade específicas de villagers permanecem fora do escopo atual. Áudio, bed rules, raid/illager, slime e atributos vinculados a blocos/entidades específicos estão fora do escopo, não são pendências.
 - Os registries built-in environment_attribute e attribute_type foram ligados ao root e ao bootstrap. As 19 definições ambientais genéricas dentro do escopo foram registradas por chave. Atributos de áudio, regras de cama, raid/illager, slime e atributos de blocos/entidades específicos não são requisitos; outros tipos ainda não implementados foram omitidos, portanto não se afirma paridade dos IDs numéricos.
 - `EnvironmentAttributeResolver` aplica mapas de fontes em ordem explícita de prioridade baixa para alta, iniciando pelo default registrado ou por um valor base fornecido pelo chamador. A ordem de 26.3 é dimensão → bioma → timeline → clima.
@@ -75,3 +75,12 @@ Base de comparação: Minecraft Java 26.3.
 - A ordem documentada para 26.3 é dimensão → bioma → timeline → clima; o chamador fornece apenas as fontes que já existem e mantém essa ordem.
 - Testes cobrem composição override + multiply + add, override pela fonte mais alta, default sem fontes, valor-base explícito, mapa vazio e rejeição de fontes nulas.
 - Não foram criados objetos falsos para dimensão, timeline ou clima. Amostragem espacial de biomas e interpolação temporal/espacial permanecem pendentes.
+
+
+## Incremento — codecs de argumentos dos modificadores (22/11/2026)
+
+- `AttributeModifier<TSubject, TArgument>` agora expõe `ArgumentCodec` opcional, mantendo compatibilidade com modificadores ainda sem codec.
+- Modificadores booleanos e inteiros usam `Codecs.BOOL` e `Codecs.INT`; operações float usam `Codecs.FLOAT`.
+- `FloatWithAlpha` usa codec de registro com campos obrigatórios `value` e `alpha`.
+- Testes cobrem round-trip de todos os argumentos booleanos, inteiros e float, além do argumento de alpha blend.
+- Este incremento não afirma que o codec de `EnvironmentAttributeMap` está pronto: despacho por atributo, despacho de modificador, validação posicional e codecs de argumentos de cor/lista ainda precisam ser conectados.
