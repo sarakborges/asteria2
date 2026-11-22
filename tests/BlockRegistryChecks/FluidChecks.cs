@@ -2,6 +2,7 @@ using Asteria.Content.Blocks;
 using Asteria.Content.Blocks.StateProperties;
 using Asteria.Content.Chunks;
 using Asteria.Content.Fluids;
+using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.Content.Storage;
 using Asteria.Core;
