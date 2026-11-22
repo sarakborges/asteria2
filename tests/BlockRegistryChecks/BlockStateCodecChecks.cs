@@ -17,6 +17,7 @@ internal static class BlockStateCodecChecks
         ResourceLocation blockId = ResourceLocation.Parse("asteria:codec_test_block");
         RegistryKey<Block> key = RegistryKey<Block>.Create(registry.Key, blockId);
         registry.Register(key, block, RegistrationInfo.BuiltIn);
+        registry.Freeze();
 
         DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
         Codec<BlockState> codec = BlockState.CreateCodec(registry.ByNameCodec());
