@@ -45,7 +45,7 @@ public sealed class EnvironmentAttributeMap : IEquatable<EnvironmentAttributeMap
             return illegalAttributes.Length == 0
                 ? DataResult<EnvironmentAttributeMap>.Success(map)
                 : DataResult<EnvironmentAttributeMap>.Error(
-                    () => $"The following attributes cannot be positional: [{string.Join(", ", illegalAttributes)}]");
+                    () => $"The following attributes cannot be positional: [{string.Join(", ", illegalAttributes.Select(attribute => attribute.ToString()))}]");
         });
     public IReadOnlyCollection<IEnvironmentAttribute> KeySet => _entries.Keys.ToArray();
 
