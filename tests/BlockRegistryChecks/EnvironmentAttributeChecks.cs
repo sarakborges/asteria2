@@ -409,8 +409,11 @@ internal static class EnvironmentAttributeChecks
         {
             new AmbientParticle(ParticleTypes.ASH, 0.35F)
         });
+        AttributeModifier<IReadOnlyList<AmbientParticle>, IReadOnlyList<AmbientParticle>> ambientAppend =
+            (AttributeModifier<IReadOnlyList<AmbientParticle>, IReadOnlyList<AmbientParticle>>)
+            AttributeTypes.AMBIENT_PARTICLES.ModifierLibrary[AttributeOperationId.APPEND];
         EnvironmentAttributeMap ambientMap = EnvironmentAttributeMap.CreateBuilder()
-            .Modify(EnvironmentAttributes.AMBIENT_PARTICLES, ListModifier<AmbientParticle>.APPEND, ambientArgument)
+            .Modify(EnvironmentAttributes.AMBIENT_PARTICLES, ambientAppend, ambientArgument)
             .Build();
         JsonElement ambientEncoded = EnvironmentAttributeMap.CODEC
             .EncodeStart(ops, ambientMap)
