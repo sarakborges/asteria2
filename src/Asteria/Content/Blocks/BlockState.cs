@@ -82,6 +82,9 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public VoxelShape GetCollisionShape(BlockGetter level, BlockPos position) =>
         _collisionShape ?? Block.GetCollisionShape(this, level, position);
 
+    public VoxelShape GetVisualShape(BlockGetter level, BlockPos position) =>
+        Block.GetVisualShape(this, level, position);
+
     public VoxelShape GetBlockSupportShape(BlockGetter level, BlockPos position) =>
         Block.GetBlockSupportShape(this, level, position);
 
