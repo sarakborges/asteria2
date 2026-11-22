@@ -2,6 +2,7 @@ using Asteria.Content.Blocks;
 using Asteria.Core;
 using Asteria.Core.Shapes;
 using Asteria.World;
+
 namespace Asteria.Content.Fluids;
 
 public sealed class FluidState : StateHolder<Fluid, FluidState>
@@ -37,6 +38,9 @@ public sealed class FluidState : StateHolder<Fluid, FluidState>
 
     public VoxelShape GetShape(BlockGetter level, BlockPos position) =>
         Fluid.GetShape(this, level, position);
+
+    public AABB? GetAABB(BlockGetter level, BlockPos position) =>
+        Fluid.GetAABB(this, level, position);
 
     public bool IsFull() => GetAmount() == AmountFull;
 }
