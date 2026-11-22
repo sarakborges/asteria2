@@ -125,6 +125,13 @@ public class Block
     public virtual int GetLightDampening(BlockState state) =>
         state.IsSolidRender ? 15 : state.PropagatesSkylightDown ? 0 : 1;
 
+    public static bool IsFaceFull(VoxelShape shape, Direction direction)
+    {
+        ArgumentNullException.ThrowIfNull(shape);
+        ArgumentNullException.ThrowIfNull(direction);
+        return IsShapeFullBlock(shape.GetFaceShape(direction));
+    }
+
     public static bool IsShapeFullBlock(VoxelShape shape)
     {
         ArgumentNullException.ThrowIfNull(shape);
