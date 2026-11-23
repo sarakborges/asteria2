@@ -106,8 +106,8 @@ public sealed class PalettedContainer<T> : IPaletteResize<T>, IPalettedContainer
         };
 
         IBitStorage storage = configuration.BitsInMemory == 0
-            ? new ZeroBitStorage(_strategy.EntryCount)
-            : new PackedBitStorage(configuration.BitsInMemory, _strategy.EntryCount);
+            ? new ZeroBitStorage(strategy.EntryCount)
+            : new PackedBitStorage(configuration.BitsInMemory, strategy.EntryCount);
 
         return new Data(configuration, palette, storage);
     }
