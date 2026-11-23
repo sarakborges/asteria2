@@ -31,11 +31,19 @@ internal static class SmearedPerlinNoiseChecks
         var normal = new PerlinNoise(new LegacyRandomSource(seed));
         var smeared = new SmearedPerlinNoise(new LegacyRandomSource(seed), 0.5);
 
-        float normalValue = normal.Get(12.25, 4.75, -9.5);
-        float smearedValue = smeared.Get(12.25, 4.75, -9.5);
+        bool smearChangedSample = false;
+        for (int sample = 0; sample < 96 && !smearChangedSample; sample++)
+        {
+            double x = -13.25 + sample * 0.375;
+            double y = -7.875 + sample * 0.1875;
+            double z = 9.5 - sample * 0.3125;
+            smearChangedSample =
+                normal.Get(x, y, z) != smeared.Get(x, y, z);
+        }
+
         Require(
-            normalValue != smearedValue,
-            "SmearedPerlinNoise must alter the Y gradient coordinate using the vertical fudge scale.");
+            smearChangedSample,
+            "SmearedPerlinNoise must alter Y gradients at coordinates where the vanilla vertical fudge is non-zero.");
 
         float negativeYValue = smeared.Get(-12.25, -4.75, 9.5);
         Require(
