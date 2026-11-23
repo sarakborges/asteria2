@@ -119,6 +119,12 @@ internal static class ClimateChecks
                 ops,
                 ParseJson("""{"min":-1.0,"max":2.1}""")).IsError,
             "Climate.Parameter codec must enforce the [-2, 2] coordinate bounds.");
+
+        Require(
+            Climate.Parameter.CODEC.Parse(
+                ops,
+                ParseJson("""{"min":0.00019,"max":0.00011}""")).IsError,
+            "Climate.Parameter codec must validate the original float interval before quantization, even when both bounds quantize to the same integer.");
     }
 
     private static void CheckParameterPointCodec()
