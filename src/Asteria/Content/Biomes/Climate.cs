@@ -233,15 +233,15 @@ public static class Climate
         {
             ArgumentNullException.ThrowIfNull(valueCodec);
 
-            Codec<ParameterEntry<TValue>> entryCodec =
-                RecordCodecBuilder.Create<ParameterEntry<TValue>>(instance =>
+            Codec<ParameterEntry<T>> entryCodec =
+                RecordCodecBuilder.Create<ParameterEntry<T>>(instance =>
                     instance.Group(
                         ParameterPoint.CODEC.FieldOf("parameters")
-                            .ForGetter<ParameterEntry<TValue>>(static entry => entry.Parameters),
-                        valueCodec.ForGetter<ParameterEntry<TValue>>(static entry => entry.Value))
+                            .ForGetter<ParameterEntry<T>>(static entry => entry.Parameters),
+                        valueCodec.ForGetter<ParameterEntry<T>>(static entry => entry.Value))
                     .Apply(
                         instance,
-                        static (parameters, value) => new ParameterEntry<TValue>(parameters, value)));
+                        static (parameters, value) => new ParameterEntry<T>(parameters, value)));
 
             return entryCodec.ListOf(minSize: 1).XMap(
                 static entries => new ParameterList<T>(
@@ -249,7 +249,7 @@ public static class Climate
                         entry.Parameters,
                         entry.Value)).ToList()),
                 static list => list._values.Select(pair =>
-                    new ParameterEntry<TValue>(pair.First, pair.Second)).ToList());
+                    new ParameterEntry<T>(pair.First, pair.Second)).ToList());
         }
 
         public ParameterList(IReadOnlyList<Pair<ParameterPoint, T>> values)
