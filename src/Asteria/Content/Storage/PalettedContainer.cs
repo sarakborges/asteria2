@@ -78,7 +78,7 @@ public sealed class PalettedContainer<T> : IPaletteResize<T>, IPalettedContainer
         ArgumentNullException.ThrowIfNull(defaultValue);
         _strategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
 
-        _data = CreateData(_strategy.GetConfigurationForBitCount(0));
+        _data = CreateData(_strategy, _strategy.GetConfigurationForBitCount(0));
         _data.Palette.IdFor(defaultValue, this);
     }
 
@@ -88,7 +88,7 @@ public sealed class PalettedContainer<T> : IPaletteResize<T>, IPalettedContainer
         _data = data;
     }
 
-    private Data CreateData(PaletteConfiguration configuration, Data? oldData = null)
+    private static Data CreateData(PalettedContainerStrategy<T> strategy, PaletteConfiguration configuration, Data? oldData = null)
     {
         if (oldData is not null && configuration == oldData.Configuration)
         {
@@ -101,7 +101,7 @@ public sealed class PalettedContainer<T> : IPaletteResize<T>, IPalettedContainer
             PaletteMode.Local when configuration.BitsInMemory <= 4 =>
                 new LinearPalette<T>(configuration.BitsInMemory),
             PaletteMode.Local => new HashMapPalette<T>(configuration.BitsInMemory),
-            PaletteMode.Global => new GlobalPalette<T>(_strategy.GlobalMap),
+            PaletteMode.Global => new GlobalPalette<T>(strategy.GlobalMap),
             _ => throw new InvalidOperationException($"Unknown palette mode '{configuration.Mode}'.")
         };
 
@@ -238,6 +238,138 @@ public sealed class PalettedContainer<T> : IPaletteResize<T>, IPalettedContainer
         }
     }
 
+
+    /// <summary>
+    /// Packs this container into palette entries and optional packed words,
+    /// matching the local serialization representation of Minecraft Java 26.3.
+    /// </summary>
+    public PalettedContainerPackedData<T> Pack() => Pack(_strategy);
+
+    public PalettedContainerPackedData<T> Pack(PalettedContainerStrategy<T> strategy)
+    {
+        ArgumentNullException.ThrowIfNull(strategy);
+        Acquire();
+        try
+        {
+            Data data = Volatile.Read(ref _data);
+            var paletteEntries = new List<T>();
+            var paletteIds = new Dictionary<T, int>(ReferenceEqualityComparer.Instance);
+            var packedContents = new int[strategy.EntryCount];
+
+            for (int index = 0; index < packedContents.Length; index++)
+            {
+                T value = data.Palette.ValueFor(data.Storage.Get(index));
+                if (!paletteIds.TryGetValue(value, out int paletteId))
+                {
+                    paletteId = paletteEntries.Count;
+                    paletteEntries.Add(value);
+                    paletteIds.Add(value, paletteId);
+                }
+
+                packedContents[index] = paletteId;
+            }
+
+            PaletteConfiguration storedConfiguration =
+                strategy.GetConfigurationForPaletteSize(paletteEntries.Count);
+            int bitsPerEntry = storedConfiguration.BitsInStorage;
+            ulong[]? storage = bitsPerEntry == 0
+                ? null
+                : new PackedBitStorage(bitsPerEntry, strategy.EntryCount, packedContents).GetRawCopy();
+
+            return new PalettedContainerPackedData<T>(paletteEntries, storage, bitsPerEntry);
+        }
+        finally
+        {
+            Release();
+        }
+    }
+
+    /// <summary>
+    /// Reconstructs a live container from its serialized palette entries and optional packed words.
+    /// </summary>
+    public static DataResult<PalettedContainer<T>> Unpack(
+        PalettedContainerStrategy<T> strategy,
+        PalettedContainerPackedData<T> packedData)
+    {
+        ArgumentNullException.ThrowIfNull(strategy);
+        ArgumentNullException.ThrowIfNull(packedData);
+
+        IReadOnlyList<T> paletteEntries = packedData.PaletteEntries;
+        int entryCount = strategy.EntryCount;
+        PaletteConfiguration storedConfiguration =
+            strategy.GetConfigurationForPaletteSize(paletteEntries.Count);
+        int bitsOnDisk = storedConfiguration.BitsInStorage;
+
+        if (packedData.BitsPerEntry != PalettedContainerPackedData<T>.UnknownBitsPerEntry &&
+            bitsOnDisk != packedData.BitsPerEntry)
+        {
+            return DataResult<PalettedContainer<T>>.Error(() =>
+                $"Invalid bit count, calculated {bitsOnDisk}, but container declared {packedData.BitsPerEntry}");
+        }
+
+        Data data = CreateData(strategy, storedConfiguration);
+        if (storedConfiguration.BitsInMemory == 0)
+        {
+            if (paletteEntries.Count == 1)
+                data.Palette.IdFor(paletteEntries[0], NoResizePaletteResize<T>.Instance);
+            else if (paletteEntries.Count > 1)
+                throw new ArgumentException(
+                    $"Can't initialize SingleValuePalette with {paletteEntries.Count} values.",
+                    nameof(packedData));
+
+            return DataResult<PalettedContainer<T>>.Success(new PalettedContainer<T>(strategy, data));
+        }
+
+        if (packedData.Storage is null)
+        {
+            return DataResult<PalettedContainer<T>>.Error("Missing values for non-zero storage");
+        }
+
+        PackedBitStorage oldStorage;
+        try
+        {
+            oldStorage = new PackedBitStorage(
+                bitsOnDisk,
+                entryCount,
+                (ulong[])packedData.Storage.Clone());
+        }
+        catch (PackedBitStorage.InitializationException exception)
+        {
+            return DataResult<PalettedContainer<T>>.Error(() =>
+                $"Failed to read PalettedContainer: {exception.Message}");
+        }
+
+        var oldToNewPaletteIds = new int[paletteEntries.Count];
+        for (int index = 0; index < paletteEntries.Count; index++)
+        {
+            oldToNewPaletteIds[index] = data.Palette.IdFor(
+                paletteEntries[index],
+                NoResizePaletteResize<T>.Instance);
+        }
+
+        if (storedConfiguration.AlwaysRepack ||
+            storedConfiguration.BitsInMemory != bitsOnDisk)
+        {
+            for (int index = 0; index < entryCount; index++)
+            {
+                int oldPaletteId = oldStorage.Get(index);
+                if ((uint)oldPaletteId >= (uint)oldToNewPaletteIds.Length)
+                    throw new MissingPaletteEntryException(oldPaletteId);
+
+                data.Storage.Set(index, oldToNewPaletteIds[oldPaletteId]);
+            }
+        }
+        else
+        {
+            data = new Data(
+                storedConfiguration,
+                data.Palette,
+                new PackedBitStorage(bitsOnDisk, entryCount, (ulong[])packedData.Storage.Clone()));
+        }
+
+        return DataResult<PalettedContainer<T>>.Success(new PalettedContainer<T>(strategy, data));
+    }
+
     public PalettedContainer<T> Copy() =>
         new(_strategy, Volatile.Read(ref _data).Copy());
 
@@ -256,7 +388,7 @@ public sealed class PalettedContainer<T> : IPaletteResize<T>, IPalettedContainer
     {
         Data oldData = Volatile.Read(ref _data);
         PaletteConfiguration configuration = _strategy.GetConfigurationForBitCount(bits);
-        Data newData = CreateData(configuration, oldData);
+        Data newData = CreateData(_strategy, configuration, oldData);
         newData.CopyFrom(oldData.Palette, oldData.Storage);
 
         // Publish only after all old palette entries have been copied into the replacement.

@@ -8,6 +8,8 @@ public interface IPalettedContainerReadOnly<T> where T : class
 {
     int Size { get; }
 
+    PalettedContainerPackedData<T> Pack(PalettedContainerStrategy<T> strategy);
+
     T Get(int x, int y, int z);
 
     PalettedContainer<T> Recreate();
