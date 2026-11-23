@@ -20,7 +20,7 @@ internal static class DensityVolumeChecks
             "DensityVolume.indexUnchecked must use Y-minor, then X, then Z storage order.");
 
         Require(volume.IndexOfBlock(-8, 10, 32) == 0 &&
-            volume.IndexOfBlock(-7, 11, 33) == 7 &&
+            volume.IndexOfBlock(-7, 11, 33) == 10 &&
             volume.IndexOfBlock(-7, 12, 35) == 23 &&
             volume.IndexOfBlock(-6, 10, 32) == DensityVolume.NO_BLOCK &&
             volume.IndexOfBlock(-8, 13, 32) == DensityVolume.NO_BLOCK,
