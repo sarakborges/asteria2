@@ -237,6 +237,7 @@ internal static class Program
         IntervalChecks.Run();
         SimplexNoiseChecks.Run();
         PerlinNoiseChecks.Run();
+        SmearedPerlinNoiseChecks.Run();
         NoiseStackChecks.Run();
         LegacyRandomSourceChecks.Run();
         XoroshiroRandomSourceChecks.Run();
