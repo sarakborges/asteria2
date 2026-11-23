@@ -35,6 +35,7 @@ internal static class BlockBehaviorChecks
         CheckSkipRendering();
         CheckFluidReplacement();
         CheckBlockSeed();
+        CheckOffsetCacheValidation();
     }
 
     private static void CheckPathComputationTypes()
@@ -124,6 +125,28 @@ internal static class BlockBehaviorChecks
             "Fluid replacement must allow a non-solid state even when its replaceable property is false.");
     }
 
+    private static void CheckOffsetCacheValidation()
+    {
+        InvalidOperationException? exception = null;
+        try
+        {
+            _ = new OffsetCacheValidationBlock(
+                BlockProperties.Of().OffsetType(OffsetType.XZ));
+        }
+        catch (InvalidOperationException caught)
+        {
+            exception = caught;
+        }
+
+        Require(
+            exception?.Message ==
+                "null has a collision shape and an offset type, but is not marked as dynamicShape in its properties.",
+            "A non-dynamic block with a non-empty collision shape and an offset function must fail cache initialization with the vanilla diagnostic.");
+
+        _ = new OffsetCacheValidationBlock(
+            BlockProperties.Of().OffsetType(OffsetType.XZ).DynamicShape());
+    }
+
     private static void CheckBlockSeed()
     {
         var position = new BlockPos(-17, 82, 35);
@@ -138,10 +161,21 @@ internal static class BlockBehaviorChecks
             "BlockState.GetSeed must dispatch to the owning block's override.");
     }
 
+    private sealed class OffsetCacheValidationBlock : Block
+    {
+        public OffsetCacheValidationBlock(BlockProperties properties)
+            : base(properties, createIntrusiveRegistryHolder: false)
+        {
+            InitializeStateCaches();
+        }
+    }
+
     private sealed class CollisionTestBlock : Block
     {
         public CollisionTestBlock()
-            : base(BlockProperties.Of().NoCollision(), createIntrusiveRegistryHolder: false)
+            : base(
+                BlockProperties.Of().NoCollision().OffsetType(OffsetType.XZ),
+                createIntrusiveRegistryHolder: false)
         {
             InitializeStateCaches();
         }

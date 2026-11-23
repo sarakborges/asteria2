@@ -224,6 +224,14 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         if (!Block.DynamicShape)
         {
             _collisionShape = Block.GetCollisionShape(this, EmptyBlockGetter.Instance, BlockPos.Zero);
+            if (!_collisionShape.IsEmpty() && HasOffsetFunction)
+            {
+                string blockName =
+                    Block.BuiltInRegistryHolder?.KeyOrNull?.Location.ToString() ?? "null";
+                throw new InvalidOperationException(
+                    $"{blockName} has a collision shape and an offset type, but is not marked as dynamicShape in its properties.");
+            }
+
             _hasLargeCollisionShape = IsLargeCollisionShape(_collisionShape);
             _isCollisionShapeFullBlock = Block.IsShapeFullBlock(_collisionShape);
             _faceSturdy = new bool[DIRECTIONS.Length * SUPPORT_TYPES.Length];
