@@ -175,7 +175,7 @@ internal static class BuiltInDensityFunctionChecks
         Require(
             toggle.Value is CacheFunction &&
             mask.Value is CacheFunction &&
-            richness.Value is LerpFunction &&
+            richness.Value is BinaryFunction { Operation: BinaryFunction.Type.ADD } &&
             copper.Value is RangeChoiceFunction &&
             iron.Value is RangeChoiceFunction &&
             gap.Value is BinaryFunction { Operation: BinaryFunction.Type.SUB },
