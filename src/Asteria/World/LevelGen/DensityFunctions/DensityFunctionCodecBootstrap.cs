@@ -185,7 +185,7 @@ internal static class DensityFunctionCodecBootstrap
             static function => (DistanceToPointFunction)function);
 
     private static MapCodec<DensityFunction> CreateUnaryCodec(UnaryFunction.Type operation) =>
-        DensityFunctions.DIRECT_CODEC.FieldOf("input")
+        DensityFunction.CODEC.FieldOf("input")
             .XMap<DensityFunction>(
                 input => new UnaryFunction(operation, input),
                 function => ((UnaryFunction)function).Input);
@@ -193,9 +193,9 @@ internal static class DensityFunctionCodecBootstrap
     private static MapCodec<DensityFunction> CreateBinaryCodec(BinaryFunction.Type operation) =>
         RecordCodecBuilder.MapCodec<BinaryFunction>(instance =>
             instance.Group(
-                    DensityFunctions.DIRECT_CODEC.FieldOf("left")
+                    DensityFunction.CODEC.FieldOf("left")
                         .ForGetter<BinaryFunction>(static function => function.Left),
-                    DensityFunctions.DIRECT_CODEC.FieldOf("right")
+                    DensityFunction.CODEC.FieldOf("right")
                         .ForGetter<BinaryFunction>(static function => function.Right))
                 .Apply(
                     instance,
@@ -207,9 +207,9 @@ internal static class DensityFunctionCodecBootstrap
     private static MapCodec<DensityFunction> CreatePowCodec() =>
         RecordCodecBuilder.MapCodec<PowFunction>(instance =>
             instance.Group(
-                    DensityFunctions.DIRECT_CODEC.FieldOf("base")
+                    DensityFunction.CODEC.FieldOf("base")
                         .ForGetter<PowFunction>(static function => function.Base),
-                    DensityFunctions.DIRECT_CODEC.FieldOf("exponent")
+                    DensityFunction.CODEC.FieldOf("exponent")
                         .ForGetter<PowFunction>(static function => function.Exponent))
                 .Apply(
                     instance,
@@ -227,11 +227,11 @@ internal static class DensityFunctionCodecBootstrap
     private static MapCodec<DensityFunction> CreateLerpCodec() =>
         RecordCodecBuilder.MapCodec<LerpFunction>(instance =>
             instance.Group(
-                    DensityFunctions.DIRECT_CODEC.FieldOf("alpha")
+                    DensityFunction.CODEC.FieldOf("alpha")
                         .ForGetter<LerpFunction>(static function => function.Alpha),
-                    DensityFunctions.DIRECT_CODEC.FieldOf("first")
+                    DensityFunction.CODEC.FieldOf("first")
                         .ForGetter<LerpFunction>(static function => function.First),
-                    DensityFunctions.DIRECT_CODEC.FieldOf("second")
+                    DensityFunction.CODEC.FieldOf("second")
                         .ForGetter<LerpFunction>(static function => function.Second))
                 .Apply(
                     instance,
@@ -242,7 +242,7 @@ internal static class DensityFunctionCodecBootstrap
                 function => (LerpFunction)function);
 
     private static MapCodec<DensityFunction> CreateCacheCodec() =>
-        DensityFunctions.DIRECT_CODEC.FieldOf("input")
+        DensityFunction.CODEC.FieldOf("input")
             .XMap<DensityFunction>(
                 static input => new CacheFunction(input),
                 static function => ((CacheFunction)function).Input);
@@ -250,7 +250,7 @@ internal static class DensityFunctionCodecBootstrap
     private static MapCodec<DensityFunction> CreateInterpolatedCodec() =>
         RecordCodecBuilder.MapCodec<InterpolatedFunction>(instance =>
             instance.Group(
-                    DensityFunctions.DIRECT_CODEC.FieldOf("input")
+                    DensityFunction.CODEC.FieldOf("input")
                         .ForGetter<InterpolatedFunction>(static function => function.Input),
                     Codecs.IntRange(1, int.MaxValue).FieldOf("cell_size_xz")
                         .ForGetter<InterpolatedFunction>(static function => function.CellSizeXz),
@@ -267,7 +267,7 @@ internal static class DensityFunctionCodecBootstrap
     private static MapCodec<DensityFunction> CreateClampCodec() =>
         RecordCodecBuilder.MapCodec<ClampFunction>(instance =>
             instance.Group(
-                    DensityFunctions.DIRECT_CODEC.FieldOf("input")
+                    DensityFunction.CODEC.FieldOf("input")
                         .ForGetter<ClampFunction>(static function => function.Input),
                     DensityFunctions.NOISE_VALUE_CODEC.FieldOf("min")
                         .ForGetter<ClampFunction>(static function => function.Min),
@@ -288,7 +288,7 @@ internal static class DensityFunctionCodecBootstrap
     private static MapCodec<DensityFunction> CreateRangeChoiceCodec() =>
         RecordCodecBuilder.MapCodec<RangeChoiceFunction>(instance =>
             instance.Group(
-                    DensityFunctions.DIRECT_CODEC.FieldOf("input")
+                    DensityFunction.CODEC.FieldOf("input")
                         .ForGetter<RangeChoiceFunction>(static function => function.Input),
                     CreateRangeChoiceBoundsCodec()
                         .ForGetter<RangeChoiceFunction>(static function =>
@@ -324,9 +324,9 @@ internal static class DensityFunctionCodecBootstrap
     private static MapCodec<RangeChoiceBranches> CreateRangeChoiceBranchesCodec() =>
         RecordCodecBuilder.MapCodec<RangeChoiceBranches>(instance =>
             instance.Group(
-                    DensityFunctions.DIRECT_CODEC.FieldOf("when_in_range")
+                    DensityFunction.CODEC.FieldOf("when_in_range")
                         .ForGetter<RangeChoiceBranches>(static branches => branches.WhenInRange),
-                    DensityFunctions.DIRECT_CODEC.FieldOf("when_out_of_range")
+                    DensityFunction.CODEC.FieldOf("when_out_of_range")
                         .ForGetter<RangeChoiceBranches>(static branches => branches.WhenOutOfRange))
                 .Apply(
                     instance,
@@ -336,12 +336,12 @@ internal static class DensityFunctionCodecBootstrap
     private static MapCodec<DensityFunction> CreateIntervalSelectCodec() =>
         RecordCodecBuilder.MapCodec<IntervalSelectFunction>(instance =>
             instance.Group(
-                    DensityFunctions.DIRECT_CODEC.FieldOf("input")
+                    DensityFunction.CODEC.FieldOf("input")
                         .ForGetter<IntervalSelectFunction>(static function => function.Input),
                     DensityFunctions.NOISE_VALUE_CODEC.ListOf()
                         .FieldOf("thresholds")
                         .ForGetter<IntervalSelectFunction>(static function => function.Thresholds),
-                    DensityFunctions.DIRECT_CODEC.ListOf(2)
+                    DensityFunction.CODEC.ListOf(2)
                         .FieldOf("functions")
                         .ForGetter<IntervalSelectFunction>(static function => function.Functions))
                 .Apply(
@@ -400,7 +400,7 @@ internal static class DensityFunctionCodecBootstrap
                         .ForGetter<SliceFunction>(static function => function.Axis),
                     Codecs.INT.FieldOf("coordinate")
                         .ForGetter<SliceFunction>(static function => function.Coordinate),
-                    DensityFunctions.DIRECT_CODEC.FieldOf("input")
+                    DensityFunction.CODEC.FieldOf("input")
                         .ForGetter<SliceFunction>(static function => function.Input))
                 .Apply(
                     instance,
@@ -505,9 +505,9 @@ internal static class DensityFunctionCodecBootstrap
     private static MapCodec<DensityFunction> CreateRoundCodec(RoundFunction.Type operation) =>
         RecordCodecBuilder.MapCodec<RoundFunction>(instance =>
             instance.Group(
-                    DensityFunctions.DIRECT_CODEC.FieldOf("input")
+                    DensityFunction.CODEC.FieldOf("input")
                         .ForGetter<RoundFunction>(static function => function.Input),
-                    DensityFunctions.DIRECT_CODEC.OptionalFieldOf(
+                    DensityFunction.CODEC.OptionalFieldOf(
                             "multiple",
                             DensityFunctions.Constant(1.0f))
                         .ForGetter<RoundFunction>(static function => function.Multiple))
