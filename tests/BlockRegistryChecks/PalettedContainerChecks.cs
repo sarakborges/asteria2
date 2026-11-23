@@ -152,10 +152,12 @@ internal static class PalettedContainerChecks
         missingPaletteEntryStorage.Set(0, 15);
         var missingPaletteEntry = new PalettedContainerPackedData<BlockState>(
             packed.PaletteEntries, missingPaletteEntryStorage.GetRawCopy(), packed.BitsPerEntry);
+        PalettedContainer<BlockState> corruptContainer =
+            PalettedContainer<BlockState>.Unpack(
+                factory.BlockStatesStrategy, missingPaletteEntry).GetOrThrow();
         try
         {
-            _ = PalettedContainer<BlockState>.Unpack(
-                factory.BlockStatesStrategy, missingPaletteEntry);
+            _ = corruptContainer.Get(0, 0, 0);
         }
         catch (MissingPaletteEntryException)
         {
@@ -163,7 +165,7 @@ internal static class PalettedContainerChecks
         }
 
         throw new InvalidOperationException(
-            "Unpack must reject a packed cell that references an absent palette entry.");
+            "Reading a packed cell that references an absent local-palette entry must raise MissingPaletteEntryException.");
     }
 
     private sealed class IdentityValue

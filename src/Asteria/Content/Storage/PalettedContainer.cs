@@ -1,4 +1,4 @@
-
+using Asteria.Serialization;
 
 namespace Asteria.Content.Storage;
 
