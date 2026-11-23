@@ -242,7 +242,7 @@ internal static class ProtoChunkChecks
             chunk.GetPostProcessing().Where(list => list is not null).Sum(list => list!.Count) == totalOffsets,
             "ProtoChunk must ignore post-processing positions outside the inclusive build-height range.");
 
-        RequireThrows<ArgumentOutOfRangeException>(
+        RequireThrows<IndexOutOfRangeException>(
             () => chunk.AddPackedPostProcess(new[] { second }, chunk.GetSectionsCount()),
             "A post-processing section index outside the backing array must preserve the array bounds failure.");
     }
