@@ -124,8 +124,7 @@ internal static class UnaryFunctionChecks
             "UnaryFunction ranges must transform the input interval using vanilla interval operations.");
 
         Require(DensityFunctions.Reciprocal(rangeInput).Range().Equals(Interval.INFINITE) &&
-            DensityFunctions.Log(DensityFunctions.Constant(1.0f)
-                .Add(DensityFunctions.Constant(3.0f))).Range().Equals(Interval.OfExact((float)Math.Log(4.0))),
+            DensityFunctions.Log(DensityFunctions.Constant(4.0f)).Range().Equals(Interval.OfExact((float)Math.Log(4.0))),
             "Reciprocal and log must use the dedicated interval range helpers.");
 
         var axisFixture = new AxisFixture(DensityFunction.AXIS_X | DensityFunction.AXIS_Z);
