@@ -40,6 +40,14 @@ public sealed class ProtoChunk : ChunkAccess
     public void SetLightEngine(LightEngine lightEngine) =>
         _lightEngine = lightEngine ?? throw new ArgumentNullException(nameof(lightEngine));
 
+    public override Holder<Biome> GetNoiseBiome(int quartX, int quartY, int quartZ)
+    {
+        if (_status.IsOrAfter(ChunkStatus.BIOMES))
+            return base.GetNoiseBiome(quartX, quartY, quartZ);
+
+        throw new InvalidOperationException("Asking for biomes before we have biomes");
+    }
+
     public override BlockState GetBlockState(BlockPos position)
     {
         ArgumentNullException.ThrowIfNull(position);

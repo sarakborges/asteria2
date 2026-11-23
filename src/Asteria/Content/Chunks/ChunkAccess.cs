@@ -78,7 +78,7 @@ public abstract class ChunkAccess : BlockGetter
 
     public ChunkPos GetPos() => _chunkPos;
 
-    public Holder<Biome> GetNoiseBiome(int quartX, int quartY, int quartZ)
+    public virtual Holder<Biome> GetNoiseBiome(int quartX, int quartY, int quartZ)
     {
         int quartMinY = QuartPos.FromBlock(GetMinY());
         int quartMaxY = unchecked(quartMinY + QuartPos.FromBlock(GetHeight()) - 1);

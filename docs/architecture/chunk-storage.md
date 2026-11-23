@@ -279,3 +279,10 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - Its default position-marking operation emits the reference warning; packed-offset import appends into the requested section.
 - ProtoChunk packs local X/Y/Z nibbles into a signed short, queues positions only inside build height, and unpacks relative coordinates using the target chunk and section.
 - Tests cover negative chunk/section coordinates, round-trip, ordered append, inclusive build bounds and invalid section indices.
+
+
+## ProtoChunk biome availability — Minecraft Java 26.3
+
+- ProtoChunk rejects `GetNoiseBiome` calls until its persisted status reaches `BIOMES`, using the reference error message.
+- Once promoted, lookup delegates to ChunkAccess, retaining quart-section addressing and vertical clamping.
+- Palette filling does not itself promote the chunk status; the lifecycle stage owns that transition.

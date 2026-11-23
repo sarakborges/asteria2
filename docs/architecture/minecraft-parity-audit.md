@@ -804,3 +804,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `ProtoChunk.MarkPosForPostProcessing` só registra posições dentro da altura de construção e escreve no slot da seção correspondente.
 - `PackOffsetCoordinates` e `UnpackOffsetCoordinates` preservam os quatro bits locais X/Y/Z e a composição com coordenadas de seção, inclusive para chunks e Y negativos.
 - Testes cobrem alocação por seção, round-trip, ordem de append, limites inclusivos e erro de índice fora do array.
+
+
+## Incremento — ProtoChunk biome availability (23/11/2026)
+
+- `ChunkAccess.GetNoiseBiome` tornou-se virtual para permitir o comportamento específico de chunks em geração.
+- `ProtoChunk.GetNoiseBiome` agora só expõe a palette quando `GetPersistedStatus()` alcança `BIOMES`; antes disso lança `InvalidOperationException` com a mensagem vanilla.
+- Após o estágio, a consulta delega ao lookup da classe base, preservando o mapeamento quart/section e o clamp vertical do mundo.
+- Testes verificam erro antes e depois do preenchimento mas antes da promoção de status, contagem de 64 células por seção, consulta após BIOMES e limites inferior/superior de quart Y.

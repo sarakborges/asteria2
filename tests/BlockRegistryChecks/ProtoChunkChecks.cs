@@ -1,4 +1,5 @@
 using Asteria.Content.Blocks;
+using Asteria.Content.Biomes;
 using Asteria.Content.Chunks;
 using Asteria.Content.Chunks.Status;
 using Asteria.Content.Registries;
@@ -31,6 +32,7 @@ internal static class ProtoChunkChecks
         CheckLightEngineNotifications();
         CheckPersistedStatusDirtyState();
         CheckPostProcessingOffsets();
+        CheckBiomeAvailabilityGate();
     }
 
     private static ProtoChunk CreateChunk(int chunkX = 0, int chunkZ = 0) =>
@@ -245,6 +247,65 @@ internal static class ProtoChunkChecks
         RequireThrows<IndexOutOfRangeException>(
             () => chunk.AddPackedPostProcess(new[] { second }, chunk.GetSectionsCount()),
             "A post-processing section index outside the backing array must preserve the array bounds failure.");
+    }
+
+    private sealed class AlternatingBiomeResolver : BiomeResolver
+    {
+        private readonly Holder<Biome> _plains = Biomes.PLAINS.BuiltInRegistryHolder!;
+        private readonly Holder<Biome> _desert = Biomes.DESERT.BuiltInRegistryHolder!;
+
+        public int CallCount { get; private set; }
+
+        public Holder<Biome> GetNoiseBiome(int quartX, int quartY, int quartZ)
+        {
+            CallCount++;
+            return ((quartX + quartY + quartZ) & 1) == 0 ? _plains : _desert;
+        }
+    }
+
+    private static void CheckBiomeAvailabilityGate()
+    {
+        ProtoChunk chunk = CreateChunk(2, -3);
+        var resolver = new AlternatingBiomeResolver();
+
+        RequireThrows<InvalidOperationException>(
+            () => chunk.GetNoiseBiome(0, 0, 0),
+            "ProtoChunk must reject biome lookup before the persisted status reaches BIOMES.");
+
+        chunk.FillBiomesFromNoise(resolver);
+        Require(
+            resolver.CallCount == chunk.GetSectionsCount() * ChunkSection.BiomeCount,
+            "ProtoChunk biome filling must resolve all 64 quart cells in each vertical section.");
+
+        RequireThrows<InvalidOperationException>(
+            () => chunk.GetNoiseBiome(0, 0, 0),
+            "Filling the biome palette alone must not expose biomes before the chunk status is promoted.");
+
+        chunk.SetPersistedStatus(ChunkStatus.BIOMES);
+
+        int quartMinX = QuartPos.FromBlock(chunk.GetPos().GetMinBlockX());
+        int quartMinY = QuartPos.FromBlock(chunk.GetMinY());
+        int quartMinZ = QuartPos.FromBlock(chunk.GetPos().GetMinBlockZ());
+        int quartMaxY = unchecked(quartMinY + QuartPos.FromBlock(chunk.GetHeight()) - 1);
+
+        Require(
+            ReferenceEquals(
+                chunk.GetNoiseBiome(quartMinX, quartMinY, quartMinZ),
+                chunk.GetSection(chunk.GetSectionIndex(chunk.GetMinY()))
+                    .GetNoiseBiome(0, 0, 0)),
+            "After BIOMES, ProtoChunk must delegate lookup to the section's quart biome palette.");
+
+        Require(
+            ReferenceEquals(
+                chunk.GetNoiseBiome(quartMinX, int.MinValue, quartMinZ),
+                chunk.GetNoiseBiome(quartMinX, quartMinY, quartMinZ)),
+            "After BIOMES, ProtoChunk must clamp low quart Y values to the build-height minimum.");
+
+        Require(
+            ReferenceEquals(
+                chunk.GetNoiseBiome(quartMinX, int.MaxValue, quartMinZ),
+                chunk.GetNoiseBiome(quartMinX, quartMaxY, quartMinZ)),
+            "After BIOMES, ProtoChunk must clamp high quart Y values to the build-height maximum.");
     }
 
     private static void RequireThrows<TException>(Action action, string message)
