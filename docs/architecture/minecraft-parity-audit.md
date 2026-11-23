@@ -574,3 +574,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `NormalNoise.CreateForLegacyNetherBiome` agora compõe duas pilhas legacy sequenciais; a segunda usa o fator de frequência `1.0181268882175227` e ambas usam o `normalizationFactor * baseAmplitude` do `NormalNoise`.
 - O caminho legacy foi mantido separado da criação moderna por nome `octave_<index>`; não foi substituído nem convertido para o algoritmo novo.
 - `LegacyFbmInitializerChecks` compara o resultado contra a sequência manual vanilla de construções e consumo, testa oitava zero silenciada e verifica a falha de oitavas positivas.
+
+
+## Incremento — buffers com escopo e contrato DensitySampler (23/11/2026)
+
+- Portados `DensityBufferArena` e `ScopedDensityBuffer`: o arena global cria buffers sem pooling e libera com no-op; o buffer com escopo preserva `restore`, capacidade, validação de uso simultâneo, contador de idade e liberação idempotente.
+- Portados `DensitySampler` e o record `Bound`: amostragem pontual e de volume, traversal naive vanilla em ordem Z/X/Y e aquisição de buffer escopado pelo `SamplerContext`.
+- Portados `ContextKey` e `ContextMap` como dados tipados imutáveis; as keys preservam igualdade por identidade. O builder suporta parâmetros required/optional e leitura de parâmetros durante a construção.
+- Portado `SamplerContext`: contexto de campos, arena configurável, buffers escopados, cache de volume e cache pontual indexados pelo cache id, com o mesmo uso de `DensityVolume.IndexOfBlock` e da posição empacotada de `BlockPos`.
+- A expansão de células usa o arredondamento para múltiplos de 16 da referência; cada cache de volume fecha o buffer anterior quando a geometria muda. O cache de ponto evita reusar NaN como valor calculado.
+- Testes cobrem ordenação das amostras, bind, buffer lease/restore/close, context keys/map, buffers customizados e caches de volume/ponto.
+- `DensityFunction` e operadores ainda serão portados depois desta infraestrutura; este incremento não introduz nenhum gerador de densidade alternativo.

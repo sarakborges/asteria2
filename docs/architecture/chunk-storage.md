@@ -95,3 +95,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - Volume amostrado em uma grade XYZ, com passo positivo independente por eixo e coordenadas mínimas em blocos.
 - Layout linear é Y-minor, X intermediário, Z major; `IndexOfBlock` aceita somente coordenadas que pertençam ao grid, incluindo alinhamento dos passos.
 - Bounding/intersection usa limites inclusivos; volumes podem representar tanto blocos contíguos quanto amostragens esparsas.
+
+
+## Density sampling runtime — Minecraft Java 26.3
+
+- `DensitySampler` exposes point and volume evaluation. Its naive volume traversal is Z-major, X-middle, Y-minor, matching the linear order of `DensityVolume`.
+- `SamplerContext` owns typed user fields, a buffer arena and optional per-cache-id point/volume cells.
+- `ScopedDensityBuffer` follows the acquire/restore/close lifecycle; the default global arena allocates buffers directly and has a no-op release, as in vanilla.
+- The first stage of the density evaluation graph is now present; `DensityFunction` nodes and `NoiseRouter` are still pending.
