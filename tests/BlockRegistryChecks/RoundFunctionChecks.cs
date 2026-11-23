@@ -156,7 +156,7 @@ internal static class RoundFunctionChecks
                     DensityFunctions.Constant(0.0f))) == -5.7f &&
             float.IsNaN(Sample(DensityFunctions.Round(
                     DensityFunctions.Constant(float.NaN),
-                    DensityFunctions.Constant(0.0f))),
+                    DensityFunctions.Constant(0.0f)))),
             "RoundFunction generic sampler must return the input unchanged when multiple is zero.");
 
         var multipleSampler = new CountingSampler(2.0f);
