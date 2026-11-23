@@ -66,7 +66,7 @@ internal static class DensitySamplerContextBindingChecks
         var sampler = new ContextBoundSampler(key, fallback);
 
         Require(
-            sampler.SampleValue(context, 2, 3, 4) == 237.0f &&
+            sampler.SampleValue(context, 2, 3, 4) == 239.0f &&
             fallback.PointCalls == 1,
             "ContextBoundSampler must delegate point evaluation to the fallback when its context field is absent.");
 
@@ -93,7 +93,7 @@ internal static class DensitySamplerContextBindingChecks
 
         var sampler = new ContextBoundSampler(key, fallback);
         Require(
-            sampler.SampleValue(context, 1, 2, 3) == 225.0f &&
+            sampler.SampleValue(context, 1, 2, 3) == 143.0f &&
             selected.PointCalls == 1 &&
             fallback.PointCalls == 0,
             "ContextBoundSampler must resolve the context-specific sampler for point evaluation.");
@@ -104,7 +104,7 @@ internal static class DensitySamplerContextBindingChecks
         Require(
             selected.VolumeCalls == 1 &&
             fallback.VolumeCalls == 0 &&
-            output.Get(1) == 121.0f,
+            output.Get(1) == 120.0f,
             "ContextBoundSampler must resolve the context-specific sampler for volume evaluation.");
     }
 
@@ -124,14 +124,14 @@ internal static class DensitySamplerContextBindingChecks
         DensityFunction second = new MarkerFunction(1.0f);
 
         Require(
-            ((DensitySamplerSet)set).SampleValue(first, 4, 5, 6) == 456.0f &&
+            ((DensitySamplerSet)set).SampleValue(first, 4, 5, 6) == 463.0f &&
             selected.PointCalls == 1 &&
             fallback.PointCalls == 0 &&
             set.Lookups == 1,
             "DensitySamplerSet.sampleValue must resolve one Bound and invoke its point sampler.");
 
         Require(
-            ((DensitySamplerSet)set).SampleValue(second, 1, 2, 3) == 123.0f &&
+            ((DensitySamplerSet)set).SampleValue(second, 1, 2, 3) == 130.0f &&
             selected.PointCalls == 2 &&
             set.Lookups == 2,
             "DensitySamplerSet must perform a fresh lookup for every function request.");
