@@ -5,6 +5,7 @@ using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Core.Shapes;
 using Asteria.World;
+using Asteria.World.Pathfinding;
 
 namespace Asteria.Content.Blocks;
 
@@ -99,6 +100,23 @@ public class Block
         ArgumentNullException.ThrowIfNull(state);
         return global::Asteria.Content.Fluids.Fluids.EMPTY.DefaultFluidState;
     }
+
+    public virtual bool IsPathfindable(BlockState state, PathComputationType type) =>
+        type switch
+        {
+            PathComputationType.LAND =>
+                !state.IsCollisionShapeFullBlock(EmptyBlockGetter.Instance, BlockPos.Zero),
+            PathComputationType.WATER =>
+                state.GetFluidState().Fluid.Is(FluidTags.Water),
+            PathComputationType.AIR =>
+                !state.IsCollisionShapeFullBlock(EmptyBlockGetter.Instance, BlockPos.Zero),
+            _ => false
+        };
+
+    public virtual bool SkipRendering(
+        BlockState state,
+        BlockState neighborState,
+        Direction direction) => false;
 
     public MapColor GetDefaultMapColor() =>
         Properties.MapColorValue(DefaultState) ??
