@@ -127,3 +127,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - Sampler compilation selects the specialized constant-left/right variants and min/max range-pruning variants from the 26.3 source.
 - Generic volume samplers allocate the right-hand scratch buffer from `SamplerContext` and release it when complete. Scalar mul/div retain the vanilla left-zero short-circuit; volume paths evaluate both child buffers.
 - Density function type codecs remain deferred with local persistence; no operator placeholder codecs were registered.
+
+
+## Lerp density function — Minecraft Java 26.3
+
+- `LerpFunction` interpolates between first and second through an alpha density input, with exact interval propagation and the union of all three coordinate domains.
+- Compilation uses the vanilla constant-first and constant-second sampler specializations; otherwise it uses the generic sampler. Point and volume paths preserve alpha 0/1 selection branches.
+- Volume evaluation owns scoped scratch buffers for the non-output branches and releases them at method exit.
+- Function codecs remain deferred with local persistence; no placeholder codec is registered.

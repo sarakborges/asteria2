@@ -79,5 +79,17 @@ public static class DensityFunctions
     public static DensityFunction Max(DensityFunction left, DensityFunction right) =>
         new BinaryFunction(BinaryFunction.Type.MAX, left, right);
 
+    public static DensityFunction Lerp(
+        DensityFunction alpha,
+        DensityFunction first,
+        DensityFunction second) =>
+        new LerpFunction(alpha, first, second);
+
+    public static DensityFunction Lerp(
+        DensityFunction alpha,
+        float first,
+        DensityFunction second) =>
+        Lerp(alpha, Constant(first), second);
+
 
 }

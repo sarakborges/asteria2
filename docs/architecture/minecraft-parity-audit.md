@@ -617,3 +617,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Samplers genéricos avaliam a esquerda no buffer de saída e a direita em um `ScopedDensityBuffer` do contexto, liberando-o ao final. Min/max volumétrico preserva as comparações condicionais do código 26.3 em vez de `Math.Min/Max`.
 - Portadas factories de `DensityFunctions` e métodos default `Add/Sub/Mul/Div` em `DensityFunction`. Map codecs de enumeração seguem adiados com persistência local.
 - `BinaryFunctionChecks` cobre ids/ordem, otimização de operandos constantes em ambos os lados, curto-circuito escalar, ranges, domínios, poda de ranges disjuntos, samplers volumétricos, liberação de buffers e rewrite dos dois filhos.
+
+
+## Incremento — LerpFunction (23/11/2026)
+
+- Portado `LerpFunction` de Minecraft Java 26.3 com os três filhos `alpha/first/second`, range via `Interval.Lerp`, união dos três domínios espaciais e rewrite que mantém identidade se nenhum filho mudar.
+- `compileSampler` compila os três filhos antes da seleção especializada. Um primeiro valor constante gera `ConstFirstSampler`; caso contrário, segundo valor constante gera `ConstSecondSampler`; sem constantes usa o sampler genérico.
+- Os três samplers preservam os atalhos escalares e volumétricos: alpha 0 seleciona first; alpha 1 seleciona second; qualquer outro valor chama `Mth.Lerp`. O volume usa buffers escopados para os filhos auxiliares e fecha-os ao final.
+- Adicionadas as factories `DensityFunctions.Lerp(alpha, first, second)` e a sobrecarga com primeiro valor constante.
+- `LerpFunctionChecks` cobre os três caminhos de compilação, valores alpha fora de [0,1], atalhos de avaliação pontual, amostragem de volume, ranges, domínio espacial, buffers e reescrita.
+- Codec da função continua adiado com persistência local; não foi criado substituto.
