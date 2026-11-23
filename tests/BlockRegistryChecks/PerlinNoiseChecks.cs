@@ -1,3 +1,4 @@
+using System.Text;
 using System.Globalization;
 using Asteria.Core;
 using Asteria.Util;
