@@ -36,6 +36,7 @@ internal static class DensityFunctionCodecChecks
         CheckNoiseFunctionCodec();
         CheckShiftNoiseCodecs();
         CheckFindTopSurfaceCodec();
+        CheckOldBlendedNoiseCodec();
         CheckHolderCodecs();
         CheckRejectedInputs();
     }
@@ -43,8 +44,8 @@ internal static class DensityFunctionCodecChecks
     private static void CheckTypeRegistry()
     {
         Require(
-            BuiltInRegistries.DensityFunctionType.Count == 39,
-            "The density-function codec slice must register constant, noise, shift variants, find_top_surface, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient, spline, distance_to_point and end_outer_islands.");
+            BuiltInRegistries.DensityFunctionType.Count == 40,
+            "The density-function codec slice must register constant, noise, shift variants, find_top_surface, old_blended_noise, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient, spline, distance_to_point and end_outer_islands.");
 
         Require(
             BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:constant")) &&
@@ -1138,6 +1139,155 @@ internal static class DensityFunctionCodecChecks
 #pragma warning disable CS0618
         public Asteria.World.LevelGen.IRandomSource CreateEndIslandRandom() =>
             throw new InvalidOperationException("FindTopSurfaceFunction tests must not resolve End Island random streams.");
+#pragma warning restore CS0618
+    }
+
+    private static void CheckOldBlendedNoiseCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        BlendedNoise expected = new(
+            XzScale: 0.75,
+            YScale: 1.25,
+            XzFactor: 8.0,
+            YFactor: 4.0,
+            SmearScaleMultiplier: 2.5);
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:old_blended_noise" &&
+            ops.Get(encoded, "xz_scale").GetOrThrow().GetDouble() == 0.75 &&
+            ops.Get(encoded, "y_scale").GetOrThrow().GetDouble() == 1.25 &&
+            ops.Get(encoded, "xz_factor").GetOrThrow().GetDouble() == 8.0 &&
+            ops.Get(encoded, "y_factor").GetOrThrow().GetDouble() == 4.0 &&
+            ops.Get(encoded, "smear_scale_multiplier").GetOrThrow().GetDouble() == 2.5,
+            "BlendedNoise must encode all five 26.3 old_blended_noise fields.");
+
+        BlendedNoise decoded = DensityFunctions.DIRECT_CODEC
+            .Parse(ops, encoded)
+            .GetOrThrow() as BlendedNoise
+            ?? throw new InvalidOperationException("old_blended_noise codec returned another density-function node.");
+
+        Require(
+            decoded == expected,
+            "BlendedNoise must round-trip all scale and factor parameters.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:old_blended_noise","xz_scale":0.0009,"y_scale":1.0,"xz_factor":1.0,"y_factor":1.0,"smear_scale_multiplier":1.0}"""))
+                .IsError &&
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:old_blended_noise","xz_scale":1000.1,"y_scale":1.0,"xz_factor":1.0,"y_factor":1.0,"smear_scale_multiplier":1.0}"""))
+                .IsError,
+            "BlendedNoise must enforce the inclusive [0.001,1000] scale and factor ranges.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:old_blended_noise","xz_scale":1.0,"y_scale":1.0,"xz_factor":1.0,"y_factor":1.0,"smear_scale_multiplier":0.99}"""))
+                .IsError &&
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:old_blended_noise","xz_scale":1.0,"y_scale":1.0,"xz_factor":1.0,"y_factor":1.0,"smear_scale_multiplier":8.01}"""))
+                .IsError,
+            "BlendedNoise must enforce the inclusive [1,8] smear scale multiplier range.");
+
+        Require(
+            expected.DomainAxes() == DensityFunction.ALL_AXES &&
+            expected.Range().Min() < 0.0f &&
+            expected.Range().Max() > 0.0f,
+            "BlendedNoise must expose all coordinate axes and its symmetric limit-noise range.");
+
+        Require(
+            ReferenceEquals(expected.RewriteChildren(static child => child), expected),
+            "BlendedNoise has no density-function children and must preserve identity under rewriting.");
+
+        BlendedNoise.FbmSet fbms = expected.CreateFbmSet(
+            new XoroshiroRandomSource(0x1234_5678_9ABC_DEF0L));
+        Require(
+            fbms.MinLimitNoise.GetLayer(0) is SmearedPerlinNoise &&
+            fbms.MaxLimitNoise.GetLayer(0) is SmearedPerlinNoise &&
+            fbms.MainNoise.GetLayer(0) is SmearedPerlinNoise,
+            "BlendedNoise must construct all three octave stacks from SmearedPerlinNoise.");
+
+        bool positiveFirstOctaveRejected = false;
+        try
+        {
+            _ = BlendedNoise.CreateFbm(
+                new XoroshiroRandomSource(1L),
+                firstOctave: 1,
+                smearScaleY: 1.0,
+                valueFactor: 1.0);
+        }
+        catch (ArgumentException exception) when (
+            exception.Message.Contains("firstOctave>0", StringComparison.Ordinal))
+        {
+            positiveFirstOctaveRejected = true;
+        }
+
+        Require(
+            positiveFirstOctaveRejected,
+            "BlendedNoise.createFbm must reject a positive first octave.");
+
+        var context = new BlendedNoiseCompileContext();
+        DensitySampler contextualSampler = expected.CompileSampler(context);
+        DensitySampler explicitlySeededSampler = expected.CompileSampler(
+            new XoroshiroRandomSource(0x5A17_2026L));
+
+        foreach ((int x, int y, int z) in new[]
+        {
+            (-32, -64, 48),
+            (0, 0, 0),
+            (37, 91, -113)
+        })
+        {
+            float contextualValue = contextualSampler.SampleValue(
+                SamplerContext.EmptyUncached, x, y, z);
+            float explicitValue = explicitlySeededSampler.SampleValue(
+                SamplerContext.EmptyUncached, x, y, z);
+
+            Require(
+                float.IsFinite(contextualValue) &&
+                contextualValue == explicitValue,
+                "BlendedNoise.compileSampler must use the compile context's deterministic terrain random stream.");
+        }
+
+        var volume = new DensityVolume(2, 3, 2, -8, -16, 24, 2, 4, 3);
+        DensityBuffer output = DensityBuffer.CreateUnpooled(volume.Size());
+        contextualSampler.SampleVolume(SamplerContext.EmptyUncached, output, volume);
+
+        for (int z = 0; z < volume.SizeZ; z++)
+        for (int x = 0; x < volume.SizeX; x++)
+        for (int y = 0; y < volume.SizeY; y++)
+        {
+            float expectedValue = contextualSampler.SampleValue(
+                SamplerContext.EmptyUncached,
+                volume.BlockX(x),
+                volume.BlockY(y),
+                volume.BlockZ(z));
+            float actual = output.Get(volume.IndexUnchecked(x, y, z));
+            Require(
+                MathF.Abs(actual - expectedValue) <= 0.0002f,
+                "BlendedNoise volume sampling must agree with point evaluation for each sampled block.");
+        }
+    }
+
+    private sealed class BlendedNoiseCompileContext : DensityFunction.CompileContext
+    {
+        public Asteria.World.LevelGen.Synth.Noise CreateNoiseSampler(
+            Holder<NormalNoise> parameters) =>
+            throw new InvalidOperationException("BlendedNoise must not resolve registered NormalNoise holders.");
+
+        public Asteria.World.LevelGen.IRandomSource CreateRandom(ResourceLocation seed) =>
+            new XoroshiroRandomSource(0x5A17_2026L);
+
+#pragma warning disable CS0618
+        public Asteria.World.LevelGen.IRandomSource CreateEndIslandRandom() =>
+            throw new InvalidOperationException("BlendedNoise must not resolve End Island random streams.");
 #pragma warning restore CS0618
     }
 
