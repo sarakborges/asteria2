@@ -126,7 +126,7 @@ internal static class DensityFunctionChecks
         var registry = new Registry<DensityFunction>(
             ResourceLocation.Parse("asteria:test_density_functions"));
         RegistryKey<Registry<DensityFunction>> registryKey =
-            RegistryKey<Registry<DensityFunction>>.CreateRegistryKey(registry.Location);
+            RegistryKey<DensityFunction>.CreateRegistryKey(registry.Location);
         RegistryKey<DensityFunction> key = RegistryKey<DensityFunction>.Create(
             registryKey,
             ResourceLocation.Parse("asteria:constant"));
