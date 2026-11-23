@@ -585,3 +585,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - A expansão de células usa o arredondamento para múltiplos de 16 da referência; cada cache de volume fecha o buffer anterior quando a geometria muda. O cache de ponto evita reusar NaN como valor calculado.
 - Testes cobrem ordenação das amostras, bind, buffer lease/restore/close, context keys/map, buffers customizados e caches de volume/ponto.
 - `DensityFunction` e operadores ainda serão portados depois desta infraestrutura; este incremento não introduz nenhum gerador de densidade alternativo.
+
+
+## Incremento — DensityFunction base e ConstantFunction (23/11/2026)
+
+- Portado o contrato base `DensityFunction` 26.3: máscaras de domínio X/Y/Z, `axesFrom`, compilação para `DensitySampler`, reescrita de filhos, intervalo e domínio espacial.
+- Portado `CompileContext` com resolução de `NormalNoise` via `Holder`, streams aleatórios por identificador e fonte legacy de End Islands.
+- Portados `ConstantFunction` e `ConstantFunction.Sampler`: faixa pontual exata, domínio sem eixos, reescrita identidade, preenchimento de buffer e avaliação independente das coordenadas.
+- Portados `DensityFunctions.zero()` (singleton compartilhado) e `constant(value)` (nova instância por chamada).
+- `DfRewriteRule` usa delegate C# para representar a interface funcional Java; `DfRewriteRules.Sequence` mantém a ordem e o encadeamento dos resultados. A forma específica `SliceUniformAxes` aguardará `SliceFunction`; `INLINE_REFERENCE` aguardará o wrapper `HolderHolder`.
+- Os codecs de função (`DensityFunction.CODEC`, `ConstantFunction.CODEC`, registry de tipos e bootstrap) não foram substituídos nem stubados: seguem adiados com persistência local. Os métodos default dos operadores também aguardam os nós reais `UnaryFunction`/`BinaryFunction` para não expor factories incompletas.
+- `DensityFunctionChecks` cobre máscaras de eixos, singleton zero, criação de constantes, range, amostragem escalar/volumétrica, capacidade residual do buffer, reescrita identidade, ordem de sequência e superfície do CompileContext.

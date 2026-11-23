@@ -103,3 +103,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - `SamplerContext` owns typed user fields, a buffer arena and optional per-cache-id point/volume cells.
 - `ScopedDensityBuffer` follows the acquire/restore/close lifecycle; the default global arena allocates buffers directly and has a no-op release, as in vanilla.
 - The first stage of the density evaluation graph is now present; `DensityFunction` nodes and `NoiseRouter` are still pending.
+
+
+## DensityFunction graph foundation — Minecraft Java 26.3
+
+- The base density-function contract is present: coordinate-axis bit masks, sampler compilation, child rewriting, interval range, and domain-axis reporting.
+- The runtime-only first node is `ConstantFunction`, including its exact interval, coordinate-independent sampler, and active-buffer fill.
+- `DensityFunctions.Zero` returns the shared vanilla zero node; `Constant` creates a new node per call.
+- Context and rewrite contracts are present. Operator nodes, SliceFunction, holder-reference inlining and density codecs remain separate follow-up ports; codecs are deferred with local persistence and no stand-ins are registered.
