@@ -53,6 +53,13 @@ public class LegacyRandomSource : IRandomSource
         return modulo;
     }
 
+    public int NextInt(int origin, int bound)
+    {
+        if (origin >= bound)
+            throw new ArgumentException("bound - origin is non positive");
+        return unchecked(origin + NextInt(unchecked(bound - origin)));
+    }
+
     public virtual long NextLong()
     {
         int upper = NextBits(32);
