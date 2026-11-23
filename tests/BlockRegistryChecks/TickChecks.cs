@@ -61,7 +61,7 @@ internal static class TickChecks
             ops.Get(encoded, "z").GetOrThrow().GetInt32() == 31 &&
             ops.Get(encoded, "t").GetOrThrow().GetInt32() == 120 &&
             ops.Get(encoded, "p").GetOrThrow().GetInt32() == -2 &&
-            ops.Get(encoded, "x").IsError,
+            ops.Get(encoded, "pos").IsError,
             "SavedTick codec must use the flat i, x, y, z, t and p fields from Minecraft Java 26.3.");
 
         SavedTick<Block> decoded = blockCodec.Parse(ops, encoded).GetOrThrow();
