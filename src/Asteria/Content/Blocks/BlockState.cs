@@ -266,12 +266,12 @@ public sealed class BlockState : StateHolder<Block, BlockState>
                 AABB bounds = shape.Bounds();
                 if (bounds.GetSize() >= 0.7291666666666666)
                     return SolidDebugger.LogAndGet(
-                        Block,
+                        Block.SolidDebugHolder,
                         SolidDebugger.Reason.LARGE_ENOUGH_COLLISION_SHAPE);
                 else
                     return bounds.GetYSize() >= 1.0
                         ? SolidDebugger.LogAndGet(
-                            Block,
+                            Block.SolidDebugHolder,
                             SolidDebugger.Reason.HIGH_ENOUGH_COLLISION_SHAPE)
                         : SolidDebugger.LogAndGet(Block.SolidDebugHolder, SolidDebugger.Reason.FALLTHROUGH);
             }
