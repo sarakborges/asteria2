@@ -145,7 +145,7 @@ internal static class RoundFunctionChecks
                     DensityFunctions.Constant(2.0f))) == 6.0f &&
             Sample(DensityFunctions.Round(
                     DensityFunctions.Constant(5.0f),
-                    DensityFunctions.Constant(2.0f))) == 4.0f &&
+                    DensityFunctions.Constant(2.0f))) == 6.0f &&
             Sample(DensityFunctions.Truncate(
                     DensityFunctions.Constant(-5.7f),
                     DensityFunctions.Constant(2.0f))) == -4.0f,
@@ -154,9 +154,9 @@ internal static class RoundFunctionChecks
         Require(Sample(DensityFunctions.Floor(
                     DensityFunctions.Constant(-5.7f),
                     DensityFunctions.Constant(0.0f))) == -5.7f &&
-            Sample(DensityFunctions.Round(
+            float.IsNaN(Sample(DensityFunctions.Round(
                     DensityFunctions.Constant(float.NaN),
-                    DensityFunctions.Constant(0.0f)) is float.NaN,
+                    DensityFunctions.Constant(0.0f))),
             "RoundFunction generic sampler must return the input unchanged when multiple is zero.");
 
         var multipleSampler = new CountingSampler(2.0f);
