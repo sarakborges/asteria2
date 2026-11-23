@@ -94,8 +94,8 @@ internal static class BlockBehaviorChecks
             })
             .MapColor(state =>
             {
-                Require(!state.IsAir && state.DestroySpeed == 0.0f,
-                    "Minecraft evaluates map color before assigning isAir and destroySpeed snapshots.");
+                Require(state.IsAir && state.DestroySpeed == 0.0f,
+                    "Minecraft assigns isAir before evaluating map color, but assigns destroySpeed afterward.");
                 events.Add("map-color");
                 return MapColor.NONE;
             });
