@@ -26,14 +26,15 @@ internal static class DensityFunctionCodecChecks
         CheckIntervalSelectCodec();
         CheckSliceCodec();
         CheckGradientCodec();
+        CheckSplineCodec();
         CheckRejectedInputs();
     }
 
     private static void CheckTypeRegistry()
     {
         Require(
-            BuiltInRegistries.DensityFunctionType.Count == 31,
-            "The density-function codec slice must register constant, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice and gradient.");
+            BuiltInRegistries.DensityFunctionType.Count == 32,
+            "The density-function codec slice must register constant, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient and spline.");
 
         Require(
             BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:constant")) &&
@@ -545,6 +546,86 @@ internal static class DensityFunctionCodecChecks
                 ParseJson("""{"type":"asteria:gradient","axis":"x","tiling":"wrap","from_coordinate":0,"to_coordinate":1,"from_value":0.0,"to_value":1.0}"""))
                 .IsError,
             "GradientFunction must reject unknown tiling modes.");
+    }
+
+    private static void CheckSplineCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+
+        var coordinate = new SplineFunction.Coordinate(
+            new UnaryFunction(
+                UnaryFunction.Type.ABS,
+                new ConstantFunction(-0.375f)));
+
+        CubicSpline<SplineFunction.Unit> nested =
+            CubicSpline<SplineFunction.Unit>.CreateBuilder(coordinate)
+                .AddPoint(-1.0f, -0.5f)
+                .AddPoint(1.0f, 0.5f)
+                .Build();
+
+        CubicSpline<SplineFunction.Unit> spline =
+            CubicSpline<SplineFunction.Unit>.CreateBuilder(coordinate)
+                .AddPoint(-2.0f, -1.0f, 0.25f)
+                .AddPoint(0.0f, nested)
+                .AddPoint(2.0f, 1.0f, -0.25f)
+                .Build();
+
+        var expected = new SplineFunction(spline);
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        JsonElement splineData = ops.Get(encoded, "spline").GetOrThrow();
+        JsonElement points = ops.Get(splineData, "points").GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:spline" &&
+            ops.Get(splineData, "coordinate").GetOrThrow().ValueKind == JsonValueKind.Object &&
+            points.GetArrayLength() == 3,
+            "SplineFunction must serialize its coordinate and non-empty point list using the 26.3 shape.");
+
+        JsonElement middlePoint = points[1];
+        Require(
+            ops.Get(middlePoint, "location").GetOrThrow().GetSingle() == 0.0f &&
+            ops.Get(middlePoint, "value").GetOrThrow().ValueKind == JsonValueKind.Object,
+            "Spline point values must recursively encode nested multipoint splines.");
+
+        SplineFunction decoded = DensityFunctions.DIRECT_CODEC
+            .Parse(ops, encoded)
+            .GetOrThrow() as SplineFunction
+            ?? throw new InvalidOperationException("Spline codec returned another density-function node.");
+
+        Require(
+            decoded.Spline.ParityString() == expected.Spline.ParityString() &&
+            decoded.Spline.Range().Equals(expected.Spline.Range()),
+            "SplineFunction must round-trip the recursive spline structure, coordinates and derivatives.");
+
+        var constantExpected = new SplineFunction(
+            CubicSpline<SplineFunction.Unit>.CreateConstant(0.625f));
+        JsonElement constantEncoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, constantExpected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(constantEncoded, "spline").GetOrThrow().GetSingle() == 0.625f,
+            "A constant cubic spline must use the scalar branch of the recursive codec.");
+
+        SplineFunction constantDecoded = DensityFunctions.DIRECT_CODEC
+            .Parse(ops, constantEncoded)
+            .GetOrThrow() as SplineFunction
+            ?? throw new InvalidOperationException("Constant spline codec returned another density-function node.");
+
+        Require(
+            constantDecoded.Spline.ParityString() == constantExpected.Spline.ParityString(),
+            "Constant cubic splines must round-trip through the scalar branch.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:spline","spline":{"coordinate":0.0,"points":[]}}"""))
+                .IsError,
+            "Multipoint spline codecs must reject empty point lists.");
     }
 
     private static void CheckRejectedInputs()
