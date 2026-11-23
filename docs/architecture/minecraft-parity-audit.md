@@ -388,3 +388,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Ajustada a ordem de avaliação para corresponder ao construtor BlockStateBase de Minecraft 26.3: light emission, useShapeForLightOcclusion, map color e, por fim, os snapshots/delegates restantes.
 - Os callbacks recebem o estado parcialmente inicializado; a ordem é observável quando consultam propriedades do próprio estado.
 - Teste de regressão verifica a ordem dos callbacks e que isAir e destroySpeed ainda têm seus valores iniciais durante light emission/map color.
+
+
+## Incremento — IntegerProperty indexação e parsing (23/11/2026)
+
+- `IntegerProperty.IndexOf` agora reproduz `getInternalIndex` de 26.3: retorna -1 somente acima do máximo e usa subtração Int32 unchecked para os demais valores, inclusive o overflow Java de valores abaixo do mínimo.
+- `TryParse` passou a validar o intervalo diretamente (`minimum <= value <= maximum`), como `IntegerProperty.getValue(String)`; isso evita aceitar texto fora do intervalo quando o índice sofre wraparound.
+- Teste atualizado para distinguir a semântica do índice da validação do parser.

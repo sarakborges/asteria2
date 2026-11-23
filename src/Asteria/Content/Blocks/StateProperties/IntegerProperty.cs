@@ -59,9 +59,9 @@ public sealed class IntegerProperty : StateProperty<int>
         new(name, minimum, maximum);
 
     public override int IndexOf(int value) =>
-        value < Minimum || value > Maximum
-            ? -1
-            : value - Minimum;
+        value <= Maximum
+            ? unchecked(value - Minimum)
+            : -1;
 
     public override string GetName(int value) =>
         value.ToString(CultureInfo.InvariantCulture);
@@ -73,7 +73,8 @@ public sealed class IntegerProperty : StateProperty<int>
                 NumberStyles.AllowLeadingSign,
                 CultureInfo.InvariantCulture,
                 out value) &&
-            IndexOf(value) >= 0)
+            value >= Minimum &&
+            value <= Maximum)
         {
             return true;
         }

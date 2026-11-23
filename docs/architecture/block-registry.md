@@ -80,3 +80,8 @@ This document records implemented scope; it does not certify total parity. The s
 ## BlockStateBase constructor ordering
 
 The state constructor preserves Minecraft 26.3 callback evaluation order: light emission, shape-for-light-occlusion, then map color, followed by the remaining property snapshots and delegates. Each callback receives the partially initialized state. BlockBehaviorChecks verifies callback order and the values visible during those callbacks.
+
+
+## IntegerProperty index and parse contracts
+
+`IntegerProperty.IndexOf` mirrors `getInternalIndex`: values above the maximum return -1; all others use unchecked 32-bit `value - minimum`, preserving Java integer overflow. Parsing intentionally does not use this index as a range predicate: Minecraft `getValue(String)` checks `minimum <= value <= maximum` directly, so out-of-range textual values remain rejected even when the index subtraction wraps.
