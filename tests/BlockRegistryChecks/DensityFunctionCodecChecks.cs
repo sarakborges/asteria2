@@ -32,6 +32,9 @@ internal static class DensityFunctionCodecChecks
         CheckSplineCodec();
         CheckDistanceToPointCodec();
         CheckEndIslandCodec();
+        CheckNormalNoiseCodec();
+        CheckNoiseFunctionCodec();
+        CheckShiftNoiseCodecs();
         CheckHolderCodecs();
         CheckRejectedInputs();
     }
@@ -39,8 +42,8 @@ internal static class DensityFunctionCodecChecks
     private static void CheckTypeRegistry()
     {
         Require(
-            BuiltInRegistries.DensityFunctionType.Count == 34,
-            "The density-function codec slice must register constant, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient, spline, distance_to_point and end_outer_islands.");
+            BuiltInRegistries.DensityFunctionType.Count == 38,
+            "The density-function codec slice must register constant, noise, shift variants, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient, spline, distance_to_point and end_outer_islands.");
 
         Require(
             BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:constant")) &&
@@ -771,6 +774,202 @@ internal static class DensityFunctionCodecChecks
                         "End-island volume sampling must write one identical value through every Y cell.");
                 }
             }
+        }
+    }
+
+    private static void CheckNormalNoiseCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        NormalNoise expected = NormalNoise.CreateBuilder()
+            .SetBaseAmplitude(0.75)
+            .SetBaseOctave(-4)
+            .SetOctaveCount(3)
+            .SetLegacyNormalization()
+            .SetAmplitudeModifier(0, 1.0)
+            .SetAmplitudeModifier(1, 0.5)
+            .SetAmplitudeModifier(2, 0.0)
+            .Build();
+
+        JsonElement encoded = NormalNoise.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "base_amplitude").GetOrThrow().GetDouble() == 0.75 &&
+            ops.Get(encoded, "base_octave").GetOrThrow().GetInt32() == -4 &&
+            ops.Get(encoded, "octave_count").GetOrThrow().GetInt32() == 3 &&
+            ops.Get(encoded, "normalize").GetOrThrow().GetString() == "legacy" &&
+            ops.Get(encoded, "amplitude_modifiers").GetOrThrow().GetArrayLength() == 3,
+            "NormalNoise must encode the 26.3 parameter fields and legacy normalization spelling.");
+
+        NormalNoise decoded = NormalNoise.DIRECT_CODEC
+            .Parse(ops, encoded)
+            .GetOrThrow();
+
+        Require(
+            decoded.Equals(expected),
+            "NormalNoise parameters must round-trip through DIRECT_CODEC.");
+
+        NormalNoise defaults = NormalNoise.DIRECT_CODEC
+            .Parse(ops, ParseJson("""{"base_octave":0}"""))
+            .GetOrThrow();
+
+        Require(
+            defaults.Equals(NormalNoise.CreateBuilder().Build()),
+            "NormalNoise must apply base amplitude, octave count, normalization and amplitude modifier defaults.");
+
+        Require(
+            NormalNoise.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"base_octave":0,"normalize":false}"""))
+                .GetOrThrow()
+                .Equals(NormalNoise.CreateBuilder().SetNormalize(false).Build()),
+            "NormalNoise normalization false must map to DISABLED.");
+
+        Require(
+            NormalNoise.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"base_octave":0,"normalize":true}"""))
+                .GetOrThrow()
+                .Equals(NormalNoise.CreateBuilder().Build()),
+            "NormalNoise normalization true must map to ENABLED.");
+
+        Require(
+            NormalNoise.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"base_octave":0,"normalize":"enabled"}"""))
+                .IsError,
+            "NormalNoise normalization strings other than legacy must be rejected.");
+
+        Require(
+            NormalNoise.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"base_octave":0,"octave_count":2,"amplitude_modifiers":[1.0]}"""))
+                .IsError,
+            "NormalNoise must reject a non-empty amplitude-modifier list whose size differs from octave_count.");
+
+        Require(
+            NormalNoise.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"base_octave":0,"base_amplitude":0.000001}"""))
+                .IsError &&
+            NormalNoise.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"base_octave":0,"base_amplitude":1000001.0}"""))
+                .IsError,
+            "NormalNoise must enforce the vanilla base-amplitude range.");
+
+        Require(
+            NormalNoise.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"base_octave":33}"""))
+                .IsError &&
+            NormalNoise.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"base_octave":0,"octave_count":0}"""))
+                .IsError,
+            "NormalNoise must enforce the base-octave and octave-count ranges.");
+
+        Require(
+            NormalNoise.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"base_octave":0,"amplitude_modifiers":[-0.1]}"""))
+                .IsError &&
+            NormalNoise.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"base_octave":0,"amplitude_modifiers":[1000001.0]}"""))
+                .IsError,
+            "NormalNoise must enforce the amplitude-modifier range.");
+    }
+
+    private static void CheckNoiseFunctionCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        NormalNoise noise = NormalNoise.CreateBuilder()
+            .SetBaseOctave(-2)
+            .SetOctaveCount(3)
+            .Build();
+
+        NoiseFunction expected = new(
+            Holder<NormalNoise>.Direct(noise),
+            2.0,
+            0.5,
+            DensityFunctions.Zero(),
+            new ConstantFunction(0.25f),
+            DensityFunctions.Zero());
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:noise" &&
+            ops.Get(encoded, "noise").GetOrThrow().ValueKind == JsonValueKind.Object &&
+            ops.Get(encoded, "xz_scale").GetOrThrow().GetDouble() == 2.0 &&
+            ops.Get(encoded, "y_scale").GetOrThrow().GetDouble() == 0.5,
+            "NoiseFunction must encode its holder and coordinate scales with the 26.3 field names.");
+
+        NoiseFunction decoded = DensityFunctions.DIRECT_CODEC
+            .Parse(ops, encoded)
+            .GetOrThrow() as NoiseFunction
+            ?? throw new InvalidOperationException("NoiseFunction codec returned another density-function node.");
+
+        Require(
+            decoded.NoiseData.Kind == HolderKind.Direct &&
+            decoded.NoiseData.Value.Equals(noise) &&
+            decoded.XzScale == expected.XzScale &&
+            decoded.YScale == expected.YScale &&
+            decoded.ShiftX.Equals(expected.ShiftX) &&
+            decoded.ShiftY.Equals(expected.ShiftY) &&
+            decoded.ShiftZ.Equals(expected.ShiftZ),
+            "NoiseFunction must round-trip its NormalNoise holder, scales and all three shifts.");
+
+        NoiseFunction defaults = DensityFunctions.DIRECT_CODEC
+            .Parse(
+                ops,
+                ParseJson("""{"type":"asteria:noise","noise":{"base_octave":0},"xz_scale":1.25,"y_scale":0.75}"""))
+            .GetOrThrow() as NoiseFunction
+            ?? throw new InvalidOperationException("NoiseFunction defaults decoded into another node type.");
+
+        Require(
+            defaults.ShiftX.Equals(DensityFunctions.Zero()) &&
+            defaults.ShiftY.Equals(DensityFunctions.Zero()) &&
+            defaults.ShiftZ.Equals(DensityFunctions.Zero()),
+            "NoiseFunction must default omitted shift_x/shift_y/shift_z to DensityFunctions.zero().");
+    }
+
+    private static void CheckShiftNoiseCodecs()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        Holder<NormalNoise> noise = Holder<NormalNoise>.Direct(
+            NormalNoise.CreateBuilder().SetBaseOctave(-3).Build());
+
+        DensityFunction[] values =
+        {
+            new ShiftNoiseFunction.ShiftA(noise),
+            new ShiftNoiseFunction.ShiftB(noise),
+            new ShiftNoiseFunction.Shift(noise)
+        };
+        string[] identifiers = { "asteria:shift_a", "asteria:shift_b", "asteria:shift" };
+
+        for (int index = 0; index < values.Length; index++)
+        {
+            JsonElement encoded = DensityFunctions.DIRECT_CODEC
+                .EncodeStart(ops, values[index])
+                .GetOrThrow();
+
+            Require(
+                ops.Get(encoded, "type").GetOrThrow().GetString() == identifiers[index] &&
+                ops.Get(encoded, "noise").GetOrThrow().ValueKind == JsonValueKind.Object,
+                $"Shift-noise codec {identifiers[index]} must encode the holder under noise.");
+
+            DensityFunction decoded = DensityFunctions.DIRECT_CODEC
+                .Parse(ops, encoded)
+                .GetOrThrow();
+
+            Require(
+                decoded.Equals(values[index]),
+                $"Shift-noise codec {identifiers[index]} must round-trip its holder.");
         }
     }
 
