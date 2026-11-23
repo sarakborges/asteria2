@@ -74,3 +74,10 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - `Create` inicializa todos os valores em ordem X externa/Z interna; `Map` cria outro cache com os mesmos limites; `ForEach` percorre a ordem linear do armazenamento.
 - `Contains`, `Get`, indexação X-major/Z-minor e diagnóstico de acesso fora da área seguem o contrato 26.3.
 - O teste cobre inicialização, ordem de iteração, transformação, limites, exceção e cache de raio zero. Essa estrutura será usada na montagem das dependências espaciais do scheduler.
+
+
+## DensityBuffer — Minecraft Java 26.3
+
+- Armazenamento linear de floats com `set/get`, `setRange`, `addTo`, `fill`, `copyFrom`, `capacity` e `size`.
+- A instância criada por `createUnpooled` mantém tamanho fixo; o buffer não introduz alocação ou pool customizado.
+- A implementação de `DensityVolume` e o método default `Noise.addToVolume` aguardam o contrato `BoundingBox` necessário para interseção volumétrica.

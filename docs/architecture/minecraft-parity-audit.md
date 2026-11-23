@@ -491,3 +491,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - A amostragem 2D foi mantida com a fórmula 26.3 e passou a compartilhar a função de canto 3D da referência, incluindo o range e constants.
 - `GradientNoise.wrap` usa a redução modular 2^25 da referência. O override `SharedConstants.DEBUG_ENABLE_FARLANDS` não foi incluído porque Asteria ainda não possui esse modo de depuração.
 - Testes cobrem amostras de seed fixo em pontos dos vários ramos tetraédricos, faixa/desvio padrão e fronteiras do wrap. Os testes de bioma existentes também protegem as amostras 2D anteriores.
+
+
+## Incremento — DensityBuffer (23/11/2026)
+
+- Portado `DensityBuffer` de Minecraft Java 26.3: array `float[]`, tamanho/capacidade fixos, `set`, `setRange`, `addTo`, `get`, `fill` e `copyFrom`.
+- `copyFrom` mantém a mensagem e o tipo de erro da referência ao receber tamanho incompatível. Não foi introduzido pooling: somente a factory `createUnpooled` faz parte da classe-base atual.
+- Testes verificam armazenamento linear, preenchimento de intervalo semiaberto, soma em precisão `float`, cópia, mismatch, capacidade fixa e buffer vazio.
+- `DensityVolume` ainda depende do port de `BoundingBox`; `Noise.addToVolume` e a integração do volume serão conectados quando esse contrato estiver disponível.
