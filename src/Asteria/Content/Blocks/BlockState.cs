@@ -250,12 +250,32 @@ public sealed class BlockState : StateHolder<Block, BlockState>
 
     private bool CalculateLegacySolid()
     {
-        if (_collisionShape is null || _collisionShape.IsEmpty())
-            return false;
-
-        AABB bounds = _collisionShape.Bounds();
-        return bounds.GetSize() >= 0.7291666666666666 ||
-            bounds.GetYSize() >= 1.0;
+        if (Block.Properties.ForceSolidOnValue)
+            return SolidDebugger.LogAndGet(Block, SolidDebugger.Reason.FORCE_SOLID_ON);
+        else if (Block.Properties.ForceSolidOffValue)
+            return SolidDebugger.LogAndGet(Block, SolidDebugger.Reason.FORCE_SOLID_OFF);
+        else if (_collisionShape is null)
+            return SolidDebugger.LogAndGet(Block, SolidDebugger.Reason.NULL_CACHE);
+        else
+        {
+            VoxelShape shape = _collisionShape;
+            if (shape.IsEmpty())
+                return SolidDebugger.LogAndGet(Block, SolidDebugger.Reason.EMPTY_COLLISION_SHAPE);
+            else
+            {
+                AABB bounds = shape.Bounds();
+                if (bounds.GetSize() >= 0.7291666666666666)
+                    return SolidDebugger.LogAndGet(
+                        Block,
+                        SolidDebugger.Reason.LARGE_ENOUGH_COLLISION_SHAPE);
+                else
+                    return bounds.GetYSize() >= 1.0
+                        ? SolidDebugger.LogAndGet(
+                            Block,
+                            SolidDebugger.Reason.HIGH_ENOUGH_COLLISION_SHAPE)
+                        : SolidDebugger.LogAndGet(Block, SolidDebugger.Reason.FALLTHROUGH);
+            }
+        }
     }
 
     private static bool IsLargeCollisionShape(VoxelShape shape)
