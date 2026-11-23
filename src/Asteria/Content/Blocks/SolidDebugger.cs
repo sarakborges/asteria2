@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Threading;
+using Asteria.Content.Registries;
 
 namespace Asteria.Content.Blocks;
 
@@ -11,10 +12,10 @@ public sealed class SolidDebugger
     private static readonly AsyncLocal<SolidDebugger?> STATUS = new();
     private static readonly bool DEBUG_CALCULATE_SOLID = GetDebugFlag("CALCULATE_SOLID");
 
-    private readonly Dictionary<Block, Reason> _firstReasonByBlock = new();
-    private readonly List<KeyValuePair<Block, Reason>> _reasonEntries = new();
+    private readonly Dictionary<Holder<Block>, Reason> _firstReasonByBlock = new();
+    private readonly List<KeyValuePair<Holder<Block>, Reason>> _reasonEntries = new();
 
-    public static bool LogAndGet(Block block, Reason reason)
+    public static bool LogAndGet(Holder<Block> block, Reason reason)
     {
         ArgumentNullException.ThrowIfNull(block);
 
@@ -33,7 +34,7 @@ public sealed class SolidDebugger
             else
             {
                 debugger._firstReasonByBlock.Add(block, reason);
-                debugger._reasonEntries.Add(new KeyValuePair<Block, Reason>(block, reason));
+                debugger._reasonEntries.Add(new KeyValuePair<Holder<Block>, Reason>(block, reason));
             }
         }
 
@@ -42,15 +43,14 @@ public sealed class SolidDebugger
 
     public void Dump()
     {
-        foreach (IGrouping<Reason, KeyValuePair<Block, Reason>> group in
+        foreach (IGrouping<Reason, KeyValuePair<Holder<Block>, Reason>> group in
                  _reasonEntries.GroupBy(entry => entry.Value))
         {
             Reason reason = group.Key;
             string blockNames = string.Join(
                 "\n",
                 group.Select(entry =>
-                    "\t" + (entry.Key.BuiltInRegistryHolder?.KeyOrNull?.Location.ToString() ??
-                             entry.Key.ToString())));
+                    "\t" + (entry.Key.GetRegisteredName())));
 
             Trace.WriteLine(
                 $"The following blocks are {(reason.CausesSolid ? "solid" : "not solid")} because: " +
