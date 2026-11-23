@@ -195,7 +195,7 @@ public static class RegistryCodecs
 
             return _elementCodec.Decode(ops, input).Map(pair =>
                 new Pair<Holder<T>, TData>(
-                    Holder<T>.Direct(pair.First),
+                    global::Asteria.Content.Registries.Holder<T>.Direct(pair.First),
                     pair.Second));
         }
 
