@@ -40,6 +40,7 @@ internal static class BlockBehaviorChecks
         CheckDefaultViewBlockingTracksSuffocationProperty();
         CheckDefaultDestroyTime();
         CheckFaceSupportSemantics();
+        CheckStateCacheReinitialization();
     }
 
     private static void CheckPathComputationTypes()
@@ -127,6 +128,50 @@ internal static class BlockBehaviorChecks
             !nonSolid.IsReplaceable && !nonSolid.IsSolid &&
             nonSolid.CanBeReplaced(Fluids.EMPTY),
             "Fluid replacement must allow a non-solid state even when its replaceable property is false.");
+    }
+
+
+    private static void CheckStateCacheReinitialization()
+    {
+        var block = new ReinitializableShapeBlock();
+        BlockState state = block.DefaultState;
+
+        Require(
+            state.IsCollisionShapeFullBlock(EmptyBlockGetter.Instance, BlockPos.Zero) &&
+            state.IsSolidRender &&
+            state.IsSolid &&
+            state.IsFaceSturdy(EmptyBlockGetter.Instance, BlockPos.Zero, Direction.UP),
+            "The initial static block shape must populate all derived collision, solid-render and face-support caches.");
+
+        block.Shape = Shapes.Empty();
+        block.ReinitializeStateCaches();
+
+        Require(
+            state.GetCollisionShape(EmptyBlockGetter.Instance, BlockPos.Zero).IsEmpty() &&
+            !state.IsCollisionShapeFullBlock(EmptyBlockGetter.Instance, BlockPos.Zero) &&
+            !state.IsSolidRender &&
+            !state.IsSolid &&
+            !state.IsFaceSturdy(EmptyBlockGetter.Instance, BlockPos.Zero, Direction.UP) &&
+            state.OcclusionShape.IsEmpty() &&
+            state.PropagatesSkylightDown,
+            "BlockState.initCache must recompute its cached geometry and derived flags when initialized again.");
+    }
+
+    private sealed class ReinitializableShapeBlock : Block
+    {
+        public VoxelShape Shape { get; set; } = Shapes.Block();
+
+        public ReinitializableShapeBlock()
+            : base(BlockProperties.Of(), createIntrusiveRegistryHolder: false)
+        {
+            InitializeStateCaches();
+        }
+
+        public override VoxelShape GetShape(BlockState state, BlockGetter level, BlockPos position) =>
+            Shape;
+
+        public void ReinitializeStateCaches() =>
+            InitializeStateCaches();
     }
 
     private static void CheckFaceSupportSemantics()

@@ -23,7 +23,6 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     private bool _hasLargeCollisionShape;
     private bool _isCollisionShapeFullBlock;
     private bool[]? _faceSturdy;
-    private bool _cacheInitialized;
     private readonly int _lightEmission;
     private readonly MapColor _mapColor;
     private readonly Func<BlockState, bool> _emissiveRendering;
@@ -215,9 +214,6 @@ public sealed class BlockState : StateHolder<Block, BlockState>
 
     internal void InitCache()
     {
-        if (_cacheInitialized)
-            return;
-
         _fluidState = Block.GetFluidState(this);
         IsRandomlyTicking = Block.IsRandomlyTickingState(this);
 
@@ -270,7 +266,6 @@ public sealed class BlockState : StateHolder<Block, BlockState>
 
         PropagatesSkylightDown = Block.PropagatesSkylightDown(this);
         LightDampening = Block.GetLightDampening(this);
-        _cacheInitialized = true;
     }
 
     private bool CalculateLegacySolid()
