@@ -49,6 +49,9 @@ public static class DensityFunctions
     public static DensityFunction Sign(DensityFunction input) =>
         new UnaryFunction(UnaryFunction.Type.SIGN, input);
 
+    public static DensityFunction Clamp(DensityFunction input, float min, float max) =>
+        new ClampFunction(input, min, max);
+
     public static DensityFunction Add(DensityFunction left, DensityFunction right) =>
         new BinaryFunction(BinaryFunction.Type.ADD, left, right);
 

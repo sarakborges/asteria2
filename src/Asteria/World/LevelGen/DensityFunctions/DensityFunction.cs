@@ -46,6 +46,8 @@ public interface DensityFunction
 
     DensityFunction Div(float right) => DensityFunctions.Div(this, right);
 
+    DensityFunction Clamp(float min, float max) => DensityFunctions.Clamp(this, min, max);
+
     DensityFunction Abs() => DensityFunctions.Abs(this);
 
     DensityFunction Square() => DensityFunctions.Square(this);

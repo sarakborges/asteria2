@@ -135,3 +135,10 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - Compilation uses the vanilla constant-first and constant-second sampler specializations; otherwise it uses the generic sampler. Point and volume paths preserve alpha 0/1 selection branches.
 - Volume evaluation owns scoped scratch buffers for the non-output branches and releases them at method exit.
 - Function codecs remain deferred with local persistence; no placeholder codec is registered.
+
+
+## Clamp density function — Minecraft Java 26.3
+
+- `ClampFunction` compiles its child once and clamps scalar/volume samples with the float-specific `Mth.clamp` operation.
+- Range propagation uses `Interval.clamp`; the node inherits its input's domain axes and preserves identity when child rewrite does not change the input.
+- Runtime constructor does not enforce min/max ordering; vanilla validates this in its codec layer, which remains deferred with local persistence.

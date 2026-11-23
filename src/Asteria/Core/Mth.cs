@@ -103,6 +103,13 @@ public static class Mth
     public static double Clamp(double value, double minimum, double maximum) =>
         value < minimum ? minimum : value > maximum ? maximum : value;
 
+    public static float Clamp(float value, float minimum, float maximum)
+    {
+        if (value < minimum)
+            return minimum;
+        return Math.Min(value, maximum);
+    }
+
     public static int Clamp(int value, int minimum, int maximum) =>
         value < minimum ? minimum : value > maximum ? maximum : value;
 

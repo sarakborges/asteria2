@@ -627,3 +627,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionadas as factories `DensityFunctions.Lerp(alpha, first, second)` e a sobrecarga com primeiro valor constante.
 - `LerpFunctionChecks` cobre os três caminhos de compilação, valores alpha fora de [0,1], atalhos de avaliação pontual, amostragem de volume, ranges, domínio espacial, buffers e reescrita.
 - Codec da função continua adiado com persistência local; não foi criado substituto.
+
+
+## Incremento — ClampFunction (23/11/2026)
+
+- Portado `ClampFunction` de Minecraft Java 26.3: sampler do filho, transformação pontual/volumétrica via `Mth.clamp(float)`, intervalo via `Interval.clamp`, rewrite com preservação de identidade e domínio herdado do input.
+- Adicionada a sobrecarga `Mth.Clamp(float, float, float)` com a ordem de comparação Java: retorna min somente se `value < min`, caso contrário `Math.min(value, max)`. Isso preserva o comportamento de NaN e de bounds invertidos da implementação vanilla.
+- Adicionadas `DensityFunctions.Clamp` e `DensityFunction.Clamp`.
+- A validação `min <= max` do codec vanilla permanece associada ao codec, não foi movida para o construtor runtime. Os codecs continuam adiados junto da persistência local.
+- `ClampFunctionChecks` cobre valores abaixo/dentro/acima dos limites, NaN, intervalos disjuntos, volume, rewrite e domínio de eixos.
