@@ -15,6 +15,7 @@ internal static class DensityFunctionCodecBootstrap
 {
     private sealed record CodecCatalog(
         MapCodec<DensityFunction> Constant,
+        MapCodec<DensityFunction> DistanceToPoint,
         IReadOnlyDictionary<UnaryFunction.Type, MapCodec<DensityFunction>> Unary,
         IReadOnlyDictionary<BinaryFunction.Type, MapCodec<DensityFunction>> Binary,
         IReadOnlyDictionary<RoundFunction.Type, MapCodec<DensityFunction>> Round,
@@ -39,6 +40,7 @@ internal static class DensityFunctionCodecBootstrap
         CodecCatalog codecs = Catalog.Value;
 
         Register(registry, "constant", codecs.Constant);
+        Register(registry, "distance_to_point", codecs.DistanceToPoint);
         Register(registry, "gradient", codecs.Gradient);
 
         foreach (UnaryFunction.Type operation in Enum.GetValues<UnaryFunction.Type>())
@@ -69,6 +71,7 @@ internal static class DensityFunctionCodecBootstrap
         return function switch
         {
             ConstantFunction => codecs.Constant,
+            DistanceToPointFunction => codecs.DistanceToPoint,
             UnaryFunction unary => codecs.Unary[unary.Operation],
             BinaryFunction binary => codecs.Binary[binary.Operation],
             RoundFunction round => codecs.Round[round.Operation],
@@ -151,6 +154,7 @@ internal static class DensityFunctionCodecBootstrap
 
         return new CodecCatalog(
             constant,
+            CreateDistanceToPointCodec(),
             unary,
             binary,
             round,
@@ -165,6 +169,11 @@ internal static class DensityFunctionCodecBootstrap
             CreateSliceCodec(),
             CreateGradientCodec());
     }
+
+    private static MapCodec<DensityFunction> CreateDistanceToPointCodec() =>
+        DistanceToPointFunction.CODEC.XMap<DensityFunction>(
+            static function => function,
+            static function => (DistanceToPointFunction)function);
 
     private static MapCodec<DensityFunction> CreateUnaryCodec(UnaryFunction.Type operation) =>
         DensityFunctions.DIRECT_CODEC.FieldOf("input")
