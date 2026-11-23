@@ -124,14 +124,14 @@ internal static class DensitySamplerContextBindingChecks
         DensityFunction second = new MarkerFunction(1.0f);
 
         Require(
-            set.SampleValue(first, 4, 5, 6) == 456.0f &&
+            ((DensitySamplerSet)set).SampleValue(first, 4, 5, 6) == 456.0f &&
             selected.PointCalls == 1 &&
             fallback.PointCalls == 0 &&
             set.Lookups == 1,
             "DensitySamplerSet.sampleValue must resolve one Bound and invoke its point sampler.");
 
         Require(
-            set.SampleValue(second, 1, 2, 3) == 123.0f &&
+            ((DensitySamplerSet)set).SampleValue(second, 1, 2, 3) == 123.0f &&
             selected.PointCalls == 2 &&
             set.Lookups == 2,
             "DensitySamplerSet must perform a fresh lookup for every function request.");
