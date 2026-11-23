@@ -205,8 +205,9 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 12, "The root registry must contain the built-in block, fluid, item, biome, density-function-type, chunk-status, particle, environment-attribute, attribute-type, position-source-type, world-clock and timeline registries.");
+        Require(BuiltInRegistries.Root.Count == 13, "The root registry must contain the built-in block, fluid, item, biome, normal-noise, density-function-type, chunk-status, particle, environment-attribute, attribute-type, position-source-type, world-clock and timeline registries.");
         DensityFunctionCodecChecks.Run();
+        BuiltInNoiseChecks.Run();
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
@@ -335,8 +336,8 @@ internal static class Program
             BuiltInRegistries.RootLocation == ResourceLocation.Parse("asteria:root"),
             "The root registry must use the Asteria namespace.");
         Require(
-            BuiltInRegistries.Root.Count == 12 && !BuiltInRegistries.Root.IsFrozen,
-            "The root registry must register all twelve built-in registries before bootstrap freezes it.");
+            BuiltInRegistries.Root.Count == 13 && !BuiltInRegistries.Root.IsFrozen,
+            "The root registry must register all thirteen built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =
             RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Block.Location);
@@ -345,6 +346,14 @@ internal static class Program
         Require(
             blockRegistryHolder is not null && !blockRegistryHolder.IsBound,
             "The root registry must create an unbound holder for each child registry before bootstrap.");
+
+        RegistryKey<IRegistry> noiseRegistryKey =
+            RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Noise.Location);
+        Holder<IRegistry>.Reference? noiseRegistryHolder =
+            BuiltInRegistries.Root.GetHolder(noiseRegistryKey);
+        Require(
+            noiseRegistryHolder is not null && !noiseRegistryHolder.IsBound,
+            "The root registry must create an unbound holder for the normal-noise registry before bootstrap.");
 
         RegistryKey<IRegistry> fluidRegistryKey =
             RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Fluid.Location);
@@ -388,6 +397,7 @@ internal static class Program
             BuiltInRegistries.Block.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
             BuiltInRegistries.Fluid.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
             BuiltInRegistries.Biome.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
+            BuiltInRegistries.Noise.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
             BuiltInRegistries.EnvironmentAttribute.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
             BuiltInRegistries.AttributeType.Key.RegistryLocation == BuiltInRegistries.RootLocation &&
             BuiltInRegistries.PositionSourceType.Key.RegistryLocation == BuiltInRegistries.RootLocation,
