@@ -59,3 +59,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - `ChunkType` distingue os nove primeiros estágios como `PROTOCHUNK` e o estágio final como `LEVELCHUNK`.
 - `heightmapsAfter` mantém os mesmos dois conjuntos compartilhados da referência: dois heightmaps de worldgen até `biomes` e quatro heightmaps finais a partir de `terrain`.
 - A registry `chunk_status` é parte do root registry e fornece o codec by-name. O metadado não executa tarefas: `ChunkStep` e `ChunkPyramid` ainda são os responsáveis pelo pipeline e por suas dependências espaciais.
+
+## Chunk dependencies — Minecraft Java 26.3
+
+- Portada a classe `ChunkDependencies`, que armazena uma lista imutável de status indexada por distância Chebyshev a partir do chunk central.
+- `Size` e `GetRadius` expõem a largura da janela; janela vazia tem raio `-1`.
+- `GetRadiusOf` inverte as garantias por distância: retorna o último anel no qual o status consultado, ou um status posterior, está garantido; retorna `-1` se nenhum anel o garante.
+- O teste reproduz a janela acumulada do estágio `FULL` da pirâmide de geração 26.3: radius 11, 23×23 chunks, com BIOMES até raio 3, TERRAIN até raio 2 e FEATURES até raio 1.
+- Isso implementa apenas a estrutura de dependências; as tabelas `ChunkStep`/`ChunkPyramid` e a execução assíncrona permanecem pendentes.

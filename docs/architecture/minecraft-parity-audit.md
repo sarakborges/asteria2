@@ -458,3 +458,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionado o registry built-in `chunk_status` ao root registry. `full` é o único status de tipo `LEVELCHUNK`; os nove anteriores são `PROTOCHUNK`.
 - Os status iniciais compartilham o conjunto `WORLDGEN_HEIGHTMAPS`; `terrain` e os seguintes compartilham `FINAL_HEIGHTMAPS`, conforme a referência.
 - Esse commit porta apenas o metadado dos estágios. Execução de tarefas, dependências de vizinhança e promoção ProtoChunk/LevelChunk permanecem pendentes de `ChunkStep`, `ChunkPyramid`, `ProtoChunk` e `LevelChunk`.
+
+
+## Incremento — ChunkDependencies (23/11/2026)
+
+- Portada a estrutura `ChunkDependencies` de Minecraft Java 26.3, com sequência imutável de status por distância, `size`, `getRadius`, `get`, `getRadiusOf` e representação textual em ordem de distância.
+- O índice inverso por status mantém a maior distância na qual o status consultado ou um posterior está garantido; valores não garantidos retornam `-1`.
+- Teste reproduz a janela acumulada de `FULL` e verifica os raios 11/3/2/1/0/-1, janela vazia e limites de indexação.
+- `ChunkStep`, `ChunkPyramid` e execução de tasks não foram introduzidos neste incremento.
