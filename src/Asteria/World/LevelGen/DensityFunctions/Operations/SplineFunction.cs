@@ -11,7 +11,7 @@ namespace Asteria.World.LevelGen.DensityFunctions.Operations;
 public sealed class SplineFunction : DensityFunction
 {
     private static Codec<IBoundedFloatFunction<Unit>> CoordinateCodec { get; } =
-        DensityFunctions.DIRECT_CODEC.XMap<IBoundedFloatFunction<Unit>>(
+        DensityFunction.CODEC.XMap<IBoundedFloatFunction<Unit>>(
             static function => new Coordinate(function),
             static coordinate => ((Coordinate)coordinate).Function);
 
