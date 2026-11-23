@@ -1,4 +1,5 @@
 using Asteria.Content.Identifiers;
+using Asteria.Content.Biomes;
 using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.World.LevelGen;
@@ -235,7 +236,7 @@ internal static class RandomStateChecks
     }
 
     private static float Sample(Noise noise, int x, int y, int z) =>
-        noise.Sample(x * 0.25, y * 0.25, z * 0.25);
+        noise.Get(x * 0.25, y * 0.25, z * 0.25);
 
     private static void Require(bool condition, string message)
     {
