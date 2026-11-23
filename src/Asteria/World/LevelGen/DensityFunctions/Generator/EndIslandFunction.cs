@@ -1,4 +1,5 @@
 using Asteria.Serialization;
+using Asteria.World.LevelGen;
 using Asteria.Util;
 using Asteria.World.LevelGen.Synth;
 
