@@ -53,6 +53,19 @@ public static class Codecs
                     () => $"Value {value} outside of range [{minInclusive}: {maxInclusive}]"));
     }
 
+    public static Codec<double> DoubleRange(double minInclusive, double maxInclusive)
+    {
+        if (double.IsNaN(minInclusive) || double.IsNaN(maxInclusive) ||
+            maxInclusive < minInclusive)
+            throw new ArgumentOutOfRangeException(nameof(maxInclusive));
+
+        return DOUBLE.Validate(value =>
+            value >= minInclusive && value <= maxInclusive
+                ? DataResult<double>.Success(value)
+                : DataResult<double>.Error(
+                    () => $"Value {value} outside of range [{minInclusive}: {maxInclusive}]"));
+    }
+
     private sealed class BooleanCodec : PrimitiveCodec<bool>
     {
         public override DataResult<bool> Read<TData>(DynamicOps<TData> ops, TData input) =>
