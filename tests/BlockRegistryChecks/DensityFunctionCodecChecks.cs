@@ -16,14 +16,18 @@ internal static class DensityFunctionCodecChecks
         CheckUnaryCodecs();
         CheckBinaryCodecs();
         CheckRoundCodecs();
+        CheckPowCodec();
+        CheckLerpCodec();
+        CheckCacheCodec();
+        CheckInterpolatedCodec();
         CheckRejectedInputs();
     }
 
     private static void CheckTypeRegistry()
     {
         Require(
-            BuiltInRegistries.DensityFunctionType.Count == 22,
-            "The first density-function codec slice must register constant, every unary, every binary and every rounding type.");
+            BuiltInRegistries.DensityFunctionType.Count == 26,
+            "The density-function codec slice must register constant, all unary/binary/rounding types, pow, lerp, cache and interpolated.");
 
         Require(
             BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:constant")) &&
@@ -203,6 +207,114 @@ internal static class DensityFunctionCodecChecks
         Require(
             defaultDecoded.Equals(defaultMultiple),
             "The rounding codec must preserve the default multiple of one when its field is omitted or emitted.");
+    }
+
+    private static void CheckPowCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        DensityFunction expected = new PowFunction(
+            new ConstantFunction(2.5f),
+            new ConstantFunction(3.0f));
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:pow" &&
+            ops.Get(encoded, "base").GetOrThrow().GetSingle() == 2.5f &&
+            ops.Get(encoded, "exponent").GetOrThrow().GetSingle() == 3.0f,
+            "PowFunction must serialize its base and exponent fields.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(ops, encoded).GetOrThrow().Equals(expected),
+            "PowFunction must round-trip through the direct density codec.");
+    }
+
+    private static void CheckLerpCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        DensityFunction expected = new LerpFunction(
+            new ConstantFunction(0.25f),
+            new ConstantFunction(-2.0f),
+            new ConstantFunction(6.0f));
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:lerp" &&
+            ops.Get(encoded, "alpha").GetOrThrow().GetSingle() == 0.25f &&
+            ops.Get(encoded, "first").GetOrThrow().GetSingle() == -2.0f &&
+            ops.Get(encoded, "second").GetOrThrow().GetSingle() == 6.0f,
+            "LerpFunction must use the 26.3 alpha/first/second fields.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(ops, encoded).GetOrThrow().Equals(expected),
+            "LerpFunction must round-trip all three child density functions.");
+    }
+
+    private static void CheckCacheCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        DensityFunction expected = new CacheFunction(
+            new UnaryFunction(
+                UnaryFunction.Type.ABS,
+                new ConstantFunction(-0.75f)));
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:cache" &&
+            ops.Get(encoded, "input").GetOrThrow().ValueKind == JsonValueKind.Object,
+            "CacheFunction must serialize its child under the 26.3 input field.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(ops, encoded).GetOrThrow().Equals(expected),
+            "CacheFunction must round-trip without evaluating its compiler-only cache node.");
+    }
+
+    private static void CheckInterpolatedCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        DensityFunction expected = new InterpolatedFunction(
+            new UnaryFunction(
+                UnaryFunction.Type.SQUARE,
+                new ConstantFunction(0.5f)),
+            4,
+            8);
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:interpolated" &&
+            ops.Get(encoded, "input").GetOrThrow().ValueKind == JsonValueKind.Object &&
+            ops.Get(encoded, "cell_size_xz").GetOrThrow().GetInt32() == 4 &&
+            ops.Get(encoded, "cell_size_y").GetOrThrow().GetInt32() == 8,
+            "InterpolatedFunction must serialize the 26.3 input and cell-size fields.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(ops, encoded).GetOrThrow().Equals(expected),
+            "InterpolatedFunction must round-trip its input and both cell sizes.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:interpolated","input":1.0,"cell_size_xz":0,"cell_size_y":4}"""))
+                .IsError,
+            "InterpolatedFunction must reject a non-positive XZ cell size.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:interpolated","input":1.0,"cell_size_xz":4,"cell_size_y":-1}"""))
+                .IsError,
+            "InterpolatedFunction must reject a non-positive Y cell size.");
     }
 
     private static void CheckRejectedInputs()
