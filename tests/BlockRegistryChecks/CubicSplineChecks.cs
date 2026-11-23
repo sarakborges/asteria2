@@ -42,7 +42,7 @@ internal static class CubicSplineChecks
             constant.Range().Equals(Interval.OfExact(7.5f)),
             "BoundedFloatFunction.constant must retain one exact range independent of context.");
 
-        IBoundedFloatFunction<string> mapped = constant.Comap<string, int>(value => value.ToString().Length);
+        IBoundedFloatFunction<string> mapped = constant.Comap<string, int>(static value => value.ToString());
         Require(
             mapped.Apply(1234) == 7.5f &&
             mapped.Range().Equals(constant.Range()),
