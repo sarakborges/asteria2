@@ -4,6 +4,8 @@
 
 Minecraft Java Edition 26.3 is the reference for architecture, contracts, and behavior. Asteria keeps its own block content; this port follows vanilla systems rather than substituting project-specific designs.
 
+Block-color contracts are checked against the 26.3 sources for [MapColor](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/material/mapcolor/), [ARGB](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/argb/), [BlockBehaviour](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/block/state/blockstatebase/) and the `Block` default-map-color accessor.
+
 This stage covers only systems already introduced in Asteria: registries and holders, blocks and block states, block-state IDs, palette storage, and the block-state portion of chunk sections. Fluid, biome, data-component, network, and disk-persistence behavior are deferred until their corresponding domain systems are introduced.
 
 ## Registry and holder model
