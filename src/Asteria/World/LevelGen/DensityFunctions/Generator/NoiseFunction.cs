@@ -1,4 +1,5 @@
 using Asteria.Content.Registries;
+using Asteria.Serialization;
 using Asteria.Util;
 using Asteria.World.LevelGen.Synth;
 
@@ -15,6 +16,68 @@ public sealed record NoiseFunction(
     DensityFunction ShiftY,
     DensityFunction ShiftZ) : DensityFunction
 {
+    private sealed record NoiseScales(
+        Holder<NormalNoise> Noise,
+        double XzScale,
+        double YScale);
+
+    private sealed record ShiftFields(
+        DensityFunction ShiftX,
+        DensityFunction ShiftY,
+        DensityFunction ShiftZ);
+
+    private static MapCodec<NoiseScales> NoiseScalesCodec { get; } =
+        RecordCodecBuilder.MapCodec<NoiseScales>(instance =>
+            instance.Group(
+                    NormalNoise.CODEC.FieldOf("noise")
+                        .ForGetter<NoiseScales>(static fields => fields.Noise),
+                    Codecs.DOUBLE.FieldOf("xz_scale")
+                        .ForGetter<NoiseScales>(static fields => fields.XzScale),
+                    Codecs.DOUBLE.FieldOf("y_scale")
+                        .ForGetter<NoiseScales>(static fields => fields.YScale))
+                .Apply(
+                    instance,
+                    static (noise, xzScale, yScale) =>
+                        new NoiseScales(noise, xzScale, yScale)));
+
+    private static MapCodec<ShiftFields> ShiftFieldsCodec { get; } =
+        RecordCodecBuilder.MapCodec<ShiftFields>(instance =>
+            instance.Group(
+                    DensityFunction.CODEC.OptionalFieldOf(
+                            "shift_x",
+                            DensityFunctions.Zero())
+                        .ForGetter<ShiftFields>(static fields => fields.ShiftX),
+                    DensityFunction.CODEC.OptionalFieldOf(
+                            "shift_y",
+                            DensityFunctions.Zero())
+                        .ForGetter<ShiftFields>(static fields => fields.ShiftY),
+                    DensityFunction.CODEC.OptionalFieldOf(
+                            "shift_z",
+                            DensityFunctions.Zero())
+                        .ForGetter<ShiftFields>(static fields => fields.ShiftZ))
+                .Apply(
+                    instance,
+                    static (shiftX, shiftY, shiftZ) =>
+                        new ShiftFields(shiftX, shiftY, shiftZ)));
+
+    public static MapCodec<NoiseFunction> CODEC { get; } =
+        RecordCodecBuilder.MapCodec<NoiseFunction>(instance =>
+            instance.Group(
+                    NoiseScalesCodec.ForGetter<NoiseFunction>(static function =>
+                        new NoiseScales(function.NoiseData, function.XzScale, function.YScale)),
+                    ShiftFieldsCodec.ForGetter<NoiseFunction>(static function =>
+                        new ShiftFields(function.ShiftX, function.ShiftY, function.ShiftZ)))
+                .Apply(
+                    instance,
+                    static (scales, shifts) =>
+                        new NoiseFunction(
+                            scales.Noise,
+                            scales.XzScale,
+                            scales.YScale,
+                            shifts.ShiftX,
+                            shifts.ShiftY,
+                            shifts.ShiftZ)));
+
     public DensitySampler CompileSampler(DensityFunction.CompileContext context)
     {
         Noise noise = context.CreateNoiseSampler(NoiseData);
