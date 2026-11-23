@@ -8,6 +8,8 @@ using Asteria.World.Pathfinding;
 
 internal static class BlockBehaviorChecks
 {
+    private static List<string>? _constructorOrderEvents;
+
     private sealed class OverrideBlock : Block
     {
         public OverrideBlock()
@@ -105,18 +107,15 @@ internal static class BlockBehaviorChecks
 
     private sealed class ConstructorOrderBlock : Block
     {
-        private readonly List<string> _events;
-
-        public ConstructorOrderBlock(BlockProperties properties, List<string> events)
+        public ConstructorOrderBlock(BlockProperties properties)
             : base(properties, createIntrusiveRegistryHolder: false)
         {
-            _events = events;
             InitializeStateCaches();
         }
 
         public override bool UseShapeForLightOcclusion(BlockState state)
         {
-            _events.Add("shape");
+            _constructorOrderEvents?.Add("shape");
             return false;
         }
     }
