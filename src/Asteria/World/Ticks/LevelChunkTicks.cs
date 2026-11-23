@@ -59,8 +59,7 @@ public sealed class LevelChunkTicks<T> : TickContainerAccess<T>, SerializableTic
     {
         ArgumentNullException.ThrowIfNull(predicate);
         var retained = new List<ScheduledTick<T>>(_tickQueue.Count);
-        foreach (PriorityQueue<ScheduledTick<T>, ScheduledTick<T>>.UnorderedItemsCollection entry
-            in _tickQueue.UnorderedItems)
+        foreach (var entry in _tickQueue.UnorderedItems)
         {
             ScheduledTick<T> tick = entry.Element;
             if (predicate(tick))
