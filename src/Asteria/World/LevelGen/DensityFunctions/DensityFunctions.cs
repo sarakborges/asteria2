@@ -219,6 +219,12 @@ public static class DensityFunctions
     public static DensityFunction Spline(CubicSpline<SplineFunction.Unit> spline) =>
         new SplineFunction(spline);
 
+    public static DensityFunction Interpolate(
+        DensityFunction input,
+        int cellSizeXz,
+        int cellSizeY) =>
+        new InterpolatedFunction(input, cellSizeXz, cellSizeY);
+
     /// <summary>
     /// Holder-backed density-function reference from Minecraft Java 26.3.
     /// </summary>

@@ -252,3 +252,13 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - `DensitySamplerSet` resolves a density function to a `DensitySampler.Bound`; its default point helper samples through that bound.
 - Both components use the existing context map and bound sampler contracts without adding global state or alternate cache behavior.
 - References: [ContextBoundSampler — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/densityfunction/contextboundsampler/) and [DensitySamplerSet — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/densityfunction/densitysamplerset/).
+
+
+## Density cell interpolation — Minecraft Java 26.3
+
+- InterpolatedFunction ports the direct-volume path, unit-block expansion for stepped volumes, and cell-corner sampling path.
+- Cell corner values are sampled on the configured XZ/Y grid; each covered cell is filled with the reference trilinear operation and same Z/X/Y loop order and vertical incremental accumulation.
+- Point sampling reads the exact input at a lattice corner and otherwise samples the enclosing 2×2×2 corner volume and applies Mth.Lerp3.
+- Negative block coordinates use Java-compatible floor division and modulus.
+- Input range/domain metadata and child rewrite behavior are preserved.
+- Reference: https://github.com/0khs/minecraft_source_26.3/blob/74720c2890f22942b72d7d84958eff1b3f72b95b/net/minecraft/world/level/levelgen/densityfunction/op/InterpolatedFunction.java.

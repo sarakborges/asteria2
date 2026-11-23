@@ -773,3 +773,15 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Portada a interface funcional `DensitySamplerSet`: `Get(function)` retorna `DensitySampler.Bound`; o método default `SampleValue` resolve o bound e encaminha a amostragem pontual.
 - Os dois componentes reutilizam `ContextKey<DensitySampler>`, `ContextMap`, `SamplerContext` e `DensitySampler.Bound` já existentes, sem novo estado global, cache ou dependência.
 - `DensitySamplerContextBindingChecks` cobre fallback ausente, override de contexto para ponto/volume e lookup do sampler set com contexto vinculado.
+
+
+## Incremento — InterpolatedFunction (23/11/2026)
+
+- Portado o algoritmo de Minecraft Java 26.3, incluindo a seleção do caminho direto, volumes com passo não unitário, volumes em passo de bloco, cálculo das células abrangidas e amostragem dos oito cantos.
+- O caminho direto só é usado quando os passos correspondem ao tamanho da célula (ou o eixo tem tamanho 1) e as coordenadas mínimas estão alinhadas.
+- O caminho com passo não unitário expande o volume para coordenadas de bloco unitárias, interpola no volume expandido e recolhe exatamente os índices solicitados.
+- O caminho de bloco usa floor division/modulus para coordenadas negativas, amostra uma grade de cantos e executa o preenchimento trilinear por eixo na ordem Z/X/Y. A acumulação vertical do valor preserva a ordem de arredondamento do código Java.
+- A amostragem pontual consulta diretamente cantos alinhados; nos demais pontos amostra o volume 2×2×2 dos cantos e chama a interpolação trilinear do Java.
+- Range, DomainAxes e RewriteChildren delegam ao filho, preservando identidade quando não há alteração.
+- Mth.FloorDiv e Mth.FloorMod reproduzem a semântica de coordenadas negativas de Java.
+- O construtor valida tamanhos positivos, refletindo a restrição do codec de referência (POSITIVE_INT); o codec local permanece adiado com persistência.

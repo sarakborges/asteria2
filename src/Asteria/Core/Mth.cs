@@ -113,6 +113,22 @@ public static class Mth
     public static int Clamp(int value, int minimum, int maximum) =>
         value < minimum ? minimum : value > maximum ? maximum : value;
 
+    /// <summary>Integer floor division, matching Java Math.floorDiv.</summary>
+    public static int FloorDiv(int numerator, int denominator)
+    {
+        if (denominator == 0)
+            throw new DivideByZeroException();
+        int quotient = numerator / denominator;
+        int remainder = numerator % denominator;
+        if (remainder != 0 && (numerator ^ denominator) < 0)
+            quotient = unchecked(quotient - 1);
+        return quotient;
+    }
+
+    /// <summary>Integer floor modulus, matching Java Math.floorMod.</summary>
+    public static int FloorMod(int numerator, int denominator) =>
+        unchecked(numerator - FloorDiv(numerator, denominator) * denominator);
+
 
     public static double LengthSquared(double x, double y) =>
         x * x + y * y;
