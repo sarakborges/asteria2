@@ -62,3 +62,11 @@ Network packet codecs are out of scope. Local disk persistence remains in scope.
 - `PerlinNoise` provides gradient lattice interpolation, derivative accumulation, and the optimized volume path from the 26.3 source. Volume evaluation keeps its distinct Z/X/Y traversal and float rounding.
 - The float `Mth` helpers used by Perlin use the same smoothstep curve and nested X/Y/Z lerp order as the reference.
 - Multi-octave construction through `NormalNoise` and `NoiseStack.Perlin` remains a separate stage.
+
+
+## NoiseStack — Minecraft Java 26.3
+
+- A composição de ruídos agora usa o contrato genérico `Noise`, com frequência/amplitude por layer, range intervalar acumulado, avaliação 2D/3D e delegação de volume.
+- `AddStack` achata sub-stacks preservando a ordem e combinando frequency/amplitude.
+- O builder seleciona a implementação interna Perlin somente para camadas do tipo exato `PerlinNoise`; pilhas mistas continuam genéricas.
+- `NormalNoise` ainda depende de randomização posicional antes de construir as oitavas de Perlin.

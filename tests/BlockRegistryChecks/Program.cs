@@ -234,6 +234,7 @@ internal static class Program
         IntervalChecks.Run();
         SimplexNoiseChecks.Run();
         PerlinNoiseChecks.Run();
+        NoiseStackChecks.Run();
         DensityBufferChecks.Run();
         BoundingBoxChecks.Run();
         DensityVolumeChecks.Run();

@@ -528,3 +528,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `NoiseUtils` fornece os dois contratos utilizados por `PerlinNoise`: bias toward extreme e texto de paridade do octave.
 - `PerlinNoiseChecks` inclui golden samples fixos, derivadas acumulativas, valores exatos da rota volumétrica otimizada, acumulação sobre buffer existente, configuração seed/permutation e interpolação float.
 - A construção e a combinação em fractal de múltiplos octaves (`NormalNoise`, `NoiseStack.Perlin`) permanecem etapas posteriores; nenhum conjunto de octaves ou seed derivado foi inventado aqui.
+
+
+## Incremento — NoiseStack (23/11/2026)
+
+- Portado `NoiseStack` de Minecraft Java 26.3 como composição de `Noise` genéricos, com getters 2D/3D, faixa intervalar acumulada, `GetLayer`, builder, `AddStack` e composição de volume.
+- `AddStack` achata as camadas e multiplica frequência/amplitude por camada, preservando a ordem do array. `AddToVolume` delega aos ruídos com as escalas e amplitudes combinadas, sem recalcular a composição por amostras pontuais.
+- `Builder.Build` seleciona a subclasse interna `Perlin` quando todas as camadas têm tipo exato `PerlinNoise`, conforme a especialização 26.3. Combinações mistas mantêm a pilha genérica.
+- `NoiseStackChecks` cobre faixa com amplitude negativa, composição 2D/3D, identidade das camadas, flattening, especialização Perlin, volume aditivo, pilha vazia e ruídos mistos.
+- `NormalNoise` permanece pendente do contrato de randomização posicional (`forkPositional/fromHashOf`), que ainda não existe em Asteria; não foi substituído por hash/seed próprio.
