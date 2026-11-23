@@ -38,8 +38,6 @@ internal static class ChunkStatusChecks
                 "Chunk status identifiers must match their registered names and order.");
             Require(ReferenceEquals(ChunkStatus.ByName(expectedNames[index]), status),
                 "ChunkStatus.byName must resolve the registered status instance.");
-            Require(ReferenceEquals(ChunkStatus.CODEC, ChunkStatus.CODEC),
-                "The chunk-status codec must be a stable registry by-name codec instance.");
         }
 
         Require(ReferenceEquals(ChunkStatus.EMPTY.GetParent(), ChunkStatus.EMPTY),
@@ -92,7 +90,7 @@ internal static class ChunkStatusChecks
         Require(ChunkStatus.ByName("asteria:not_registered") is null &&
             ChunkStatus.ByName("not a resource location") is null,
             "Unknown or malformed chunk-status names must resolve to null.");
-        Require(statuses.ToList() != null && !ReferenceEquals(statuses, ChunkStatus.GetStatusList()),
+        Require(!ReferenceEquals(statuses, ChunkStatus.GetStatusList()),
             "getStatusList must return a new ordered list on each call.");
         Require(ReferenceEquals(ChunkStatus.EMPTY.GetHeightmapsAfter(), ChunkStatus.STRUCTURE_REFERENCES.GetHeightmapsAfter()),
             "The shared world-generation heightmap set must retain identity across the early statuses.");

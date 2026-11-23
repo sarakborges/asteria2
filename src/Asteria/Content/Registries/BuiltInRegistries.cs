@@ -55,6 +55,11 @@ public static class BuiltInRegistries
             ResourceLocation.FromNamespaceAndPath("asteria", "plains"),
             static () => BuiltInBiomes.RegisterAll());
 
+    public static Registry<ChunkStatusValue> ChunkStatus { get; } =
+        RegisterSimple<ChunkStatusValue>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "chunk_status"),
+            static () => { _ = ChunkStatusValue.EMPTY; });
+
     public static Registry<ParticleType> ParticleType { get; } =
         RegisterSimple<ParticleType>(
             ResourceLocation.FromNamespaceAndPath("asteria", "particle_type"),
