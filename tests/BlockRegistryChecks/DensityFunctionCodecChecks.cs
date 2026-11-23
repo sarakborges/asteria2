@@ -977,9 +977,8 @@ internal static class DensityFunctionCodecChecks
     private static void CheckFindTopSurfaceCodec()
     {
         DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
-        var density = new SurfaceProbeDensityFunction(5.0f);
         FindTopSurfaceFunction expected = new(
-            density,
+            new ConstantFunction(0.25f),
             new ConstantFunction(11.0f),
             -8,
             4);
@@ -1054,7 +1053,13 @@ internal static class DensityFunctionCodecChecks
             "FindTopSurfaceFunction rewrite must replace the density child and preserve search settings.");
 
         var context = new TestCompileContext();
-        DensitySampler sampler = expected.CompileSampler(context);
+        DensityFunction density = new SurfaceProbeDensityFunction(5.0f);
+        DensityFunction runtimeFunction = new FindTopSurfaceFunction(
+            density,
+            new ConstantFunction(11.0f),
+            -8,
+            4);
+        DensitySampler sampler = runtimeFunction.CompileSampler(context);
         Require(
             sampler.SampleValue(SamplerContext.EmptyUncached, 2, 100, -3) == 8.0f,
             "FindTopSurfaceFunction must begin at floor(upper_bound/cell_height)*cell_height and return the first positive probe.");
