@@ -134,6 +134,7 @@ internal static class DensityFunctionChecks
         DensityFunction input = DensityFunctions.Constant(2.75f);
         Holder<DensityFunction>.Reference reference =
             registry.Register(key, input, RegistrationInfo.BuiltIn);
+        registry.Freeze();
         var holderFunction = new DensityFunctions.HolderHolder(reference);
 
         Require(
