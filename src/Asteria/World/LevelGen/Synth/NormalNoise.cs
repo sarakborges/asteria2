@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Text;
+using Asteria.Content.Registries;
+using Asteria.Serialization;
 using Asteria.Util;
 using Asteria.World.LevelGen.DensityFunctions;
 
@@ -16,6 +18,17 @@ public sealed class NormalNoise : IEquatable<NormalNoise>
     public const int MAX_OCTAVE_COUNT = 32;
     public const double PERSISTENCE = 0.5;
     public const double LACUNARITY = 2.0;
+
+    private static Codec<Normalization> NormalizationCodec { get; } =
+        new NormalizationCodecImpl();
+
+    public static Codec<NormalNoise> DIRECT_CODEC { get; } =
+        Parameters.CODEC.XMap<NormalNoise>(
+            static parameters => new NormalNoise(parameters),
+            static noise => noise._parameters);
+
+    public static Codec<Holder<NormalNoise>> CODEC { get; } =
+        RegistryCodecs.Holder(Registries.NOISE, DIRECT_CODEC);
 
     private readonly Parameters _parameters;
     private readonly OctaveInfo[] _octaves;
@@ -296,8 +309,107 @@ public sealed class NormalNoise : IEquatable<NormalNoise>
         public double AbsAmplitude() => Math.Abs(Amplitude);
     }
 
+    private sealed record NormalizationSettings(
+        Normalization Normalize,
+        IReadOnlyList<double> AmplitudeModifiers);
+
+    private static MapCodec<NormalizationSettings> CreateNormalizationSettingsCodec() =>
+        RecordCodecBuilder.MapCodec<NormalizationSettings>(instance =>
+            instance.Group(
+                    NormalizationCodec.OptionalFieldOf(
+                            "normalize",
+                            Normalization.ENABLED)
+                        .ForGetter<NormalizationSettings>(static settings => settings.Normalize),
+                    Codecs.DoubleRange(0.0, MAX_AMPLITUDE)
+                        .ListOf(0, MAX_OCTAVE_COUNT)
+                        .OptionalFieldOf("amplitude_modifiers", Array.Empty<double>())
+                        .ForGetter<NormalizationSettings>(static settings => settings.AmplitudeModifiers))
+                .Apply(
+                    instance,
+                    static (normalize, amplitudeModifiers) =>
+                        new NormalizationSettings(normalize, amplitudeModifiers)));
+
+    private sealed class NormalizationCodecImpl : Codec<Normalization>
+    {
+        public override DataResult<TData> Encode<TData>(
+            Normalization input,
+            DynamicOps<TData> ops,
+            TData prefix) =>
+            input switch
+            {
+                Normalization.DISABLED => Codecs.BOOL.Encode(false, ops, prefix),
+                Normalization.ENABLED => Codecs.BOOL.Encode(true, ops, prefix),
+                Normalization.LEGACY => Codecs.STRING.Encode("legacy", ops, prefix),
+                _ => DataResult<TData>.Error(
+                    () => $"Unknown normalization type: {input}")
+            };
+
+        public override DataResult<Pair<Normalization, TData>> Decode<TData>(
+            DynamicOps<TData> ops,
+            TData input)
+        {
+            DataResult<Pair<bool, TData>> boolean = Codecs.BOOL.Decode(ops, input);
+            if (boolean.TryGetResult(out Pair<bool, TData> boolPair))
+            {
+                return DataResult<Pair<Normalization, TData>>.Success(
+                    new Pair<Normalization, TData>(
+                        boolPair.First ? Normalization.ENABLED : Normalization.DISABLED,
+                        boolPair.Second));
+            }
+
+            DataResult<Pair<string, TData>> text = Codecs.STRING.Decode(ops, input);
+            if (text.TryGetResult(out Pair<string, TData> textPair))
+            {
+                return string.Equals(textPair.First, "legacy", StringComparison.Ordinal)
+                    ? DataResult<Pair<Normalization, TData>>.Success(
+                        new Pair<Normalization, TData>(Normalization.LEGACY, textPair.Second))
+                    : DataResult<Pair<Normalization, TData>>.Error(
+                        () => $"Invalid normalization type: {textPair.First}");
+            }
+
+            return DataResult<Pair<Normalization, TData>>.Error(
+                () => $"Invalid normalization type: {boolean.ErrorMessage}; {text.ErrorMessage}");
+        }
+
+        public override string ToString() =>
+            "Normalization[bool|legacy]";
+    }
+
     private sealed class Parameters : IEquatable<Parameters>
     {
+        public static Codec<Parameters> CODEC { get; } =
+            RecordCodecBuilder.Create<Parameters>(instance =>
+                instance.Group(
+                        Codecs.DoubleRange(1.0E-5f, MAX_AMPLITUDE)
+                            .OptionalFieldOf("base_amplitude", 1.0)
+                            .ForGetter<Parameters>(static parameters => parameters.BaseAmplitude),
+                        Codecs.IntRange(-MAX_OCTAVE_COUNT, MAX_OCTAVE_COUNT)
+                            .FieldOf("base_octave")
+                            .ForGetter<Parameters>(static parameters => parameters.BaseOctave),
+                        Codecs.IntRange(1, MAX_OCTAVE_COUNT)
+                            .OptionalFieldOf("octave_count", 1)
+                            .ForGetter<Parameters>(static parameters => parameters.OctaveCount),
+                        CreateNormalizationSettingsCodec()
+                            .ForGetter<Parameters>(static parameters =>
+                                new NormalizationSettings(
+                                    parameters.Normalize,
+                                    parameters.AmplitudeModifiers)))
+                    .Apply(
+                        instance,
+                        static (baseAmplitude, baseOctave, octaveCount, settings) =>
+                            new Parameters(
+                                baseAmplitude,
+                                baseOctave,
+                                octaveCount,
+                                settings.Normalize,
+                                settings.AmplitudeModifiers)))
+            .Validate(static parameters =>
+                parameters.AmplitudeModifiers.Count != 0 &&
+                parameters.AmplitudeModifiers.Count != parameters.OctaveCount
+                    ? DataResult<Parameters>.Error(
+                        () => $"amplitude_modifiers had size {parameters.AmplitudeModifiers.Count}, but octave_count was {parameters.OctaveCount}")
+                    : DataResult<Parameters>.Success(parameters));
+
         public double BaseAmplitude { get; }
         public int BaseOctave { get; }
         public int OctaveCount { get; }
