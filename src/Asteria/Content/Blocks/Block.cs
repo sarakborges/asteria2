@@ -113,6 +113,9 @@ public class Block
             _ => false
         };
 
+    public virtual bool CanBeReplaced(BlockState state, Fluid fluid) =>
+        state.CanBeReplaced() || !state.IsSolid;
+
     public virtual bool SkipRendering(
         BlockState state,
         BlockState neighborState,
