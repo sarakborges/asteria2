@@ -3,6 +3,7 @@ using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
 using Asteria.Content.Storage;
 using Asteria.Core;
+using Asteria.Serialization;
 
 namespace Asteria.World;
 
@@ -193,6 +194,45 @@ public sealed class Heightmap
                 Usage.CLIENT,
                 static state => state.Is(BlockTags.BlocksMotionInHeightmapNoLeaves) ||
                     !state.GetFluidState().IsEmpty());
+
+        private static readonly Types[] Values =
+        {
+            WORLD_SURFACE_WG,
+            WORLD_SURFACE,
+            OCEAN_FLOOR_WG,
+            OCEAN_FLOOR,
+            MOTION_BLOCKING,
+            MOTION_BLOCKING_NO_LEAVES
+        };
+
+        /// <summary>
+        /// String names for ordinary data, integer IDs when DynamicOps requests compressed maps,
+        /// matching StringRepresentable.fromEnum in Minecraft Java 26.3.
+        /// </summary>
+        public static Codec<Types> CODEC { get; } = CreateCodec();
+
+        private static Codec<Types> CreateCodec()
+        {
+            Codec<Types> byName = Codecs.STRING.FlatXMap(
+                name =>
+                {
+                    Types? value = Array.Find(
+                        Values,
+                        candidate => string.Equals(candidate._serializationKey, name, StringComparison.Ordinal));
+                    return value is null
+                        ? DataResult<Types>.Error(() => $"Unknown element name: {name}")
+                        : DataResult<Types>.Success(value);
+                },
+                value => DataResult<string>.Success(value._serializationKey));
+
+            Codec<Types> byId = Codecs.INT.FlatXMap(
+                id => id >= 0 && id < Values.Length
+                    ? DataResult<Types>.Success(Values[id])
+                    : DataResult<Types>.Error(() => $"Unknown element id: {id}"),
+                value => DataResult<int>.Success(value._id));
+
+            return byName.OrCompressed(byId);
+        }
 
         internal int Id => _id;
 

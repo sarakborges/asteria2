@@ -23,6 +23,7 @@ internal static class ChunkChecks
         ArgumentNullException.ThrowIfNull(sourceFluidState);
 
         CheckHeightAccessor();
+        CheckHeightmapTypeCodec();
         CheckChunkPositionBounds();
         CheckChunkAccessLifecycle();
         CheckChunkBlockMutationContract(nonAirState);
@@ -927,6 +928,49 @@ internal static class ChunkChecks
         Require(chunk.GetSections().Length == 24, "Chunk section storage length must come from the height accessor.");
         Require(chunk.GetSection(0).HasOnlyAir, "A mismatched supplied section array must be discarded before missing sections are filled.");
         Require(!ReferenceEquals(chunk.GetSection(0), supplied[0]), "A mismatched supplied section array must not partially populate the chunk.");
+    }
+
+    private static void CheckHeightmapTypeCodec()
+    {
+        Heightmap.Types[] types =
+        {
+            Heightmap.Types.WORLD_SURFACE_WG,
+            Heightmap.Types.WORLD_SURFACE,
+            Heightmap.Types.OCEAN_FLOOR_WG,
+            Heightmap.Types.OCEAN_FLOOR,
+            Heightmap.Types.MOTION_BLOCKING,
+            Heightmap.Types.MOTION_BLOCKING_NO_LEAVES
+        };
+
+        DynamicOps<JsonElement> normalOps = JsonOps.INSTANCE;
+        DynamicOps<JsonElement> compressedOps = JsonOps.COMPRESSED;
+
+        for (int index = 0; index < types.Length; index++)
+        {
+            Heightmap.Types type = types[index];
+            JsonElement named = Heightmap.Types.CODEC.EncodeStart(normalOps, type).GetOrThrow();
+            JsonElement compressed = Heightmap.Types.CODEC.EncodeStart(compressedOps, type).GetOrThrow();
+
+            Require(
+                named.GetString() == type.GetSerializedName() &&
+                ReferenceEquals(Heightmap.Types.CODEC.Parse(normalOps, named).GetOrThrow(), type),
+                "Heightmap.Types.CODEC must round-trip every serialized name in ordinary DynamicOps.");
+
+            Require(
+                compressed.GetInt32() == index &&
+                ReferenceEquals(Heightmap.Types.CODEC.Parse(compressedOps, compressed).GetOrThrow(), type),
+                "Heightmap.Types.CODEC must use enum ordinal IDs when DynamicOps requests compressed maps.");
+        }
+
+        DataResult<Heightmap.Types> unknownName =
+            Heightmap.Types.CODEC.Parse(normalOps, normalOps.CreateString("missing"));
+        DataResult<Heightmap.Types> unknownId =
+            Heightmap.Types.CODEC.Parse(compressedOps, compressedOps.CreateInt(6));
+
+        Require(
+            unknownName.IsError && unknownName.ErrorMessage == "Unknown element name: missing" &&
+            unknownId.IsError && unknownId.ErrorMessage == "Unknown element id: 6",
+            "Heightmap.Types.CODEC must preserve the reference unknown-name and unknown-ID errors.");
     }
 
     private static void CheckWorldSurfaceHeightmap(BlockState nonAirState)
