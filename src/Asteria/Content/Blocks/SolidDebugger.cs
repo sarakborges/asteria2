@@ -93,26 +93,51 @@ public sealed class SolidDebugger
     {
         string? value = Environment.GetEnvironmentVariable(name);
         return value is not null &&
-               (value.Length == 0 || bool.TryParse(value, out bool enabled) && enabled);
+               (value.Length == 0 || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase));
     }
 
-    public enum Reason
+    public sealed class Reason
     {
-        FORCE_SOLID_ON(true, "forceSolidOn called on properties"),
-        LARGE_ENOUGH_COLLISION_SHAPE(true, "collision shape bounds size is large enough"),
-        HIGH_ENOUGH_COLLISION_SHAPE(true, "collision shape bounds are higher than 1"),
-        FORCE_SOLID_OFF(false, "forceSolidOff called on properties"),
-        NULL_CACHE(false, "cache is null"),
-        EMPTY_COLLISION_SHAPE(false, "collision shape is empty"),
-        FALLTHROUGH(false, "fallthrough");
+        public static readonly Reason FORCE_SOLID_ON =
+            new(0, nameof(FORCE_SOLID_ON), true, "forceSolidOn called on properties");
+        public static readonly Reason LARGE_ENOUGH_COLLISION_SHAPE =
+            new(1, nameof(LARGE_ENOUGH_COLLISION_SHAPE), true, "collision shape bounds size is large enough");
+        public static readonly Reason HIGH_ENOUGH_COLLISION_SHAPE =
+            new(2, nameof(HIGH_ENOUGH_COLLISION_SHAPE), true, "collision shape bounds are higher than 1");
+        public static readonly Reason FORCE_SOLID_OFF =
+            new(3, nameof(FORCE_SOLID_OFF), false, "forceSolidOff called on properties");
+        public static readonly Reason NULL_CACHE =
+            new(4, nameof(NULL_CACHE), false, "cache is null");
+        public static readonly Reason EMPTY_COLLISION_SHAPE =
+            new(5, nameof(EMPTY_COLLISION_SHAPE), false, "collision shape is empty");
+        public static readonly Reason FALLTHROUGH =
+            new(6, nameof(FALLTHROUGH), false, "fallthrough");
 
+        public static IReadOnlyList<Reason> Values { get; } = Array.AsReadOnly(
+            new[]
+            {
+                FORCE_SOLID_ON,
+                LARGE_ENOUGH_COLLISION_SHAPE,
+                HIGH_ENOUGH_COLLISION_SHAPE,
+                FORCE_SOLID_OFF,
+                NULL_CACHE,
+                EMPTY_COLLISION_SHAPE,
+                FALLTHROUGH
+            });
+
+        public int Ordinal { get; }
+        public string Name { get; }
         public bool CausesSolid { get; }
         public string Message { get; }
 
-        Reason(bool causesSolid, string message)
+        private Reason(int ordinal, string name, bool causesSolid, string message)
         {
+            Ordinal = ordinal;
+            Name = name;
             CausesSolid = causesSolid;
             Message = message;
         }
+
+        public override string ToString() => Name;
     }
 }
