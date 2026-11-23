@@ -11,29 +11,28 @@ Asteria é exclusivamente single-player/offline/local. Redstone e multiplayer/ne
 - Godot 4.7.2 — edição .NET
 - .NET SDK 8.0
 
-## Executar
+## Estado atual
 
-1. Abra o arquivo \`project.godot\` no Godot 4.7.2 .NET.
+O projeto ainda não contém um mundo jogável. A cena inicial executa somente o bootstrap e a validação dos registries de conteúdo em `scripts/Main.cs`.
+
+A base já inclui modelos de conteúdo, block states, registries, armazenamento paletizado, geometria voxel, primitivas de chunks, biomas, ruído e partes do lifecycle/tick de chunks. Ainda precisam ser integrados o mundo local, o gerenciador e a geração de chunks, o rendering, o jogador/física, a simulação e a persistência local.
+
+A referência de paridade é Minecraft Java 26.3. Os sistemas fora do escopo do produto estão documentados em [docs/architecture/project-scope.md](docs/architecture/project-scope.md).
+
+## Executar o bootstrap
+
+1. Abra `project.godot` no Godot 4.7.2 .NET.
 2. Aguarde a importação inicial dos arquivos.
-3. Execute o projeto com \`F6\` ou \`F5\`.
+3. Execute com `F6` ou `F5`.
 
-A cena inicial agora abre uma área local jogável com nove chunks, terreno de teste, iluminação, câmera em primeira pessoa, colisão física e edição de blocos. O terreno plano é temporário: geração procedural, streaming e demais sistemas de mundo ainda serão conectados às estruturas de chunk já existentes.
-
-### Controles
-
-- \`W A S D\`: movimentar
-- \`Espaço\`: pular
-- Mouse: olhar
-- Botão esquerdo: quebrar bloco
-- Botão direito: colocar bloco
-- \`1\`: grama; \`2\`: terra; \`3\`: pedra
-- \`Esc\`: liberar/recapturar o cursor
+A execução atual valida o carregamento e o congelamento dos registries; não inicia gameplay.
 
 ## Estrutura
 
-- \`assets/\`: arquivos de arte e recursos externos.
-- \`resources/\`: recursos nativos do Godot.
-- \`scenes/\`: cenas do projeto.
-- \`scripts/Gameplay/\`: mundo local, visualização de chunks e controle do jogador.
-- \`src/Asteria/\`: modelos e sistemas centrais de jogo.
-- \`tests/\`: verificações automatizadas.
+- `assets/`: arquivos de arte e recursos externos.
+- `resources/`: recursos nativos do Godot.
+- `scenes/`: cenas do projeto.
+- `scripts/`: bootstrap e integração com o Godot.
+- `src/Asteria/`: modelos e sistemas centrais de jogo.
+- `tests/`: verificações automatizadas de paridade.
+- `docs/architecture/`: decisões arquiteturais e auditoria de paridade.
