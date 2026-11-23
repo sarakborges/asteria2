@@ -395,3 +395,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `IntegerProperty.IndexOf` agora reproduz `getInternalIndex` de 26.3: retorna -1 somente acima do máximo e usa subtração Int32 unchecked para os demais valores, inclusive o overflow Java de valores abaixo do mínimo.
 - `TryParse` passou a validar o intervalo diretamente (`minimum <= value <= maximum`), como `IntegerProperty.getValue(String)`; isso evita aceitar texto fora do intervalo quando o índice sofre wraparound.
 - Teste atualizado para distinguir a semântica do índice da validação do parser.
+
+
+## Incremento — lifecycle do codec de BlockState (23/11/2026)
+
+- O ramo de objeto de `BlockStateCodec` agora aplica `Lifecycle.Stable()` ao resultado de encode e decode, inclusive resultados de erro, reproduzindo `BlockState.FULL_CODEC = codec(...).stable()` de Minecraft 26.3.
+- O ramo compacto por identificador continua preservando o lifecycle do `Registry.byNameCodec()`, em vez de forçar estabilidade sobre o codec do registry.
+- Testes verificam o lifecycle em encode/decode dos formatos compacto e completo e do codec completo estrito.

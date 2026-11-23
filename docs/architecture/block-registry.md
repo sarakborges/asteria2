@@ -85,3 +85,8 @@ The state constructor preserves Minecraft 26.3 callback evaluation order: light 
 ## IntegerProperty index and parse contracts
 
 `IntegerProperty.IndexOf` mirrors `getInternalIndex`: values above the maximum return -1; all others use unchecked 32-bit `value - minimum`, preserving Java integer overflow. Parsing intentionally does not use this index as a range predicate: Minecraft `getValue(String)` checks `minimum <= value <= maximum` directly, so out-of-range textual values remain rejected even when the index subtraction wraps.
+
+
+## Block-state codec lifecycle
+
+The full block-state form applies Minecraft 26.3 `FULL_CODEC.stable()` semantics to both successful and failed encode/decode results. When the compact string form is enabled, that branch preserves the registry name codec lifecycle; object-form states retain the stable full-codec lifecycle.

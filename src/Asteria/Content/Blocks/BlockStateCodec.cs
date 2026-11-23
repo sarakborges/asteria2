@@ -1,4 +1,5 @@
 using Asteria.Content.Blocks.StateProperties;
+using Asteria.Content.Registries;
 using Asteria.Serialization;
 
 namespace Asteria.Content.Blocks;
@@ -57,7 +58,7 @@ internal sealed class BlockStateCodec : Codec<BlockState>
             }
 
             return ops.MergeToMap(prefix, entries);
-        });
+        }).SetLifecycle(Lifecycle.Stable());
     }
 
     public override DataResult<Pair<BlockState, TData>> Decode<TData>(
@@ -77,7 +78,8 @@ internal sealed class BlockStateCodec : Codec<BlockState>
         return ops.GetMap(input).FlatMap(map =>
             map.Get("id").FlatMap(encodedId => _ownerCodec.Parse(ops, encodedId))
                 .FlatMap(block => DecodeProperties(ops, map, block))
-                .Map(state => new Pair<BlockState, TData>(state, input)));
+                .Map(state => new Pair<BlockState, TData>(state, input)))
+            .SetLifecycle(Lifecycle.Stable());
     }
 
     private static DataResult<BlockState> DecodeProperties<TData>(
