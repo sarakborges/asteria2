@@ -1,4 +1,5 @@
 using Asteria.Content.Blocks;
+using Asteria.Content.Biomes;
 using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
 using Asteria.Content.Chunks.Status;
