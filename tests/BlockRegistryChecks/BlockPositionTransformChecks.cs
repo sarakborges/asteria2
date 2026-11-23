@@ -3,6 +3,7 @@ using Asteria.Content.Blocks;
 using Asteria.Content.Blocks.StateProperties;
 using Asteria.Content.Materials;
 using Asteria.Core;
+using Asteria.Core.Shapes;
 using Asteria.Core.Mathematics;
 using Asteria.Serialization;
 using Asteria.World;
