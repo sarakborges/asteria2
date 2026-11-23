@@ -230,6 +230,7 @@ internal static class Program
         Require(BuiltInRegistries.Timeline.Count == 0, "No built-in timelines should be registered until their complete attribute content is in scope.");
         ChunkStatusChecks.Run();
         ChunkDependenciesChecks.Run();
+        ChunkPyramidChecks.Run();
         StaticCache2DChecks.Run();
         IntervalChecks.Run();
         SimplexNoiseChecks.Run();

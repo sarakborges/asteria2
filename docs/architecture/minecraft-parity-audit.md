@@ -820,3 +820,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - No modelo atual, que ainda não possui `BelowZeroRetrogen`, o maior status gerado é o status persistido. A separação permite que a integração de retrogen seja adicionada quando seus tipos/dependências forem portados, sem alterar consumidores.
 - `ProtoChunk.GetNoiseBiome` usa agora `GetHighestGeneratedStatus` para decidir quando a palette pode ser consultada.
 - Testes cobrem igualdade entre os dois status no estado atual, mudança após `SetPersistedStatus` e a guarda de biomas.
+
+
+## Incremento — ChunkStep e ChunkPyramid (23/11/2026)
+
+- Portados o builder de dependências diretas/acumuladas de `ChunkStep` e as pirâmides de geração e carregamento da referência Java 26.3.
+- O cálculo preserva a posição do pai na janela, o máximo de status requerido em cada raio, os raios de escrita de bloco de `TERRAIN` (0) e `FEATURES` (1), e a regra de raio zero para o próprio status.
+- A janela acumulada de `GENERATION_PYRAMID/FULL` é verificada contra os 12 anéis vanilla; `LOADING_PYRAMID/FULL` exige `SPAWN` no centro e `INITIALIZE_LIGHT` no anel adjacente.
+- Portada também a margem de segurança usada para limitar coordenadas máximas de chunk.
+- Delimitação: estes tipos contêm os metadados de agendamento. `ChunkStep.apply`, delegates de tarefas, profiling, `WorldGenContext`, `GenerationChunkHolder` e o scheduler ainda dependem de gerador/mundo local e não foram substituídos por callbacks ou no-ops artificiais.

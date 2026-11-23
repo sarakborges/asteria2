@@ -293,3 +293,13 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - `ChunkAccess.GetHighestGeneratedStatus` provides the distinct lifecycle query used by status-gated consumers.
 - While below-zero retrogen is not represented in Asteria, it returns the persisted status; once retrogen is ported, it must return the maximum of the target and persisted statuses as in the reference.
 - ProtoChunk biome lookup uses this query rather than directly reading the backing status field.
+
+
+## ChunkStep e ChunkPyramid — Minecraft Java 26.3
+
+- ChunkStep builds immutable direct and accumulated status dependencies by distance, preserving the parent-window offset and maximum required status at each ring.
+- Generation and loading pyramids contain the ten statuses in registered order and preserve the vanilla per-stage dependency radii.
+- TERRAIN has block-state write radius 0; FEATURES has write radius 1; unconfigured stages retain -1.
+- The generation FULL dependency window has twelve rings; the loading FULL window requires SPAWN at the center and INITIALIZE_LIGHT in the adjacent ring.
+- The maximum chunk coordinate uses the reference generation-pyramid safety margin.
+- This increment ports scheduling metadata only. Task delegates, apply/profiling, WorldGenContext, GenerationChunkHolder and the generation scheduler remain dependent on the local world/generator lifecycle and are not represented by placeholders.
