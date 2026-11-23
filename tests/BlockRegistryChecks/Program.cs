@@ -8,6 +8,7 @@ using Asteria.Content.Particles;
 using Asteria.Content.Biomes;
 using Asteria.Content.Blocks.StateProperties;
 using Asteria.Content.Chunks;
+using Asteria.Content.Chunks.Status;
 using Asteria.Content.Identifiers;
 using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
@@ -203,7 +204,7 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 10, "The root registry must contain the built-in block, fluid, item, biome, particle, environment-attribute, attribute-type, position-source-type, world-clock and timeline registries.");
+        Require(BuiltInRegistries.Root.Count == 11, "The root registry must contain the built-in block, fluid, item, biome, chunk-status, particle, environment-attribute, attribute-type, position-source-type, world-clock and timeline registries.");
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
@@ -227,6 +228,7 @@ internal static class Program
         Require(BuiltInRegistries.Biome.Count == 2, "The built-in biome registry must contain plains and desert.");
         Require(BuiltInRegistries.PositionSourceType.Count == 1, "The local position-source registry must contain only the block variant.");
         Require(BuiltInRegistries.Timeline.Count == 0, "No built-in timelines should be registered until their complete attribute content is in scope.");
+        ChunkStatusChecks.Run();
         Require(BuiltInRegistries.AttributeType.Count == 9, "The attribute-type registry must contain the seven existing value types plus particle and ambient-particle types.");
         Require(Fluid.FluidStateRegistry.Count == 1, "The fluid-state ID map must contain every registered fluid state.");
         Require(ReferenceEquals(Blocks.AIR.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState), "Air must contain the empty fluid state.");

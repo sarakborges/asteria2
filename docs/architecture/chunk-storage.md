@@ -52,3 +52,10 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - When the word count differs, the serialized data is discarded and that heightmap type is primed again from the owning chunk, as in Minecraft 26.3. No partial copy is performed.
 - The backing array returned by `GetRawData()` intentionally remains mutable, matching the reference storage accessor.
 
+
+## Chunk lifecycle status metadata — Minecraft Java 26.3
+
+- Portados os dez `ChunkStatus` em ordem de registro: `empty`, `structure_starts`, `structure_references`, `biomes`, `terrain`, `features`, `initialize_light`, `light`, `spawn` e `full`.
+- `ChunkType` distingue os nove primeiros estágios como `PROTOCHUNK` e o estágio final como `LEVELCHUNK`.
+- `heightmapsAfter` mantém os mesmos dois conjuntos compartilhados da referência: dois heightmaps de worldgen até `biomes` e quatro heightmaps finais a partir de `terrain`.
+- A registry `chunk_status` é parte do root registry e fornece o codec by-name. O metadado não executa tarefas: `ChunkStep` e `ChunkPyramid` ainda são os responsáveis pelo pipeline e por suas dependências espaciais.

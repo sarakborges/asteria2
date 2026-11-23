@@ -2,6 +2,7 @@ using Block = Asteria.Content.Blocks.Block;
 using Biome = Asteria.Content.Biomes.Biome;
 using Item = Asteria.Content.Items.Item;
 using Asteria.Content.Blocks;
+using ChunkStatusValue = Asteria.Content.Chunks.Status.ChunkStatus;
 using Asteria.Content.Particles;
 using BuiltInBlocks = Asteria.Content.Blocks.Blocks;
 using BuiltInBiomes = Asteria.Content.Biomes.Biomes;

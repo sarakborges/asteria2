@@ -450,3 +450,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Estados de blocos registrados retornam a mesma referência intrusive já criada pelo registry, preservando identidade e metadados.
 - Fixtures não registradas retornam o holder direto já usado internamente para diagnóstico, sem criar um novo objeto por consulta.
 - Testes cobrem identidade do holder registrado e resolução do holder direto de uma fixture.
+
+
+## Incremento — ciclo de vida de chunks: ChunkStatus (23/11/2026)
+
+- Portados `ChunkType` e os dez `ChunkStatus` do Minecraft Java 26.3 na ordem original, com parent chain, índices, comparação de status, `max`, resolução pelo nome e codec do registry.
+- Adicionado o registry built-in `chunk_status` ao root registry. `full` é o único status de tipo `LEVELCHUNK`; os nove anteriores são `PROTOCHUNK`.
+- Os status iniciais compartilham o conjunto `WORLDGEN_HEIGHTMAPS`; `terrain` e os seguintes compartilham `FINAL_HEIGHTMAPS`, conforme a referência.
+- Esse commit porta apenas o metadado dos estágios. Execução de tarefas, dependências de vizinhança e promoção ProtoChunk/LevelChunk permanecem pendentes de `ChunkStep`, `ChunkPyramid`, `ProtoChunk` e `LevelChunk`.
