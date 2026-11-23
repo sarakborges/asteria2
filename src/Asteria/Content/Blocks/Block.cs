@@ -1,5 +1,6 @@
 using Asteria.Content.Blocks.StateProperties;
 using Asteria.Content.Fluids;
+using Asteria.Content.Materials;
 using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Core.Shapes;
