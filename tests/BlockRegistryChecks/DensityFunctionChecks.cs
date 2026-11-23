@@ -121,13 +121,12 @@ internal static class DensityFunctionChecks
             "An empty DfRewriteRules.sequence must preserve the original density function.");
     }
 
-
     private static void CheckHolderHolder()
     {
         var registry = new Registry<DensityFunction>(
             ResourceLocation.Parse("asteria:test_density_functions"));
-        RegistryKey<DensityFunction> registryKey =
-            RegistryKey<DensityFunction>.CreateRegistryKey(registry.Location);
+        RegistryKey<Registry<DensityFunction>> registryKey =
+            RegistryKey<Registry<DensityFunction>>.CreateRegistryKey(registry.Location);
         RegistryKey<DensityFunction> key = RegistryKey<DensityFunction>.Create(
             registryKey,
             ResourceLocation.Parse("asteria:constant"));
