@@ -1,5 +1,6 @@
 using Asteria.Content.Registries;
 using Asteria.World.LevelGen.DensityFunctions;
+using Asteria.World.LevelGen.Synth;
 using DensityFunctionFactories = Asteria.World.LevelGen.DensityFunctions.DensityFunctions;
 
 namespace Asteria.World.LevelGen;
