@@ -262,3 +262,12 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - Negative block coordinates use Java-compatible floor division and modulus.
 - Input range/domain metadata and child rewrite behavior are preserved.
 - Reference: https://github.com/0khs/minecraft_source_26.3/blob/74720c2890f22942b72d7d84958eff1b3f72b95b/net/minecraft/world/level/levelgen/densityfunction/op/InterpolatedFunction.java.
+
+
+## ProtoChunk block storage — Minecraft Java 26.3
+
+- `ProtoChunk` now provides persisted chunk status, block/fluid reads and the vanilla block-state mutation path over existing section palettes.
+- Mutation preserves the reference ordering for build-height rejection, the empty-section/AIR fast path, section mutation, optional post-light initialization notifications, skylight-source updates, and status-specific heightmap updates/priming.
+- `VOID_AIR` is a distinct built-in air state for positions outside the build-height range; in-range empty sections return ordinary `AIR`.
+- The light-engine interface now exposes the two abstract notifications required by this mutation path: block checks and section-empty changes.
+- The current ProtoChunk increment deliberately does not claim full parity for upgrade/blending data, scheduled ticks, block entities, entities, structures, post-processing or below-zero retrogen; these remain separate dependency ports rather than no-op APIs.

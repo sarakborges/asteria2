@@ -1,6 +1,7 @@
 using Asteria.Content.Biomes;
 using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
+using Asteria.Content.Chunks.Status;
 using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
 using Asteria.Content.Storage;
@@ -1036,6 +1037,8 @@ internal static class ChunkChecks
 
     private sealed class TestChunkAccess : ChunkAccess
     {
+        public override ChunkStatus GetPersistedStatus() => ChunkStatus.EMPTY;
+
         public TestChunkAccess(
             ChunkPos chunkPos,
             LevelHeightAccessor levelHeightAccessor,

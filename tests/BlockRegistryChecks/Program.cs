@@ -271,6 +271,7 @@ internal static class Program
         BlockTagChecks.Run();
         BlockPositionTransformChecks.Run();
         BlockBehaviorChecks.Run();
+        ProtoChunkChecks.Run();
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState, FluidChecks.SourceFluidState);
         BiomeChecks.Run();
         EnvironmentAttributeChecks.Run();

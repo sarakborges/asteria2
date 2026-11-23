@@ -1,0 +1,195 @@
+using Asteria.Content.Blocks;
+using Asteria.Content.Chunks;
+using Asteria.Content.Chunks.Status;
+using Asteria.Content.Registries;
+using Asteria.Content.Fluids;
+using Asteria.Core;
+using Asteria.World;
+using Asteria.World.Lighting;
+
+internal static class ProtoChunkChecks
+{
+    private sealed class RecordingLightEngine : LightEngine
+    {
+        public List<(SectionPos Position, bool IsEmpty)> SectionStatusChanges { get; } = new();
+        public List<BlockPos> CheckedBlocks { get; } = new();
+
+        public override void CheckBlock(BlockPos position) =>
+            CheckedBlocks.Add(position.Immutable());
+
+        public override void UpdateSectionStatus(SectionPos sectionPosition, bool sectionEmpty) =>
+            SectionStatusChanges.Add((sectionPosition, sectionEmpty));
+    }
+
+    public static void Run()
+    {
+        CheckBlockAndFluidLookup();
+        CheckMutationAndWorldgenHeightmaps();
+        CheckFinalHeightmapTransition();
+        CheckOutsideBuildHeightAndAirFastPath();
+        CheckLightEngineNotifications();
+        CheckPersistedStatusDirtyState();
+    }
+
+    private static ProtoChunk CreateChunk(int chunkX = 0, int chunkZ = 0) =>
+        new(
+            new ChunkPos(chunkX, chunkZ),
+            LevelHeightAccessor.Create(-16, 48),
+            PalettedContainerFactory.CreateBuiltIn());
+
+    private static void CheckBlockAndFluidLookup()
+    {
+        ProtoChunk chunk = CreateChunk(2, -3);
+        int x = chunk.GetPos().GetMinBlockX() + 3;
+        int z = chunk.GetPos().GetMinBlockZ() + 5;
+        var position = new BlockPos(x, 4, z);
+
+        Require(
+            ReferenceEquals(chunk.GetBlockState(position), Blocks.AIR.DefaultState),
+            "A ProtoChunk empty section must return ordinary AIR.");
+
+        Require(
+            chunk.GetFluidState(position).IsEmpty(),
+            "An empty ProtoChunk section must return the empty fluid state.");
+
+        chunk.GetSection(chunk.GetSectionIndex(4))
+            .SetBlockState(3, 4, 5, Blocks.STONE.DefaultState);
+
+        Require(
+            ReferenceEquals(chunk.GetBlockState(position), Blocks.STONE.DefaultState),
+            "ProtoChunk lookup must read the local section palette at world coordinates.");
+
+        Require(
+            chunk.GetFluidState(position).IsEmpty(),
+            "A non-fluid block must retain its own empty fluid state.");
+    }
+
+    private static void CheckMutationAndWorldgenHeightmaps()
+    {
+        ProtoChunk chunk = CreateChunk(-2, 4);
+        int x = chunk.GetPos().GetMinBlockX() + 3;
+        int z = chunk.GetPos().GetMinBlockZ() + 6;
+        var firstPosition = new BlockPos(x, 2, z);
+        var topPosition = new BlockPos(x, 7, z);
+
+        BlockState previous = chunk.SetBlockState(firstPosition, Blocks.STONE.DefaultState);
+        Require(
+            ReferenceEquals(previous, Blocks.AIR.DefaultState) &&
+            ReferenceEquals(chunk.GetBlockState(firstPosition), Blocks.STONE.DefaultState),
+            "ProtoChunk.SetBlockState must return the previous palette state and store the new state.");
+
+        Require(
+            chunk.GetHeightmaps().Count == 2 &&
+            chunk.GetHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) == 2,
+            "The EMPTY persisted status must lazily create and prime the two world-generation heightmaps.");
+
+        BlockState previousTop = chunk.SetBlockState(topPosition, Blocks.STONE.DefaultState, flags: 0);
+        Require(
+            ReferenceEquals(previousTop, Blocks.AIR.DefaultState) &&
+            chunk.GetHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) == 7,
+            "Adding a higher block must incrementally update an already-primed world-generation heightmap.");
+
+        chunk.SetBlockState(topPosition, Blocks.AIR.DefaultState);
+        Require(
+            chunk.GetHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) == 2,
+            "Removing the topmost block must rescan below and restore the previous highest surface.");
+    }
+
+    private static void CheckFinalHeightmapTransition()
+    {
+        ProtoChunk chunk = CreateChunk();
+        int x = 1;
+        int z = 2;
+        chunk.SetBlockState(new BlockPos(x, 1, z), Blocks.STONE.DefaultState);
+        chunk.SetPersistedStatus(ChunkStatus.TERRAIN);
+        chunk.TryMarkSaved();
+
+        chunk.SetBlockState(new BlockPos(x, 9, z), Blocks.STONE.DefaultState);
+
+        Require(
+            chunk.GetHeightmaps().Count == 6 &&
+            chunk.GetHeight(Heightmap.Types.WORLD_SURFACE, x, z) == 9,
+            "At TERRAIN, the first block mutation must prime the four final heightmaps alongside the two retained world-generation maps.");
+    }
+
+    private static void CheckOutsideBuildHeightAndAirFastPath()
+    {
+        ProtoChunk chunk = CreateChunk();
+        BlockPos below = new(1, chunk.GetMinY() - 1, 1);
+        BlockPos above = new(1, chunk.GetMaxY() + 1, 1);
+
+        Require(
+            ReferenceEquals(chunk.GetBlockState(below), Blocks.VOID_AIR.DefaultState) &&
+            ReferenceEquals(chunk.GetBlockState(above), Blocks.VOID_AIR.DefaultState),
+            "ProtoChunk block reads outside the build height must return VOID_AIR.");
+
+        Require(
+            chunk.GetFluidState(below).IsEmpty() && chunk.GetFluidState(above).IsEmpty(),
+            "ProtoChunk fluid reads outside the build height must return EMPTY.");
+
+        Require(
+            ReferenceEquals(chunk.SetBlockState(below, Blocks.STONE.DefaultState), Blocks.VOID_AIR.DefaultState) &&
+            ReferenceEquals(chunk.GetBlockState(below), Blocks.VOID_AIR.DefaultState),
+            "ProtoChunk block writes outside the build height must return VOID_AIR without storing the requested state.");
+
+        ProtoChunk emptyChunk = CreateChunk();
+        BlockState air = Blocks.AIR.DefaultState;
+        int mapsBefore = emptyChunk.GetHeightmaps().Count;
+        Require(
+            ReferenceEquals(emptyChunk.SetBlockState(new BlockPos(0, 0, 0), air), air) &&
+            emptyChunk.GetHeightmaps().Count == mapsBefore,
+            "An AIR write into an already-empty section must take the vanilla fast path before heightmap creation.");
+    }
+
+    private static void CheckLightEngineNotifications()
+    {
+        ProtoChunk chunk = CreateChunk();
+        var engine = new RecordingLightEngine();
+        chunk.SetLightEngine(engine);
+        chunk.InitializeLightSources();
+        chunk.SetPersistedStatus(ChunkStatus.INITIALIZE_LIGHT);
+
+        BlockPos position = new(2, 3, 4);
+        chunk.SetBlockState(position, Blocks.STONE.DefaultState);
+
+        Require(
+            engine.SectionStatusChanges.Count == 1 &&
+            engine.SectionStatusChanges[0].Position.Equals(SectionPos.Of(position)) &&
+            !engine.SectionStatusChanges[0].IsEmpty,
+            "When a section transitions from empty to non-empty after INITIALIZE_LIGHT, ProtoChunk must notify the corresponding section node.");
+
+        Require(
+            engine.CheckedBlocks.Count == 1 &&
+            engine.CheckedBlocks[0].Equals(position),
+            "A change in light dampening must update skylight sources and enqueue a light-engine block check.");
+
+        chunk.SetBlockState(position, Blocks.AIR.DefaultState);
+        Require(
+            engine.SectionStatusChanges.Count == 2 &&
+            engine.SectionStatusChanges[1].IsEmpty &&
+            engine.CheckedBlocks.Count == 2,
+            "Removing the only block must notify the section becoming empty and schedule a second light check.");
+    }
+
+    private static void CheckPersistedStatusDirtyState()
+    {
+        ProtoChunk chunk = CreateChunk();
+        Require(
+            ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.EMPTY) &&
+            !chunk.IsUnsaved(),
+            "A new ProtoChunk must start at EMPTY and clean.");
+
+        chunk.SetPersistedStatus(ChunkStatus.BIOMES);
+        Require(
+            ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.BIOMES) &&
+            chunk.IsUnsaved() &&
+            chunk.TryMarkSaved(),
+            "Changing the persisted chunk status must mark the ProtoChunk unsaved.");
+    }
+
+    private static void Require(bool condition, string message)
+    {
+        if (!condition)
+            throw new InvalidOperationException(message);
+    }
+}

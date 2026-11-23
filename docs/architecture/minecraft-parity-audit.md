@@ -785,3 +785,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Range, DomainAxes e RewriteChildren delegam ao filho, preservando identidade quando não há alteração.
 - Mth.FloorDiv e Mth.FloorMod reproduzem a semântica de coordenadas negativas de Java.
 - O construtor valida tamanhos positivos, refletindo a restrição do codec de referência (POSITIVE_INT); o codec local permanece adiado com persistência.
+
+
+## Incremento — ProtoChunk block storage (23/11/2026)
+
+- Portada a parte de armazenamento e mutação de `ProtoChunk` do Minecraft Java 26.3, com `GetPersistedStatus`, `SetPersistedStatus`, lookup de estado/fluido e `SetBlockState`.
+- `SetBlockState` mantém a ordem vanilla: rejeição fora do build height, atalho de seção vazia + AIR, mutação da seção, atualização do estado de seção no light engine quando o status alcança `INITIALIZE_LIGHT`, detecção de mudança de propriedades de luz, atualização de fontes de skylight, atualização/priming em lote dos heightmaps do status.
+- `LightEngine.HasDifferentLightProperties` compara identidade, light dampening, emissão e uso de shape para oclusão como a referência; os pontos de integração `CheckBlock` e `UpdateSectionStatus` são contratos abstratos do engine, não stubs.
+- Adicionado o estado built-in `VOID_AIR`, distinto de `AIR`, usado por leituras/escritas fora da altura de construção como em `ProtoChunk`.
+- Testes cobrem bounds, estados fora do mundo, retorno do estado anterior, atalho AIR, heightmaps das fases worldgen/finais, transição de seção vazia, notificações do light engine e atualização de skylight.
+- Divergências temporárias e explícitas: construtor omite `UpgradeData`, `BlendingData`, ticks agendados e dependências de load; a classe ainda não modela block entities, entidades, estruturas, post-processing ou retrogen. Esses campos/métodos não foram preenchidos com stubs.

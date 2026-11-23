@@ -3,6 +3,7 @@ using Asteria.Content.Biomes;
 using Asteria.Content.Blocks;
 using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
+using Asteria.Content.Chunks.Status;
 using Asteria.Core;
 using Asteria.World;
 using Asteria.World.Lighting;
@@ -258,6 +259,8 @@ public abstract class ChunkAccess : BlockGetter
 
         return heightmap.GetFirstAvailable(x & SectionPos.SectionMask, z & SectionPos.SectionMask) - 1;
     }
+
+    public abstract ChunkStatus GetPersistedStatus();
 
     public void MarkUnsaved() => _unsaved = true;
 

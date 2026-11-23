@@ -15,6 +15,9 @@ public static class Blocks
     public static Block AIR { get; } = new AirBlock(
         BlockProperties.Of().Replaceable().NoCollision().Air());
 
+    public static Block VOID_AIR { get; } = new AirBlock(
+        BlockProperties.Of().Replaceable().NoCollision().Air());
+
     public static Block STONE { get; } = new(
         BlockProperties.Of().MapColor(MapColor.STONE).Strength(1.5f, 6.0f));
 
@@ -27,6 +30,7 @@ public static class Blocks
     internal static void RegisterAll()
     {
         Register("air", AIR);
+        Register("void_air", VOID_AIR);
         Register("stone", STONE);
         Register("dirt", DIRT);
         Register("grass_block", GRASS_BLOCK);
