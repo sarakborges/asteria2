@@ -26,8 +26,8 @@ internal static class ChunkStatusChecks
             "Minecraft 26.3 must expose exactly ten chunk statuses.");
         Require(BuiltInRegistries.ChunkStatus.Count == expectedNames.Length,
             "All ten chunk statuses must be registered in the built-in registry.");
-        Require(BuiltInRegistries.Root.Count == 13,
-            "The built-in root registry must include the normal-noise, density-function-type and chunk-status registries.");
+        Require(BuiltInRegistries.Root.Count == 14,
+            "The built-in root registry must include the normal-noise, density-function, density-function-type and chunk-status registries.");
 
         for (int index = 0; index < expectedNames.Length; index++)
         {
