@@ -1,47 +1,55 @@
 namespace Asteria.World.LevelGen;
 
-/// <summary>
-/// World-generation random adapter. It preserves the source's call-count behavior and
-/// delegates bit generation to the wrapped legacy source.
-/// </summary>
-public sealed class WorldgenRandom : IRandomSource
+/// <summary>Minecraft 26.3 WorldgenRandom: a LegacyRandomSource facade over another RandomSource.</summary>
+public sealed class WorldgenRandom : LegacyRandomSource
 {
-    private readonly LegacyRandomSource _randomSource;
-
+    private readonly IRandomSource? _randomSource;
     public int Count { get; private set; }
 
-    public WorldgenRandom(LegacyRandomSource randomSource) =>
+    public WorldgenRandom(IRandomSource randomSource) : base(0L)
+    {
         _randomSource = randomSource ?? throw new ArgumentNullException(nameof(randomSource));
+    }
 
-    public int NextBits(int bits)
+    public int GetCount() => Count;
+    public override IRandomSource Fork() => _randomSource!.Fork();
+    public override PositionalRandomFactory ForkPositional() => _randomSource!.ForkPositional();
+
+    public override int NextBits(int bits)
     {
         Count++;
-        return _randomSource.NextBits(bits);
+        return _randomSource is LegacyRandomSource legacy
+            ? legacy.NextBits(bits)
+            : unchecked((int)((ulong)_randomSource!.NextLong() >> (64 - bits)));
     }
 
-    public int NextInt(int bound)
+    public override void SetSeed(long seed)
     {
-        if (bound <= 0)
-            throw new ArgumentOutOfRangeException(nameof(bound), "bound must be positive");
-
-        if ((bound & -bound) == bound)
-            return (int)((bound * (long)NextBits(31)) >> 31);
-
-        int bits;
-        int value;
-        do
-        {
-            bits = NextBits(31);
-            value = bits % bound;
-        }
-        while (unchecked(bits - value + (bound - 1)) < 0);
-
-        return value;
+        if (_randomSource is not null)
+            _randomSource.SetSeed(seed);
     }
 
-    public float NextFloat() =>
-        NextBits(24) * (1.0F / 16777216.0F);
+    public long SetDecorationSeed(long seed, int chunkX, int chunkZ)
+    {
+        SetSeed(seed);
+        long xScale = NextLong() | 1L;
+        long zScale = NextLong() | 1L;
+        long result = unchecked(((long)chunkX * xScale + (long)chunkZ * zScale) ^ seed);
+        SetSeed(result);
+        return result;
+    }
 
-    public double NextDouble() =>
-        (((long)NextBits(26) << 27) + NextBits(27)) / 9007199254740992.0;
+    public void SetFeatureSeed(long seed, int index, int step) =>
+        SetSeed(unchecked(seed + index + 10000L * step));
+
+    public void SetLargeFeatureSeed(long seed, int chunkX, int chunkZ)
+    {
+        SetSeed(seed);
+        long xScale = NextLong();
+        long zScale = NextLong();
+        SetSeed(unchecked((long)chunkX * xScale ^ (long)chunkZ * zScale ^ seed));
+    }
+
+    public void SetLargeFeatureWithSalt(long seed, int x, int z, int blend) =>
+        SetSeed(unchecked((long)x * 341873128712L + (long)z * 132897987541L + seed + blend));
 }
