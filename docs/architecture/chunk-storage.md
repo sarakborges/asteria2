@@ -67,3 +67,10 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - `GetRadiusOf` inverte as garantias por distância: retorna o último anel no qual o status consultado, ou um status posterior, está garantido; retorna `-1` se nenhum anel o garante.
 - O teste reproduz a janela acumulada do estágio `FULL` da pirâmide de geração 26.3: radius 11, 23×23 chunks, com BIOMES até raio 3, TERRAIN até raio 2 e FEATURES até raio 1.
 - Isso implementa apenas a estrutura de dependências; as tabelas `ChunkStep`/`ChunkPyramid` e a execução assíncrona permanecem pendentes.
+
+## StaticCache2D — Minecraft Java 26.3
+
+- Portada `StaticCache2D<T>` como cache retangular com limites inferiores inclusivos e superiores exclusivos.
+- `Create` inicializa todos os valores em ordem X externa/Z interna; `Map` cria outro cache com os mesmos limites; `ForEach` percorre a ordem linear do armazenamento.
+- `Contains`, `Get`, indexação X-major/Z-minor e diagnóstico de acesso fora da área seguem o contrato 26.3.
+- O teste cobre inicialização, ordem de iteração, transformação, limites, exceção e cache de raio zero. Essa estrutura será usada na montagem das dependências espaciais do scheduler.

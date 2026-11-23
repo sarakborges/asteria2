@@ -466,3 +466,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O índice inverso por status mantém a maior distância na qual o status consultado ou um posterior está garantido; valores não garantidos retornam `-1`.
 - Teste reproduz a janela acumulada de `FULL` e verifica os raios 11/3/2/1/0/-1, janela vazia e limites de indexação.
 - `ChunkStep`, `ChunkPyramid` e execução de tasks não foram introduzidos neste incremento.
+
+
+## Incremento — StaticCache2D (23/11/2026)
+
+- Portada a utilidade genérica `StaticCache2D<T>` de Minecraft Java 26.3, incluindo `create`, `map`, `forEach`, `get`, `contains`, indexação e representação textual.
+- A inicialização materializa toda a janela retangular em ordem X/Z; a transformação cria novo armazenamento e mantém a mesma área.
+- Testes cobrem limites inclusivos/exclusivos, ordem, indexação, mapping, raio zero, tipo de exceção e diagnóstico de acesso externo.
+- A classe é uma dependência direta de `ChunkStep.apply` e `ChunkGenerationTask`; não introduz scheduler customizado.

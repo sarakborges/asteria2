@@ -230,6 +230,7 @@ internal static class Program
         Require(BuiltInRegistries.Timeline.Count == 0, "No built-in timelines should be registered until their complete attribute content is in scope.");
         ChunkStatusChecks.Run();
         ChunkDependenciesChecks.Run();
+        StaticCache2DChecks.Run();
         Require(BuiltInRegistries.AttributeType.Count == 9, "The attribute-type registry must contain the seven existing value types plus particle and ambient-particle types.");
         Require(Fluid.FluidStateRegistry.Count == 1, "The fluid-state ID map must contain every registered fluid state.");
         Require(ReferenceEquals(Blocks.AIR.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState), "Air must contain the empty fluid state.");
