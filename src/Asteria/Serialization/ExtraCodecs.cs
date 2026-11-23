@@ -39,6 +39,57 @@ public static class ExtraCodecs
             .XMap(Argb.Vector4FromArgb32, Argb.ColorFromVector4)
             .WithAlternative(ARGB_COLOR_VEC4_CODEC, static value => value);
 
+
+    /// <summary>
+    /// Preserves a decoded value or partial result; when decoding has no usable value,
+    /// attaches the configured default as a partial value while retaining the error.
+    /// Equivalent to DataFixerUpper's ExtraCodecs.orElsePartial.
+    /// </summary>
+    public static Codec<TValue> OrElsePartial<TValue>(
+        Codec<TValue> codec,
+        TValue defaultValue)
+    {
+        ArgumentNullException.ThrowIfNull(codec);
+        ArgumentNullException.ThrowIfNull(defaultValue);
+        return new OrElsePartialCodec<TValue>(codec, defaultValue);
+    }
+
+    private sealed class OrElsePartialCodec<TValue> : Codec<TValue>
+    {
+        private readonly Codec<TValue> _source;
+        private readonly TValue _defaultValue;
+
+        public OrElsePartialCodec(Codec<TValue> source, TValue defaultValue)
+        {
+            _source = source;
+            _defaultValue = defaultValue;
+        }
+
+        public override DataResult<TData> Encode<TData>(
+            TValue input,
+            DynamicOps<TData> ops,
+            TData prefix) =>
+            _source.Encode(input, ops, prefix);
+
+        public override DataResult<Pair<TValue, TData>> Decode<TData>(
+            DynamicOps<TData> ops,
+            TData input)
+        {
+            DataResult<Pair<TValue, TData>> decoded = _source.Decode(ops, input);
+            if (decoded.IsSuccess || decoded.TryGetPartial(out _))
+                return decoded;
+
+            string message = decoded.ErrorMessage ?? "Decoding failed";
+            return DataResult<Pair<TValue, TData>>.Error(
+                () => $"({message} -> using default)",
+                new Pair<TValue, TData>(_defaultValue, input),
+                decoded.Lifecycle);
+        }
+
+        public override string ToString() =>
+            $"OrElsePartial[{_defaultValue}]";
+    }
+
     public static Codec<int> HexColor(int digits)
     {
         if (digits is not (6 or 8))

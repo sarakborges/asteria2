@@ -243,6 +243,93 @@ public sealed class PalettedContainer<T> : IPaletteResize<T>, IPalettedContainer
     /// Packs this container into palette entries and optional packed words,
     /// matching the local serialization representation of Minecraft Java 26.3.
     /// </summary>
+
+    /// <summary>
+    /// Creates the writable local-data codec used for chunk block-state and biome palettes.
+    /// Network stream codecs are deliberately separate.
+    /// </summary>
+    public static Codec<PalettedContainer<T>> CodecRW(
+        Codec<T> elementCodec,
+        PalettedContainerStrategy<T> strategy,
+        T defaultValue)
+    {
+        Codec<PalettedContainerPackedData<T>> packedCodec =
+            CreatePackedDataCodec(elementCodec, defaultValue);
+
+        return packedCodec.FlatXMap(
+            packed => Unpack(strategy, packed),
+            container => DataResult<PalettedContainerPackedData<T>>.Success(container.Pack(strategy)));
+    }
+
+    /// <summary>Creates the read-only local-data codec for a paletted container.</summary>
+    public static Codec<IPalettedContainerReadOnly<T>> CodecRO(
+        Codec<T> elementCodec,
+        PalettedContainerStrategy<T> strategy,
+        T defaultValue)
+    {
+        Codec<PalettedContainerPackedData<T>> packedCodec =
+            CreatePackedDataCodec(elementCodec, defaultValue);
+
+        return packedCodec.FlatXMap(
+            packed => Unpack(strategy, packed)
+                .Map(container => (IPalettedContainerReadOnly<T>)container),
+            container => DataResult<PalettedContainerPackedData<T>>.Success(
+                container.Pack(strategy)));
+    }
+
+    private readonly record struct OptionalStorage(bool IsPresent, IReadOnlyList<long> Values)
+    {
+        public static OptionalStorage None { get; } =
+            new(false, Array.Empty<long>());
+    }
+
+    private static OptionalStorage GetOptionalStorage(PalettedContainerPackedData<T> packed)
+    {
+        ulong[]? storage = packed.Storage;
+        if (storage is null)
+            return OptionalStorage.None;
+
+        long[] values = Array.ConvertAll(
+            storage,
+            static value => unchecked((long)value));
+        return new OptionalStorage(true, values);
+    }
+
+    private static Codec<PalettedContainerPackedData<T>> CreatePackedDataCodec(
+        Codec<T> elementCodec,
+        T defaultValue)
+    {
+        ArgumentNullException.ThrowIfNull(elementCodec);
+        ArgumentNullException.ThrowIfNull(defaultValue);
+
+        MapCodec<IReadOnlyList<T>> paletteField =
+            ExtraCodecs.OrElsePartial(elementCodec, defaultValue)
+                .ListOf()
+                .FieldOf("palette");
+
+        MapCodec<OptionalStorage> storageField =
+            Codecs.LONG.ListOf()
+                .XMap(
+                    static values => new OptionalStorage(true, values),
+                    static optional => optional.Values)
+                .OptionalFieldOf("data", OptionalStorage.None);
+
+        return RecordCodecBuilder.Create<PalettedContainerPackedData<T>>(instance =>
+            instance.Group(
+                paletteField.ForGetter<PalettedContainerPackedData<T>>(
+                    static packed => packed.PaletteEntries),
+                storageField.ForGetter<PalettedContainerPackedData<T>>(
+                    static packed => GetOptionalStorage(packed)))
+            .Apply(instance, static (paletteEntries, optionalStorage) =>
+                new PalettedContainerPackedData<T>(
+                    paletteEntries,
+                    optionalStorage.IsPresent
+                        ? Array.ConvertAll(
+                            optionalStorage.Values.ToArray(),
+                            static value => unchecked((ulong)value))
+                        : null)));
+    }
+
     public PalettedContainerPackedData<T> Pack() => Pack(_strategy);
 
     public PalettedContainerPackedData<T> Pack(PalettedContainerStrategy<T> strategy)
