@@ -3,6 +3,7 @@ using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Serialization;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
+using Asteria.World.LevelGen.Synth;
 using Asteria.World.LevelGen.DensityFunctions.Operations;
 
 namespace Asteria.World.LevelGen.DensityFunctions;
@@ -34,7 +35,8 @@ internal static class DensityFunctionCodecBootstrap
         MapCodec<DensityFunction> IntervalSelect,
         MapCodec<DensityFunction> Slice,
         MapCodec<DensityFunction> Gradient,
-        MapCodec<DensityFunction> FindTopSurface);
+        MapCodec<DensityFunction> FindTopSurface,
+        MapCodec<DensityFunction> OldBlendedNoise);
 
     // Lazy initialization is required because these map codecs compose DIRECT_CODEC,
     // whose registry dispatch is created while DensityFunctions itself is initialized.
@@ -73,6 +75,7 @@ internal static class DensityFunctionCodecBootstrap
         Register(registry, "interpolated", codecs.Interpolated);
         Register(registry, "slice", codecs.Slice);
         Register(registry, "find_top_surface", codecs.FindTopSurface);
+        Register(registry, "old_blended_noise", codecs.OldBlendedNoise);
     }
 
     internal static MapCodec<DensityFunction>? GetCodec(DensityFunction function)
@@ -103,6 +106,7 @@ internal static class DensityFunctionCodecBootstrap
             SliceFunction => codecs.Slice,
             GradientFunction => codecs.Gradient,
             FindTopSurfaceFunction => codecs.FindTopSurface,
+            BlendedNoise => codecs.OldBlendedNoise,
             _ => null
         };
     }
@@ -191,7 +195,8 @@ internal static class DensityFunctionCodecBootstrap
             CreateIntervalSelectCodec(),
             CreateSliceCodec(),
             CreateGradientCodec(),
-            CreateFindTopSurfaceCodec());
+            CreateFindTopSurfaceCodec(),
+            CreateOldBlendedNoiseCodec());
     }
 
     private static MapCodec<DensityFunction> CreateNoiseCodec() =>
@@ -564,6 +569,11 @@ internal static class DensityFunctionCodecBootstrap
             .XMap<DensityFunction>(
                 static function => function,
                 function => (FindTopSurfaceFunction)function);
+
+    private static MapCodec<DensityFunction> CreateOldBlendedNoiseCodec() =>
+        BlendedNoise.CODEC.XMap<DensityFunction>(
+            static function => function,
+            static function => (BlendedNoise)function);
 
     private static MapCodec<DensityFunction> CreateRoundCodec(RoundFunction.Type operation) =>
         RecordCodecBuilder.MapCodec<RoundFunction>(instance =>
