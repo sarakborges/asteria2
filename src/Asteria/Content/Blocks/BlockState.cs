@@ -16,7 +16,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     private static readonly Direction[] DIRECTIONS = Direction.GetValues();
     private static readonly SupportType[] SUPPORT_TYPES = Enum.GetValues<SupportType>();
 
-    private FluidState? _fluidState;
+    private FluidState _fluidState = Fluids.EMPTY.DefaultFluidState;
     private VoxelShape? _collisionShape;
     private VoxelShape _occlusionShape = Shapes.Empty();
     private VoxelShape[] _occlusionShapesByFace = EMPTY_OCCLUSION_SHAPES;
@@ -316,7 +316,5 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public bool Is(TagKey<Block> tag, Predicate<BlockState> predicate) =>
         Is(tag) && predicate(this);
 
-    public FluidState GetFluidState() =>
-        _fluidState ?? throw new InvalidOperationException(
-            "BlockState cache has not been initialized. Initialize its owning block after construction.");
+    public FluidState GetFluidState() => _fluidState;
 }

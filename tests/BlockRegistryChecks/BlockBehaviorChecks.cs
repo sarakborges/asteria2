@@ -41,6 +41,37 @@ internal static class BlockBehaviorChecks
         CheckDefaultDestroyTime();
         CheckFaceSupportSemantics();
         CheckStateCacheReinitialization();
+        CheckDefaultFluidStateBeforeCacheInitialization();
+    }
+
+
+    private static void CheckDefaultFluidStateBeforeCacheInitialization()
+    {
+        var block = new InitialFluidStateBlock();
+
+        Require(
+            ReferenceEquals(block.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState),
+            "A newly constructed BlockState must expose the empty fluid state before initCache replaces it with the owning block's fluid state.");
+    }
+
+    private sealed class InitialFluidStateBlock : Block
+    {
+        public InitialFluidStateBlock()
+            : base(
+                BlockProperties.Of().LightLevel(static state =>
+                {
+                    if (!ReferenceEquals(state.GetFluidState(), Fluids.EMPTY.DefaultFluidState))
+                    {
+                        throw new InvalidOperationException(
+                            "BlockState must expose Fluids.EMPTY while the state constructor evaluates its light-emission property.");
+                    }
+
+                    return 0;
+                }),
+                createIntrusiveRegistryHolder: false)
+        {
+            InitializeStateCaches();
+        }
     }
 
     private static void CheckPathComputationTypes()
