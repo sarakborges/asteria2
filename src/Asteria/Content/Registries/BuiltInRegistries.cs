@@ -20,6 +20,8 @@ using Asteria.Serialization;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Synth;
 using BuiltInNoises = Asteria.World.LevelGen.BuiltInNoises;
+using DensityFunctionValue = Asteria.World.LevelGen.DensityFunctions.DensityFunction;
+using BuiltInDensityFunctions = Asteria.World.LevelGen.BuiltInDensityFunctions;
 
 namespace Asteria.Content.Registries;
 
@@ -63,6 +65,11 @@ public static class BuiltInRegistries
         RegisterSimple<NormalNoise>(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/noise"),
             static () => BuiltInNoises.RegisterAll());
+
+    public static Registry<DensityFunctionValue> DensityFunction { get; } =
+        RegisterSimple<DensityFunctionValue>(
+            Registries.DENSITY_FUNCTION.Location,
+            static () => BuiltInDensityFunctions.RegisterAll());
 
     public static Registry<MapCodec<DensityFunction>> DensityFunctionType { get; } =
         RegisterSimple<MapCodec<DensityFunction>>(

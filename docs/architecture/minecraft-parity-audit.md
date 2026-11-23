@@ -913,3 +913,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O port ainda não inclui `BiomeSource`, dados climáticos vanilla nem integração com a geração do mundo.
 - Commits de implementação, correção e testes: `dc953b5`, `4b374c3`, `3ecee9d`, `399c6d1`, `e5ee06b`, `127f7b1`, `085e770`, `378f296` e `49a7a0d`.
 - CI 921: [checks](https://github.com/sarakborges/asteria2/actions/runs/45237271508) — harness de paridade e build Godot concluídos com sucesso.
+
+## Incremento — bootstrap inicial de DensityFunction (23/11/2026)
+
+- Adicionado o registry de valores `asteria:worldgen/density_function`, separado do registry de tipos de codec `density_function_type`.
+- Registradas as duas primeiras entradas de `NoiseRouterData.bootstrap` do Minecraft Java 26.3, na mesma ordem: `zero` e `y`. A sequência para aqui intencionalmente: a próxima etapa vanilla é o bootstrap das regras de minério, ainda não portadas.
+- `zero` usa o singleton `DensityFunctions.Zero()`. `y` usa o gradiente Y clamped com limites `DimensionType.MIN_Y * 2` e `DimensionType.MAX_Y * 2`, derivados dos limites dimensionais locais.
+- Testes verificam a identidade do registry, as chaves/ordem/holders, o nó constante zero e a amostragem do gradiente nos extremos e fora dos limites.
+- Este incremento não declara o dataset de density functions completo nem habilita geração de chunks.
