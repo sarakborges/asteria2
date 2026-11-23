@@ -35,12 +35,12 @@ public abstract class GradientNoise
     protected readonly double OffsetY;
     protected readonly double OffsetZ;
 
-    protected GradientNoise(WorldgenRandom random)
+    protected GradientNoise(IRandomSource random)
         : this(random, 256.0)
     {
     }
 
-    protected GradientNoise(WorldgenRandom random, double noiseOffsetScale)
+    protected GradientNoise(IRandomSource random, double noiseOffsetScale)
     {
         ArgumentNullException.ThrowIfNull(random);
 

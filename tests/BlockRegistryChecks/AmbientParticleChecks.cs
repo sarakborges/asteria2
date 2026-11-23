@@ -116,6 +116,15 @@ internal static class AmbientParticleChecks
 
     private sealed class FixedRandomSource(float value) : IRandomSource
     {
+        public IRandomSource Fork() => throw new NotSupportedException();
+        public PositionalRandomFactory ForkPositional() => throw new NotSupportedException();
+        public void SetSeed(long seed) => throw new NotSupportedException();
+        public int NextInt() => throw new NotSupportedException();
+        public long NextLong() => throw new NotSupportedException();
+        public bool NextBoolean() => throw new NotSupportedException();
+        public double NextDouble() => throw new NotSupportedException();
+        public double NextGaussian() => throw new NotSupportedException();
+
         public int NextInt(int bound)
         {
             if (bound <= 0)

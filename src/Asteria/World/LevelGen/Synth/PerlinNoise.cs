@@ -14,7 +14,7 @@ public class PerlinNoise : GradientNoise, Noise
     public static readonly Interval RANGE = Interval.OfSymmetric(2.0f);
     public const double STANDARD_DEVIATION = 0.2702247831245211;
 
-    public PerlinNoise(WorldgenRandom random)
+    public PerlinNoise(IRandomSource random)
         : base(random)
     {
     }

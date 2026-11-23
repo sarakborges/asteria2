@@ -16,12 +16,12 @@ public sealed class SimplexNoise : GradientNoise, Noise
     public static readonly Interval RANGE = Interval.OfSymmetric(2.0f);
     public const double STANDARD_DEVIATION = 0.42544;
 
-    public SimplexNoise(WorldgenRandom random)
+    public SimplexNoise(IRandomSource random)
         : base(random)
     {
     }
 
-    public SimplexNoise(WorldgenRandom random, bool discardNoiseOffset)
+    public SimplexNoise(IRandomSource random, bool discardNoiseOffset)
         : base(random, discardNoiseOffset ? 0.0 : 256.0)
     {
     }
