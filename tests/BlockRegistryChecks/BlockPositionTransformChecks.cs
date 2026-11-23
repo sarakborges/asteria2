@@ -19,6 +19,7 @@ internal static class BlockPositionTransformChecks
         CheckMirrorOperations();
         CheckBlockStateTransforms();
         CheckMapColor();
+        CheckLegacySolid();
     }
 
     private static void CheckAxisCycles()
@@ -282,6 +283,29 @@ internal static class BlockPositionTransformChecks
             "NONE block offset type must not install an offset function.");
     }
 
+    private sealed class CollisionShapeTestBlock : Block
+    {
+        private readonly VoxelShape _shape;
+
+        public CollisionShapeTestBlock(VoxelShape shape, bool dynamicShape)
+            : base(CreateProperties(dynamicShape), createIntrusiveRegistryHolder: false)
+        {
+            _shape = shape ?? throw new ArgumentNullException(nameof(shape));
+            InitializeStateCaches();
+        }
+
+        public override VoxelShape GetShape(BlockState state, BlockGetter level, BlockPos position) =>
+            _shape;
+
+        private static BlockProperties CreateProperties(bool dynamicShape)
+        {
+            BlockProperties properties = BlockProperties.Of();
+            if (dynamicShape)
+                properties.DynamicShape();
+            return properties;
+        }
+    }
+
     private sealed class MapColorTestBlock : Block
     {
         public MapColorTestBlock(BlockProperties properties, BooleanProperty variant)
@@ -421,6 +445,39 @@ internal static class BlockPositionTransformChecks
                 BlockProperties.Of().MapColor(static _ => null!),
                 BooleanProperty.Create("null_map_color_variant")),
             "A block state must reject a null map-color callback result during construction.");
+    }
+
+    private static void CheckLegacySolid()
+    {
+        BlockState sufficientlyLarge = new CollisionShapeTestBlock(
+            Shapes.Box(0.0, 0.0, 0.0, 0.73, 0.73, 0.73),
+            dynamicShape: false).DefaultState;
+        Require(sufficientlyLarge.IsSolid && !sufficientlyLarge.IsSolidRender,
+            "Legacy solidity must use the collision-bounds average-size threshold independently of full-block solid rendering.");
+
+        BlockState tooSmall = new CollisionShapeTestBlock(
+            Shapes.Box(0.0, 0.0, 0.0, 0.72, 0.72, 0.72),
+            dynamicShape: false).DefaultState;
+        Require(!tooSmall.IsSolid,
+            "A collision shape below the legacy average-size threshold and shorter than one block must not be solid.");
+
+        BlockState fullHeight = new CollisionShapeTestBlock(
+            Shapes.Box(0.0, 0.0, 0.0, 0.1, 1.0, 0.1),
+            dynamicShape: false).DefaultState;
+        Require(fullHeight.IsSolid,
+            "A collision shape reaching one block in Y must be legacy-solid even when its average bounds size is below the threshold.");
+
+        BlockState empty = new CollisionShapeTestBlock(
+            Shapes.Empty(),
+            dynamicShape: false).DefaultState;
+        Require(!empty.IsSolid,
+            "An empty static collision shape must never be legacy-solid.");
+
+        VoxelShape dynamicShape = Shapes.Box(0.0, 0.0, 0.0, 0.9, 0.9, 0.9);
+        BlockState dynamic = new CollisionShapeTestBlock(dynamicShape, dynamicShape: true).DefaultState;
+        Require(!dynamic.IsSolid &&
+                ReferenceEquals(dynamic.GetCollisionShape(EmptyBlockGetter.Instance, BlockPos.Zero), dynamicShape),
+            "Dynamic-shape states have no cached collision-shape record and therefore remain non-solid under the legacy calculation.");
     }
 
     private static void RequireThrows<TException>(Action action, string message)
