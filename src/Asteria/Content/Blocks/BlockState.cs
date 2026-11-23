@@ -251,16 +251,16 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     private bool CalculateLegacySolid()
     {
         if (Block.Properties.ForceSolidOnValue)
-            return SolidDebugger.LogAndGet(Block, SolidDebugger.Reason.FORCE_SOLID_ON);
+            return SolidDebugger.LogAndGet(Block.SolidDebugHolder, SolidDebugger.Reason.FORCE_SOLID_ON);
         else if (Block.Properties.ForceSolidOffValue)
-            return SolidDebugger.LogAndGet(Block, SolidDebugger.Reason.FORCE_SOLID_OFF);
+            return SolidDebugger.LogAndGet(Block.SolidDebugHolder, SolidDebugger.Reason.FORCE_SOLID_OFF);
         else if (_collisionShape is null)
-            return SolidDebugger.LogAndGet(Block, SolidDebugger.Reason.NULL_CACHE);
+            return SolidDebugger.LogAndGet(Block.SolidDebugHolder, SolidDebugger.Reason.NULL_CACHE);
         else
         {
             VoxelShape shape = _collisionShape;
             if (shape.IsEmpty())
-                return SolidDebugger.LogAndGet(Block, SolidDebugger.Reason.EMPTY_COLLISION_SHAPE);
+                return SolidDebugger.LogAndGet(Block.SolidDebugHolder, SolidDebugger.Reason.EMPTY_COLLISION_SHAPE);
             else
             {
                 AABB bounds = shape.Bounds();
@@ -273,7 +273,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
                         ? SolidDebugger.LogAndGet(
                             Block,
                             SolidDebugger.Reason.HIGH_ENOUGH_COLLISION_SHAPE)
-                        : SolidDebugger.LogAndGet(Block, SolidDebugger.Reason.FALLTHROUGH);
+                        : SolidDebugger.LogAndGet(Block.SolidDebugHolder, SolidDebugger.Reason.FALLTHROUGH);
             }
         }
     }
