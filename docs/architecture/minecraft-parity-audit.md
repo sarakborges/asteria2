@@ -381,3 +381,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - A integração não registra atributos ligados a objetos individuais nem adiciona conteúdo de áudio, cama, raid/illager ou entidades.
 - Testes usam uma registry fixture isolada para verificar lifecycle do holder, identidade do mapa, modificador float, override booleano, ausência de overrides e isolamento da registry de biomas de produção.
 - Resolução efetiva de atributos por fontes de dimensão/bioma/timeline/clima, codecs e o `BiomeBuilder` completo dependente de `BiomeGenerationSettings` permanecem pendentes; nenhum placeholder foi criado.
+
+
+## Incremento — ordem de avaliação do construtor de BlockState (23/11/2026)
+
+- Ajustada a ordem de avaliação para corresponder ao construtor BlockStateBase de Minecraft 26.3: light emission, useShapeForLightOcclusion, map color e, por fim, os snapshots/delegates restantes.
+- Os callbacks recebem o estado parcialmente inicializado; a ordem é observável quando consultam propriedades do próprio estado.
+- Teste de regressão verifica a ordem dos callbacks e que isAir e destroySpeed ainda têm seus valores iniciais durante light emission/map color.

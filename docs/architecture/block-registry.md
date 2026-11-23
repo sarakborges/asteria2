@@ -75,3 +75,8 @@ This stage covers only systems already introduced in Asteria: registries and hol
 ## Parity gate
 
 This document records implemented scope; it does not certify total parity. The stage remains open until every behavior and structural contract within the systems above has been compared with Minecraft 26.3 and the relevant checks/build pass. Future systems remain deferred rather than being counted as current-stage defects. No later development stage may begin while a current-scope divergence remains.
+
+
+## BlockStateBase constructor ordering
+
+The state constructor preserves Minecraft 26.3 callback evaluation order: light emission, shape-for-light-occlusion, then map color, followed by the remaining property snapshots and delegates. Each callback receives the partially initialized state. BlockBehaviorChecks verifies callback order and the values visible during those callbacks.

@@ -43,6 +43,7 @@ internal static class BlockBehaviorChecks
         CheckFaceSupportSemantics();
         CheckStateCacheReinitialization();
         CheckDefaultFluidStateBeforeCacheInitialization();
+        CheckStateConstructorEvaluationOrder();
     }
 
 
@@ -72,6 +73,51 @@ internal static class BlockBehaviorChecks
                 createIntrusiveRegistryHolder: false)
         {
             InitializeStateCaches();
+        }
+    }
+
+
+    private static void CheckStateConstructorEvaluationOrder()
+    {
+        var events = new List<string>();
+        var properties = BlockProperties.Of()
+            .Air()
+            .LightLevel(state =>
+            {
+                Require(!state.IsAir && state.DestroySpeed == 0.0f,
+                    "Minecraft evaluates light emission before assigning the remaining BlockStateBase property snapshots.");
+                events.Add("light");
+                return 0;
+            })
+            .MapColor(state =>
+            {
+                Require(!state.IsAir && state.DestroySpeed == 0.0f,
+                    "Minecraft evaluates map color before assigning isAir and destroySpeed snapshots.");
+                events.Add("map-color");
+                return MapColor.NONE;
+            });
+
+        _ = new ConstructorOrderBlock(properties, events);
+
+        Require(events.SequenceEqual(new[] { "light", "shape", "map-color" }),
+            "BlockStateBase constructor callbacks must execute in Minecraft 26.3 order.");
+    }
+
+    private sealed class ConstructorOrderBlock : Block
+    {
+        private readonly List<string> _events;
+
+        public ConstructorOrderBlock(BlockProperties properties, List<string> events)
+            : base(properties, createIntrusiveRegistryHolder: false)
+        {
+            _events = events;
+            InitializeStateCaches();
+        }
+
+        public override bool UseShapeForLightOcclusion(BlockState state)
+        {
+            _events.Add("shape");
+            return false;
         }
     }
 
