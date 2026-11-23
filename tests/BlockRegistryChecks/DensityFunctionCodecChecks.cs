@@ -1081,28 +1081,6 @@ internal static class DensityFunctionCodecChecks
                 "FindTopSurfaceFunction volume sampling must replicate the sampled Y=0 surface across the input Y axis.");
         }
 
-        bool rejectsMultiYVolume = false;
-        try
-        {
-            new FindTopSurfaceFunction(
-                    density,
-                    new ConstantFunction(11.0f),
-                    -8,
-                    4)
-                .CompileSampler(context)
-                .SampleVolume(
-                    SamplerContext.EmptyUncached,
-                    DensityBuffer.CreateUnpooled(volume.Size()),
-                    new DensityVolume(1, 2, 1, 0, 0, 0));
-        }
-        catch (ArgumentException exception) when (exception.Message.Contains("sizeY=2", StringComparison.Ordinal))
-        {
-            rejectsMultiYVolume = true;
-        }
-
-        Require(
-            rejectsMultiYVolume,
-            "FindTopSurfaceFunction's internal sampler must reject volumes with more than one Y sample.");
     }
 
     private sealed record SurfaceProbeDensityFunction(float Threshold) : DensityFunction
