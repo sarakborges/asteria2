@@ -87,7 +87,6 @@ public interface DensityFunction
 
         IRandomSource CreateRandom(ResourceLocation seed);
 
-        [Obsolete("Legacy End Island density-function initialization.")]
         IRandomSource CreateEndIslandRandom();
     }
 }
