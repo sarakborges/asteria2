@@ -52,6 +52,9 @@ public static class DensityFunctions
     public static DensityFunction Clamp(DensityFunction input, float min, float max) =>
         new ClampFunction(input, min, max);
 
+    public static DensityFunction Pow(DensityFunction @base, DensityFunction exponent) =>
+        new PowFunction(@base, exponent);
+
     public static DensityFunction RangeChoice(
         DensityFunction input,
         float minInclusive,

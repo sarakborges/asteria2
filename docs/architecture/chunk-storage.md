@@ -150,3 +150,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - The constant sampler is selected only when both output functions are constant nodes. Otherwise, the generic sampler evaluates both branches into separate buffers and selects values by input.
 - The range encloses only the two output ranges; domain axes union input and both branches. Rewrite traverses all three children.
 - Runtime factory is wired; codec is deferred with local persistence.
+
+
+## Power density function — Minecraft Java 26.3
+
+- `PowFunction` evaluates base raised to exponent, with range propagation through `Interval.pow` and the union of both child axis masks.
+- Compilation preserves vanilla specialization precedence: constant base first; otherwise constant exponent. Absolute exponents 0.5, 1, 2 and 3 reuse square-root, identity, square and cube samplers. Negative values wrap the selected operation in reciprocal.
+- General volume evaluation uses a scoped exponent buffer. No additional zero or domain short-circuit is introduced.
+- Runtime factory is wired; codec remains deferred with local persistence.

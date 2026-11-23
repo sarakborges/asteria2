@@ -646,3 +646,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `Range` encapsula apenas os intervalos das duas saídas; `DomainAxes` une input e saídas. Rewrite reescreve os três filhos e preserva identidade quando nenhum muda.
 - Adicionada `DensityFunctions.RangeChoice`; codec permanece adiado com persistência local.
 - `RangeChoiceFunctionChecks` cobre fronteiras min/max, valores interiores/exteriores, caminhos constante/genérico, avaliação escalar/volumétrica, ranges, domínios, buffer lifecycle e rewrite.
+
+
+## Incremento — PowFunction (23/11/2026)
+
+- Portado `PowFunction` de Minecraft Java 26.3 com avaliação escalar/volumétrica, rewrite dos dois filhos, intervalo via `Interval.Pow` e domínio pela união de base/expoente.
+- Compilação avalia as duas subárvores antes da otimização. Base constante tem precedência e usa `ConstBaseSampler`; caso contrário, expoente constante usa otimização própria.
+- Expoentes com módulo 0.5, 1, 2 e 3 usam `UnaryFunction.SqrtSampler`, a identidade do sampler base, `SquareSampler` ou `CubeSampler`. Expoentes negativos envolvem o sampler especializado com `ReciprocalSampler`; outros expoentes constantes usam `ConstExponentSampler`.
+- O caminho geral calcula `Math.pow(base, exponent)` sem curto-circuito extra e usa buffer escopado para a amostragem do expoente.
+- Adicionada a factory `DensityFunctions.Pow`. Codec continua adiado com persistência local.
+- `PowFunctionChecks` cobre precedência da base constante, todos os expoentes especializados positivos/negativos, expoente genérico, base constante, caminho geral, ranges, domínio, volumes, buffers e rewrite.

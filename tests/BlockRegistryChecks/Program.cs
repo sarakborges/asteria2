@@ -249,6 +249,7 @@ internal static class Program
         LerpFunctionChecks.Run();
         ClampFunctionChecks.Run();
         RangeChoiceFunctionChecks.Run();
+        PowFunctionChecks.Run();
         Require(BuiltInRegistries.AttributeType.Count == 9, "The attribute-type registry must contain the seven existing value types plus particle and ambient-particle types.");
         Require(Fluid.FluidStateRegistry.Count == 1, "The fluid-state ID map must contain every registered fluid state.");
         Require(ReferenceEquals(Blocks.AIR.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState), "Air must contain the empty fluid state.");
