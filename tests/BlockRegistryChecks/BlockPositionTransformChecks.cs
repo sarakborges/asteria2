@@ -519,6 +519,40 @@ internal static class BlockPositionTransformChecks
             forceSolidOff: true).DefaultState;
         Require(forceOnWins.IsSolid,
             "forceSolidOn must take priority when both force-solid properties are enabled.");
+
+        BlockState forcedDynamicSolid = new CollisionShapeTestBlock(
+            Shapes.Empty(),
+            dynamicShape: true,
+            forceSolidOn: true).DefaultState;
+        Require(forcedDynamicSolid.IsSolid,
+            "forceSolidOn must take priority over the missing collision cache of a dynamic-shape block.");
+
+        SolidDebugger.Reason[] reasons = SolidDebugger.Reason.Values.ToArray();
+        string[] expectedReasonNames =
+        {
+            "FORCE_SOLID_ON",
+            "LARGE_ENOUGH_COLLISION_SHAPE",
+            "HIGH_ENOUGH_COLLISION_SHAPE",
+            "FORCE_SOLID_OFF",
+            "NULL_CACHE",
+            "EMPTY_COLLISION_SHAPE",
+            "FALLTHROUGH"
+        };
+        Require(reasons.Length == expectedReasonNames.Length &&
+                reasons.Select(reason => reason.Name).SequenceEqual(expectedReasonNames) &&
+                reasons.Select(reason => reason.Ordinal).SequenceEqual(Enumerable.Range(0, 7)),
+            "SolidDebugger reasons must retain the seven reference enum values and ordinal order.");
+        Require(reasons[0].CausesSolid && reasons[1].CausesSolid && reasons[2].CausesSolid &&
+                !reasons[3].CausesSolid && !reasons[4].CausesSolid &&
+                !reasons[5].CausesSolid && !reasons[6].CausesSolid &&
+                reasons[0].Message == "forceSolidOn called on properties" &&
+                reasons[1].Message == "collision shape bounds size is large enough" &&
+                reasons[2].Message == "collision shape bounds are higher than 1" &&
+                reasons[3].Message == "forceSolidOff called on properties" &&
+                reasons[4].Message == "cache is null" &&
+                reasons[5].Message == "collision shape is empty" &&
+                reasons[6].Message == "fallthrough",
+            "SolidDebugger reasons must preserve the source causesSolid flags and exact messages.");
     }
 
     private static void RequireThrows<TException>(Action action, string message)
