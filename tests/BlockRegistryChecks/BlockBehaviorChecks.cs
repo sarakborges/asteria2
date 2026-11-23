@@ -2,6 +2,7 @@ using Asteria.Content.Blocks;
 using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Content.Fluids;
 using Asteria.Core;
+using Asteria.Content.Materials;
 using Asteria.Core.Shapes;
 using Asteria.World;
 using Asteria.World.Pathfinding;
