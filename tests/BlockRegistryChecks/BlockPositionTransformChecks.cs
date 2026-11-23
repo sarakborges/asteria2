@@ -372,6 +372,25 @@ internal static class BlockPositionTransformChecks
             "A block state must reject a null map-color callback result during construction.");
     }
 
+    private static void RequireThrows<TException>(Action action, string message)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException)
+        {
+            return;
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException(message, exception);
+        }
+
+        throw new InvalidOperationException(message);
+    }
+
     private static void Require(bool condition, string message)
     {
         if (!condition)
