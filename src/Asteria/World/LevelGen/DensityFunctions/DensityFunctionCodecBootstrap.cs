@@ -20,7 +20,10 @@ internal static class DensityFunctionCodecBootstrap
         MapCodec<DensityFunction> Pow,
         MapCodec<DensityFunction> Lerp,
         MapCodec<DensityFunction> Cache,
-        MapCodec<DensityFunction> Interpolated);
+        MapCodec<DensityFunction> Interpolated,
+        MapCodec<DensityFunction> Clamp,
+        MapCodec<DensityFunction> RangeChoice,
+        MapCodec<DensityFunction> IntervalSelect);
 
     // Lazy initialization is required because these map codecs compose DIRECT_CODEC,
     // whose registry dispatch is created while DensityFunctions itself is initialized.
@@ -44,6 +47,9 @@ internal static class DensityFunctionCodecBootstrap
 
         Register(registry, "pow", codecs.Pow);
         Register(registry, "lerp", codecs.Lerp);
+        Register(registry, "clamp", codecs.Clamp);
+        Register(registry, "range_choice", codecs.RangeChoice);
+        Register(registry, "interval_select", codecs.IntervalSelect);
         Register(registry, "cache", codecs.Cache);
         Register(registry, "interpolated", codecs.Interpolated);
     }
@@ -63,6 +69,9 @@ internal static class DensityFunctionCodecBootstrap
             LerpFunction => codecs.Lerp,
             CacheFunction => codecs.Cache,
             InterpolatedFunction => codecs.Interpolated,
+            ClampFunction => codecs.Clamp,
+            RangeChoiceFunction => codecs.RangeChoice,
+            IntervalSelectFunction => codecs.IntervalSelect,
             _ => null
         };
     }
@@ -138,7 +147,10 @@ internal static class DensityFunctionCodecBootstrap
             CreatePowCodec(),
             CreateLerpCodec(),
             CreateCacheCodec(),
-            CreateInterpolatedCodec());
+            CreateInterpolatedCodec(),
+            CreateClampCodec(),
+            CreateRangeChoiceCodec(),
+            CreateIntervalSelectCodec());
     }
 
     private static MapCodec<DensityFunction> CreateUnaryCodec(UnaryFunction.Type operation) =>
@@ -215,6 +227,135 @@ internal static class DensityFunctionCodecBootstrap
             .XMap<DensityFunction>(
                 static function => function,
                 function => (InterpolatedFunction)function);
+
+    private static MapCodec<DensityFunction> CreateClampCodec() =>
+        RecordCodecBuilder.MapCodec<ClampFunction>(instance =>
+            instance.Group(
+                    DensityFunctions.DIRECT_CODEC.FieldOf("input")
+                        .ForGetter<ClampFunction>(static function => function.Input),
+                    DensityFunctions.NOISE_VALUE_CODEC.FieldOf("min")
+                        .ForGetter<ClampFunction>(static function => function.Min),
+                    DensityFunctions.NOISE_VALUE_CODEC.FieldOf("max")
+                        .ForGetter<ClampFunction>(static function => function.Max))
+                .Apply(
+                    instance,
+                    static (input, min, max) => new ClampFunction(input, min, max)))
+            .Validate(static function =>
+                function.Max < function.Min
+                    ? DataResult<ClampFunction>.Error(
+                        () => $"min ({function.Min}) must be less than or equal to max ({function.Max})")
+                    : DataResult<ClampFunction>.Success(function))
+            .XMap<DensityFunction>(
+                static function => function,
+                function => (ClampFunction)function);
+
+    private static MapCodec<DensityFunction> CreateRangeChoiceCodec() =>
+        RecordCodecBuilder.MapCodec<RangeChoiceFunction>(instance =>
+            instance.Group(
+                    DensityFunctions.DIRECT_CODEC.FieldOf("input")
+                        .ForGetter<RangeChoiceFunction>(static function => function.Input),
+                    CreateRangeChoiceBoundsCodec()
+                        .ForGetter<RangeChoiceFunction>(static function =>
+                            new RangeChoiceBounds(function.MinInclusive, function.MaxExclusive)),
+                    CreateRangeChoiceBranchesCodec()
+                        .ForGetter<RangeChoiceFunction>(static function =>
+                            new RangeChoiceBranches(function.WhenInRange, function.WhenOutOfRange)))
+                .Apply(
+                    instance,
+                    static (input, bounds, branches) =>
+                        new RangeChoiceFunction(
+                            input,
+                            bounds.MinInclusive,
+                            bounds.MaxExclusive,
+                            branches.WhenInRange,
+                            branches.WhenOutOfRange)))
+            .XMap<DensityFunction>(
+                static function => function,
+                function => (RangeChoiceFunction)function);
+
+    private static MapCodec<RangeChoiceBounds> CreateRangeChoiceBoundsCodec() =>
+        RecordCodecBuilder.MapCodec<RangeChoiceBounds>(instance =>
+            instance.Group(
+                    DensityFunctions.NOISE_VALUE_CODEC.FieldOf("min_inclusive")
+                        .ForGetter<RangeChoiceBounds>(static bounds => bounds.MinInclusive),
+                    DensityFunctions.NOISE_VALUE_CODEC.FieldOf("max_exclusive")
+                        .ForGetter<RangeChoiceBounds>(static bounds => bounds.MaxExclusive))
+                .Apply(
+                    instance,
+                    static (minInclusive, maxExclusive) =>
+                        new RangeChoiceBounds(minInclusive, maxExclusive)));
+
+    private static MapCodec<RangeChoiceBranches> CreateRangeChoiceBranchesCodec() =>
+        RecordCodecBuilder.MapCodec<RangeChoiceBranches>(instance =>
+            instance.Group(
+                    DensityFunctions.DIRECT_CODEC.FieldOf("when_in_range")
+                        .ForGetter<RangeChoiceBranches>(static branches => branches.WhenInRange),
+                    DensityFunctions.DIRECT_CODEC.FieldOf("when_out_of_range")
+                        .ForGetter<RangeChoiceBranches>(static branches => branches.WhenOutOfRange))
+                .Apply(
+                    instance,
+                    static (whenInRange, whenOutOfRange) =>
+                        new RangeChoiceBranches(whenInRange, whenOutOfRange)));
+
+    private static MapCodec<DensityFunction> CreateIntervalSelectCodec() =>
+        RecordCodecBuilder.MapCodec<IntervalSelectFunction>(instance =>
+            instance.Group(
+                    DensityFunctions.DIRECT_CODEC.FieldOf("input")
+                        .ForGetter<IntervalSelectFunction>(static function => function.Input),
+                    DensityFunctions.NOISE_VALUE_CODEC.ListOf()
+                        .FieldOf("thresholds")
+                        .ForGetter<IntervalSelectFunction>(static function => function.Thresholds),
+                    DensityFunctions.DIRECT_CODEC.ListOf(2)
+                        .FieldOf("functions")
+                        .ForGetter<IntervalSelectFunction>(static function => function.Functions))
+                .Apply(
+                    instance,
+                    static (input, thresholds, functions) =>
+                        new IntervalSelectFunction(input, thresholds, functions)))
+            .Validate(ValidateIntervalSelect)
+            .XMap<DensityFunction>(
+                static function => function,
+                function => (IntervalSelectFunction)function);
+
+    private static DataResult<IntervalSelectFunction> ValidateIntervalSelect(
+        IntervalSelectFunction function)
+    {
+        if (function.Thresholds.Count != function.Functions.Count - 1)
+        {
+            return DataResult<IntervalSelectFunction>.Error(
+                () => $"Expected {function.Functions.Count - 1} thresholds for {function.Functions.Count} functions, but got {function.Thresholds.Count}");
+        }
+
+        for (int index = 1; index < function.Thresholds.Count; index++)
+        {
+            if (JavaFloatCompare(function.Thresholds[index - 1], function.Thresholds[index]) > 0)
+            {
+                return DataResult<IntervalSelectFunction>.Error(
+                    "Threshold values must be ordered from smallest to largest");
+            }
+        }
+
+        return DataResult<IntervalSelectFunction>.Success(function);
+    }
+
+    private static int JavaFloatCompare(float left, float right)
+    {
+        if (left < right)
+            return -1;
+        if (left > right)
+            return 1;
+
+        int leftBits = BitConverter.SingleToInt32Bits(left);
+        int rightBits = BitConverter.SingleToInt32Bits(right);
+        return leftBits == rightBits
+            ? 0
+            : leftBits < rightBits ? -1 : 1;
+    }
+
+    private sealed record RangeChoiceBounds(float MinInclusive, float MaxExclusive);
+    private sealed record RangeChoiceBranches(
+        DensityFunction WhenInRange,
+        DensityFunction WhenOutOfRange);
 
     private static MapCodec<DensityFunction> CreateRoundCodec(RoundFunction.Type operation) =>
         RecordCodecBuilder.MapCodec<RoundFunction>(instance =>
