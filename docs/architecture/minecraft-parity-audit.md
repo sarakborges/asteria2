@@ -929,3 +929,5 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Os testes verificam chaves e ordem, tipo de nó, identidade do holder de ruído e contrato de domínio/range.
 - Os parâmetros do ruído `offset` já estavam no dataset de ruídos; não foi criada uma cópia nem um algoritmo alternativo.
 - Correção de escopo 26.3: `vein_toggle`, `vein_ridged` e `vein_gap` não devem ser tratados como campos antigos do NoiseRouter. A versão 26.3 moveu a seleção de veios para a material rule `minecraft:ore_vein`; as density functions de suporte continuam registradas por `NoiseRouterData` e são consumidas por essa regra. A implementação da regra material permanece pendente.
+
+- Validação final: executar o harness e o build Godot no HEAD corrigido do incremento de shifts.
