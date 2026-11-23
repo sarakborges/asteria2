@@ -22,6 +22,8 @@ public sealed class BlockProperties
     public bool CanOccludeValue { get; private set; } = true;
     public bool IsRandomlyTickingValue { get; private set; }
     public bool DynamicShapeValue { get; private set; }
+    public bool ForceSolidOnValue { get; private set; }
+    public bool ForceSolidOffValue { get; private set; }
     public bool IgnitedByLavaValue { get; private set; }
     public bool IsLiquidValue { get; private set; }
     public bool ReplaceableValue { get; private set; }
@@ -216,6 +218,19 @@ public sealed class BlockProperties
     public BlockProperties DynamicShape()
     {
         DynamicShapeValue = true;
+        return this;
+    }
+
+    public BlockProperties ForceSolidOn()
+    {
+        ForceSolidOnValue = true;
+        return this;
+    }
+
+    [Obsolete("Legacy compatibility override.")]
+    public BlockProperties ForceSolidOff()
+    {
+        ForceSolidOffValue = true;
         return this;
     }
 
