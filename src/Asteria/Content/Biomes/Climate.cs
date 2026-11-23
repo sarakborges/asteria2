@@ -125,27 +125,40 @@ public static class Climate
         ];
     }
 
+    private readonly record struct ParameterRangeInput(float Min, float Max);
+
     public readonly record struct Parameter(long Min, long Max)
     {
         public static Codec<Parameter> CODEC { get; } =
-            RecordCodecBuilder.Create<Parameter>(instance =>
-                instance.Group(
-                    Codecs.FloatRange(-2.0F, 2.0F)
-                        .FieldOf("min")
-                        .ForGetter<Parameter>(static parameter => UnquantizeCoord(parameter.Min)),
-                    Codecs.FloatRange(-2.0F, 2.0F)
-                        .FieldOf("max")
-                        .ForGetter<Parameter>(static parameter => UnquantizeCoord(parameter.Max)))
-                .Apply(
-                    instance,
-                    static (min, max) =>
-                        new Parameter(QuantizeCoord(min), QuantizeCoord(max))))
-            .FlatXMap(
-                static parameter => parameter.Min > parameter.Max
+            CreateCodec();
+
+        private static Codec<Parameter> CreateCodec()
+        {
+            Codec<ParameterRangeInput> intervalCodec =
+                RecordCodecBuilder.Create<ParameterRangeInput>(instance =>
+                    instance.Group(
+                        Codecs.FloatRange(-2.0F, 2.0F)
+                            .FieldOf("min")
+                            .ForGetter<ParameterRangeInput>(static interval => interval.Min),
+                        Codecs.FloatRange(-2.0F, 2.0F)
+                            .FieldOf("max")
+                            .ForGetter<ParameterRangeInput>(static interval => interval.Max))
+                    .Apply(
+                        instance,
+                        static (min, max) => new ParameterRangeInput(min, max)));
+
+            return intervalCodec.FlatXMap(
+                static interval => interval.Min > interval.Max
                     ? DataResult<Parameter>.Error(() =>
-                        $"Cannon construct interval, min > max ({UnquantizeCoord(parameter.Min)} > {UnquantizeCoord(parameter.Max)})")
-                    : DataResult<Parameter>.Success(parameter),
-                static parameter => DataResult<Parameter>.Success(parameter));
+                        $"Cannon construct interval, min > max ({interval.Min} > {interval.Max})")
+                    : DataResult<Parameter>.Success(new Parameter(
+                        QuantizeCoord(interval.Min),
+                        QuantizeCoord(interval.Max))),
+                static parameter => DataResult<ParameterRangeInput>.Success(
+                    new ParameterRangeInput(
+                        UnquantizeCoord(parameter.Min),
+                        UnquantizeCoord(parameter.Max))));
+        }
 
         public static Parameter Point(float value) =>
             Span(value, value);
