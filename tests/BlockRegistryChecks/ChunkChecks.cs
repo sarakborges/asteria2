@@ -56,10 +56,12 @@ internal static class ChunkChecks
         chunk.SetInhabitedTime(0);
         Require(chunk.GetInhabitedTime() == 0, "SetInhabitedTime must replace the inhabited time.");
 
+        Require(chunk.CanBeSerialized(), "ChunkAccess.canBeSerialized must return true for a newly created chunk.");
         Require(!chunk.IsUnsaved(), "A new ChunkAccess must start saved.");
         Require(!chunk.TryMarkSaved(), "Trying to save a clean ChunkAccess must return false.");
         chunk.MarkUnsaved();
         Require(chunk.IsUnsaved(), "MarkUnsaved must set the dirty state.");
+        Require(chunk.CanBeSerialized(), "ChunkAccess.canBeSerialized must remain true while a chunk is dirty.");
         Require(chunk.TryMarkSaved(), "Trying to save a dirty ChunkAccess must return true.");
         Require(!chunk.IsUnsaved() && !chunk.TryMarkSaved(), "TryMarkSaved must clear the dirty state after a successful transition.");
 

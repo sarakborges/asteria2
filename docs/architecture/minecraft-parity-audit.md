@@ -836,3 +836,9 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Portada a sobrecarga compartilhada `ChunkAccess.SetBlockState(position, state)`, que encaminha para a mutação concreta com flags padrão `3`.
 - A sobrecarga com flags agora é abstrata em `ChunkAccess`, como na referência, e `ProtoChunk` a implementa diretamente.
 - Testes verificam o valor padrão 3, passagem sem alteração de flags explícitas, retorno do estado anterior, estado armazenado e a resposta concreta fora da altura do mundo.
+
+
+## Incremento — contrato de serialização de ChunkAccess (23/11/2026)
+
+- Portado `ChunkAccess.CanBeSerialized` como método virtual com retorno padrão `true`, conforme Minecraft Java 26.3.
+- Testes verificam que a resposta permanece verdadeira em chunks recém-criados e marcados como dirty.

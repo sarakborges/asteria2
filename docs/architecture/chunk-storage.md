@@ -310,3 +310,9 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - The base `SetBlockState(position, state)` overload delegates to the concrete three-argument mutator with default flags 3.
 - The flags overload is an abstract chunk contract; ProtoChunk implements the mutation semantics, while other chunk types can supply their own lifecycle behavior.
 - Tests verify default and explicit flags, previous-state return, stored state and out-of-build-height behavior.
+
+
+## ChunkAccess serialization eligibility — Minecraft Java 26.3
+
+- ChunkAccess exposes the virtual `CanBeSerialized` contract and defaults to `true`, matching the reference base class.
+- Tests verify the default for clean and dirty chunks; specialized chunk wrappers may override it when their lifecycle requires.

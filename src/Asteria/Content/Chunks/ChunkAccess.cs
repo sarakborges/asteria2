@@ -273,6 +273,11 @@ public abstract class ChunkAccess : BlockGetter
     public abstract ChunkStatus GetPersistedStatus();
 
     /// <summary>
+    /// Indicates whether this chunk can be serialized. ChunkAccess defaults to true in Minecraft Java 26.3.
+    /// </summary>
+    public virtual bool CanBeSerialized() => true;
+
+    /// <summary>
     /// Returns the furthest status represented by the chunk. Without below-zero retrogen data,
     /// this is the persisted status, matching Minecraft Java 26.3.
     /// </summary>
