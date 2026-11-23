@@ -468,6 +468,8 @@ internal static class BlockPositionTransformChecks
 
     private static void CheckLegacySolid()
     {
+        Require(ReferenceEquals(Blocks.STONE.SolidDebugHolder, Blocks.STONE.BuiltInRegistryHolder),
+            "Registered blocks must be diagnosed through their intrusive registry holder.");
         BlockState sufficientlyLarge = new CollisionShapeTestBlock(
             Shapes.Box(0.0, 0.0, 0.0, 0.73, 0.73, 0.73),
             dynamicShape: false).DefaultState;
