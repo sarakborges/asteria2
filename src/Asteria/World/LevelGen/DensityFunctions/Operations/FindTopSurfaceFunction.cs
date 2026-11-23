@@ -123,10 +123,6 @@ public sealed record FindTopSurfaceFunction(
             {
                 if (Density.SampleValue(context, x, probeY, z) > 0.0f)
                     return probeY;
-
-                // Avoid wrapping an int when the next decrement would pass Int32.MinValue.
-                if (probeY < int.MinValue + CellHeight)
-                    break;
             }
 
             return LowerBound;
