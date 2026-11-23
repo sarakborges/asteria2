@@ -216,7 +216,7 @@ public static class Climate
         private readonly IReadOnlyList<Pair<ParameterPoint, T>> _values;
         private readonly RTree<T> _index;
 
-        public static Codec<ParameterList<T>> Codec(MapCodec<T> valueCodec)
+        public static Codec<ParameterList<T>> CreateCodec(MapCodec<T> valueCodec)
         {
             ArgumentNullException.ThrowIfNull(valueCodec);
 
@@ -293,6 +293,14 @@ public static class Climate
     private static long Square(long value) =>
         unchecked(value * value);
 
+    private readonly record struct ClimateAxes(
+        Parameter Temperature,
+        Parameter Humidity,
+        Parameter Continentalness,
+        Parameter Erosion,
+        Parameter Depth,
+        Parameter Weirdness);
+
     private sealed class ParameterPointCodec : Codec<ParameterPoint>
     {
         private static readonly Codec<float> OffsetCodec = Codecs.FloatRange(0.0F, 1.0F);
@@ -314,40 +322,42 @@ public static class Climate
         {
             return ops.GetMap(input).FlatMap(map =>
             {
-                DataResult<Parameter> temperature = Parameter.CODEC.Parse(ops, map.Get("temperature").GetOrThrow());
-                DataResult<Parameter> humidity = Parameter.CODEC.Parse(ops, map.Get("humidity").GetOrThrow());
-                DataResult<Parameter> continentalness = Parameter.CODEC.Parse(ops, map.Get("continentalness").GetOrThrow());
-                DataResult<Parameter> erosion = Parameter.CODEC.Parse(ops, map.Get("erosion").GetOrThrow());
-                DataResult<Parameter> depth = Parameter.CODEC.Parse(ops, map.Get("depth").GetOrThrow());
-                DataResult<Parameter> weirdness = Parameter.CODEC.Parse(ops, map.Get("weirdness").GetOrThrow());
-                DataResult<float> offset = OffsetCodec.Parse(ops, map.Get("offset").GetOrThrow());
+                DataResult<Parameter> GetParameter(string name) =>
+                    map.Get(name).FlatMap(value => Parameter.CODEC.Parse(ops, value));
+
+                DataResult<Parameter> temperature = GetParameter("temperature");
+                DataResult<Parameter> humidity = GetParameter("humidity");
+                DataResult<Parameter> continentalness = GetParameter("continentalness");
+                DataResult<Parameter> erosion = GetParameter("erosion");
+                DataResult<Parameter> depth = GetParameter("depth");
+                DataResult<Parameter> weirdness = GetParameter("weirdness");
+                DataResult<float> offset = map.Get("offset")
+                    .FlatMap(value => OffsetCodec.Parse(ops, value));
 
                 return temperature.Apply2(
-                        static (a, b) => (a, b),
+                        static (first, second) => new ClimateAxes(
+                            first, second, default, default, default, default),
                         humidity)
                     .Apply2(
-                        static (pair, value) => (pair.a, pair.b, value),
+                        static (values, next) => values with { Continentalness = next },
                         continentalness)
                     .Apply2(
-                        static (values, value) =>
-                            (values.a, values.b, values.value, value),
+                        static (values, next) => values with { Erosion = next },
                         erosion)
                     .Apply2(
-                        static (values, value) =>
-                            (values.a, values.b, values.value, values.value1, value),
+                        static (values, next) => values with { Depth = next },
                         depth)
                     .Apply2(
-                        static (values, value) =>
-                            (values.a, values.b, values.value, values.value1, values.value2, value),
+                        static (values, next) => values with { Weirdness = next },
                         weirdness)
                     .Apply2(
                         static (values, offsetValue) => new ParameterPoint(
-                            values.a,
-                            values.b,
-                            values.value,
-                            values.value1,
-                            values.value2,
-                            values.value3,
+                            values.Temperature,
+                            values.Humidity,
+                            values.Continentalness,
+                            values.Erosion,
+                            values.Depth,
+                            values.Weirdness,
                             QuantizeCoord(offsetValue)),
                         offset)
                     .Map(point => new Pair<ParameterPoint, TData>(point, ops.Empty));
@@ -372,7 +382,7 @@ public static class Climate
         }
 
         public override IReadOnlyList<TData> Keys<TData>(DynamicOps<TData> ops) =>
-            FieldNames.Select(ops.CreateString).ToArray();
+            FieldNames.Select(name => ops.CreateString(name)).ToArray();
 
         private static DataResult<IReadOnlyList<KeyValuePair<TData, TData>>> CombineMaps<TData>(
             DynamicOps<TData> ops,
@@ -474,10 +484,9 @@ public static class Climate
             if (minBuckets is null)
                 throw new InvalidOperationException("Unable to construct climate parameter search tree.");
 
-            Sort(minBuckets.Cast<Node<T>>().ToList(), dimensions, minDimension, absolute: true);
-            List<Node<T>> rebuilt = minBuckets
-                .OrderBy(bucket => bucket, Comparer<SubTree<T>>.Create((left, right) =>
-                    CompareParameterSpaces(left.ParameterSpace, right.ParameterSpace, dimensions, minDimension, absolute: true)))
+            List<SubTree<T>> sortedBuckets = SortBuckets(
+                minBuckets, dimensions, minDimension, absolute: true);
+            List<Node<T>> rebuilt = sortedBuckets
                 .Select(bucket => (Node<T>)Build(
                     dimensions,
                     bucket.Children.ToList(),
@@ -505,13 +514,21 @@ public static class Climate
             int dimension,
             bool absolute)
         {
-            children.Sort(Comparer<Node<T>>.Create((left, right) =>
+            Comparer<Node<T>> comparer = Comparer<Node<T>>.Create((left, right) =>
                 CompareParameterSpaces(
                     left.ParameterSpace,
                     right.ParameterSpace,
                     dimensions,
                     dimension,
-                    absolute)));
+                    absolute));
+            List<Node<T>> sorted = children
+                .Select((node, index) => (Node: node, Index: index))
+                .OrderBy(entry => entry.Node, comparer)
+                .ThenBy(entry => entry.Index)
+                .Select(entry => entry.Node)
+                .ToList();
+            children.Clear();
+            children.AddRange(sorted);
         }
 
         private static int CompareParameterSpaces(
@@ -538,6 +555,26 @@ public static class Climate
             }
 
             return 0;
+        }
+
+        private static List<SubTree<T>> SortBuckets(
+            List<SubTree<T>> buckets,
+            int dimensions,
+            int dimension,
+            bool absolute)
+        {
+            return buckets
+                .Select((bucket, index) => (Bucket: bucket, Index: index))
+                .OrderBy(entry => entry.Bucket, Comparer<SubTree<T>>.Create((left, right) =>
+                    CompareParameterSpaces(
+                        left.ParameterSpace,
+                        right.ParameterSpace,
+                        dimensions,
+                        dimension,
+                        absolute)))
+                .ThenBy(entry => entry.Index)
+                .Select(entry => entry.Bucket)
+                .ToList();
         }
 
         private static List<SubTree<T>> Bucketize(
