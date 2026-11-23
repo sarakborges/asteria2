@@ -63,6 +63,21 @@ public abstract class MapCodec<TValue>
         return new MappedMapCodec<TValue, TMapped>(this, to, from);
     }
 
+    public MapCodec<TMapped> FlatXMap<TMapped>(
+        Func<TValue, DataResult<TMapped>> to,
+        Func<TMapped, DataResult<TValue>> from)
+    {
+        ArgumentNullException.ThrowIfNull(to);
+        ArgumentNullException.ThrowIfNull(from);
+        return new FlatMappedMapCodec<TValue, TMapped>(this, to, from);
+    }
+
+    public MapCodec<TValue> Validate(Func<TValue, DataResult<TValue>> checker)
+    {
+        ArgumentNullException.ThrowIfNull(checker);
+        return FlatXMap(checker, checker);
+    }
+
     private sealed class MapCodecAdapter<TSource> : Codec<TSource>
     {
         private readonly MapCodec<TSource> _source;
@@ -123,6 +138,40 @@ public abstract class MapCodec<TValue>
 
         public override string ToString() =>
             $"{_source}[xmapped]";
+    }
+
+    private sealed class FlatMappedMapCodec<TSource, TTarget> : MapCodec<TTarget>
+    {
+        private readonly MapCodec<TSource> _source;
+        private readonly Func<TSource, DataResult<TTarget>> _to;
+        private readonly Func<TTarget, DataResult<TSource>> _from;
+
+        public FlatMappedMapCodec(
+            MapCodec<TSource> source,
+            Func<TSource, DataResult<TTarget>> to,
+            Func<TTarget, DataResult<TSource>> from)
+        {
+            _source = source ?? throw new ArgumentNullException(nameof(source));
+            _to = to ?? throw new ArgumentNullException(nameof(to));
+            _from = from ?? throw new ArgumentNullException(nameof(from));
+        }
+
+        public override DataResult<TTarget> Decode<TData>(
+            DynamicOps<TData> ops,
+            MapLike<TData> input) =>
+            _source.Decode(ops, input).FlatMap(_to);
+
+        public override DataResult<TData> Encode<TData>(
+            TTarget input,
+            DynamicOps<TData> ops,
+            TData prefix) =>
+            _from(input).FlatMap(value => _source.Encode(value, ops, prefix));
+
+        public override IReadOnlyList<TData> Keys<TData>(DynamicOps<TData> ops) =>
+            _source.Keys(ops);
+
+        public override string ToString() =>
+            $"{_source}[flatXmapped]";
     }
 }
 
