@@ -884,3 +884,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `ExtraCodecs.OrElsePartial` reproduz o fallback da referência: mantém resultados parciais; quando não há valor parcial, fornece o default sem apagar o erro original.
 - Testes cobrem omissão de `data` para single-value, round-trip JSON de palette local e global, codec read-only e fallback parcial.
 - Commit: `c5880f8`; CI: [checks](https://github.com/sarakborges/asteria2/actions/runs/45230321666) — sucesso.
+
+## Incremento — overloads de SectionPos (23/11/2026)
+
+- Adicionado `SectionPos.Of(Position)`, convertendo as três coordenadas reais com `Mth.floor` e shift aritmético, inclusive coordenadas fracionárias negativas.
+- Adicionado `SectionPos.BottomOf(ChunkAccess)`, combinando X/Z do chunk com `GetMinSectionY()`.
+- Adicionado `SectionPos.Offset(long, Direction)`, delegando aos vetores unitários das seis direções.
+- Testes cobrem flooring negativo, as seis direções e bottom section para chunk em (-2, 3) com build height iniciando em -64.
+- Commit: `bb98db9`; CI: [checks](https://github.com/sarakborges/asteria2/actions/runs/45231314839) — sucesso.
