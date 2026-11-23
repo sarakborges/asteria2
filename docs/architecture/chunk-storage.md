@@ -190,3 +190,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - The integer-multiple sampler is selected only when the multiple is exactly the constant 1. Other multiples use a generic sampler with a scoped scratch buffer. A zero multiple returns the input unchanged.
 - Java `Math.round(float)` behavior is preserved, including ties toward positive infinity and saturation to the integer range.
 - Interval propagation follows the vanilla divide → monotonic round → multiply formula. Runtime factories for round/floor/ceil/truncate are wired; codec remains deferred with local persistence.
+
+
+## IntervalSelect density function — Minecraft Java 26.3
+
+- `IntervalSelectFunction` selects the first output whose threshold is greater than the input; equality advances to the next output, and values above all thresholds select the last output.
+- One threshold compiles to a two-output specialized sampler. Other threshold counts use the generic sampler and compile every output.
+- Point evaluation samples only the selected output; volume evaluation samples all outputs into scoped buffers. The generic implementation releases every acquired buffer in a `finally` path if any child throws.
+- Range encloses output ranges only; domain axes include the input and every output. Runtime factory is wired; count/order validation remains in the deferred codec layer.

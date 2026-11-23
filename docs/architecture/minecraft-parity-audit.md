@@ -699,3 +699,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionadas as factories `Round`, `Floor`, `Ceil` e `Truncate`, com overloads de múltiplo default 1.
 - `RoundFunctionChecks` cobre order/ids, tie-breaking Java, NaN e saturação, múltiplos unitários/dinâmicos/constantes, zero multiple, volume, range, domínio e rewrite.
 - Codec e validações de persistência permanecem adiados; nenhuma implementação alternativa foi introduzida.
+
+
+## Incremento — IntervalSelectFunction (23/11/2026)
+
+- Portado `IntervalSelectFunction` de Minecraft Java 26.3: amostra o input e escolhe a primeira função cujo threshold é estritamente maior que o input; se nenhum threshold satisfaz `input < threshold`, escolhe a última função.
+- Com um único threshold, compila somente o ramo abaixo e o ramo final para `SingleThresholdSampler`. Com zero ou mais de um threshold, compila a lista inteira para o sampler genérico, preservando a forma de seleção da referência.
+- Em volume, o sampler único avalia as duas saídas em buffers separados. O sampler genérico adquire um buffer por função e fecha todos em `finally`, inclusive quando a avaliação de qualquer saída lança uma exceção. Na amostragem pontual, apenas o ramo selecionado é avaliado.
+- `Range` encapsula apenas os ranges das funções de saída; `DomainAxes` combina input e todas as saídas. Rewrite visita input e depois cada função, mantendo a identidade se nenhum filho mudar.
+- Adicionada `DensityFunctions.IntervalSelect`. As validações vanilla de quantidade de thresholds, mínimo de funções e ordenação crescente pertencem ao codec e continuam adiadas com persistência local; o runtime não inventa uma validação substituta.
+- `IntervalSelectFunctionChecks` cobre thresholds estritos, NaN, sampler single/generic, branch point-only, avaliação volumétrica, range, domain axes, rewrite e liberação de buffers inclusive no caminho de exceção.

@@ -152,6 +152,12 @@ public static class DensityFunctions
     public static DensityFunction Max(DensityFunction left, DensityFunction right) =>
         new BinaryFunction(BinaryFunction.Type.MAX, left, right);
 
+    public static DensityFunction IntervalSelect(
+        DensityFunction input,
+        IReadOnlyList<float> thresholds,
+        IReadOnlyList<DensityFunction> functions) =>
+        new IntervalSelectFunction(input, thresholds, functions);
+
     public static DensityFunction Round(
         RoundFunction.Type type,
         DensityFunction input,
