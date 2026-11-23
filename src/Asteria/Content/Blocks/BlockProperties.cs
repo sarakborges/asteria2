@@ -29,7 +29,7 @@ public sealed class BlockProperties
     public bool IsAir { get; private set; }
     public Func<BlockState, int> LightEmissionValue { get; private set; } = static _ => 0;
     public Func<BlockState, bool> EmissiveRenderingValue { get; private set; } = static _ => false;
-    public Func<BlockState, MapColor> MapColorValue { get; private set; } = static _ => MapColor.NONE;
+    public Func<BlockState, MapColor> MapColorValue { get; private set; } = static _ => global::Asteria.Content.Materials.MapColor.NONE;
 
     public Func<BlockState, BlockPos, Vec3>? OffsetFunctionValue { get; private set; }
 
