@@ -1,5 +1,3 @@
-using System.Numerics;
-
 namespace Asteria.World.LevelGen;
 
 /// <summary>Xoroshiro128++ state machine from Minecraft Java 26.3.</summary>
@@ -24,14 +22,17 @@ public sealed class Xoroshiro128PlusPlus
         }
     }
 
+    private static long RotateLeft(long value, int distance) =>
+        unchecked((long)(((ulong)value << distance) | ((ulong)value >> (64 - distance))));
+
     public long NextLong()
     {
         long s0 = SeedLo;
         long s1 = SeedHi;
-        long result = unchecked(BitOperations.RotateLeft(unchecked(s0 + s1), 17) + s0);
+        long result = unchecked(RotateLeft(unchecked(s0 + s1), 17) + s0);
         s1 ^= s0;
-        SeedLo = BitOperations.RotateLeft(s0, 49) ^ s1 ^ unchecked(s1 << 21);
-        SeedHi = BitOperations.RotateLeft(s1, 28);
+        SeedLo = RotateLeft(s0, 49) ^ s1 ^ unchecked(s1 << 21);
+        SeedHi = RotateLeft(s1, 28);
         return result;
     }
 }
