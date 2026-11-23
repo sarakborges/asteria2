@@ -153,9 +153,10 @@ internal static class BuiltInNoiseChecks
         Require(
             Get(Noises.TEMPERATURE).Equals(temperature),
             "The temperature noise must retain the exact 26.3 base amplitude, octave range and amplitude modifiers.");
+        NormalNoise actualOffset = Get(Noises.SHIFT);
         Require(
-            Get(Noises.SHIFT).Equals(offset),
-            "The offset noise must retain the exact 26.3 offset amplitude modifiers.");
+            actualOffset.Equals(offset),
+            $"The offset noise must retain the exact 26.3 offset amplitude modifiers. Expected {offset}; got {actualOffset}.");
         Require(
             Get(Noises.CAVE_CHEESE).Equals(caveCheese),
             "The cave-cheese noise must retain all nine 26.3 amplitude modifiers, including disabled octaves.");
