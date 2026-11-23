@@ -88,9 +88,18 @@ internal static class LegacyFbmInitializerChecks
         var root = new LegacyRandomSource(445566L);
         NoiseStack first = LegacyFbmInitializer.CreateForLegacyNetherBiome(root, -2, amplitudes);
         NoiseStack second = LegacyFbmInitializer.CreateForLegacyNetherBiome(root, -2, amplitudes);
+        double firstAmplitude = 4.0 / 7.0;
+        double thirdAmplitude = 1.0 / 7.0;
+        double targetAmplitude = Math.Abs(firstAmplitude) + Math.Abs(thirdAmplitude);
+        double inputDeviation = Math.Sqrt(
+            Math.Pow(PerlinNoise.STANDARD_DEVIATION * Math.Abs(firstAmplitude), 2.0) +
+            Math.Pow(PerlinNoise.STANDARD_DEVIATION * Math.Abs(thirdAmplitude), 2.0));
+        float valueFactor = (float)(
+            (targetAmplitude / 3.0) / (inputDeviation * Math.Sqrt(2.0)));
+
         NoiseStack expected = NoiseStack.CreateBuilder()
-            .AddStack(first, 1.0, 1.0f)
-            .AddStack(second, 1.0181268882175227, 1.0f)
+            .AddStack(first, 1.0, valueFactor)
+            .AddStack(second, 1.0181268882175227, valueFactor)
             .Build();
 
         foreach ((double x, double y, double z) in new[]
