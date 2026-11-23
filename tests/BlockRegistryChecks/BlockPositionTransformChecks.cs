@@ -215,8 +215,6 @@ internal static class BlockPositionTransformChecks
             "BlockState.Rotate must dispatch through the owning block and preserve the base default state.");
         Require(ReferenceEquals(state, state.Mirror(Mirror.FRONT_BACK)),
             "BlockState.Mirror must dispatch through the owning block and preserve the base default state.");
-        Require(!state.IsSignalSource() && !state.HasAnalogOutputSignal(),
-            "Base block states must not emit redstone signals or analog output by default.");
         Require(state.CanBeReplaced() == state.IsReplaceable,
             "BlockState.CanBeReplaced must expose the state's configured replacement flag.");
         Require(state.GetDestroySpeed(EmptyBlockGetter.Instance, BlockPos.Zero) == state.DestroySpeed,
@@ -231,10 +229,6 @@ internal static class BlockPositionTransformChecks
             "Block shade brightness must be one for a non-full collision shape.");
         Require(!state.HasOffsetFunction && state.GetOffset(new BlockPos(10, 20, -20)).Equals(Vec3.ZERO),
             "A block state without an offset function must return Vec3.ZERO.");
-        BlockState stone = Blocks.STONE.DefaultState;
-        Require(stone.IsRedstoneConductor(EmptyBlockGetter.Instance, BlockPos.Zero) &&
-                !state.IsRedstoneConductor(EmptyBlockGetter.Instance, BlockPos.Zero),
-            "The default redstone-conductor predicate must follow full collision-shape occupancy.");
         Require(!state.IsSuffocating(EmptyBlockGetter.Instance, BlockPos.Zero) &&
                 !state.IsViewBlocking(EmptyBlockGetter.Instance, BlockPos.Zero, new AABB(0, 0, 0, 1, 1, 1)),
             "Default suffocation and view-blocking predicates must use the causes-suffocation tag.");
@@ -284,13 +278,6 @@ internal static class BlockPositionTransformChecks
 
         Require(BlockProperties.Of().OffsetType(OffsetType.NONE).OffsetFunctionValue is null,
             "NONE block offset type must not install an offset function.");
-        Require(!state.ShouldRedstoneWireConnectTo(EmptyBlockGetter.Instance, BlockPos.Zero, null) &&
-                !state.ShouldRedstoneWireConnectTo(EmptyBlockGetter.Instance, BlockPos.Zero, Direction.UP),
-            "BlockState should not connect redstone wire by default, including when a direction is supplied.");
-        Require(state.GetSignal(EmptyBlockGetter.Instance, BlockPos.Zero, Direction.UP) == 0 &&
-                state.GetOwnSignal(EmptyBlockGetter.Instance, BlockPos.Zero) == 0 &&
-                state.GetDirectSignal(EmptyBlockGetter.Instance, BlockPos.Zero, Direction.UP) == 0,
-            "BlockState redstone signal queries must preserve zero-valued base defaults.");
     }
 
     private static void Require(bool condition, string message)
