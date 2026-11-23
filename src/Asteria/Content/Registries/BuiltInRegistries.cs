@@ -125,7 +125,7 @@ public static class BuiltInRegistries
         foreach (var loader in Loaders)
             loader.Bootstrap();
 
-        InitializeBlockStateCaches();
+        SolidDebugger.RunAndDump(InitializeBlockStateCaches);
         Freeze();
     }
 
