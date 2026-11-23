@@ -44,7 +44,7 @@ internal static class ChunkDependenciesChecks
         IReadOnlyList<ChunkStatus> list = dependencies.AsList();
         Require(ReferenceEquals(list, dependencies.AsList()) && list.Count == dependencies.Size(),
             "asList must expose the same immutable dependency list instance.");
-        Require(dependencies.ToString() == "[spawn, initialize_light, terrain, biomes, structure_starts, structure_starts, structure_starts, structure_starts, structure_starts, structure_starts, structure_starts, structure_starts]",
+        Require(dependencies.ToString() == "[asteria:spawn, asteria:initialize_light, asteria:terrain, asteria:biomes, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts]",
             "ChunkDependencies.toString must display its status sequence in distance order.");
 
         var empty = new ChunkDependencies(Array.Empty<ChunkStatus>());
