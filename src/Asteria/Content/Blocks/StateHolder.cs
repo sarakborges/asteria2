@@ -13,6 +13,12 @@ public abstract class StateHolder<TOwner, TState>
     public StateDefinition<TOwner, TState> Definition { get; }
     public bool IsSingletonState => _values.Length == 0;
 
+    public sealed override bool Equals(object? obj) =>
+        base.Equals(obj);
+
+    public override int GetHashCode() =>
+        base.GetHashCode();
+
     protected StateHolder(StateDefinition<TOwner, TState> definition, object[] values)
     {
         Definition = definition ?? throw new ArgumentNullException(nameof(definition));

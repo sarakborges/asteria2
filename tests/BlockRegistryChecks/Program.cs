@@ -1,4 +1,5 @@
 using Asteria.Core.Shapes;
+
 using System.Runtime.CompilerServices;
 using Asteria.Content.Blocks;
 using Asteria.Content.Particles;
@@ -173,6 +174,7 @@ internal static class Program
     private static void RunChecks()
     {
         _ = TestBlocks.TEST_BLOCK;
+        StateHolderChecks.Run();
         SerializationChecks.Run();
         DynamicOpsChecks.Run();
         CodecChecks.Run();
