@@ -91,4 +91,4 @@ Network packet codecs are out of scope. Local disk persistence remains in scope.
 - Multi-octave normal noise constructs two independent sets of Perlin octaves from separate positional factories, using the stable name `octave_<index>` for each octave.
 - The second Perlin octave set samples at `frequency * 1.0181268882175227`; both sets share the normalized amplitude factor.
 - The builder supports DISABLED, ENABLED and LEGACY normalization, plus per-octave amplitude modifiers. `CreateParity` preserves the legacy amplitude-array normalization conversion.
-- Legacy Nether biome FBM and parameter codecs are deferred until their actual initializer and local persistence dependencies are ported.
+- NormalNoise parameter codecs remain deferred with local persistence. The legacy Nether biome path is implemented through the original LegacyFbmInitializer, including the 262-draw skips for disabled octaves.

@@ -566,3 +566,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O builder mantém os defaults vanilla (base amplitude 1, base octave 0, uma oitava, normalização ENABLED, modifiers vazios) e as falhas/ordem de configuração de `setOctaveCount` e `setAmplitudeModifier`.
 - `createForLegacyNetherBiome` não foi substituído por ruído novo: continua pendente do port integral de `LegacyFbmInitializer`. Os codecs de parâmetros também seguem pendentes do escopo de persistência local.
 - `NormalNoiseChecks` verifica faixas, fórmulas de normalização, configurações parity, factories posicionais independentes, sampling 3D e seleção de oitavas.
+
+
+## Incremento — LegacyFbmInitializer (23/11/2026)
+
+- Portado `LegacyFbmInitializer` de Minecraft Java 26.3 para o fBm histórico das Nether biomes. Preservados o consumo do octave zero mesmo quando desligado, a ordem de criação das oitavas inferiores, os `consumeCount(262)` para cada lacuna, o erro de quantidade de ruídos e o bloqueio atual de oitavas positivas.
+- `NormalNoise.CreateForLegacyNetherBiome` agora compõe duas pilhas legacy sequenciais; a segunda usa o fator de frequência `1.0181268882175227` e ambas usam o `normalizationFactor * baseAmplitude` do `NormalNoise`.
+- O caminho legacy foi mantido separado da criação moderna por nome `octave_<index>`; não foi substituído nem convertido para o algoritmo novo.
+- `LegacyFbmInitializerChecks` compara o resultado contra a sequência manual vanilla de construções e consumo, testa oitava zero silenciada e verifica a falha de oitavas positivas.

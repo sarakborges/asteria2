@@ -253,6 +253,31 @@ public sealed class NormalNoise : IEquatable<NormalNoise>
         builder.Append("]}");
     }
 
+    /// <summary>
+    /// Recreates the legacy Nether biome fBm pipeline, including its fixed random-consumption
+    /// rules for absent octaves. This is intentionally distinct from the modern Create path.
+    /// </summary>
+    [Obsolete("Legacy Nether biome noise compatibility path.")]
+    public NoiseStack CreateForLegacyNetherBiome(IRandomSource random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+
+        IReadOnlyList<double> amplitudes = _parameters.AmplitudeModifiers.Count == 0
+            ? Enumerable.Repeat(1.0, _parameters.OctaveCount).ToArray()
+            : _parameters.AmplitudeModifiers;
+
+        NoiseStack first = LegacyFbmInitializer.CreateForLegacyNetherBiome(
+            random, _parameters.BaseOctave, amplitudes);
+        NoiseStack second = LegacyFbmInitializer.CreateForLegacyNetherBiome(
+            random, _parameters.BaseOctave, amplitudes);
+
+        float valueFactor = (float)(_normalizationFactor * _parameters.BaseAmplitude);
+        return NoiseStack.CreateBuilder()
+            .AddStack(first, 1.0, valueFactor)
+            .AddStack(second, InputFactor, valueFactor)
+            .Build();
+    }
+
     public bool Equals(NormalNoise? other) =>
         ReferenceEquals(this, other) ||
         (other is not null && _parameters.Equals(other._parameters));
