@@ -245,6 +245,8 @@ internal static class Program
         DensitySamplingChecks.Run();
         DensityFunctionChecks.Run();
         DfRewriteRuleChecks.Run();
+        CacheFunctionChecks.Run();
+        DensityFunctionCompilerChecks.Run();
         UnaryFunctionChecks.Run();
         BinaryFunctionChecks.Run();
         LerpFunctionChecks.Run();

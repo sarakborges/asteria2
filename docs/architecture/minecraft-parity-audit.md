@@ -730,3 +730,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Quando os domínios diferem, os filhos são reescritos com uma regra cujo domínio é o do nó atual; os eixos presentes no pai e ausentes no nó são removidos com slices de coordenada zero.
 - A remoção considera slices já existentes na cadeia externa e não os duplica. A ordem de inserção permanece X, Z, Y, deixando Y como wrapper externo quando os três eixos são removidos.
 - `DfRewriteRuleChecks` cobre inlining, nós ignorados, propagação recursiva, caminho de igualdade do domínio, deduplicação de eixos e ordem exata dos wrappers.
+
+
+## Incremento — CacheFunction e DensityFunctionCompiler (23/11/2026)
+
+- Portado `CacheFunction` como pedido de cache: preserva o filho em `Range` e `DomainAxes`, reescreve o filho com a regra recebida e rejeita compilação direta; o nó só pode ser preparado pelo compilador.
+- Portado `CachingDensitySampler(id, input)`, que delega amostragem pontual e volumétrica às células de cache de `SamplerContext`.
+- Portado `DensityFunctionCompiler`: memoiza samplers por igualdade de nós, serializa a otimização sob lock, aplica `InlineReference` e substituição/compartilhamento de caches antes de `SliceUniformAxes`.
+- Cada input de cache estruturalmente igual reutiliza o mesmo `PreparedCache` e ID. A preparação reescreve o input com a sequência completa, cria o sampler de cache e preserva range/domínio do input preparado.
+- `PreparedCache` é interno ao compilador, retorna o sampler já preparado e permanece não serializável; não há codec alternativo. Os codecs locais e o registry de tipos de density functions continuam adiados.
+- A publicação concorrente usa `ConcurrentDictionary<DensityFunction, Lazy<DensitySampler>>` para garantir uma única compilação por chave, preservando o comportamento de `computeIfAbsent` da referência.
+- `CacheFunctionChecks` e `DensityFunctionCompilerChecks` cobrem erro de compilação direta, rewrite, metadata, inlining de holders, compilação concorrente, cache pontual, cache de volume, contexto sem cache, substituição de buffer, compartilhamento de IDs e caches aninhados.

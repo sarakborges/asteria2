@@ -216,3 +216,13 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - Existing outer slice wrappers are inspected before adding new slices, preventing duplicate removal of an axis.
 - These rewrites are runtime graph transformations. Density-function codecs, type registry and bootstrap remain deferred with local persistence.
 - Reference: [DfRewriteRule — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/densityfunction/dfrewriterule/).
+
+
+## Density function cache compilation — Minecraft Java 26.3
+
+- `CacheFunction` is a cache request and cannot be compiled directly; `DensityFunctionCompiler` replaces it with an internal prepared node.
+- `CachingDensitySampler` routes point and volume requests through the selected `SamplerContext` cache cell. Contexts without caches evaluate the wrapped sampler directly.
+- The compiler memoizes samplers, inlines holder references, prepares one cache ID per distinct input graph, then applies uniform-axis slicing before sampler compilation.
+- Equivalent cache inputs share a prepared sampler and cache ID; nested cache requests receive their own IDs. Prepared nodes are runtime-only and do not participate in local serialization.
+- Codec registry/bootstrap work remains deferred with local persistence; no placeholder codecs are introduced.
+- Reference: [DensityFunctionCompiler — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/densityfunction/densityfunctioncompiler/).

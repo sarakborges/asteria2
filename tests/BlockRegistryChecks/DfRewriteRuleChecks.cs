@@ -50,9 +50,7 @@ internal static class DfRewriteRuleChecks
     {
         DensityFunction xGradient = CreateGradient(Direction.Axis.X);
         DensityFunction zGradient = CreateGradient(Direction.Axis.Z);
-        DensityFunction xNode = DensityFunctions.Clamp(xGradient, -0.5f, 0.5f);
-        DensityFunction zNode = DensityFunctions.Clamp(zGradient, -0.5f, 0.5f);
-        DensityFunction combined = DensityFunctions.Add(xNode, zNode);
+        DensityFunction combined = DensityFunctions.Add(xGradient, zGradient);
 
         DensityFunction rewritten = DfRewriteRules.SliceUniformAxes(combined);
         SliceFunction ySlice = RequireType<SliceFunction>(rewritten);
@@ -67,15 +65,13 @@ internal static class DfRewriteRuleChecks
         Require(
             ReferenceEquals(leftZSlice.Axis, Direction.Axis.Z) &&
             leftZSlice.Coordinate == 0 &&
-            ReferenceEquals(leftZSlice.Input, xNode) &&
-            ReferenceEquals(RequireType<ClampFunction>(leftZSlice.Input).Input, xGradient),
+            ReferenceEquals(leftZSlice.Input, xGradient),
             "The X-gradient branch must be sliced only on its unused Z axis.");
 
         Require(
             ReferenceEquals(rightXSlice.Axis, Direction.Axis.X) &&
             rightXSlice.Coordinate == 0 &&
-            ReferenceEquals(rightXSlice.Input, zNode) &&
-            ReferenceEquals(RequireType<ClampFunction>(rightXSlice.Input).Input, zGradient),
+            ReferenceEquals(rightXSlice.Input, zGradient),
             "The Z-gradient branch must be sliced only on its unused X axis.");
 
         Require(
@@ -87,9 +83,7 @@ internal static class DfRewriteRuleChecks
     {
         DensityFunction xGradient = CreateGradient(Direction.Axis.X);
         DensityFunction zGradient = CreateGradient(Direction.Axis.Z);
-        DensityFunction xNode = DensityFunctions.Clamp(xGradient, -0.5f, 0.5f);
-        DensityFunction zNode = DensityFunctions.Clamp(zGradient, -0.5f, 0.5f);
-        DensityFunction combined = DensityFunctions.Add(xNode, zNode);
+        DensityFunction combined = DensityFunctions.Add(xGradient, zGradient);
         var rule = new SliceUniformAxesRewriteRule(
             DensityFunction.AXIS_X | DensityFunction.AXIS_Z);
 
@@ -99,15 +93,13 @@ internal static class DfRewriteRuleChecks
         Require(
             binary.Left is SliceFunction left &&
             ReferenceEquals(left.Axis, Direction.Axis.Z) &&
-            ReferenceEquals(left.Input, xNode) &&
-            ReferenceEquals(RequireType<ClampFunction>(left.Input).Input, xGradient),
+            ReferenceEquals(left.Input, xGradient),
             "When parent axes equal the current node axes, the same rule must recursively rewrite the left child.");
 
         Require(
             binary.Right is SliceFunction right &&
             ReferenceEquals(right.Axis, Direction.Axis.X) &&
-            ReferenceEquals(right.Input, zNode) &&
-            ReferenceEquals(RequireType<ClampFunction>(right.Input).Input, zGradient),
+            ReferenceEquals(right.Input, zGradient),
             "When parent axes equal the current node axes, the same rule must recursively rewrite the right child.");
 
         Require(

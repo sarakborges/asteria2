@@ -213,6 +213,9 @@ public static class DensityFunctions
         DensityFunction second) =>
         Lerp(alpha, Constant(first), second);
 
+    public static DensityFunction Cache(DensityFunction input) =>
+        new CacheFunction(input);
+
     /// <summary>
     /// Holder-backed density-function reference from Minecraft Java 26.3.
     /// </summary>
