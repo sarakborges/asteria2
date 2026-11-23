@@ -205,7 +205,8 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 11, "The root registry must contain the built-in block, fluid, item, biome, chunk-status, particle, environment-attribute, attribute-type, position-source-type, world-clock and timeline registries.");
+        Require(BuiltInRegistries.Root.Count == 12, "The root registry must contain the built-in block, fluid, item, biome, density-function-type, chunk-status, particle, environment-attribute, attribute-type, position-source-type, world-clock and timeline registries.");
+        DensityFunctionCodecChecks.Run();
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
