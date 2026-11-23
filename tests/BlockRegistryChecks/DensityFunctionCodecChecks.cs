@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
+using Asteria.Core;
 using Asteria.Serialization;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
@@ -23,14 +24,15 @@ internal static class DensityFunctionCodecChecks
         CheckClampCodec();
         CheckRangeChoiceCodec();
         CheckIntervalSelectCodec();
+        CheckSliceCodec();
         CheckRejectedInputs();
     }
 
     private static void CheckTypeRegistry()
     {
         Require(
-            BuiltInRegistries.DensityFunctionType.Count == 29,
-            "The density-function codec slice must register constant, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache and interpolated.");
+            BuiltInRegistries.DensityFunctionType.Count == 30,
+            "The density-function codec slice must register constant, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated and slice.");
 
         Require(
             BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:constant")) &&
@@ -455,6 +457,39 @@ internal static class DensityFunctionCodecChecks
                 ParseJson("""{"type":"asteria:interval_select","input":0.0,"thresholds":[],"functions":[1.0]}"""))
                 .IsError,
             "IntervalSelectFunction must require at least two branches.");
+    }
+
+    private static void CheckSliceCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        DensityFunction expected = new SliceFunction(
+            Direction.Axis.Z,
+            -128,
+            new UnaryFunction(
+                UnaryFunction.Type.ABS,
+                new ConstantFunction(-0.5f)));
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:slice" &&
+            ops.Get(encoded, "axis").GetOrThrow().GetString() == "z" &&
+            ops.Get(encoded, "coordinate").GetOrThrow().GetInt32() == -128 &&
+            ops.Get(encoded, "input").GetOrThrow().ValueKind == JsonValueKind.Object,
+            "SliceFunction must serialize axis, coordinate and input with the 26.3 field names.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(ops, encoded).GetOrThrow().Equals(expected),
+            "SliceFunction must round-trip its axis, coordinate and input.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:slice","axis":"w","coordinate":0,"input":1.0}"""))
+                .IsError,
+            "SliceFunction must reject axes outside x/y/z.");
     }
 
     private static void CheckRejectedInputs()
