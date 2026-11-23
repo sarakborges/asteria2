@@ -100,3 +100,8 @@ The generic `StateDefinition` constructor is protected-internal rather than publ
 ## Redstone conductor predicate
 
 `BlockProperties.IsRedstoneConductor` and `BlockState.IsRedstoneConductor(level, position)` port the generic `BlockBehaviour.Properties.isRedstoneConductor` contract. The default predicate delegates to the state's full-collision-shape test; a configured predicate is retained by each state and evaluated with the query's level and position.
+
+
+## Property.parseValue partial-result contract
+
+`StateProperty<T>.ParseValue` mirrors Minecraft 26.3 `Property.parseValue`: decode a serialized property value through `DynamicOps`, transition to the corresponding precomputed state on success, and attach the original state as the partial value on any parsing error. This keeps callers able to retain the original state while reporting invalid input.

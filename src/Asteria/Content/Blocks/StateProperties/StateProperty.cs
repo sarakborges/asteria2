@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Asteria.Serialization;
 
 namespace Asteria.Content.Blocks.StateProperties;
 
@@ -97,6 +98,27 @@ public abstract class StateProperty<T> : StateProperty where T : notnull, ICompa
 
     public abstract string GetName(T value);
     public abstract bool TryParse(string serializedValue, out T value);
+
+    public DataResult<TState> ParseValue<TData, TOwner, TState>(
+        DynamicOps<TData> ops,
+        StateHolder<TOwner, TState> state,
+        TData input)
+        where TOwner : notnull
+        where TState : StateHolder<TOwner, TState>
+    {
+        ArgumentNullException.ThrowIfNull(ops);
+        ArgumentNullException.ThrowIfNull(state);
+
+        DataResult<T> parsed = ops.GetStringValue(input).FlatMap(serializedValue =>
+            TryParse(serializedValue, out T value)
+                ? DataResult<T>.Success(value)
+                : DataResult<T>.Error(() =>
+                    $"Unable to read property: {this} with value: {serializedValue}"));
+
+        return parsed
+            .Map(value => state.SetValue(this, value))
+            .SetPartial((TState)state);
+    }
 
     public virtual int IndexOf(T value)
     {

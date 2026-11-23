@@ -1,3 +1,5 @@
+using Asteria.Serialization;
+using System.Text.Json;
 using Asteria.Core.Shapes;
 
 using System.Runtime.CompilerServices;
@@ -1998,6 +2000,45 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(lit.IndexOf(true) == 0 && lit.IndexOf(false) == 1, "BooleanProperty.getInternalIndex must use its fixed true/false indices.");
         Require(lit.TryParse("true", out bool parsedTrue) && parsedTrue, "Boolean parsing must accept true.");
         Require(!lit.TryParse("TRUE", out _), "Boolean parsing must be case-sensitive.");
+
+        DynamicOps<JsonElement> propertyOps = JsonOps.INSTANCE;
+        BlockState originalState = TestBlocks.TEST_BLOCK.DefaultState;
+        DataResult<BlockState> validPropertyParse =
+            TestBlocks.TEST_POWERED.ParseValue<JsonElement, Block, BlockState>(
+                propertyOps,
+                originalState,
+                propertyOps.CreateString("true"));
+        Require(
+            ReferenceEquals(
+                validPropertyParse.GetOrThrow(),
+                originalState.SetValue(TestBlocks.TEST_POWERED, true)),
+            "Property.parseValue must parse a serialized value and return the matching precomputed state.");
+
+        DataResult<BlockState> invalidPropertyParse =
+            TestBlocks.TEST_POWERED.ParseValue<JsonElement, Block, BlockState>(
+                propertyOps,
+                originalState,
+                propertyOps.CreateString("not-a-boolean"));
+        Require(
+            invalidPropertyParse.IsError &&
+            invalidPropertyParse.TryGetPartial(out BlockState partialState) &&
+            ReferenceEquals(partialState, originalState),
+            "Property.parseValue must preserve the original state as the partial result when the serialized property value is invalid.");
+        Require(
+            invalidPropertyParse.ErrorMessage ==
+                $"Unable to read property: {TestBlocks.TEST_POWERED} with value: not-a-boolean",
+            "Property.parseValue must use the vanilla invalid serialized-value diagnostic.");
+
+        DataResult<BlockState> invalidInputTypeParse =
+            TestBlocks.TEST_POWERED.ParseValue<JsonElement, Block, BlockState>(
+                propertyOps,
+                originalState,
+                propertyOps.CreateInt(1));
+        Require(
+            invalidInputTypeParse.IsError &&
+            invalidInputTypeParse.TryGetPartial(out partialState) &&
+            ReferenceEquals(partialState, originalState),
+            "Property.parseValue must preserve the original state as partial when the input is not a string.");
 
         StatePropertyValue<bool>[] booleanValues = lit.GetAllValues().ToArray();
         Require(

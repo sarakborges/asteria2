@@ -416,3 +416,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Portados `BlockBehaviour.Properties.isRedstoneConductor` e `BlockStateBase.isRedstoneConductor(level, pos)` como propriedade genérica do estado.
 - O padrão da referência é `BlockStateBase::isCollisionShapeFullBlock`; a configuração permite substituir o predicado e recebe level/position da consulta.
 - Testes cobrem o padrão em ar/pedra e a avaliação contextual de um predicado configurado.
+
+
+## Incremento — Property.parseValue e partial state (23/11/2026)
+
+- Implementado `StateProperty<T>.ParseValue`, equivalente ao `Property.parseValue` de Minecraft 26.3.
+- O parse válido resolve a instância pré-calculada com `SetValue`; falhas de valor ou de tipo de entrada preservam o estado original como resultado parcial em `DataResult`.
+- Testes verificam estado resultante, mensagem de erro vanilla e partial state para string inválida e entrada não textual.
