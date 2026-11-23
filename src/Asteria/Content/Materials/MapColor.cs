@@ -140,15 +140,15 @@ public sealed class MapColor
 
     public sealed class Brightness
     {
-        private static readonly Brightness[] VALUES =
-        {
-            LOW, NORMAL, HIGH, LOWEST
-        };
-
         public static readonly Brightness LOW = new(0, 180);
         public static readonly Brightness NORMAL = new(1, 220);
         public static readonly Brightness HIGH = new(2, 255);
         public static readonly Brightness LOWEST = new(3, 135);
+
+        private static readonly Brightness[] VALUES =
+        {
+            LOW, NORMAL, HIGH, LOWEST
+        };
 
         public int Id { get; }
         public int Modifier { get; }
