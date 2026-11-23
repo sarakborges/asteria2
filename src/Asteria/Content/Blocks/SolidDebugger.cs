@@ -11,7 +11,8 @@ public sealed class SolidDebugger
     private static readonly AsyncLocal<SolidDebugger?> STATUS = new();
     private static readonly bool DEBUG_CALCULATE_SOLID = GetDebugFlag("CALCULATE_SOLID");
 
-    private readonly Dictionary<Block, Reason> _reasonByBlock = new();
+    private readonly Dictionary<Block, Reason> _firstReasonByBlock = new();
+    private readonly List<KeyValuePair<Block, Reason>> _reasonEntries = new();
 
     public static bool LogAndGet(Block block, Reason reason)
     {
@@ -20,7 +21,7 @@ public sealed class SolidDebugger
         SolidDebugger? debugger = STATUS.Value;
         if (debugger is not null)
         {
-            if (debugger._reasonByBlock.TryGetValue(block, out Reason? existingReason))
+            if (debugger._firstReasonByBlock.TryGetValue(block, out Reason? existingReason))
             {
                 if (existingReason.CausesSolid != reason.CausesSolid)
                 {
@@ -31,7 +32,8 @@ public sealed class SolidDebugger
             }
             else
             {
-                debugger._reasonByBlock.Add(block, reason);
+                debugger._firstReasonByBlock.Add(block, reason);
+                debugger._reasonEntries.Add(new KeyValuePair<Block, Reason>(block, reason));
             }
         }
 
@@ -41,7 +43,7 @@ public sealed class SolidDebugger
     public void Dump()
     {
         foreach (IGrouping<Reason, KeyValuePair<Block, Reason>> group in
-                 _reasonByBlock.GroupBy(entry => entry.Value))
+                 _reasonEntries.GroupBy(entry => entry.Value))
         {
             Reason reason = group.Key;
             string blockNames = string.Join(
