@@ -129,12 +129,18 @@ internal static class BuiltInDensityFunctionChecks
             throw new InvalidOperationException("Missing built-in shift_z density-function holder.");
 
         Require(
-            shiftXHolder.Value is ShiftNoiseFunction.ShiftA shiftX &&
+            shiftXHolder.Value is CacheFunction
+            {
+                Input: ShiftNoiseFunction.ShiftA shiftX
+            } &&
             ReferenceEquals(shiftX.OffsetNoise, noiseHolder),
             "The shift_x density function must use the vanilla ShiftA node and the registered offset noise holder.");
 
         Require(
-            shiftZHolder.Value is ShiftNoiseFunction.ShiftB shiftZ &&
+            shiftZHolder.Value is CacheFunction
+            {
+                Input: ShiftNoiseFunction.ShiftB shiftZ
+            } &&
             ReferenceEquals(shiftZ.OffsetNoise, noiseHolder),
             "The shift_z density function must use the vanilla ShiftB node and the registered offset noise holder.");
 

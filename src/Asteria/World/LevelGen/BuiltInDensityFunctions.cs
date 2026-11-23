@@ -48,12 +48,12 @@ internal static class BuiltInDensityFunctions
 
         registry.Register(
             DensityFunctionKeys.SHIFT_X,
-            DensityFunctionFactories.ShiftA(shiftNoise),
+            DensityFunctionFactories.Cache(DensityFunctionFactories.ShiftA(shiftNoise)),
             RegistrationInfo.BuiltIn);
 
         registry.Register(
             DensityFunctionKeys.SHIFT_Z,
-            DensityFunctionFactories.ShiftB(shiftNoise),
+            DensityFunctionFactories.Cache(DensityFunctionFactories.ShiftB(shiftNoise)),
             RegistrationInfo.BuiltIn);
 
         registry.Register(
@@ -258,15 +258,27 @@ internal static class BuiltInDensityFunctions
         float fromMax,
         float toMin,
         float toMax) =>
-        DensityFunctionFactories.Lerp(
-            DensityFunctionFactories.Clamp(
-                DensityFunctionFactories.Div(
-                    DensityFunctionFactories.Sub(input, fromMin),
-                    fromMax - fromMin),
-                0.0f,
-                1.0f),
+        Remap(
+            DensityFunctionFactories.Clamp(input, fromMin, fromMax),
+            fromMin,
+            fromMax,
             toMin,
-            DensityFunctionFactories.Constant(toMax));
+            toMax);
+
+    private static DensityFunction Remap(
+        DensityFunction input,
+        float fromMin,
+        float fromMax,
+        float toMin,
+        float toMax)
+    {
+        float factor = (toMax - toMin) / (fromMax - fromMin);
+        float offset = toMin - fromMin * factor;
+        DensityFunction scaled = DensityFunctionFactories.Mul(input, factor);
+        return offset == 0.0f
+            ? scaled
+            : DensityFunctionFactories.Add(scaled, offset);
+    }
 
     private static Holder<NormalNoise> GetNoise(RegistryKey<NormalNoise> key) =>
         BuiltInRegistries.Noise.GetHolder(key) ??

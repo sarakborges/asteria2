@@ -925,7 +925,7 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 ## Incremento — horizontal density shifts (23/11/2026)
 
 - Registradas `zero`, `y`, `shift_x` e `shift_z`. A ordem local ainda não é a ordem integral de `NoiseRouterData.bootstrap`: o estágio `registerOreVeins`, que ocorre antes dos shifts em 26.3, permanece pendente.
-- `shift_x` usa o nó vanilla `ShiftA`; `shift_z` usa `ShiftB`. Ambos referenciam o holder registrado de `asteria:offset` (parâmetros do ruído vanilla `shift`).
+- `shift_x` usa `cache(ShiftA)`; `shift_z` usa `cache(ShiftB)`, conforme `NoiseRouterData.bootstrap`. Ambos referenciam o holder registrado de `asteria:offset` (parâmetros do ruído vanilla `shift`).
 - Os testes verificam chaves e ordem, tipo de nó, identidade do holder de ruído e contrato de domínio/range.
 - Os parâmetros do ruído `offset` já estavam no dataset de ruídos; não foi criada uma cópia nem um algoritmo alternativo.
 - Correção de escopo 26.3: `vein_toggle`, `vein_ridged` e `vein_gap` não devem ser tratados como campos antigos do NoiseRouter. A versão 26.3 moveu a seleção de veios para a material rule `minecraft:ore_vein`; as density functions de suporte continuam registradas por `NoiseRouterData` e são consumidas por essa regra. A implementação da regra material permanece pendente.
@@ -946,6 +946,6 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Portado `NoiseRouterData.registerOreVeins` antes dos shifts, corrigindo a ordem real de bootstrap do Minecraft Java 26.3.
 - Registradas as seis entradas vanilla: `toggle`, `richness`, `mask`, `copper_density`, `iron_density` e `gap`.
 - A máscara usa `ore_veininess`, `ore_vein_a`, `ore_vein_b`, limites interpolados em Y e células 4×8; cobre usa faixa Y [0, 50) e ferro [-60, -8).
-- O mapeamento clamped foi composto com os nós existentes de clamp/divisão/lerp; não foi introduzido um operador novo nem lógica de colocação de blocos.
+- `clampedMap` segue a expansão vanilla: clamp do input, fator `(toMax-toMin)/(fromMax-fromMin)` e offset `toMin-fromMin*factor`, usando os nós existentes de clamp/multiplicação/adição. Não foi introduzido um operador novo nem lógica de colocação de blocos.
 - Testes verificam sequência integral dos 13 registros atualmente portados, tipos de nós, disponibilidade dos quatro ruídos e intervalos das funções.
 - A aplicação de minério continua fora deste incremento: as densidades ainda precisam ser consumidas pela material rule `minecraft:ore_vein`.
