@@ -15,8 +15,12 @@ internal static class DensityFunctionCodecBootstrap
 {
     private sealed record CodecCatalog(
         MapCodec<DensityFunction> Constant,
+        MapCodec<DensityFunction> Noise,
         MapCodec<DensityFunction> DistanceToPoint,
         MapCodec<DensityFunction> EndOuterIslands,
+        MapCodec<DensityFunction> ShiftA,
+        MapCodec<DensityFunction> ShiftB,
+        MapCodec<DensityFunction> Shift,
         IReadOnlyDictionary<UnaryFunction.Type, MapCodec<DensityFunction>> Unary,
         IReadOnlyDictionary<BinaryFunction.Type, MapCodec<DensityFunction>> Binary,
         IReadOnlyDictionary<RoundFunction.Type, MapCodec<DensityFunction>> Round,
@@ -41,9 +45,13 @@ internal static class DensityFunctionCodecBootstrap
         CodecCatalog codecs = Catalog.Value;
 
         Register(registry, "constant", codecs.Constant);
-        Register(registry, "distance_to_point", codecs.DistanceToPoint);
+        Register(registry, "noise", codecs.Noise);
         Register(registry, "end_outer_islands", codecs.EndOuterIslands);
+        Register(registry, "distance_to_point", codecs.DistanceToPoint);
         Register(registry, "gradient", codecs.Gradient);
+        Register(registry, "shift_a", codecs.ShiftA);
+        Register(registry, "shift_b", codecs.ShiftB);
+        Register(registry, "shift", codecs.Shift);
 
         foreach (UnaryFunction.Type operation in Enum.GetValues<UnaryFunction.Type>())
             Register(registry, UnaryFunction.GetId(operation), codecs.Unary[operation]);
@@ -73,8 +81,12 @@ internal static class DensityFunctionCodecBootstrap
         return function switch
         {
             ConstantFunction => codecs.Constant,
+            NoiseFunction => codecs.Noise,
             DistanceToPointFunction => codecs.DistanceToPoint,
             EndIslandFunction => codecs.EndOuterIslands,
+            ShiftNoiseFunction.ShiftA => codecs.ShiftA,
+            ShiftNoiseFunction.ShiftB => codecs.ShiftB,
+            ShiftNoiseFunction.Shift => codecs.Shift,
             UnaryFunction unary => codecs.Unary[unary.Operation],
             BinaryFunction binary => codecs.Binary[binary.Operation],
             RoundFunction round => codecs.Round[round.Operation],
@@ -157,8 +169,12 @@ internal static class DensityFunctionCodecBootstrap
 
         return new CodecCatalog(
             constant,
+            CreateNoiseCodec(),
             CreateDistanceToPointCodec(),
             CreateEndIslandCodec(),
+            CreateShiftACodec(),
+            CreateShiftBCodec(),
+            CreateShiftCodec(),
             unary,
             binary,
             round,
@@ -173,6 +189,26 @@ internal static class DensityFunctionCodecBootstrap
             CreateSliceCodec(),
             CreateGradientCodec());
     }
+
+    private static MapCodec<DensityFunction> CreateNoiseCodec() =>
+        NoiseFunction.CODEC.XMap<DensityFunction>(
+            static function => function,
+            static function => (NoiseFunction)function);
+
+    private static MapCodec<DensityFunction> CreateShiftACodec() =>
+        ShiftNoiseFunction.ShiftA.CODEC.XMap<DensityFunction>(
+            static function => function,
+            static function => (ShiftNoiseFunction.ShiftA)function);
+
+    private static MapCodec<DensityFunction> CreateShiftBCodec() =>
+        ShiftNoiseFunction.ShiftB.CODEC.XMap<DensityFunction>(
+            static function => function,
+            static function => (ShiftNoiseFunction.ShiftB)function);
+
+    private static MapCodec<DensityFunction> CreateShiftCodec() =>
+        ShiftNoiseFunction.Shift.CODEC.XMap<DensityFunction>(
+            static function => function,
+            static function => (ShiftNoiseFunction.Shift)function);
 
     private static MapCodec<DensityFunction> CreateEndIslandCodec() =>
         EndIslandFunction.CODEC.XMap<DensityFunction>(
