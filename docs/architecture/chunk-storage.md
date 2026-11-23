@@ -182,3 +182,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - `GradientFunction` maps one axis coordinate linearly between two values, preserving reversed endpoints. Repeat modes use Java floor division/modulo behavior for negative coordinates.
 - Volume sampling has axis-specific paths that write ranges or planes directly, matching the 26.3 layout and avoiding general point traversal.
 - `Gradient` and `YClampedGradient` runtime factories are wired. The equal-endpoint validation remains part of the deferred codec layer.
+
+
+## Round density function — Minecraft Java 26.3
+
+- `RoundFunction` implements floor, Java round, ceil and truncation toward zero with a variable multiple.
+- The integer-multiple sampler is selected only when the multiple is exactly the constant 1. Other multiples use a generic sampler with a scoped scratch buffer. A zero multiple returns the input unchanged.
+- Java `Math.round(float)` behavior is preserved, including ties toward positive infinity and saturation to the integer range.
+- Interval propagation follows the vanilla divide → monotonic round → multiply formula. Runtime factories for round/floor/ceil/truncate are wired; codec remains deferred with local persistence.

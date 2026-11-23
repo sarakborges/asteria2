@@ -152,6 +152,39 @@ public static class DensityFunctions
     public static DensityFunction Max(DensityFunction left, DensityFunction right) =>
         new BinaryFunction(BinaryFunction.Type.MAX, left, right);
 
+    public static DensityFunction Round(
+        RoundFunction.Type type,
+        DensityFunction input,
+        DensityFunction multiple) =>
+        new RoundFunction(type, input, multiple);
+
+    public static DensityFunction Round(RoundFunction.Type type, DensityFunction input) =>
+        Round(type, input, Constant(1.0f));
+
+    public static DensityFunction Floor(DensityFunction input, DensityFunction multiple) =>
+        Round(RoundFunction.Type.FLOOR, input, multiple);
+
+    public static DensityFunction Floor(DensityFunction input) =>
+        Floor(input, Constant(1.0f));
+
+    public static DensityFunction Round(DensityFunction input, DensityFunction multiple) =>
+        Round(RoundFunction.Type.ROUND, input, multiple);
+
+    public static DensityFunction Round(DensityFunction input) =>
+        Round(input, Constant(1.0f));
+
+    public static DensityFunction Ceil(DensityFunction input, DensityFunction multiple) =>
+        Round(RoundFunction.Type.CEIL, input, multiple);
+
+    public static DensityFunction Ceil(DensityFunction input) =>
+        Ceil(input, Constant(1.0f));
+
+    public static DensityFunction Truncate(DensityFunction input, DensityFunction multiple) =>
+        Round(RoundFunction.Type.TRUNCATE, input, multiple);
+
+    public static DensityFunction Truncate(DensityFunction input) =>
+        Truncate(input, Constant(1.0f));
+
     public static DensityFunction Lerp(
         DensityFunction alpha,
         DensityFunction first,

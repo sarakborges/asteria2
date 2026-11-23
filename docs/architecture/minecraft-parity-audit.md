@@ -687,3 +687,15 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Samplers volumétricos preservam os três caminhos específicos: X replica por Y para cada Z; Y escreve valores por plano Y; Z preenche faixas lineares por plano Z.
 - Adicionadas `DensityFunctions.Gradient` e `YClampedGradient`. A validação `fromCoordinate != toCoordinate` permanece na camada codec vanilla, não foi introduzida artificialmente no construtor runtime.
 - `GradientFunctionChecks` cobre os três tiling modes, coordenadas negativas, período espelhado, endpoints invertidos, amostras volumétricas por eixo, ranges, domínios e factories.
+
+
+## Incremento — RoundFunction (23/11/2026)
+
+- Portado `RoundFunction` de Minecraft Java 26.3 com FLOOR, ROUND, CEIL e TRUNCATE, mantendo a ordem do enum e os ids.
+- `roundToInteger` usa floor, ceil e o truncamento condicional por sinal como na referência. ROUND replica `Math.round(float)`: floor de `input + 0.5f`, saturação para int e NaN→0; empates negativos são arredondados para cima.
+- O compilador primeiro compila o input. `IntegerMultipleSampler` é escolhido apenas quando `multiple` é ConstantFunction com valor exatamente 1; nos demais casos `multiple` também é compilado e o sampler genérico é usado.
+- O sampler genérico amostra input no buffer de saída e multiple em buffer escopado. Se multiple for zero, retorna o input sem divisão; caso contrário calcula `roundToInteger(input / multiple) * multiple`.
+- Range usa a fórmula 26.3: `Interval.mul(Interval.mapMonotonic(Interval.div(input.range, multiple.range), roundToInteger), multiple.range)`; domainAxes combina os filhos. Rewrite preserva identidade somente se ambos os filhos mantiverem identidade.
+- Adicionadas as factories `Round`, `Floor`, `Ceil` e `Truncate`, com overloads de múltiplo default 1.
+- `RoundFunctionChecks` cobre order/ids, tie-breaking Java, NaN e saturação, múltiplos unitários/dinâmicos/constantes, zero multiple, volume, range, domínio e rewrite.
+- Codec e validações de persistência permanecem adiados; nenhuma implementação alternativa foi introduzida.
