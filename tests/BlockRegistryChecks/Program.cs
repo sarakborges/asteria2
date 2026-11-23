@@ -247,6 +247,7 @@ internal static class Program
         NoiseSettingsChecks.Run();
         LegacyFbmInitializerChecks.Run();
         CubicSplineChecks.Run();
+        TerrainProviderChecks.Run();
         SplineFunctionChecks.Run();
         DensitySamplerContextBindingChecks.Run();
         InterpolatedFunctionChecks.Run();
