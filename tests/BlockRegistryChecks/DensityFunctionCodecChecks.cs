@@ -396,7 +396,7 @@ internal static class DensityFunctionCodecChecks
     private static void CheckIntervalSelectCodec()
     {
         DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
-        DensityFunction expected = new IntervalSelectFunction(
+        IntervalSelectFunction expected = new IntervalSelectFunction(
             new ConstantFunction(0.25f),
             new[] { -0.5f, 0.75f },
             new DensityFunction[]
