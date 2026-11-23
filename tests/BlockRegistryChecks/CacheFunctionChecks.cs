@@ -1,12 +1,28 @@
+using Asteria.Content.Identifiers;
+using Asteria.Content.Registries;
 using Asteria.Core;
+using Asteria.Util;
+using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.DensityFunctions;
+using Asteria.World.LevelGen.Synth;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
 using Asteria.World.LevelGen.DensityFunctions.Operations;
 
 internal static class CacheFunctionChecks
 {
-    private static readonly DensityFunction.CompileContext CompileContext =
-        new DensityFunctionChecks.UnusedCompileContext();
+    private sealed class UnusedCompileContext : DensityFunction.CompileContext
+    {
+        public Noise CreateNoiseSampler(Holder<NormalNoise> parameters) =>
+            throw new InvalidOperationException("CacheFunction checks must not request noise.");
+
+        public IRandomSource CreateRandom(ResourceLocation seed) =>
+            throw new InvalidOperationException("CacheFunction checks must not request random streams.");
+
+#pragma warning disable CS0618
+        public IRandomSource CreateEndIslandRandom() =>
+            throw new InvalidOperationException("CacheFunction checks must not request End Island random streams.");
+#pragma warning restore CS0618
+    }
 
     public static void Run()
     {
@@ -60,7 +76,7 @@ internal static class CacheFunctionChecks
         var cache = new CacheFunction(DensityFunctions.Constant(1.0f));
         try
         {
-            _ = cache.CompileSampler(CompileContext);
+            _ = cache.CompileSampler(new UnusedCompileContext());
         }
         catch (NotSupportedException)
         {
