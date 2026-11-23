@@ -11,8 +11,6 @@ namespace Asteria.World.LevelGen;
 public static class TerrainProvider
 {
     private const float DeepOceanContinentalness = -0.51f;
-    private const float OceanContinentalness = -0.4f;
-    private const float PlainsContinentalness = 0.1f;
     private const float BeachContinentalness = -0.15f;
 
     private static readonly Func<float, float> NoTransform = static value => value;
@@ -301,9 +299,6 @@ public static class TerrainProvider
         bool saddle,
         Func<float, float> offsetTransformer)
     {
-        const float lowPeaks = 0.6f;
-        const float valleyPlateau = 0.5f;
-        const float plateau = 0.5f;
         CubicSpline<TContext> veryLowErosionMountains = BuildMountainRidgeSplineWithPoints(
             ridges, Mth.Lerp(mountainFactor, 0.6f, 1.5f), saddle, offsetTransformer);
         CubicSpline<TContext> lowErosionMountains = BuildMountainRidgeSplineWithPoints(
