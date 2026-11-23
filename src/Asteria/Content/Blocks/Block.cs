@@ -43,6 +43,7 @@ public class Block
     public bool DynamicShape { get; }
     public BlockState DefaultState { get; private set; } = null!;
     public Holder<Block>.Reference? BuiltInRegistryHolder { get; }
+    internal Holder<Block> SolidDebugHolder { get; }
 
     public Block(BlockProperties properties)
         : this(properties, createIntrusiveRegistryHolder: true, configureState: null)
@@ -71,6 +72,8 @@ public class Block
         {
             BuiltInRegistryHolder = BuiltInRegistries.Block.CreateIntrusiveHolder(this);
         }
+
+        SolidDebugHolder = BuiltInRegistryHolder ?? Holder<Block>.Direct(this);
 
         var builder = new StateDefinitionBuilder(this);
         CreateBlockStateDefinition(builder);
