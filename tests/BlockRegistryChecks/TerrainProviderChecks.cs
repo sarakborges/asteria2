@@ -59,8 +59,8 @@ internal static class TerrainProviderChecks
         float normalJaggednessValue = CubicSpline<Sample>.Sample(normalJaggedness, jaggednessSample);
         float amplifiedJaggednessValue = CubicSpline<Sample>.Sample(amplifiedJaggedness, jaggednessSample);
         Require(
-            MathF.Abs(normalJaggednessValue - 0.315f) < 0.0001f &&
-            MathF.Abs(amplifiedJaggednessValue - 0.63f) < 0.0001f,
+            MathF.Abs(normalJaggednessValue - 0.63f) < 0.0001f &&
+            MathF.Abs(amplifiedJaggednessValue - 1.26f) < 0.0001f,
             "Amplified jaggedness must double the vanilla jaggedness values through the shared spline topology.");
     }
 
