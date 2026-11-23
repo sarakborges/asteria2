@@ -52,4 +52,27 @@ public sealed class WorldgenRandom : LegacyRandomSource
 
     public void SetLargeFeatureWithSalt(long seed, int x, int z, int blend) =>
         SetSeed(unchecked((long)x * 341873128712L + (long)z * 132897987541L + seed + blend));
+    /// <summary>
+    /// Source-selection equivalent of Minecraft's WorldgenRandom.Algorithm enum.
+    /// A closed value type is used because C# enums cannot own the vanilla factory method.
+    /// </summary>
+    public sealed class Algorithm
+    {
+        public static readonly Algorithm LEGACY = new("LEGACY", static seed => new LegacyRandomSource(seed));
+        public static readonly Algorithm XOROSHIRO = new("XOROSHIRO", static seed => new XoroshiroRandomSource(seed));
+
+        private readonly Func<long, IRandomSource> _constructor;
+        public string Name { get; }
+
+        private Algorithm(string name, Func<long, IRandomSource> constructor)
+        {
+            Name = name;
+            _constructor = constructor;
+        }
+
+        public IRandomSource NewInstance(long seed) => _constructor(seed);
+
+        public override string ToString() => Name;
+    }
+
 }
