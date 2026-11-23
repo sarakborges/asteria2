@@ -261,7 +261,7 @@ internal static class BinaryFunctionChecks
         Require(Sample(DensityFunctions.Add(left, right)) == 5.0f &&
             Sample(DensityFunctions.Sub(left, right)) == -1.0f &&
             Sample(DensityFunctions.Mul(left, right)) == 6.0f &&
-            Sample(DensityFunctions.Div(left, right)) == 2.0f,
+            Math.Abs(Sample(DensityFunctions.Div(left, right)) - (2.0f / 3.0f)) < 0.000001f,
             "DensityFunctions factories must create working binary nodes.");
     }
 
