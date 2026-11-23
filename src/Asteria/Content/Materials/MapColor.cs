@@ -167,7 +167,7 @@ public sealed class MapColor
             return ByIdUnsafe(id);
         }
 
-        private static Brightness ByIdUnsafe(int id) =>
+        internal static Brightness ByIdUnsafe(int id) =>
             VALUES[id];
     }
 }
