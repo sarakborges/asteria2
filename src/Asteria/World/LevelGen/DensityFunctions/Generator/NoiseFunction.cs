@@ -1,3 +1,4 @@
+using Asteria.Content.Registries;
 using Asteria.Util;
 using Asteria.World.LevelGen.Synth;
 
