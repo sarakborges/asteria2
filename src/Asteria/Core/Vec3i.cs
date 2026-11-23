@@ -1,3 +1,5 @@
+using Asteria.Serialization;
+
 namespace Asteria.Core;
 
 /// <summary>
@@ -6,6 +8,14 @@ namespace Asteria.Core;
 /// </summary>
 public class Vec3i : IComparable<Vec3i>, IEquatable<Vec3i>
 {
+    /// <summary>
+    /// Fixed-size three-integer codec matching the Vec3i int-stream representation.
+    /// </summary>
+    public static Codec<Vec3i> CODEC { get; } =
+        Codecs.INT.ListOf(3, 3).XMap<Vec3i>(
+            static values => new Vec3i(values[0], values[1], values[2]),
+            static value => new[] { value.GetX(), value.GetY(), value.GetZ() });
+
     public enum Axis
     {
         X,
