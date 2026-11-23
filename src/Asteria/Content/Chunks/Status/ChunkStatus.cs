@@ -81,7 +81,7 @@ public class ChunkStatus
         return status;
     }
 
-    public static IReadOnlyList<ChunkStatus> GetStatusList()
+    public static List<ChunkStatus> GetStatusList()
     {
         var statuses = new List<ChunkStatus>();
         ChunkStatus status = FULL;
