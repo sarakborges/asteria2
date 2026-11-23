@@ -17,6 +17,8 @@ internal static class BlockBehaviorChecks
         public override bool IsPathfindable(BlockState state, PathComputationType type) =>
             type == PathComputationType.WATER;
 
+        public override long GetSeed(BlockState state, BlockPos position) => 987654321L;
+
         public override bool SkipRendering(
             BlockState state,
             BlockState neighborState,
@@ -32,6 +34,7 @@ internal static class BlockBehaviorChecks
         CheckPathfindabilityOverride();
         CheckSkipRendering();
         CheckFluidReplacement();
+        CheckBlockSeed();
     }
 
     private static void CheckPathComputationTypes()
@@ -119,6 +122,20 @@ internal static class BlockBehaviorChecks
             !nonSolid.IsReplaceable && !nonSolid.IsSolid &&
             nonSolid.CanBeReplaced(Fluids.EMPTY),
             "Fluid replacement must allow a non-solid state even when its replaceable property is false.");
+    }
+
+    private static void CheckBlockSeed()
+    {
+        var position = new BlockPos(-17, 82, 35);
+        Require(
+            Blocks.STONE.DefaultState.GetSeed(position) ==
+            Mth.GetSeed(position.GetX(), position.GetY(), position.GetZ()),
+            "The default Block.getSeed implementation must delegate to Mth.getSeed(BlockPos).");
+
+        var block = new OverrideBlock();
+        Require(
+            block.DefaultState.GetSeed(position) == 987654321L,
+            "BlockState.GetSeed must dispatch to the owning block's override.");
     }
 
     private sealed class CollisionTestBlock : Block
