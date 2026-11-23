@@ -155,7 +155,7 @@ internal static class LerpFunctionChecks
 
         Require(DensityFunctions.Lerp(DensityFunctions.Constant(-0.5f),
                     DensityFunctions.Constant(2.0f), DensityFunctions.Constant(8.0f))
-                .CompileSampler(Context).SampleValue(SamplerContext.EmptyUncached, 0, 0, 0) == -3.0f &&
+                .CompileSampler(Context).SampleValue(SamplerContext.EmptyUncached, 0, 0, 0) == -1.0f &&
             DensityFunctions.Lerp(DensityFunctions.Constant(1.5f),
                     DensityFunctions.Constant(2.0f), DensityFunctions.Constant(8.0f))
                 .CompileSampler(Context).SampleValue(SamplerContext.EmptyUncached, 0, 0, 0) == 11.0f,
