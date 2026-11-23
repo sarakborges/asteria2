@@ -1,5 +1,7 @@
 using Asteria.Content.Blocks;
+using Asteria.Content.Fluids;
 using Asteria.Core;
+using Asteria.Core.Shapes;
 using Asteria.World.Pathfinding;
 
 internal static class BlockBehaviorChecks
@@ -29,6 +31,7 @@ internal static class BlockBehaviorChecks
         CheckDefaultPathfindability();
         CheckPathfindabilityOverride();
         CheckSkipRendering();
+        CheckFluidReplacement();
     }
 
     private static void CheckPathComputationTypes()
@@ -97,6 +100,34 @@ internal static class BlockBehaviorChecks
             !state.SkipRendering(Blocks.STONE.DefaultState, Direction.UP) &&
             !state.SkipRendering(state, Direction.DOWN),
             "Skip-rendering overrides must receive the neighbor state and exact face direction.");
+    }
+
+    private static void CheckFluidReplacement()
+    {
+        BlockState air = Blocks.AIR.DefaultState;
+        BlockState stone = Blocks.STONE.DefaultState;
+        var noCollisionBlock = new CollisionTestBlock();
+        BlockState nonSolid = noCollisionBlock.DefaultState;
+
+        Require(
+            air.CanBeReplaced(Fluids.EMPTY),
+            "A block with the replaceable property must remain fluid-replaceable.");
+        Require(
+            !stone.CanBeReplaced(Fluids.EMPTY),
+            "A solid, non-replaceable block must reject fluid replacement.");
+        Require(
+            !nonSolid.IsReplaceable && !nonSolid.IsSolid &&
+            nonSolid.CanBeReplaced(Fluids.EMPTY),
+            "Fluid replacement must allow a non-solid state even when its replaceable property is false.");
+    }
+
+    private sealed class CollisionTestBlock : Block
+    {
+        public CollisionTestBlock()
+            : base(BlockProperties.Of().NoCollision(), createIntrusiveRegistryHolder: false)
+        {
+            InitializeStateCaches();
+        }
     }
 
     private static void Require(bool condition, string message)
