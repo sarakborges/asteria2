@@ -22,6 +22,7 @@ public abstract class ChunkAccess : BlockGetter
     private readonly ChunkPos _chunkPos;
     private readonly LevelHeightAccessor _levelHeightAccessor;
     private readonly ChunkSection[] _sections;
+    private readonly List<short>?[] _postProcessing;
     private volatile bool _unsaved;
     private volatile bool _isLightCorrect;
     private long _inhabitedTime;
@@ -43,6 +44,7 @@ public abstract class ChunkAccess : BlockGetter
         _levelHeightAccessor = levelHeightAccessor;
         _inhabitedTime = inhabitedTime;
         _sections = new ChunkSection[levelHeightAccessor.GetSectionsCount()];
+        _postProcessing = new List<short>?[_sections.Length];
         _heightmapEntries = new HeightmapEntries(_heightmaps);
         _skyLightSources = new ChunkSkyLightSources(levelHeightAccessor);
 
@@ -261,6 +263,33 @@ public abstract class ChunkAccess : BlockGetter
     }
 
     public abstract ChunkStatus GetPersistedStatus();
+
+    /// <summary>
+    /// Returns the backing per-section post-processing array, matching ChunkAccess.getPostProcessing().
+    /// </summary>
+    public List<short>?[] GetPostProcessing() => _postProcessing;
+
+    public virtual void MarkPosForPostProcessing(BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        Trace.TraceWarning(
+            "Trying to mark a block for post processing @ {0}, but this operation is not supported.",
+            position);
+    }
+
+    public virtual void AddPackedPostProcess(IEnumerable<short> packedOffsets, int sectionIndex)
+    {
+        ArgumentNullException.ThrowIfNull(packedOffsets);
+        GetOrCreateOffsetList(_postProcessing, sectionIndex).AddRange(packedOffsets);
+    }
+
+    protected static List<short> GetOrCreateOffsetList(
+        List<short>?[] postProcessing,
+        int sectionIndex)
+    {
+        ArgumentNullException.ThrowIfNull(postProcessing);
+        return postProcessing[sectionIndex] ??= new List<short>();
+    }
 
     public void MarkUnsaved() => _unsaved = true;
 

@@ -795,3 +795,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionado o estado built-in `VOID_AIR`, distinto de `AIR`, usado por leituras/escritas fora da altura de construção como em `ProtoChunk`.
 - Testes cobrem bounds, estados fora do mundo, retorno do estado anterior, atalho AIR, heightmaps das fases worldgen/finais, transição de seção vazia, notificações do light engine e atualização de skylight.
 - Divergências temporárias e explícitas: construtor omite `UpgradeData`, `BlendingData`, ticks agendados e dependências de load; a classe ainda não modela block entities, entidades, estruturas, post-processing ou retrogen. Esses campos/métodos não foram preenchidos com stubs.
+
+
+## Incremento — post-processing por seção de ProtoChunk (23/11/2026)
+
+- Portado o armazenamento `postProcessing` de `ChunkAccess`: array com uma lista opcional de `short` por seção vertical, inicializada vazia e exposta pelo acesso ao backing array.
+- `ChunkAccess.AddPackedPostProcess` acumula offsets no slot solicitado; o comportamento base de `MarkPosForPostProcessing` registra o aviso vanilla de operação não suportada.
+- `ProtoChunk.MarkPosForPostProcessing` só registra posições dentro da altura de construção e escreve no slot da seção correspondente.
+- `PackOffsetCoordinates` e `UnpackOffsetCoordinates` preservam os quatro bits locais X/Y/Z e a composição com coordenadas de seção, inclusive para chunks e Y negativos.
+- Testes cobrem alocação por seção, round-trip, ordem de append, limites inclusivos e erro de índice fora do array.

@@ -30,6 +30,7 @@ internal static class ProtoChunkChecks
         CheckOutsideBuildHeightAndAirFastPath();
         CheckLightEngineNotifications();
         CheckPersistedStatusDirtyState();
+        CheckPostProcessingOffsets();
     }
 
     private static ProtoChunk CreateChunk(int chunkX = 0, int chunkZ = 0) =>
@@ -186,6 +187,64 @@ internal static class ProtoChunkChecks
             chunk.IsUnsaved() &&
             chunk.TryMarkSaved(),
             "Changing the persisted chunk status must mark the ProtoChunk unsaved.");
+    }
+
+    private static void CheckPostProcessingOffsets()
+    {
+        ProtoChunk chunk = CreateChunk(-2, 4);
+        BlockPos position = new(
+            chunk.GetPos().GetMinBlockX() + 3,
+            -7,
+            chunk.GetPos().GetMinBlockZ() + 5);
+        int sectionIndex = chunk.GetSectionIndex(position.GetY());
+        int sectionY = chunk.GetSectionYFromSectionIndex(sectionIndex);
+
+        Require(
+            chunk.GetPostProcessing().Length == chunk.GetSectionsCount() &&
+            chunk.GetPostProcessing().All(offsets => offsets is null),
+            "ChunkAccess must allocate one initially empty post-processing slot per vertical section.");
+
+        chunk.MarkPosForPostProcessing(position);
+        List<short> offsets = chunk.GetPostProcessing()[sectionIndex] ??
+            throw new InvalidOperationException("MarkPosForPostProcessing must create the target section's offset list.");
+
+        Require(
+            offsets.Count == 1 &&
+            offsets[0] == ProtoChunk.PackOffsetCoordinates(position) &&
+            ProtoChunk.UnpackOffsetCoordinates(offsets[0], sectionY, chunk.GetPos()).Equals(position),
+            "ProtoChunk post-processing coordinates must round-trip through the vanilla packed local X/Y/Z bit layout.");
+
+        short second = ProtoChunk.PackOffsetCoordinates(new BlockPos(
+            chunk.GetPos().GetMinBlockX() + 9,
+            -2,
+            chunk.GetPos().GetMinBlockZ() + 12));
+        short third = ProtoChunk.PackOffsetCoordinates(new BlockPos(
+            chunk.GetPos().GetMinBlockX() + 14,
+            -1,
+            chunk.GetPos().GetMinBlockZ() + 1));
+        chunk.AddPackedPostProcess(new[] { second, third }, sectionIndex);
+
+        Require(
+            offsets.SequenceEqual(new[] { ProtoChunk.PackOffsetCoordinates(position), second, third }),
+            "addPackedPostProcess must append incoming offsets to the existing section list without reordering or replacing it.");
+
+        int totalOffsets = chunk.GetPostProcessing().Where(list => list is not null).Sum(list => list!.Count);
+        chunk.MarkPosForPostProcessing(new BlockPos(
+            position.GetX(),
+            chunk.GetMinY() - 1,
+            position.GetZ()));
+        chunk.MarkPosForPostProcessing(new BlockPos(
+            position.GetX(),
+            chunk.GetMaxY() + 1,
+            position.GetZ()));
+
+        Require(
+            chunk.GetPostProcessing().Where(list => list is not null).Sum(list => list!.Count) == totalOffsets,
+            "ProtoChunk must ignore post-processing positions outside the inclusive build-height range.");
+
+        RequireThrows<ArgumentOutOfRangeException>(
+            () => chunk.AddPackedPostProcess(new[] { second }, chunk.GetSectionsCount()),
+            "A post-processing section index outside the backing array must preserve the array bounds failure.");
     }
 
     private static void Require(bool condition, string message)

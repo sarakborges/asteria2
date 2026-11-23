@@ -82,6 +82,49 @@ public sealed class ProtoChunk : ChunkAccess
     /// <summary>
     /// The update flags are accepted for API parity; ProtoChunk itself does not dispatch world neighbor updates.
     /// </summary>
+    public override void MarkPosForPostProcessing(BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+
+        if (IsInsideBuildHeight(position))
+        {
+            GetOrCreateOffsetList(
+                GetPostProcessing(),
+                GetSectionIndex(position.GetY()))
+                .Add(PackOffsetCoordinates(position));
+        }
+    }
+
+    public override void AddPackedPostProcess(IEnumerable<short> packedOffsets, int sectionIndex)
+    {
+        ArgumentNullException.ThrowIfNull(packedOffsets);
+        GetOrCreateOffsetList(GetPostProcessing(), sectionIndex).AddRange(packedOffsets);
+    }
+
+    public static short PackOffsetCoordinates(BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+
+        int dx = position.GetX() & SectionPos.SectionMask;
+        int dy = position.GetY() & SectionPos.SectionMask;
+        int dz = position.GetZ() & SectionPos.SectionMask;
+        return unchecked((short)(dx | dy << 4 | dz << 8));
+    }
+
+    public static BlockPos UnpackOffsetCoordinates(
+        short packedData,
+        int sectionY,
+        ChunkPos chunkPosition)
+    {
+        ArgumentNullException.ThrowIfNull(chunkPosition);
+
+        int coordinates = unchecked((ushort)packedData);
+        int x = SectionPos.SectionToBlockCoord(chunkPosition.X, coordinates & SectionPos.SectionMask);
+        int y = SectionPos.SectionToBlockCoord(sectionY, coordinates >> 4 & SectionPos.SectionMask);
+        int z = SectionPos.SectionToBlockCoord(chunkPosition.Z, coordinates >> 8 & SectionPos.SectionMask);
+        return new BlockPos(x, y, z);
+    }
+
     public BlockState SetBlockState(BlockPos position, BlockState state, int flags)
     {
         ArgumentNullException.ThrowIfNull(position);

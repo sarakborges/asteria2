@@ -271,3 +271,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - `VOID_AIR` is a distinct built-in air state for positions outside the build-height range; in-range empty sections return ordinary `AIR`.
 - The light-engine interface now exposes the two abstract notifications required by this mutation path: block checks and section-empty changes.
 - The current ProtoChunk increment deliberately does not claim full parity for upgrade/blending data, scheduled ticks, block entities, entities, structures, post-processing or below-zero retrogen; these remain separate dependency ports rather than no-op APIs.
+
+
+## ProtoChunk post-processing offsets — Minecraft Java 26.3
+
+- ChunkAccess stores one optional ordered short-offset list per vertical section and exposes the backing array.
+- Its default position-marking operation emits the reference warning; packed-offset import appends into the requested section.
+- ProtoChunk packs local X/Y/Z nibbles into a signed short, queues positions only inside build height, and unpacks relative coordinates using the target chunk and section.
+- Tests cover negative chunk/section coordinates, round-trip, ordered append, inclusive build bounds and invalid section indices.
