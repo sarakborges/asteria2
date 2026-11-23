@@ -84,10 +84,24 @@ internal static class BoundingBoxChecks
 
         Require(box.IntersectingChunks().SequenceEqual(new[]
             {
-                new ChunkPos(-1, -1), new ChunkPos(0, -1),
-                new ChunkPos(-1, 0), new ChunkPos(0, 0)
+                new ChunkPos(-1, -1),
+                new ChunkPos(0, -1),
+                new ChunkPos(1, -1),
+                new ChunkPos(2, -1),
+                new ChunkPos(3, -1),
+                new ChunkPos(4, -1),
+                new ChunkPos(5, -1),
+                new ChunkPos(6, -1),
+                new ChunkPos(-1, 0),
+                new ChunkPos(0, 0),
+                new ChunkPos(1, 0),
+                new ChunkPos(2, 0),
+                new ChunkPos(3, 0),
+                new ChunkPos(4, 0),
+                new ChunkPos(5, 0),
+                new ChunkPos(6, 0)
             }),
-            "BoundingBox.intersectingChunks must enumerate inclusive intersecting chunk coordinates.");
+            "BoundingBox.intersectingChunks must enumerate inclusive intersecting chunk coordinates after the receiver is expanded.");
         Require(BoundingBox.Infinite().Equals(new BoundingBox(
                 int.MinValue, int.MinValue, int.MinValue,
                 int.MaxValue, int.MaxValue, int.MaxValue)),
