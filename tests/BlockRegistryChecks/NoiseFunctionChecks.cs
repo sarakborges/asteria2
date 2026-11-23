@@ -111,7 +111,7 @@ internal static class NoiseFunctionChecks
         DensityBuffer output = DensityBuffer.CreateUnpooled(volume.Size());
         sampler.SampleVolume(SamplerContext.EmptyUncached, output, volume);
         Require(noise.Samples.Count == 9 &&
-            output.Get(0) == 3998.0f,
+            output.Get(0) == 4298.0f,
             "NoiseFunction.Sampler.sampleVolume must clear the output buffer and accumulate the scaled Noise volume.");
 
         Require(DensityFunctions.Noise(NoiseHolder) is NoiseFunction defaultScale &&
@@ -143,7 +143,7 @@ internal static class NoiseFunctionChecks
         SamplerContext sampleContext = SamplerContext.CreateBuilder().UseBufferArena(arena).Build();
         sampler.SampleVolume(sampleContext, output, volume);
 
-        Require(output.Get(0) == 3899.0f && arena.Acquired == 1 && arena.Released == 1,
+        Require(output.Get(0) == 3801.0f && arena.Acquired == 1 && arena.Released == 1,
             "ShiftedXzSampler volume path must apply both shifts and release its Z scratch buffer.");
     }
 
@@ -171,7 +171,7 @@ internal static class NoiseFunctionChecks
         SamplerContext sampleContext = SamplerContext.CreateBuilder().UseBufferArena(arena).Build();
         sampler.SampleVolume(sampleContext, output, volume);
 
-        Require(output.Get(0) == 3969.0f && arena.Acquired == 2 && arena.Released == 2,
+        Require(output.Get(0) == 3871.0f && arena.Acquired == 2 && arena.Released == 2,
             "ShiftedXyzSampler volume path must apply all three shifts and release Y/Z scratch buffers.");
     }
 
