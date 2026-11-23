@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Asteria.Content.Blocks;
+using Asteria.Content.Blocks.StateProperties;
 using Asteria.Content.Materials;
 using Asteria.Core;
 using Asteria.Core.Mathematics;
@@ -17,6 +18,7 @@ internal static class BlockPositionTransformChecks
         CheckRotationCodecsAndRandom();
         CheckMirrorOperations();
         CheckBlockStateTransforms();
+        CheckMapColor();
     }
 
     private static void CheckAxisCycles()
@@ -278,6 +280,96 @@ internal static class BlockPositionTransformChecks
 
         Require(BlockProperties.Of().OffsetType(OffsetType.NONE).OffsetFunctionValue is null,
             "NONE block offset type must not install an offset function.");
+    }
+
+    private sealed class MapColorTestBlock : Block
+    {
+        public MapColorTestBlock(BlockProperties properties, BooleanProperty variant)
+            : base(
+                properties,
+                createIntrusiveRegistryHolder: false,
+                configureState: builder => builder.Add(variant))
+        {
+            InitializeStateCaches();
+        }
+
+        public void SetDefaultStateForTest(BlockState state) =>
+            RegisterDefaultState(state);
+    }
+
+    private static void CheckMapColor()
+    {
+        Require(MapColor.ById(0) == MapColor.NONE &&
+                MapColor.ById(1) == MapColor.GRASS &&
+                MapColor.ById(61) == MapColor.GLOW_LICHEN &&
+                MapColor.ById(62) == MapColor.NONE &&
+                MapColor.ById(63) == MapColor.NONE,
+            "Map-color ID lookup must preserve the 26.3 palette, including unregistered trailing slots.");
+        Require(MapColor.GRASS.Col == 8368696 &&
+                MapColor.TERRACOTTA_LIGHT_BLUE.Id == 39 &&
+                ReferenceEquals(MapColor.Brightness.ById(0), MapColor.Brightness.LOW) &&
+                ReferenceEquals(MapColor.Brightness.ById(1), MapColor.Brightness.NORMAL) &&
+                ReferenceEquals(MapColor.Brightness.ById(2), MapColor.Brightness.HIGH) &&
+                ReferenceEquals(MapColor.Brightness.ById(3), MapColor.Brightness.LOWEST),
+            "Map-color RGB values, IDs and brightness ordinal order must match 26.3.");
+        RequireThrows<ArgumentOutOfRangeException>(
+            () => MapColor.ById(-1),
+            "Map-color lookup must reject negative IDs.");
+        RequireThrows<ArgumentOutOfRangeException>(
+            () => MapColor.ById(65),
+            "Map-color lookup must reject IDs above the source array's length.");
+        RequireThrows<IndexOutOfRangeException>(
+            () => MapColor.ById(64),
+            "Map-color lookup must preserve the source check-position-index boundary at id == length.");
+        RequireThrows<ArgumentOutOfRangeException>(
+            () => MapColor.Brightness.ById(-1),
+            "Brightness lookup must reject negative IDs.");
+        RequireThrows<IndexOutOfRangeException>(
+            () => MapColor.Brightness.ById(4),
+            "Brightness lookup must preserve the source array boundary at id == length.");
+
+        Require(MapColor.NONE.CalculateArgbColor(MapColor.Brightness.HIGH) == 0 &&
+                unchecked((uint)MapColor.GRASS.CalculateArgbColor(MapColor.Brightness.HIGH)) == 0xFF7FB238U &&
+                unchecked((uint)MapColor.GRASS.CalculateArgbColor(MapColor.Brightness.NORMAL)) == 0xFF6D9930U &&
+                unchecked((uint)MapColor.GRASS.CalculateArgbColor(MapColor.Brightness.LOW)) == 0xFF597D27U &&
+                unchecked((uint)MapColor.GRASS.CalculateArgbColor(MapColor.Brightness.LOWEST)) == 0xFF435E1DU,
+            "Map-color brightness must preserve opaque ARGB channels and integer scaling/truncation.");
+        byte packed = MapColor.GRASS.GetPackedId(MapColor.Brightness.NORMAL);
+        Require(packed == 5 &&
+                unchecked((uint)MapColor.GetColorFromPackedId(packed)) == 0xFF6D9930U &&
+                MapColor.GetColorFromPackedId(-1) == 0,
+            "Packed map-color IDs must encode the palette ID and brightness in the low eight bits.");
+
+        BooleanProperty variant = BooleanProperty.Create("map_color_variant");
+        MapColorTestBlock block = new(
+            BlockProperties.Of().MapColor(state =>
+                state.GetValue(variant) ? MapColor.GRASS : MapColor.SAND),
+            variant);
+        BlockState grassState = block.DefaultState.SetValue(variant, true);
+        BlockState sandState = block.DefaultState.SetValue(variant, false);
+        Require(ReferenceEquals(grassState.GetMapColor(EmptyBlockGetter.Instance, BlockPos.Zero), MapColor.GRASS) &&
+                ReferenceEquals(sandState.GetMapColor(EmptyBlockGetter.Instance, BlockPos.Zero), MapColor.SAND),
+            "Map color must be evaluated for and snapshotted by each immutable block state.");
+        block.SetDefaultStateForTest(sandState);
+        Require(ReferenceEquals(block.GetDefaultMapColor(), MapColor.SAND),
+            "Block default map color must evaluate the map-color property against its current default state.");
+
+        MapColorTestBlock fixedBlock = new(
+            BlockProperties.Of().MapColor(MapColor.WOOD),
+            BooleanProperty.Create("fixed_map_color_variant"));
+        Require(ReferenceEquals(
+                fixedBlock.DefaultState.GetMapColor(EmptyBlockGetter.Instance, BlockPos.Zero),
+                MapColor.WOOD),
+            "The fixed map-color property overload must apply the same palette entry to every state.");
+        Require(ReferenceEquals(
+                Blocks.STONE.DefaultState.GetMapColor(EmptyBlockGetter.Instance, BlockPos.Zero),
+                MapColor.NONE),
+            "Block map colors must default to MapColor.NONE.");
+        RequireThrows<InvalidOperationException>(
+            () => new MapColorTestBlock(
+                BlockProperties.Of().MapColor(static _ => null!),
+                BooleanProperty.Create("null_map_color_variant")),
+            "A block state must reject a null map-color callback result during construction.");
     }
 
     private static void Require(bool condition, string message)
