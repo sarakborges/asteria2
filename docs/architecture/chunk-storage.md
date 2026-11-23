@@ -119,3 +119,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - Each operation compiles to its corresponding sampler record; both leaky-ReLU variants share the parameterized vanilla sampler. Volume sampling delegates to the child, then transforms the active buffer.
 - Range calculations use the existing interval primitives, and the node inherits its child's domain-axis mask.
 - Type factories and the default `DensityFunction` operator methods are now wired. Operator codecs are deferred with local persistence and not replaced with placeholders.
+
+
+## Binary density operators — Minecraft Java 26.3
+
+- Binary density nodes now support add, sub, mul, div, min and max with vanilla operand order and interval propagation.
+- Sampler compilation selects the specialized constant-left/right variants and min/max range-pruning variants from the 26.3 source.
+- Generic volume samplers allocate the right-hand scratch buffer from `SamplerContext` and release it when complete. Scalar mul/div retain the vanilla left-zero short-circuit; volume paths evaluate both child buffers.
+- Density function type codecs remain deferred with local persistence; no operator placeholder codecs were registered.

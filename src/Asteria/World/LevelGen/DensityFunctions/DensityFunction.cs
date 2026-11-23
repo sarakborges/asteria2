@@ -30,6 +30,22 @@ public interface DensityFunction
         throw new ArgumentOutOfRangeException(nameof(axis));
     }
 
+    DensityFunction Add(DensityFunction right) => DensityFunctions.Add(this, right);
+
+    DensityFunction Add(float right) => DensityFunctions.Add(this, right);
+
+    DensityFunction Sub(DensityFunction right) => DensityFunctions.Sub(this, right);
+
+    DensityFunction Sub(float right) => DensityFunctions.Sub(this, right);
+
+    DensityFunction Mul(DensityFunction right) => DensityFunctions.Mul(this, right);
+
+    DensityFunction Mul(float right) => DensityFunctions.Mul(this, right);
+
+    DensityFunction Div(DensityFunction right) => DensityFunctions.Div(this, right);
+
+    DensityFunction Div(float right) => DensityFunctions.Div(this, right);
+
     DensityFunction Abs() => DensityFunctions.Abs(this);
 
     DensityFunction Square() => DensityFunctions.Square(this);

@@ -606,3 +606,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Portadas as factories de `DensityFunctions` e os métodos default correspondentes de `DensityFunction`.
 - O enum conserva a ordem 26.3; ids são mapeados para nomes de registro, sem registrar codecs nesta etapa. `MapCodec` continua adiado com persistência, não substituído por codec local.
 - `UnaryFunctionChecks` cobre as onze transformações, extremos e intervalos, aplicação escalar/volumétrica, ordem do enum, ids e reconstrução após rewrite.
+
+
+## Incremento — BinaryFunction (23/11/2026)
+
+- Portado `BinaryFunction` de Minecraft Java 26.3 com a ordem de enum ADD, SUB, MUL, DIV, MIN, MAX; ids de registro; reescrita dos dois filhos; união dos eixos de domínio e aritmética intervalar.
+- O compilador preserva o caminho especializado por constante e o lado do operando: ConstAdd, ConstSub, ConstMul e ConstDiv. Divisão por divisor constante vira multiplicação pelo recíproco; divisão por numerador constante usa ConstDivSampler.
+- `MulSampler` e `DivSampler` mantêm o curto-circuito escalar quando o lado esquerdo é zero; seus samplers volumétricos avaliam ambos os buffers. ConstDiv não herda esse curto-circuito.
+- `Min`/ `Max` eliminam a outra branch quando os ranges não se sobrepõem, preservam os tipos especializados com constantes e usam os limites mínimos/máximos do lado direito para podar a amostragem pontual.
+- Samplers genéricos avaliam a esquerda no buffer de saída e a direita em um `ScopedDensityBuffer` do contexto, liberando-o ao final. Min/max volumétrico preserva as comparações condicionais do código 26.3 em vez de `Math.Min/Max`.
+- Portadas factories de `DensityFunctions` e métodos default `Add/Sub/Mul/Div` em `DensityFunction`. Map codecs de enumeração seguem adiados com persistência local.
+- `BinaryFunctionChecks` cobre ids/ordem, otimização de operandos constantes em ambos os lados, curto-circuito escalar, ranges, domínios, poda de ranges disjuntos, samplers volumétricos, liberação de buffers e rewrite dos dois filhos.

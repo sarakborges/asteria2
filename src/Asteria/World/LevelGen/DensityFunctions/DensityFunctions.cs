@@ -49,4 +49,35 @@ public static class DensityFunctions
     public static DensityFunction Sign(DensityFunction input) =>
         new UnaryFunction(UnaryFunction.Type.SIGN, input);
 
+    public static DensityFunction Add(DensityFunction left, DensityFunction right) =>
+        new BinaryFunction(BinaryFunction.Type.ADD, left, right);
+
+    public static DensityFunction Add(DensityFunction left, float right) =>
+        Add(left, Constant(right));
+
+    public static DensityFunction Sub(DensityFunction left, DensityFunction right) =>
+        new BinaryFunction(BinaryFunction.Type.SUB, left, right);
+
+    public static DensityFunction Sub(DensityFunction left, float right) =>
+        Sub(left, Constant(right));
+
+    public static DensityFunction Mul(DensityFunction left, DensityFunction right) =>
+        new BinaryFunction(BinaryFunction.Type.MUL, left, right);
+
+    public static DensityFunction Mul(DensityFunction left, float right) =>
+        Mul(left, Constant(right));
+
+    public static DensityFunction Div(DensityFunction left, DensityFunction right) =>
+        new BinaryFunction(BinaryFunction.Type.DIV, left, right);
+
+    public static DensityFunction Div(DensityFunction left, float right) =>
+        Div(left, Constant(right));
+
+    public static DensityFunction Min(DensityFunction left, DensityFunction right) =>
+        new BinaryFunction(BinaryFunction.Type.MIN, left, right);
+
+    public static DensityFunction Max(DensityFunction left, DensityFunction right) =>
+        new BinaryFunction(BinaryFunction.Type.MAX, left, right);
+
+
 }
