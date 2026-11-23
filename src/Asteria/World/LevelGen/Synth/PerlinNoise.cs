@@ -1,3 +1,4 @@
+using System.Text;
 using Asteria.Core;
 using Asteria.Util;
 using Asteria.World.LevelGen;

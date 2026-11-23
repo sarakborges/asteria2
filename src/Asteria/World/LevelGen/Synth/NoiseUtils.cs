@@ -1,3 +1,4 @@
+using System.Text;
 using System.Globalization;
 
 namespace Asteria.World.LevelGen.Synth;
