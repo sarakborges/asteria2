@@ -547,3 +547,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `WorldgenRandom` agora herda de `LegacyRandomSource` e envolve um `IRandomSource`; delega `Fork`/`ForkPositional`, incrementa o contador em cada pedido bruto de bits e preserva os métodos de seed usados em decoração, features e estruturas.
 - `LegacyRandomSourceChecks` cobre vetores Java LCG, limites por potência e rejeição, positional streams, fork, contador e cache Gaussian.
 - Xoroshiro e `RandomSupport` seguem como etapa distinta; a factory de oitavas de `NormalNoise` só será implementada depois que os dois algoritmos estiverem disponíveis.
+
+
+## Incremento — RandomSupport e Xoroshiro 128++ (23/11/2026)
+
+- Portados `RandomSupport` e `Seed128bit`: expansão LCG→128 bits, mixer Stafford13, MD5 UTF-8 com leitura big-endian, XOR dos words e gerador de seed único.
+- Portados `Xoroshiro128PlusPlus` e `XoroshiroRandomSource` 26.3: transição de estado, recuperação do estado zero, draws int/long/bool/float/double/Gaussian, rejeição sem viés para `nextInt(bound)`, consumo, fork e factory posicional.
+- `WorldgenRandom.Algorithm` seleciona as famílias LEGACY e XOROSHIRO. Em C#, o `enum` vanilla foi adaptado a um tipo fechado com instâncias nomeadas porque enums C# não podem declarar o método de fábrica `NewInstance`.
+- `XoroshiroRandomSourceChecks` verifica vetores 26.3 do estado inicial, stream nextLong, bounded int, MD5, factory por coordenada/nome/seed, wrapper WorldgenRandom e cache Gaussian.
+- Codec de serialização do estado Xoroshiro continua fora deste incremento; a integração de geração passa a poder usar os dois algoritmos e será exercitada por `NormalNoise`.

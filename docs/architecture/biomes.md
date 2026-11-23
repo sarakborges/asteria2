@@ -77,3 +77,10 @@ Network packet codecs are out of scope. Local disk persistence remains in scope.
 - The legacy 48-bit LCG implements the shared random-source API and creates position-/name-derived child streams.
 - WorldgenRandom wraps a selected source, delegates forks and reseeding, and counts raw bit requests. The Gaussian sampler uses the shared cached Marsaglia polar implementation.
 - Xoroshiro and multi-octave noise construction remain separate steps.
+
+
+## Xoroshiro random-source family — Minecraft Java 26.3
+
+- The Xoroshiro128++ generator and RandomSupport seed mixer are ported alongside the legacy LCG.
+- Named streams use MD5 over UTF-8, positional streams use the vanilla coordinate seed mix, and both source families are selectable through WorldgenRandom.
+- Runtime seed generation and the random draws used by noise construction are included. State codecs remain deferred with persistence.

@@ -236,6 +236,7 @@ internal static class Program
         PerlinNoiseChecks.Run();
         NoiseStackChecks.Run();
         LegacyRandomSourceChecks.Run();
+        XoroshiroRandomSourceChecks.Run();
         DensityBufferChecks.Run();
         BoundingBoxChecks.Run();
         DensityVolumeChecks.Run();
