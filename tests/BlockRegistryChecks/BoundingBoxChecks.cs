@@ -54,7 +54,7 @@ internal static class BoundingBoxChecks
             "BoundingBox.move must translate the mutable box in place and return the same instance.");
         Require(box.InflatedBy(2, 1, 3).Equals(new BoundingBox(-5, 11, -8, 6, 17, 13)),
             "BoundingBox.inflatedBy must expand each axis by its own amount.");
-        Require(box.GetCenter().Equals(new BlockPos(1, 15, 3)),
+        Require(box.GetCenter().Equals(new BlockPos(1, 14, 3)),
             "BoundingBox.getCenter must preserve the reference integer-center formula.");
 
         var corners = new List<string>();
