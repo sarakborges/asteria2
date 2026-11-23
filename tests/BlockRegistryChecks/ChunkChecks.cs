@@ -77,6 +77,15 @@ internal static class ChunkChecks
         chunk.TryMarkSaved();
         chunk.SetLightCorrect(false);
         Require(!chunk.IsLightCorrect() && chunk.IsUnsaved(), "Changing light correctness must mark the chunk unsaved.");
+
+        var bottomChunk = new TestChunkAccess(
+            new ChunkPos(-2, 3),
+            height,
+            PalettedContainerFactory.CreateBuiltIn());
+        SectionPos bottomSection = SectionPos.BottomOf(bottomChunk);
+        Require(
+            bottomSection.Equals(SectionPos.Of(-2, -4, 3)),
+            "SectionPos.BottomOf must combine the chunk's horizontal coordinates with its minimum section Y.");
     }
 
     private static void CheckChunkBlockMutationContract(BlockState nonAirState)

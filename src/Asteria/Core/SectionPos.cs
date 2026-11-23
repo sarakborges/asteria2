@@ -1,3 +1,4 @@
+using Asteria.Content.Chunks;
 using Asteria.World;
 
 namespace Asteria.Core;
@@ -38,6 +39,15 @@ public sealed class SectionPos : Vec3i
     public static SectionPos Of(int x, int y, int z) =>
         new(x, y, z);
 
+    public static SectionPos Of(Position position)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        return new(
+            BlockToSectionCoord(position.GetX()),
+            BlockToSectionCoord(position.GetY()),
+            BlockToSectionCoord(position.GetZ()));
+    }
+
     public static SectionPos Of(BlockPos position)
     {
         ArgumentNullException.ThrowIfNull(position);
@@ -50,6 +60,12 @@ public sealed class SectionPos : Vec3i
     public static SectionPos Of(ChunkPos position, int sectionY) =>
         new(position.X, sectionY, position.Z);
 
+    public static SectionPos BottomOf(ChunkAccess chunk)
+    {
+        ArgumentNullException.ThrowIfNull(chunk);
+        return Of(chunk.GetPos(), chunk.GetMinSectionY());
+    }
+
     public static SectionPos Of(long sectionNode) =>
         new(GetX(sectionNode), GetY(sectionNode), GetZ(sectionNode));
 
@@ -58,6 +74,16 @@ public sealed class SectionPos : Vec3i
             unchecked(GetX(sectionNode) + stepX),
             unchecked(GetY(sectionNode) + stepY),
             unchecked(GetZ(sectionNode) + stepZ));
+
+    public static long Offset(long sectionNode, Direction direction)
+    {
+        ArgumentNullException.ThrowIfNull(direction);
+        return Offset(
+            sectionNode,
+            direction.GetStepX(),
+            direction.GetStepY(),
+            direction.GetStepZ());
+    }
 
     public static int PosToSectionCoord(double position) =>
         BlockToSectionCoord(FloorToInt(position));

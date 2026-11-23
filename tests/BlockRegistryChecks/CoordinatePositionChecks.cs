@@ -4,6 +4,13 @@ using Asteria.World.LevelGen;
 
 internal static class CoordinatePositionChecks
 {
+    private readonly record struct TestPosition(double X, double Y, double Z) : Position
+    {
+        public double GetX() => X;
+        public double GetY() => Y;
+        public double GetZ() => Z;
+    }
+
     public static void Run()
     {
         CheckVec3i();
@@ -393,6 +400,11 @@ internal static class CoordinatePositionChecks
         Require(SectionPos.BlockToSectionCoord(-17) == -2, "Block coordinate -17 must belong to section -2.");
         Require(SectionPos.BlockToSectionCoord(-16.0001) == -2, "Double block coordinates must floor before section conversion.");
         Require(SectionPos.PosToSectionCoord(-0.01) == -1, "Position-to-section conversion must floor negative fractions before shifting.");
+
+        SectionPos fractionalPosition = SectionPos.Of(new TestPosition(-0.01, -16.0001, 31.9999));
+        Require(
+            fractionalPosition.Equals(SectionPos.Of(-1, -2, 1)),
+            "SectionPos.Of(Position) must floor all real-valued coordinates before converting them to sections.");
         Require(SectionPos.SectionToBlockCoord(-1) == -16, "Section -1 must begin at block -16.");
         Require(SectionPos.SectionToBlockCoord(-2, 15) == -17, "Section -2's last block must be -17.");
 
@@ -405,6 +417,18 @@ internal static class CoordinatePositionChecks
         Require(section.Origin().Equals(new BlockPos(-16, -32, 32)), "SectionPos origin must return its minimum block corner.");
         Require(section.Center().Equals(new BlockPos(-8, -24, 40)), "SectionPos center must be origin plus eight on every axis.");
         Require(section.Chunk() == new ChunkPos(-1, 2), "SectionPos chunk conversion must retain section X/Z.");
+
+        long sectionNode = SectionPos.AsLong(-2, -3, 4);
+        foreach (Direction direction in Direction.GetValues())
+        {
+            SectionPos expected = SectionPos.Of(
+                -2 + direction.GetStepX(),
+                -3 + direction.GetStepY(),
+                4 + direction.GetStepZ());
+            Require(
+                SectionPos.Of(SectionPos.Offset(sectionNode, direction)).Equals(expected),
+                $"SectionPos offset by {direction.GetName()} must advance exactly one neighboring section.");
+        }
         Require(SectionPos.BlockToSection(position.AsLong()) == section.AsLong(), "Packed block-to-section conversion must equal object conversion.");
         Require(SectionPos.SectionToChunk(section.AsLong()) == ChunkPos.Pack(-1, 2), "Packed section-to-chunk conversion must preserve section X/Z.");
         Require(SectionPos.GetZeroNode(SectionPos.AsLong(-1, -20, 2)) == SectionPos.AsLong(-1, 0, 2), "SectionPos zero node must clear its packed Y component.");
