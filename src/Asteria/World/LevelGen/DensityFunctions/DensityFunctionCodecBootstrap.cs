@@ -25,7 +25,8 @@ internal static class DensityFunctionCodecBootstrap
         MapCodec<DensityFunction> Clamp,
         MapCodec<DensityFunction> RangeChoice,
         MapCodec<DensityFunction> IntervalSelect,
-        MapCodec<DensityFunction> Slice);
+        MapCodec<DensityFunction> Slice,
+        MapCodec<DensityFunction> Gradient);
 
     // Lazy initialization is required because these map codecs compose DIRECT_CODEC,
     // whose registry dispatch is created while DensityFunctions itself is initialized.
@@ -37,6 +38,7 @@ internal static class DensityFunctionCodecBootstrap
         CodecCatalog codecs = Catalog.Value;
 
         Register(registry, "constant", codecs.Constant);
+        Register(registry, "gradient", codecs.Gradient);
 
         foreach (UnaryFunction.Type operation in Enum.GetValues<UnaryFunction.Type>())
             Register(registry, UnaryFunction.GetId(operation), codecs.Unary[operation]);
@@ -76,6 +78,7 @@ internal static class DensityFunctionCodecBootstrap
             RangeChoiceFunction => codecs.RangeChoice,
             IntervalSelectFunction => codecs.IntervalSelect,
             SliceFunction => codecs.Slice,
+            GradientFunction => codecs.Gradient,
             _ => null
         };
     }
@@ -155,7 +158,8 @@ internal static class DensityFunctionCodecBootstrap
             CreateClampCodec(),
             CreateRangeChoiceCodec(),
             CreateIntervalSelectCodec(),
-            CreateSliceCodec());
+            CreateSliceCodec(),
+            CreateGradientCodec());
     }
 
     private static MapCodec<DensityFunction> CreateUnaryCodec(UnaryFunction.Type operation) =>
@@ -390,6 +394,86 @@ internal static class DensityFunctionCodecBootstrap
                         () => $"Unknown axis: {name}");
             },
             axis => DataResult<string>.Success(axis.GetSerializedName()));
+
+    private static MapCodec<DensityFunction> CreateGradientCodec() =>
+        RecordCodecBuilder.MapCodec<GradientFunction>(instance =>
+            instance.Group(
+                    AxisCodec.FieldOf("axis")
+                        .ForGetter<GradientFunction>(static function => function.Axis),
+                    TilingModeCodec.OptionalFieldOf(
+                            "tiling",
+                            TilingMode.CLAMP_TO_EDGE)
+                        .ForGetter<GradientFunction>(static function => function.Tiling),
+                    CreateGradientCoordinatesCodec()
+                        .ForGetter<GradientFunction>(static function =>
+                            new GradientCoordinates(function.FromCoordinate, function.ToCoordinate)),
+                    CreateGradientValuesCodec()
+                        .ForGetter<GradientFunction>(static function =>
+                            new GradientValues(function.FromValue, function.ToValue)))
+                .Apply(
+                    instance,
+                    static (axis, tiling, coordinates, values) =>
+                        new GradientFunction(
+                            axis,
+                            tiling,
+                            coordinates.FromCoordinate,
+                            coordinates.ToCoordinate,
+                            values.FromValue,
+                            values.ToValue)))
+            .Validate(static function =>
+                function.FromCoordinate == function.ToCoordinate
+                    ? DataResult<GradientFunction>.Error(
+                        "from_coordinate cannot be equal to to_coordinate")
+                    : DataResult<GradientFunction>.Success(function))
+            .XMap<DensityFunction>(
+                static function => function,
+                function => (GradientFunction)function);
+
+    private static MapCodec<GradientCoordinates> CreateGradientCoordinatesCodec() =>
+        RecordCodecBuilder.MapCodec<GradientCoordinates>(instance =>
+            instance.Group(
+                    Codecs.INT.FieldOf("from_coordinate")
+                        .ForGetter<GradientCoordinates>(static coordinates => coordinates.FromCoordinate),
+                    Codecs.INT.FieldOf("to_coordinate")
+                        .ForGetter<GradientCoordinates>(static coordinates => coordinates.ToCoordinate))
+                .Apply(
+                    instance,
+                    static (fromCoordinate, toCoordinate) =>
+                        new GradientCoordinates(fromCoordinate, toCoordinate)));
+
+    private static MapCodec<GradientValues> CreateGradientValuesCodec() =>
+        RecordCodecBuilder.MapCodec<GradientValues>(instance =>
+            instance.Group(
+                    DensityFunctions.NOISE_VALUE_CODEC.FieldOf("from_value")
+                        .ForGetter<GradientValues>(static values => values.FromValue),
+                    DensityFunctions.NOISE_VALUE_CODEC.FieldOf("to_value")
+                        .ForGetter<GradientValues>(static values => values.ToValue))
+                .Apply(
+                    instance,
+                    static (fromValue, toValue) =>
+                        new GradientValues(fromValue, toValue)));
+
+    private static Codec<TilingMode> TilingModeCodec { get; } =
+        Codecs.STRING.FlatXMap(
+            name =>
+            {
+                TilingMode? tiling = name switch
+                {
+                    "clamp_to_edge" => TilingMode.CLAMP_TO_EDGE,
+                    "repeat" => TilingMode.REPEAT,
+                    "mirrored_repeat" => TilingMode.MIRRORED_REPEAT,
+                    _ => null
+                };
+
+                return tiling.HasValue
+                    ? DataResult<TilingMode>.Success(tiling.Value)
+                    : DataResult<TilingMode>.Error(
+                        () => $"Unknown tiling mode: {name}");
+            },
+            tiling => DataResult<string>.Success(tiling.GetSerializedName()));
+
+    private sealed record GradientCoordinates(int FromCoordinate, int ToCoordinate);
+    private sealed record GradientValues(float FromValue, float ToValue);
 
     private static MapCodec<DensityFunction> CreateRoundCodec(RoundFunction.Type operation) =>
         RecordCodecBuilder.MapCodec<RoundFunction>(instance =>
