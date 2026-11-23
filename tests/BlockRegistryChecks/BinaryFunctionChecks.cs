@@ -117,7 +117,7 @@ internal static class BinaryFunctionChecks
             "BinaryFunction.compileSampler must select the vanilla constant-specialized sampler in operand order.");
 
         Require(Sample(DensityFunctions.Sub(DensityFunctions.Constant(5.0f), dynamic)) == 8.0f &&
-            Sample(DensityFunctions.Div(DensityFunctions.Constant(5.0f), dynamic)) == -5.0f,
+            Math.Abs(Sample(DensityFunctions.Div(DensityFunctions.Constant(5.0f), dynamic)) - (5.0f / -3.0f)) < 0.000001f,
             "Constant-left subtraction and division samplers must preserve their non-commutative operand order.");
     }
 
