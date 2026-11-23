@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Asteria.Util;
+using Asteria.World.LevelGen.DensityFunctions.Generator;
 
 namespace Asteria.World.LevelGen.DensityFunctions.Operations;
 
