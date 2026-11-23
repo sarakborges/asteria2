@@ -16,6 +16,8 @@ using Asteria.World.Attributes;
 using Asteria.World.GameEvents;
 using Asteria.World.Clocks;
 using Asteria.World.Timelines;
+using Asteria.Serialization;
+using Asteria.World.LevelGen.DensityFunctions;
 
 namespace Asteria.Content.Registries;
 
@@ -54,6 +56,11 @@ public static class BuiltInRegistries
             ResourceLocation.FromNamespaceAndPath("asteria", "biome"),
             ResourceLocation.FromNamespaceAndPath("asteria", "plains"),
             static () => BuiltInBiomes.RegisterAll());
+
+    public static Registry<MapCodec<DensityFunction>> DensityFunctionType { get; } =
+        RegisterSimple<MapCodec<DensityFunction>>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "density_function_type"),
+            static () => DensityFunctionCodecBootstrap.RegisterAll(DensityFunctionType));
 
     public static Registry<ChunkStatusValue> ChunkStatus { get; } =
         RegisterSimple<ChunkStatusValue>(
