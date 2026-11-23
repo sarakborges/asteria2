@@ -977,8 +977,8 @@ internal static class DensityFunctionCodecChecks
     private static void CheckFindTopSurfaceCodec()
     {
         DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
-        var density = new SurfaceProbeDensityFunction(threshold: 5.0f);
-        DensityFunction expected = new FindTopSurfaceFunction(
+        var density = new SurfaceProbeDensityFunction(5.0f);
+        FindTopSurfaceFunction expected = new(
             density,
             new ConstantFunction(11.0f),
             -8,
@@ -1044,7 +1044,7 @@ internal static class DensityFunctionCodecChecks
 
         DensityFunction rewritten = expected.RewriteChildren(
             child => ReferenceEquals(child, expected.Density)
-                ? new SurfaceProbeDensityFunction(threshold: 9.0f)
+                ? new SurfaceProbeDensityFunction(9.0f)
                 : child);
         Require(
             rewritten is FindTopSurfaceFunction rewrittenNode &&
