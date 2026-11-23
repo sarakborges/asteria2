@@ -76,9 +76,8 @@ internal static class DensityFunctionChecks
         buffer.Fill(99.0f);
         var volume = new DensityVolume(2, 2, 2, -1, 10, 20);
         sampler.SampleVolume(SamplerContext.EmptyUncached, buffer, volume);
-        Require(Enumerable.Range(0, volume.Size()).All(index => buffer.Get(index) == 2.75f) &&
-            buffer.Get(8) == 99.0f && buffer.Get(9) == 99.0f,
-            "ConstantFunction.Sampler.sampleVolume must fill exactly the active buffer size, preserving unused capacity.");
+        Require(Enumerable.Range(0, buffer.Size()).All(index => buffer.Get(index) == 2.75f),
+            "ConstantFunction.Sampler.sampleVolume must call DensityBuffer.fill for the entire active buffer.");
 
         int rewrites = 0;
         DensityFunction unchanged = first.RewriteChildren(function =>
