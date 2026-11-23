@@ -47,3 +47,10 @@ Network packet codecs are out of scope. Local disk persistence remains in scope.
 - A semântica de `NaI` usa identidade com singleton, enquanto intervalos numéricos não aceitam limites NaN. Operações de produto e interpolação preservam as regras especiais para zero e infinito da referência.
 - Testes cobrem limites invertidos/NaN, ranges canônicos, aritmética com sinal, zero e infinito, potência, log, lerp, mapeamento monotônico, comparação e valores NaI.
 - Essa primitiva é pré-requisito para o contrato `Noise.range()` e para os limites intervalares do grafo de Density Functions; ainda não executa geração de chunks.
+
+
+## Ruído simplex 3D — Minecraft Java 26.3
+
+- O modelo `SimplexNoise` agora oferece `Get(x,y,z)` com escala 3D, quatro gradientes de canto e ranking das coordenadas locais por tetraedro.
+- `GradientNoise` centraliza a tabela de gradientes, permutação e wrap de coordenadas 2^25 usados pelas variantes Simplex e Perlin.
+- A variante 2D continua disponível para o modificador de cor de bioma e as funções ambientais existentes.

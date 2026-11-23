@@ -482,3 +482,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Preservados os singletons `NaI`, `INFINITE`, `[-1;1]` e `[0;1]`, identidade específica de NaI, validação de bounds, operações intervalares e tratamentos de zero/infinito/NaN.
 - Os métodos `pow`, `log`, `lerp` e `mapMonotonic` seguem os ramos de borda da implementação 26.3. O delegate C# substitui o operador funcional fastutil sem mudar a ordem de aplicação.
 - `IntervalChecks` cobre os ramos principais e erros. A classe fornece a faixa de retorno da próxima etapa `Noise/PerlinNoise`.
+
+
+## Incremento — GradientNoise e SimplexNoise 2D/3D (23/11/2026)
+
+- `GradientNoise` agora segue a tabela de 16 gradientes, a permutação sem sinal, seleção `permuteToGrad`, produto de gradiente e wrap de coordenadas de Minecraft Java 26.3.
+- `SimplexNoise` agora expõe a faixa `[-2,2]`, o desvio padrão `0.42544` e a amostragem 3D completa por ranking de coordenadas, quatro cantos, atenuação `0.6` e escala `32`.
+- A amostragem 2D foi mantida com a fórmula 26.3 e passou a compartilhar a função de canto 3D da referência, incluindo o range e constants.
+- `GradientNoise.wrap` usa a redução modular 2^25 da referência. O override `SharedConstants.DEBUG_ENABLE_FARLANDS` não foi incluído porque Asteria ainda não possui esse modo de depuração.
+- Testes cobrem amostras de seed fixo em pontos dos vários ramos tetraédricos, faixa/desvio padrão e fronteiras do wrap. Os testes de bioma existentes também protegem as amostras 2D anteriores.
