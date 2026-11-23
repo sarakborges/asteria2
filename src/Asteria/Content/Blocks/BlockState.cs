@@ -24,6 +24,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     private bool[]? _faceSturdy;
     private bool _cacheInitialized;
     private readonly int _lightEmission;
+    private readonly MapColor _mapColor;
     private readonly Func<BlockState, bool> _emissiveRendering;
     private readonly Func<BlockState, BlockPos, Vec3>? _offsetFunction;
 
@@ -81,6 +82,9 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public bool IsLightPermeable => !IsSolidRender || LightDampening == 0;
 
     public int GetLightEmission() => _lightEmission;
+
+    public MapColor GetMapColor(BlockGetter level, BlockPos position) =>
+        _mapColor;
 
     public VoxelShape GetFaceOcclusionShape(Direction direction)
     {
@@ -181,6 +185,8 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         ShouldSpawnTerrainParticles = properties.SpawnTerrainParticlesValue;
         UseShapeForLightOcclusion = Block.UseShapeForLightOcclusion(this);
         _lightEmission = properties.LightEmissionValue(this);
+        _mapColor = properties.MapColorValue(this) ??
+            throw new InvalidOperationException("A block state's map color cannot be null.");
         _emissiveRendering = properties.EmissiveRenderingValue;
         _offsetFunction = properties.OffsetFunctionValue;
         _isSuffocating = properties.IsSuffocatingValue;
