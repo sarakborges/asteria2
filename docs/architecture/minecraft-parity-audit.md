@@ -508,3 +508,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `CODEC` de disco permanece pendente do escopo atual de persistência; `STREAM_CODEC` é excluído por multiplayer/rede. A geometria não depende desses codecs.
 - `BoundingBoxChecks` cobre normalização, limites, interseção, transforms, orientação cardinal, chunks, cantos, igualdade e hash.
 - O tipo agora fornece o contrato exigido por `DensityVolume.intersects` sem criar uma abstração geométrica ad hoc.
+
+
+## Incremento — DensityVolume (23/11/2026)
+
+- Portado `DensityVolume` como record imutável de Minecraft Java 26.3: dimensões X/Y/Z, coordenadas mínimas, passo de amostragem independente por eixo, máximos inclusivos e tamanho total.
+- Preservada a ordem linear do volume (`Y` interno, depois X, depois Z) e a indexação de coordenadas mundiais por passo. `IndexOfBlock` retorna `-1` para coordenadas externas ou desalinhadas, inclusive em volumes esparsos por passo.
+- `Intersects` usa `BoundingBox` em coordenadas mundiais inclusivas. Os construtores validam todas as dimensões e passos positivos com os diagnósticos da referência.
+- Testes cobrem volume unitário e stepped, máximos, índices, interseção, igualdade do record e erros de configuração.
+- A geometria e o armazenamento necessários para `Noise.addToVolume` estão agora presentes; o próximo passo é conectar o contrato de ruído e o amostrador Perlin 26.3.

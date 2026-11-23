@@ -88,3 +88,10 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - Bounds de estrutura com coordenadas inclusivas, construção por cantos, orientação por direção, interseção, operações de encapsulamento/movimento/inflação, contenção, spans, centro e enumeração de oito vértices.
 - `IntersectingChunks` enumera todos os chunks tocados pela caixa em ordem X-major/Z-minor. A implementação também expõe a caixa infinita e valores de limites individuais.
 - CODEC de disco e stream codec de rede continuam pendentes (persistência adiada; rede fora do escopo).
+
+
+## DensityVolume — Minecraft Java 26.3
+
+- Volume amostrado em uma grade XYZ, com passo positivo independente por eixo e coordenadas mínimas em blocos.
+- Layout linear é Y-minor, X intermediário, Z major; `IndexOfBlock` aceita somente coordenadas que pertençam ao grid, incluindo alinhamento dos passos.
+- Bounding/intersection usa limites inclusivos; volumes podem representar tanto blocos contíguos quanto amostragens esparsas.
