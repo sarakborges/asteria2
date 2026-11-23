@@ -45,9 +45,9 @@ internal static class GradientFunctionChecks
 
         DensityFunction clamped = DensityFunctions.Gradient(
             Direction.Axis.Y, TilingMode.CLAMP_TO_EDGE, 10, 20, 2.0f, 12.0f);
-        Require(Sample(clamped, 5, 0, 0) == 2.0f &&
-            Sample(clamped, 15, 0, 0) == 7.0f &&
-            Sample(clamped, 25, 0, 0) == 12.0f,
+        Require(Sample(clamped, 0, 5, 0) == 2.0f &&
+            Sample(clamped, 0, 15, 0) == 7.0f &&
+            Sample(clamped, 0, 25, 0) == 12.0f,
             "GradientFunction.CLAMP_TO_EDGE must clamp coordinates before applying the linear gradient.");
 
         DensityFunction repeat = DensityFunctions.Gradient(
