@@ -25,14 +25,15 @@ internal static class DensityFunctionCodecChecks
         CheckRangeChoiceCodec();
         CheckIntervalSelectCodec();
         CheckSliceCodec();
+        CheckGradientCodec();
         CheckRejectedInputs();
     }
 
     private static void CheckTypeRegistry()
     {
         Require(
-            BuiltInRegistries.DensityFunctionType.Count == 30,
-            "The density-function codec slice must register constant, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated and slice.");
+            BuiltInRegistries.DensityFunctionType.Count == 31,
+            "The density-function codec slice must register constant, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice and gradient.");
 
         Require(
             BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:constant")) &&
@@ -490,6 +491,60 @@ internal static class DensityFunctionCodecChecks
                 ParseJson("""{"type":"asteria:slice","axis":"w","coordinate":0,"input":1.0}"""))
                 .IsError,
             "SliceFunction must reject axes outside x/y/z.");
+    }
+
+    private static void CheckGradientCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        DensityFunction expected = new GradientFunction(
+            Direction.Axis.Y,
+            TilingMode.MIRRORED_REPEAT,
+            -64,
+            320,
+            -1.25f,
+            2.5f);
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:gradient" &&
+            ops.Get(encoded, "axis").GetOrThrow().GetString() == "y" &&
+            ops.Get(encoded, "tiling").GetOrThrow().GetString() == "mirrored_repeat" &&
+            ops.Get(encoded, "from_coordinate").GetOrThrow().GetInt32() == -64 &&
+            ops.Get(encoded, "to_coordinate").GetOrThrow().GetInt32() == 320 &&
+            ops.Get(encoded, "from_value").GetOrThrow().GetSingle() == -1.25f &&
+            ops.Get(encoded, "to_value").GetOrThrow().GetSingle() == 2.5f,
+            "GradientFunction must serialize all 26.3 fields and the tiling name.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(ops, encoded).GetOrThrow().Equals(expected),
+            "GradientFunction must round-trip axis, tiling, coordinates and values.");
+
+        DensityFunction defaultTiling = DensityFunctions.DIRECT_CODEC
+            .Parse(
+                ops,
+                ParseJson("""{"type":"asteria:gradient","axis":"x","from_coordinate":1,"to_coordinate":4,"from_value":0.0,"to_value":1.0}"""))
+            .GetOrThrow();
+
+        Require(
+            defaultTiling is GradientFunction { Tiling: TilingMode.CLAMP_TO_EDGE },
+            "GradientFunction must default omitted tiling to CLAMP_TO_EDGE.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:gradient","axis":"x","from_coordinate":2,"to_coordinate":2,"from_value":0.0,"to_value":1.0}"""))
+                .IsError,
+            "GradientFunction must reject equal from/to coordinates.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:gradient","axis":"x","tiling":"wrap","from_coordinate":0,"to_coordinate":1,"from_value":0.0,"to_value":1.0}"""))
+                .IsError,
+            "GradientFunction must reject unknown tiling modes.");
     }
 
     private static void CheckRejectedInputs()
