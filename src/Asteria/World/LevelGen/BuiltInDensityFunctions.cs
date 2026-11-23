@@ -14,10 +14,49 @@ internal static class BuiltInDensityFunctions
 {
     internal const int Count = 21;
 
-    private const int CopperVeinMinY = 0;
-    private const int CopperVeinMaxY = 50;
-    private const int IronVeinMinY = -60;
-    private const int IronVeinMaxY = -8;
+    private readonly record struct OreVeinDefinition(
+        RegistryKey<DensityFunction> DensityKey,
+        int MinY,
+        int MaxY,
+        bool WhenTogglePositive);
+
+    private readonly record struct Base3dNoiseDefinition(
+        RegistryKey<DensityFunction> Key,
+        double XzScale,
+        double YScale,
+        double XzFactor,
+        double YFactor,
+        double SmearScaleMultiplier);
+
+    private readonly record struct ClimateNoiseDefinition(
+        RegistryKey<DensityFunction> DensityKey,
+        RegistryKey<NormalNoise> NoiseKey,
+        bool Cached);
+
+    // These are vanilla's data variants; registration and density construction stay type-agnostic.
+    private static readonly OreVeinDefinition[] OreVeins =
+    [
+        new(DensityFunctionKeys.ORE_VEIN_COPPER_DENSITY, 0, 50, true),
+        new(DensityFunctionKeys.ORE_VEIN_IRON_DENSITY, -60, -8, false)
+    ];
+
+    private static readonly Base3dNoiseDefinition[] Base3dNoises =
+    [
+        new(DensityFunctionKeys.BASE_3D_NOISE_OVERWORLD, 0.25, 0.125, 80.0, 160.0, 8.0),
+        new(DensityFunctionKeys.BASE_3D_NOISE_NETHER, 0.25, 0.375, 80.0, 60.0, 8.0),
+        new(DensityFunctionKeys.BASE_3D_NOISE_END, 0.25, 0.25, 80.0, 160.0, 4.0)
+    ];
+
+    private static readonly ClimateNoiseDefinition[] OverworldClimateNoises =
+    [
+        new(DensityFunctionKeys.OVERWORLD_TEMPERATURE, Noises.TEMPERATURE, false),
+        new(DensityFunctionKeys.OVERWORLD_LARGE_TEMPERATURE, Noises.TEMPERATURE_LARGE, false),
+        new(DensityFunctionKeys.OVERWORLD_VEGETATION, Noises.VEGETATION, false),
+        new(DensityFunctionKeys.OVERWORLD_LARGE_VEGETATION, Noises.VEGETATION_LARGE, false),
+        new(DensityFunctionKeys.OVERWORLD_CONTINENTS, Noises.CONTINENTALNESS, true),
+        new(DensityFunctionKeys.OVERWORLD_EROSION, Noises.EROSION, true),
+        new(DensityFunctionKeys.RIDGES, Noises.RIDGE, true)
+    ];
 
     internal static void RegisterAll()
     {
@@ -56,20 +95,18 @@ internal static class BuiltInDensityFunctions
             DensityFunctionFactories.Cache(DensityFunctionFactories.ShiftB(shiftNoise)),
             RegistrationInfo.BuiltIn);
 
-        registry.Register(
-            DensityFunctionKeys.BASE_3D_NOISE_OVERWORLD,
-            new BlendedNoise(0.25, 0.125, 80.0, 160.0, 8.0),
-            RegistrationInfo.BuiltIn);
-
-        registry.Register(
-            DensityFunctionKeys.BASE_3D_NOISE_NETHER,
-            new BlendedNoise(0.25, 0.375, 80.0, 60.0, 8.0),
-            RegistrationInfo.BuiltIn);
-
-        registry.Register(
-            DensityFunctionKeys.BASE_3D_NOISE_END,
-            new BlendedNoise(0.25, 0.25, 80.0, 160.0, 4.0),
-            RegistrationInfo.BuiltIn);
+        foreach (Base3dNoiseDefinition definition in Base3dNoises)
+        {
+            registry.Register(
+                definition.Key,
+                new BlendedNoise(
+                    definition.XzScale,
+                    definition.YScale,
+                    definition.XzFactor,
+                    definition.YFactor,
+                    definition.SmearScaleMultiplier),
+                RegistrationInfo.BuiltIn);
+        }
 
         RegisterOverworldClimateFunctions(registry);
     }
@@ -79,50 +116,23 @@ internal static class BuiltInDensityFunctions
         DensityFunction shiftX = GetFunction(registry, DensityFunctionKeys.SHIFT_X);
         DensityFunction shiftZ = GetFunction(registry, DensityFunctionKeys.SHIFT_Z);
 
-        RegisterAndWrap(
-            registry,
-            DensityFunctionKeys.OVERWORLD_TEMPERATURE,
-            DensityFunctionFactories.ShiftedNoise2d(
-                shiftX, shiftZ, 0.25, GetNoise(Noises.TEMPERATURE)));
+        foreach (ClimateNoiseDefinition definition in OverworldClimateNoises)
+        {
+            DensityFunction shiftedNoise = DensityFunctionFactories.ShiftedNoise2d(
+                shiftX,
+                shiftZ,
+                0.25,
+                GetNoise(definition.NoiseKey));
 
-        RegisterAndWrap(
-            registry,
-            DensityFunctionKeys.OVERWORLD_LARGE_TEMPERATURE,
-            DensityFunctionFactories.ShiftedNoise2d(
-                shiftX, shiftZ, 0.25, GetNoise(Noises.TEMPERATURE_LARGE)));
+            RegisterAndWrap(
+                registry,
+                definition.DensityKey,
+                definition.Cached
+                    ? DensityFunctionFactories.Cache(shiftedNoise)
+                    : shiftedNoise);
+        }
 
-        RegisterAndWrap(
-            registry,
-            DensityFunctionKeys.OVERWORLD_VEGETATION,
-            DensityFunctionFactories.ShiftedNoise2d(
-                shiftX, shiftZ, 0.25, GetNoise(Noises.VEGETATION)));
-
-        RegisterAndWrap(
-            registry,
-            DensityFunctionKeys.OVERWORLD_LARGE_VEGETATION,
-            DensityFunctionFactories.ShiftedNoise2d(
-                shiftX, shiftZ, 0.25, GetNoise(Noises.VEGETATION_LARGE)));
-
-        RegisterAndWrap(
-            registry,
-            DensityFunctionKeys.OVERWORLD_CONTINENTS,
-            DensityFunctionFactories.Cache(
-                DensityFunctionFactories.ShiftedNoise2d(
-                    shiftX, shiftZ, 0.25, GetNoise(Noises.CONTINENTALNESS))));
-
-        RegisterAndWrap(
-            registry,
-            DensityFunctionKeys.OVERWORLD_EROSION,
-            DensityFunctionFactories.Cache(
-                DensityFunctionFactories.ShiftedNoise2d(
-                    shiftX, shiftZ, 0.25, GetNoise(Noises.EROSION))));
-
-        DensityFunction ridges = RegisterAndWrap(
-            registry,
-            DensityFunctionKeys.RIDGES,
-            DensityFunctionFactories.Cache(
-                DensityFunctionFactories.ShiftedNoise2d(
-                    shiftX, shiftZ, 0.25, GetNoise(Noises.RIDGE))));
+        DensityFunction ridges = GetFunction(registry, DensityFunctionKeys.RIDGES);
 
         registry.Register(
             DensityFunctionKeys.RIDGES_FOLDED,
@@ -150,8 +160,8 @@ internal static class BuiltInDensityFunctions
         Holder<NormalNoise> gapNoise = GetNoise(Noises.ORE_GAP);
 
         DensityFunction y = GetFunction(registry, DensityFunctionKeys.Y);
-        int veinMinY = Math.Min(CopperVeinMinY, IronVeinMinY);
-        int veinMaxY = Math.Max(CopperVeinMaxY, IronVeinMaxY);
+        int veinMinY = OreVeins.Min(definition => definition.MinY);
+        int veinMaxY = OreVeins.Max(definition => definition.MaxY);
         int interpolatedVeinMinY = Mth.FloorDiv(veinMinY, 8) * 8;
         int interpolatedVeinMaxY = (Mth.FloorDiv(veinMaxY, 8) + 1) * 8;
 
@@ -190,27 +200,19 @@ internal static class BuiltInDensityFunctions
                     interpolatedVeinMinY,
                     interpolatedVeinMaxY)));
 
-        registry.Register(
-            DensityFunctionKeys.ORE_VEIN_COPPER_DENSITY,
-            CreateOreVeinDensity(
-                CopperVeinMinY,
-                CopperVeinMaxY,
-                y,
-                veinToggle,
-                veinMask,
-                whenTogglePositive: true),
-            RegistrationInfo.BuiltIn);
-
-        registry.Register(
-            DensityFunctionKeys.ORE_VEIN_IRON_DENSITY,
-            CreateOreVeinDensity(
-                IronVeinMinY,
-                IronVeinMaxY,
-                y,
-                veinToggle,
-                veinMask,
-                whenTogglePositive: false),
-            RegistrationInfo.BuiltIn);
+        foreach (OreVeinDefinition definition in OreVeins)
+        {
+            registry.Register(
+                definition.DensityKey,
+                CreateOreVeinDensity(
+                    definition.MinY,
+                    definition.MaxY,
+                    y,
+                    veinToggle,
+                    veinMask,
+                    definition.WhenTogglePositive),
+                RegistrationInfo.BuiltIn);
+        }
 
         registry.Register(
             DensityFunctionKeys.ORE_VEIN_GAP,
