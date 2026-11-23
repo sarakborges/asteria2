@@ -20,14 +20,17 @@ internal static class DensityFunctionCodecChecks
         CheckLerpCodec();
         CheckCacheCodec();
         CheckInterpolatedCodec();
+        CheckClampCodec();
+        CheckRangeChoiceCodec();
+        CheckIntervalSelectCodec();
         CheckRejectedInputs();
     }
 
     private static void CheckTypeRegistry()
     {
         Require(
-            BuiltInRegistries.DensityFunctionType.Count == 26,
-            "The density-function codec slice must register constant, all unary/binary/rounding types, pow, lerp, cache and interpolated.");
+            BuiltInRegistries.DensityFunctionType.Count == 29,
+            "The density-function codec slice must register constant, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache and interpolated.");
 
         Require(
             BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:constant")) &&
@@ -315,6 +318,136 @@ internal static class DensityFunctionCodecChecks
                 ParseJson("""{"type":"asteria:interpolated","input":1.0,"cell_size_xz":4,"cell_size_y":-1}"""))
                 .IsError,
             "InterpolatedFunction must reject a non-positive Y cell size.");
+    }
+
+    private static void CheckClampCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        DensityFunction expected = new ClampFunction(
+            new ConstantFunction(-4.0f),
+            -1.5f,
+            2.25f);
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:clamp" &&
+            ops.Get(encoded, "input").GetOrThrow().GetSingle() == -4.0f &&
+            ops.Get(encoded, "min").GetOrThrow().GetSingle() == -1.5f &&
+            ops.Get(encoded, "max").GetOrThrow().GetSingle() == 2.25f,
+            "ClampFunction must serialize input/min/max using the 26.3 fields.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(ops, encoded).GetOrThrow().Equals(expected),
+            "ClampFunction must round-trip its child and bounds.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:clamp","input":1.0,"min":2.0,"max":1.0}"""))
+                .IsError,
+            "ClampFunction codec must reject a maximum lower than its minimum.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.EncodeStart(
+                ops,
+                new ClampFunction(new ConstantFunction(0.0f), 2.0f, 1.0f))
+                .IsError,
+            "ClampFunction codec validation must also run during encoding.");
+    }
+
+    private static void CheckRangeChoiceCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        DensityFunction expected = new RangeChoiceFunction(
+            new ConstantFunction(0.5f),
+            -0.25f,
+            0.75f,
+            new UnaryFunction(UnaryFunction.Type.SQUARE, new ConstantFunction(2.0f)),
+            new ConstantFunction(-3.0f));
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:range_choice" &&
+            ops.Get(encoded, "input").GetOrThrow().GetSingle() == 0.5f &&
+            ops.Get(encoded, "min_inclusive").GetOrThrow().GetSingle() == -0.25f &&
+            ops.Get(encoded, "max_exclusive").GetOrThrow().GetSingle() == 0.75f &&
+            ops.Get(encoded, "when_in_range").GetOrThrow().ValueKind == JsonValueKind.Object &&
+            ops.Get(encoded, "when_out_of_range").GetOrThrow().GetSingle() == -3.0f,
+            "RangeChoiceFunction must serialize all five vanilla fields.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(ops, encoded).GetOrThrow().Equals(expected),
+            "RangeChoiceFunction must round-trip its condition and both result branches.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:range_choice","input":0.0,"min_inclusive":3.0,"max_exclusive":-3.0,"when_in_range":1.0,"when_out_of_range":2.0}"""))
+                .IsSuccess,
+            "RangeChoiceFunction must not add validation absent from the 26.3 codec.");
+    }
+
+    private static void CheckIntervalSelectCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        DensityFunction expected = new IntervalSelectFunction(
+            new ConstantFunction(0.25f),
+            new[] { -0.5f, 0.75f },
+            new DensityFunction[]
+            {
+                new ConstantFunction(-2.0f),
+                new UnaryFunction(UnaryFunction.Type.ABS, new ConstantFunction(-3.0f)),
+                new ConstantFunction(4.0f)
+            });
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:interval_select" &&
+            ops.Get(encoded, "input").GetOrThrow().GetSingle() == 0.25f &&
+            ops.Get(encoded, "thresholds").GetArrayLength() == 2 &&
+            ops.Get(encoded, "functions").GetArrayLength() == 3,
+            "IntervalSelectFunction must serialize input, thresholds and the function list.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(ops, encoded).GetOrThrow().Equals(expected),
+            "IntervalSelectFunction must round-trip its threshold sequence and branches.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:interval_select","input":0.0,"thresholds":[0.0],"functions":[1.0,2.0,3.0]}"""))
+                .IsError,
+            "IntervalSelectFunction must require exactly one fewer thresholds than functions.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:interval_select","input":0.0,"thresholds":[1.0,0.0],"functions":[1.0,2.0,3.0]}"""))
+                .IsError,
+            "IntervalSelectFunction must reject thresholds not ordered by Java Float.compare.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:interval_select","input":0.0,"thresholds":[0.0,0.0],"functions":[1.0,2.0,3.0]}"""))
+                .IsSuccess,
+            "IntervalSelectFunction must allow equal, nondecreasing threshold values.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:interval_select","input":0.0,"thresholds":[],"functions":[1.0]}"""))
+                .IsError,
+            "IntervalSelectFunction must require at least two branches.");
     }
 
     private static void CheckRejectedInputs()
