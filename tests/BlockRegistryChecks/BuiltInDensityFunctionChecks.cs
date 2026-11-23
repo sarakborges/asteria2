@@ -4,6 +4,7 @@ using Asteria.Core;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
+using Asteria.World.LevelGen.DensityFunctions.Operations;
 using Asteria.World.LevelGen.Synth;
 
 internal static class BuiltInDensityFunctionChecks
@@ -182,8 +183,8 @@ internal static class BuiltInDensityFunctionChecks
             "Ore-vein density functions must reference the registered vanilla ore noise parameters.");
 
         Require(
-            toggle.Value.Range().Min() <= -1.0f &&
-            toggle.Value.Range().Max() >= 1.0f &&
+            toggle.Value.Range().Min() <= 0.0f &&
+            toggle.Value.Range().Max() >= 0.0f &&
             richness.Value.Range().Min() == 0.1f &&
             richness.Value.Range().Max() == 0.3f &&
             copper.Value.Range().Min() <= -1.0f &&
