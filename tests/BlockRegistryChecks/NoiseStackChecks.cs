@@ -68,7 +68,7 @@ internal static class NoiseStackChecks
             mixed.GetRange().Equals(Interval.Of(-1.5f, 1.5f)),
             "Mixed noise types must use the generic NoiseStack with the summed interval range.");
 
-        RequireThrows<ArgumentOutOfRangeException>(() => stack.GetLayer(2),
+        RequireThrows<IndexOutOfRangeException>(() => stack.GetLayer(2),
             "NoiseStack.getLayer must preserve the underlying layer-array bounds behavior.");
     }
 
