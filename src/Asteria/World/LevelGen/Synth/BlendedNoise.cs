@@ -31,28 +31,48 @@ public sealed record BlendedNoise(
     private static Codec<double> ScaleRange { get; } =
         Codecs.DoubleRange(0.001, 1000.0);
 
+    private sealed record ScaleFields(
+        double XzScale,
+        double YScale,
+        double XzFactor,
+        double YFactor);
+
+    private static MapCodec<ScaleFields> ScaleFieldsCodec { get; } =
+        RecordCodecBuilder.MapCodec<ScaleFields>(instance =>
+            instance.Group(
+                    ScaleRange.FieldOf("xz_scale")
+                        .ForGetter<ScaleFields>(static scales => scales.XzScale),
+                    ScaleRange.FieldOf("y_scale")
+                        .ForGetter<ScaleFields>(static scales => scales.YScale),
+                    ScaleRange.FieldOf("xz_factor")
+                        .ForGetter<ScaleFields>(static scales => scales.XzFactor),
+                    ScaleRange.FieldOf("y_factor")
+                        .ForGetter<ScaleFields>(static scales => scales.YFactor))
+                .Apply(
+                    instance,
+                    static (xzScale, yScale, xzFactor, yFactor) =>
+                        new ScaleFields(xzScale, yScale, xzFactor, yFactor)));
+
     public static MapCodec<BlendedNoise> CODEC { get; } =
         RecordCodecBuilder.MapCodec<BlendedNoise>(instance =>
             instance.Group(
-                    ScaleRange.FieldOf("xz_scale")
-                        .ForGetter<BlendedNoise>(static noise => noise.XzScale),
-                    ScaleRange.FieldOf("y_scale")
-                        .ForGetter<BlendedNoise>(static noise => noise.YScale),
-                    ScaleRange.FieldOf("xz_factor")
-                        .ForGetter<BlendedNoise>(static noise => noise.XzFactor),
-                    ScaleRange.FieldOf("y_factor")
-                        .ForGetter<BlendedNoise>(static noise => noise.YFactor),
+                    ScaleFieldsCodec.ForGetter<BlendedNoise>(static noise =>
+                        new ScaleFields(
+                            noise.XzScale,
+                            noise.YScale,
+                            noise.XzFactor,
+                            noise.YFactor)),
                     Codecs.DoubleRange(1.0, 8.0)
                         .FieldOf("smear_scale_multiplier")
                         .ForGetter<BlendedNoise>(static noise => noise.SmearScaleMultiplier))
                 .Apply(
                     instance,
-                    static (xzScale, yScale, xzFactor, yFactor, smearScaleMultiplier) =>
+                    static (scales, smearScaleMultiplier) =>
                         new BlendedNoise(
-                            xzScale,
-                            yScale,
-                            xzFactor,
-                            yFactor,
+                            scales.XzScale,
+                            scales.YScale,
+                            scales.XzFactor,
+                            scales.YFactor,
                             smearScaleMultiplier)));
 
     private double XzMultiplier() =>
