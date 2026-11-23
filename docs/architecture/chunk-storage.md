@@ -81,3 +81,10 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - Armazenamento linear de floats com `set/get`, `setRange`, `addTo`, `fill`, `copyFrom`, `capacity` e `size`.
 - A instância criada por `createUnpooled` mantém tamanho fixo; o buffer não introduz alocação ou pool customizado.
 - A implementação de `DensityVolume` e o método default `Noise.addToVolume` aguardam o contrato `BoundingBox` necessário para interseção volumétrica.
+
+
+## BoundingBox — Minecraft Java 26.3
+
+- Bounds de estrutura com coordenadas inclusivas, construção por cantos, orientação por direção, interseção, operações de encapsulamento/movimento/inflação, contenção, spans, centro e enumeração de oito vértices.
+- `IntersectingChunks` enumera todos os chunks tocados pela caixa em ordem X-major/Z-minor. A implementação também expõe a caixa infinita e valores de limites individuais.
+- CODEC de disco e stream codec de rede continuam pendentes (persistência adiada; rede fora do escopo).
