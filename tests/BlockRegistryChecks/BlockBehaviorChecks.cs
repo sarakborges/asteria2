@@ -39,6 +39,7 @@ internal static class BlockBehaviorChecks
         CheckOffsetCacheValidation();
         CheckDefaultViewBlockingTracksSuffocationProperty();
         CheckDefaultDestroyTime();
+        CheckFaceSupportSemantics();
     }
 
     private static void CheckPathComputationTypes()
@@ -126,6 +127,46 @@ internal static class BlockBehaviorChecks
             !nonSolid.IsReplaceable && !nonSolid.IsSolid &&
             nonSolid.CanBeReplaced(Fluids.EMPTY),
             "Fluid replacement must allow a non-solid state even when its replaceable property is false.");
+    }
+
+    private static void CheckFaceSupportSemantics()
+    {
+        SupportType[] supportTypes = Enum.GetValues<SupportType>();
+        Require(
+            supportTypes.Length == 3 &&
+            supportTypes[0] == SupportType.Full &&
+            supportTypes[1] == SupportType.Center &&
+            supportTypes[2] == SupportType.Rigid,
+            "SupportType must preserve the Minecraft FULL/CENTER/RIGID enum order.");
+
+        BlockState air = Blocks.AIR.DefaultState;
+        BlockState stone = Blocks.STONE.DefaultState;
+        BlockState dynamic = new DynamicSupportBlock().DefaultState;
+
+        foreach (Direction direction in Direction.GetValues())
+        {
+            foreach (SupportType supportType in supportTypes)
+            {
+                Require(
+                    stone.IsFaceSturdy(EmptyBlockGetter.Instance, BlockPos.Zero, direction, supportType),
+                    $"A full cube must support every face for {supportType}.");
+                Require(
+                    !air.IsFaceSturdy(EmptyBlockGetter.Instance, BlockPos.Zero, direction, supportType),
+                    $"An empty shape must not support any face for {supportType}.");
+                Require(
+                    dynamic.IsFaceSturdy(EmptyBlockGetter.Instance, BlockPos.Zero, direction, supportType),
+                    $"Dynamic-shape blocks must evaluate face support without the static cache for {supportType}.");
+            }
+        }
+    }
+
+    private sealed class DynamicSupportBlock : Block
+    {
+        public DynamicSupportBlock()
+            : base(BlockProperties.Of().DynamicShape(), createIntrusiveRegistryHolder: false)
+        {
+            InitializeStateCaches();
+        }
     }
 
     private static void CheckDefaultDestroyTime()
