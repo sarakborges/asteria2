@@ -855,3 +855,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O cálculo preserva a semântica de overflow de `Math.abs(int.MinValue)` em Java; não usa `Math.Abs` do .NET, que lançaria exceção e diverge da referência.
 - `ChunkChecks` cobre os dois limites inclusivos, o primeiro valor além do limite e o caso extremo de `int.MinValue`.
 - Commit: `5e3f44e`; CI: [checks](https://github.com/sarakborges/asteria2/actions/runs/45226852530) — sucesso.
+
+## Incremento — serialização de ChunkPos (23/11/2026)
+
+- Portado `ChunkPos.CODEC` como codec estável de exatamente dois inteiros, serializados na ordem X/Z, correspondente ao `Codec.INT_STREAM` da referência Java 26.3.
+- A implementação usa os codecs de listas existentes; não adiciona codec de protocolo/`StreamCodec`, fora do escopo single-player.
+- `ChunkChecks` cobre round-trip com coordenadas negativas/positivas, ordem dos campos, lifecycle estável e rejeição de listas com tamanho diferente de dois.
+- Commit: `3324711`; testes do harness e build Release do Godot concluídos com sucesso: [checks](https://github.com/sarakborges/asteria2/actions/runs/45227425598).
