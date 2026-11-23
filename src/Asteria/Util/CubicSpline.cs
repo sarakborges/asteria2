@@ -1,5 +1,6 @@
 using System.Globalization;
 using Asteria.Core;
+using Asteria.Serialization;
 
 namespace Asteria.Util;
 
@@ -40,6 +41,129 @@ public abstract class CubicSpline<TContext>
             Constant constant => BoundedFloatFunctions.Constant<TContext>(constant.Value),
             _ => throw new InvalidOperationException($"Unsupported cubic spline type {spline.GetType().FullName}.")
         };
+    }
+
+    /// <summary>
+    /// Creates the recursive codec used by Minecraft 26.3: constants are floats,
+    /// while multipoint splines are records containing a coordinate and non-empty points.
+    /// </summary>
+    public static Codec<CubicSpline<TContext>> CreateCodec(
+        Codec<IBoundedFloatFunction<TContext>> coordinateCodec)
+    {
+        ArgumentNullException.ThrowIfNull(coordinateCodec);
+        return new RecursiveCodec(coordinateCodec);
+    }
+
+    private sealed record SplinePoint(
+        float Location,
+        CubicSpline<TContext> Value,
+        float Derivative);
+
+    private sealed class RecursiveCodec : Codec<CubicSpline<TContext>>
+    {
+        private readonly Codec<float> _constantCodec = Codecs.FLOAT;
+        private readonly MapCodec<Multipoint> _multipointCodec;
+
+        public RecursiveCodec(Codec<IBoundedFloatFunction<TContext>> coordinateCodec)
+        {
+            _multipointCodec = CreateMultipointCodec(coordinateCodec, this);
+        }
+
+        public override DataResult<TData> Encode<TData>(
+            CubicSpline<TContext> input,
+            DynamicOps<TData> ops,
+            TData prefix)
+        {
+            ArgumentNullException.ThrowIfNull(input);
+
+            return input switch
+            {
+                Constant constant => _constantCodec.Encode(constant.Value, ops, prefix),
+                Multipoint multipoint => _multipointCodec.Codec().Encode(multipoint, ops, prefix),
+                _ => DataResult<TData>.Error(
+                    () => $"Unsupported cubic spline type {input.GetType().FullName}.")
+            };
+        }
+
+        public override DataResult<Pair<CubicSpline<TContext>, TData>> Decode<TData>(
+            DynamicOps<TData> ops,
+            TData input)
+        {
+            DataResult<Pair<CubicSpline<TContext>, TData>> constant =
+                _constantCodec.Decode(ops, input).Map(pair =>
+                    new Pair<CubicSpline<TContext>, TData>(
+                        new Constant(pair.First),
+                        pair.Second));
+
+            if (constant.IsSuccess)
+                return constant;
+
+            DataResult<Pair<CubicSpline<TContext>, TData>> multipoint =
+                _multipointCodec.Codec().Decode(ops, input).Map(pair =>
+                    new Pair<CubicSpline<TContext>, TData>(
+                        pair.First,
+                        pair.Second));
+
+            if (multipoint.IsSuccess)
+                return multipoint;
+            if (constant.HasResultOrPartial)
+                return constant;
+            if (multipoint.HasResultOrPartial)
+                return multipoint;
+
+            return DataResult<Pair<CubicSpline<TContext>, TData>>.Error(
+                () => $"Failed to parse either. First: {constant.ErrorMessage}; Second: {multipoint.ErrorMessage}");
+        }
+
+        private static MapCodec<Multipoint> CreateMultipointCodec(
+            Codec<IBoundedFloatFunction<TContext>> coordinateCodec,
+            Codec<CubicSpline<TContext>> recursiveCodec)
+        {
+            Codec<SplinePoint> pointCodec =
+                RecordCodecBuilder.Create<SplinePoint>(instance =>
+                    instance.Group(
+                            Codecs.FLOAT.FieldOf("location")
+                                .ForGetter<SplinePoint>(static point => point.Location),
+                            recursiveCodec.FieldOf("value")
+                                .ForGetter<SplinePoint>(static point => point.Value),
+                            Codecs.FLOAT.FieldOf("derivative")
+                                .ForGetter<SplinePoint>(static point => point.Derivative))
+                        .Apply(
+                            instance,
+                            static (location, value, derivative) =>
+                                new SplinePoint(location, value, derivative)));
+
+            return RecordCodecBuilder.MapCodec<Multipoint>(instance =>
+                instance.Group(
+                        coordinateCodec.FieldOf("coordinate")
+                            .ForGetter<Multipoint>(static spline => spline.Coordinate),
+                        pointCodec.ListOf(1).FieldOf("points")
+                            .ForGetter<Multipoint>(PackPoints))
+                    .Apply(
+                        instance,
+                        static (coordinate, points) =>
+                            new Multipoint(
+                                coordinate,
+                                points.Select(static point => point.Location).ToArray(),
+                                points.Select(static point => point.Value).ToArray(),
+                                points.Select(static point => point.Derivative).ToArray())));
+        }
+
+        private static IReadOnlyList<SplinePoint> PackPoints(Multipoint spline)
+        {
+            var points = new SplinePoint[spline.Locations.Length];
+            for (int index = 0; index < points.Length; index++)
+            {
+                points[index] = new SplinePoint(
+                    spline.Locations[index],
+                    spline.Values[index],
+                    spline.Derivatives[index]);
+            }
+
+            return points;
+        }
+
+        public override string ToString() => "CubicSpline";
     }
 
     public static Constant CreateConstant(float value) => new(value);
