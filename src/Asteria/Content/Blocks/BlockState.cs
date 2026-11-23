@@ -116,6 +116,9 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public bool CanBeReplaced(Fluid fluid) =>
         Block.CanBeReplaced(this, fluid);
 
+    public long GetSeed(BlockPos position) =>
+        Block.GetSeed(this, position);
+
     public bool IsPathfindable(PathComputationType type) =>
         Block.IsPathfindable(this, type);
 
