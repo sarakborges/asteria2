@@ -1,4 +1,5 @@
 using Asteria.Content.Registries;
+using Asteria.Serialization;
 using Asteria.Util;
 using Asteria.World.LevelGen.DensityFunctions.Operations;
 using Asteria.World.LevelGen.Synth;
@@ -20,6 +21,12 @@ public interface ShiftNoiseFunction : DensityFunction
 
     public sealed record ShiftA(Holder<NormalNoise> OffsetNoise) : ShiftNoiseFunction
     {
+        public static MapCodec<ShiftA> CODEC { get; } =
+            NormalNoise.CODEC.FieldOf("noise")
+                .XMap<ShiftA>(
+                    static noise => new ShiftA(noise),
+                    static function => function.OffsetNoise);
+
         public DensitySampler CompileSampler(DensityFunction.CompileContext context)
         {
             Noise noise = context.CreateNoiseSampler(OffsetNoise);
@@ -37,6 +44,12 @@ public interface ShiftNoiseFunction : DensityFunction
 
     public sealed record ShiftB(Holder<NormalNoise> OffsetNoise) : ShiftNoiseFunction
     {
+        public static MapCodec<ShiftB> CODEC { get; } =
+            NormalNoise.CODEC.FieldOf("noise")
+                .XMap<ShiftB>(
+                    static noise => new ShiftB(noise),
+                    static function => function.OffsetNoise);
+
         public DensitySampler CompileSampler(DensityFunction.CompileContext context)
         {
             Noise noise = context.CreateNoiseSampler(OffsetNoise);
@@ -97,6 +110,12 @@ public interface ShiftNoiseFunction : DensityFunction
 
     public sealed record Shift(Holder<NormalNoise> OffsetNoise) : ShiftNoiseFunction
     {
+        public static MapCodec<Shift> CODEC { get; } =
+            NormalNoise.CODEC.FieldOf("noise")
+                .XMap<Shift>(
+                    static noise => new Shift(noise),
+                    static function => function.OffsetNoise);
+
         public DensitySampler CompileSampler(DensityFunction.CompileContext context)
         {
             Noise noise = context.CreateNoiseSampler(OffsetNoise);
