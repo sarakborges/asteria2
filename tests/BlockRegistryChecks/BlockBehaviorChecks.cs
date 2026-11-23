@@ -100,7 +100,15 @@ internal static class BlockBehaviorChecks
                 return MapColor.NONE;
             });
 
-        _ = new ConstructorOrderBlock(properties, events);
+        _constructorOrderEvents = events;
+        try
+        {
+            _ = new ConstructorOrderBlock(properties);
+        }
+        finally
+        {
+            _constructorOrderEvents = null;
+        }
 
         Require(events.SequenceEqual(new[] { "light", "shape", "map-color" }),
             "BlockStateBase constructor callbacks must execute in Minecraft 26.3 order.");
