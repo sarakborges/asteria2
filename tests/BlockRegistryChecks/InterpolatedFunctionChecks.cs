@@ -175,12 +175,11 @@ internal static class InterpolatedFunctionChecks
             counters.PointCalls == volume.Size(),
             "A volume already aligned to the cell lattice must bypass interpolation and sample the input volume directly.");
 
-        for (int index = 0; index < volume.Size(); index++)
+        for (int z = 0; z < volume.SizeZ; z++)
+        for (int x = 0; x < volume.SizeX; x++)
+        for (int y = 0; y < volume.SizeY; y++)
         {
-            int x = index / (volume.SizeY * volume.SizeZ);
-            int remainder = index % (volume.SizeY * volume.SizeZ);
-            int z = remainder / volume.SizeY;
-            int y = remainder % volume.SizeY;
+            int index = volume.IndexUnchecked(x, y, z);
             float expected = PolynomialSampler.Evaluate(
                 volume.BlockX(x), volume.BlockY(y), volume.BlockZ(z));
             Require(output.Get(index) == expected,
