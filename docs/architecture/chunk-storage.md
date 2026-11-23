@@ -166,3 +166,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - The no-shift sampler uses the noise volume accumulation path. Shifted variants preserve the vanilla X/Z-only and X/Y/Z coordinate paths and Z/X/Y volume traversal.
 - Domain axes remove Y for zero Y scale and X/Z for zero horizontal scale, then union all shift child axes.
 - Noise and shifted-noise runtime factories are wired; codecs remain deferred with local persistence.
+
+
+## ShiftNoiseFunction — Minecraft Java 26.3
+
+- `ShiftA`, `ShiftB` and `Shift` preserve the vanilla coordinate factor 0.25 and output factor 4.
+- ShiftA samples 2D horizontal noise through the regular NoiseFunction sampler. Shift uses the same sampler with vertical scaling enabled.
+- ShiftB transposes the requested volume into a Z/X plane with the corresponding block steps, samples it once, then replicates each value along the original Y dimension using `DensityBuffer.SetRange`.
+- The transposed scratch buffer is scoped to the evaluation and released. Domain axes are X/Z for ShiftA/B and X/Y/Z for Shift.

@@ -667,3 +667,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionadas as factories `Noise(holder)`, `Noise(holder, xzScale, yScale)`, `Noise(holder, yScale)` e `ShiftedNoise2d`.
 - `NoiseFunctionChecks` cobre coordenadas, escalas, os três modos de compilação, ordem de volume, ranges, domínio, rewrite e liberação dos buffers temporários.
 - Codec de ruído segue adiado com persistência local.
+
+
+## Incremento — ShiftNoiseFunction (23/11/2026)
+
+- Portada a interface `ShiftNoiseFunction` e suas três variantes Java 26.3: `ShiftA`, `ShiftB`, `Shift`. Range é o intervalo do holder multiplicado por 4.
+- As três funções mantêm `COORDINATE_FACTOR = 0.25` e `VALUE_FACTOR = 4.0`. `ShiftA` usa `NoiseFunction.Sampler(xzScale=0.25, yScale=0)` escalado por 4; `Shift` usa 0.25 nos três eixos e também multiplica por 4.
+- `ShiftB` foi portado com o volume transposto `sizeZ × sizeX × 1`, origem/steps permutados Z/X, sampling no plano Z/X, lookup por `IndexUnchecked(z,x,0)` e replicação por Y via `SetRange`. O buffer transposto é escopado e liberado.
+- Os eixos de domínio preservam X/Z para ShiftA/B e XYZ para Shift. Rewrite cria uma nova instância do mesmo subtipo, como na implementação vanilla (não retorna `this`).
+- Adicionadas as factories `DensityFunctions.ShiftA/B/Shift`. Codecs permanecem adiados com persistência local.
+- `ShiftNoiseFunctionChecks` verifica fórmulas escalares, range, eixos, rewrite, transposição com passos independentes, replicação vertical e liberação de buffer.

@@ -75,6 +75,15 @@ public static class DensityFunctions
     public static DensityFunction Noise(Holder<NormalNoise> noiseData, double yScale) =>
         Noise(noiseData, 1.0, yScale);
 
+    public static DensityFunction ShiftA(Holder<NormalNoise> noiseData) =>
+        new ShiftNoiseFunction.ShiftA(noiseData);
+
+    public static DensityFunction ShiftB(Holder<NormalNoise> noiseData) =>
+        new ShiftNoiseFunction.ShiftB(noiseData);
+
+    public static DensityFunction Shift(Holder<NormalNoise> noiseData) =>
+        new ShiftNoiseFunction.Shift(noiseData);
+
     public static DensityFunction ShiftedNoise2d(
         DensityFunction shiftX,
         DensityFunction shiftZ,
