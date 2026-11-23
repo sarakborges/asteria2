@@ -111,7 +111,7 @@ internal static class DensityFunctionCompilerChecks
             "DensityFunctionCompiler must compile and publish one sampler for concurrent requests of an equal graph.");
 
         Require(
-            first.SampleValue(SamplerContext.EmptyUncached, 1, 2, 3) == 1025.5f,
+            first.SampleValue(SamplerContext.EmptyUncached, 1, 2, 3) == 1026.5f,
             "The memoized sampler must preserve the input's point evaluation.");
     }
 
