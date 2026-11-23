@@ -40,8 +40,7 @@ public sealed class BlockProperties
             state.Is(BlockTags.CausesSuffocation) &&
             state.IsCollisionShapeFullBlock(level, position);
 
-    public Func<BlockState, BlockGetter, BlockPos, AABB, bool> IsViewBlockingValue { get; private set; } =
-        static (state, level, position, _) => state.IsSuffocating(level, position);
+    public Func<BlockState, BlockGetter, BlockPos, AABB, bool> IsViewBlockingValue { get; private set; }
 
     public Func<BlockState, BlockGetter, BlockPos, BlockPos?> PostProcessValue { get; private set; } =
         static (_, _, _) => null;
@@ -50,6 +49,8 @@ public sealed class BlockProperties
 
     private BlockProperties()
     {
+        IsViewBlockingValue = (state, level, position, _) =>
+            IsSuffocatingValue(state, level, position);
     }
 
     public static BlockProperties Of() => new();

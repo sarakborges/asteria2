@@ -36,6 +36,7 @@ internal static class BlockBehaviorChecks
         CheckFluidReplacement();
         CheckBlockSeed();
         CheckOffsetCacheValidation();
+        CheckDefaultViewBlockingTracksSuffocationProperty();
     }
 
     private static void CheckPathComputationTypes()
@@ -123,6 +124,24 @@ internal static class BlockBehaviorChecks
             !nonSolid.IsReplaceable && !nonSolid.IsSolid &&
             nonSolid.CanBeReplaced(Fluids.EMPTY),
             "Fluid replacement must allow a non-solid state even when its replaceable property is false.");
+    }
+
+    private static void CheckDefaultViewBlockingTracksSuffocationProperty()
+    {
+        var properties = BlockProperties.Of();
+        var block = new OffsetCacheValidationBlock(properties);
+        BlockState state = block.DefaultState;
+        var nearPlane = new AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+
+        Require(
+            !state.IsViewBlocking(EmptyBlockGetter.Instance, BlockPos.Zero, nearPlane),
+            "The default view-blocking predicate must initially delegate to the default suffocation predicate.");
+
+        properties.IsSuffocating(static (_, _, _) => true);
+
+        Require(
+            state.IsViewBlocking(EmptyBlockGetter.Instance, BlockPos.Zero, nearPlane),
+            "The default view-blocking predicate must retain the vanilla closure over BlockProperties and observe a later suffocation-predicate replacement.");
     }
 
     private static void CheckOffsetCacheValidation()
