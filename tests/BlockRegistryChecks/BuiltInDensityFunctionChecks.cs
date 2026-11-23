@@ -42,8 +42,12 @@ internal static class BuiltInDensityFunctionChecks
             "The density-function value registry must use Asteria's worldgen/density_function registry key.");
 
         Require(
-            actualPaths.SequenceEqual(new[] { "zero", "y", "shift_x", "shift_z" }, StringComparer.Ordinal),
-            "The initial density-function registry entries must preserve the initial NoiseRouterData.bootstrap registrations: zero, y, shift_x, then shift_z.");
+            actualPaths.SequenceEqual(new[]
+            {
+                "zero", "y", "shift_x", "shift_z",
+                "overworld/base_3d_noise", "nether/base_3d_noise", "end/base_3d_noise"
+            }, StringComparer.Ordinal),
+            "The currently ported density-function entries must retain their local registration order.");
 
         Require(
             registry.Entries.All(holder => holder.IsBound),

@@ -6,8 +6,8 @@ using DensityFunctionFactories = Asteria.World.LevelGen.DensityFunctions.Density
 namespace Asteria.World.LevelGen;
 
 /// <summary>
-/// Initial vanilla 26.3 density-function bootstrap prefix.
-/// Additional entries must be ported in NoiseRouterData.bootstrap order.
+/// Partial vanilla 26.3 density-function bootstrap.
+/// The ore-vein bootstrap must be ported before this registry can match vanilla registration order.
 /// </summary>
 internal static class BuiltInDensityFunctions
 {

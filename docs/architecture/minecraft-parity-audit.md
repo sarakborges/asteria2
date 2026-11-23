@@ -924,7 +924,7 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 
 ## Incremento — horizontal density shifts (23/11/2026)
 
-- Estendido o prefixo do bootstrap de `NoiseRouterData` de duas para quatro entradas: `zero`, `y`, `shift_x`, `shift_z`.
+- Registradas `zero`, `y`, `shift_x` e `shift_z`. A ordem local ainda não é a ordem integral de `NoiseRouterData.bootstrap`: o estágio `registerOreVeins`, que ocorre antes dos shifts em 26.3, permanece pendente.
 - `shift_x` usa o nó vanilla `ShiftA`; `shift_z` usa `ShiftB`. Ambos referenciam o holder registrado de `asteria:offset` (parâmetros do ruído vanilla `shift`).
 - Os testes verificam chaves e ordem, tipo de nó, identidade do holder de ruído e contrato de domínio/range.
 - Os parâmetros do ruído `offset` já estavam no dataset de ruídos; não foi criada uma cópia nem um algoritmo alternativo.
@@ -935,7 +935,7 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 
 ## Incremento — dimension base 3D density functions (23/11/2026)
 
-- Registradas as três entradas seguintes de `NoiseRouterData.bootstrap`: `overworld/base_3d_noise`, `nether/base_3d_noise` e `end/base_3d_noise`.
+- Registradas as entradas `overworld/base_3d_noise`, `nether/base_3d_noise` e `end/base_3d_noise`. A posição dessas entradas no bootstrap local ainda será realinhada após o port do estágio de veios, que precede os shifts na ordem vanilla.
 - As três usam o tipo vanilla `old_blended_noise`, já implementado em `BlendedNoise`; nenhuma implementação paralela ou aproximação foi criada.
 - Parâmetros preservados: Overworld `(0.25, 0.125, 80, 160, 8)`; Nether `(0.25, 0.375, 80, 60, 8)`; End `(0.25, 0.25, 80, 160, 4)`.
-- Testes verificam identidade, tipo, ordem e os cinco parâmetros de cada entrada. O registro não equivale à integração desses nós em `NoiseRouter` nem habilita geração de chunks.
+- Testes verificam identidade, tipo, ordem local e os cinco parâmetros de cada entrada. A ordem integral do bootstrap continua pendente do port de `registerOreVeins`; o registro não equivale à integração desses nós em `NoiseRouter` nem habilita geração de chunks.
