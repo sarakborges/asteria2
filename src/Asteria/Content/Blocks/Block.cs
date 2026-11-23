@@ -116,6 +116,9 @@ public class Block
     public virtual bool CanBeReplaced(BlockState state, Fluid fluid) =>
         state.CanBeReplaced() || !state.IsSolid;
 
+    public virtual long GetSeed(BlockState state, BlockPos position) =>
+        Mth.GetSeed(position.GetX(), position.GetY(), position.GetZ());
+
     public virtual bool SkipRendering(
         BlockState state,
         BlockState neighborState,
