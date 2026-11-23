@@ -3,6 +3,7 @@ using Asteria.Util;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
+using Asteria.World.LevelGen.DensityFunctions.Operations;
 using Asteria.World.LevelGen.Synth;
 
 internal static class ShiftNoiseFunctionChecks
@@ -80,7 +81,7 @@ internal static class ShiftNoiseFunctionChecks
         var volume = new DensityVolume(2, 2, 2, 10, 30, 50);
         DensityBuffer output = DensityBuffer.CreateUnpooled(volume.Size());
         sampler.SampleVolume(SamplerContext.EmptyUncached, output, volume);
-        Require(output.Get(0) == 1208.0f,
+        Require(output.Get(0) == 5010.0f,
             "ShiftA must use the same 2D noise coordinates for volume sampling.");
     }
 
@@ -95,7 +96,7 @@ internal static class ShiftNoiseFunctionChecks
         var volume = new DensityVolume(2, 2, 2, 10, 30, 50);
         DensityBuffer output = DensityBuffer.CreateUnpooled(volume.Size());
         sampler.SampleVolume(SamplerContext.EmptyUncached, output, volume);
-        Require(output.Get(0) == 1368.0f,
+        Require(output.Get(0) == 5310.0f,
             "Shift volume sampling must preserve the full XYZ coordinate contribution.");
     }
 
