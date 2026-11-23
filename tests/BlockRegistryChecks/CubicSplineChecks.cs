@@ -42,7 +42,7 @@ internal static class CubicSplineChecks
             constant.Range().Equals(Interval.OfExact(7.5f)),
             "BoundedFloatFunction.constant must retain one exact range independent of context.");
 
-        IBoundedFloatFunction<string> mapped = constant.Comap<string, int>(static value => value.ToString());
+        IBoundedFloatFunction<int> mapped = constant.Comap<string, int>(static value => value.ToString());
         Require(
             mapped.Apply(1234) == 7.5f &&
             mapped.Range().Equals(constant.Range()),
@@ -136,7 +136,7 @@ internal static class CubicSplineChecks
             .Build();
 
         CubicSpline<int> mapped = spline.MapCoordinates<int>(
-            coordinate => coordinate.Comap<int, float>(value => value * 2.0f));
+            coordinate => coordinate.Comap<float, int>(static value => value * 2.0f));
 
         Require(
             Math.Abs(CubicSpline<int>.Sample(mapped, 1) - CubicSpline<float>.Sample(spline, 2.0f)) < 0.00001f &&
