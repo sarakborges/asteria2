@@ -242,6 +242,7 @@ internal static class Program
         CubicSplineChecks.Run();
         SplineFunctionChecks.Run();
         DensitySamplerContextBindingChecks.Run();
+        InterpolatedFunctionChecks.Run();
         DensityBufferChecks.Run();
         BoundingBoxChecks.Run();
         DensityVolumeChecks.Run();
