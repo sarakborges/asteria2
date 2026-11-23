@@ -38,6 +38,7 @@ internal static class BlockBehaviorChecks
         CheckBlockSeed();
         CheckOffsetCacheValidation();
         CheckDefaultViewBlockingTracksSuffocationProperty();
+        CheckDefaultDestroyTime();
     }
 
     private static void CheckPathComputationTypes()
@@ -125,6 +126,38 @@ internal static class BlockBehaviorChecks
             !nonSolid.IsReplaceable && !nonSolid.IsSolid &&
             nonSolid.CanBeReplaced(Fluids.EMPTY),
             "Fluid replacement must allow a non-solid state even when its replaceable property is false.");
+    }
+
+    private static void CheckDefaultDestroyTime()
+    {
+        var defaultBlock = new DefaultDestroyTimeBlock(BlockProperties.Of());
+        Require(
+            defaultBlock.GetDefaultDestroyTime() == 0.0f,
+            "BlockBehaviour.defaultDestroyTime must expose the default destroy-time value.");
+
+        var properties = BlockProperties.Of().DestroyTime(1.25f);
+        var block = new DefaultDestroyTimeBlock(properties);
+        Require(
+            block.GetDefaultDestroyTime() == 1.25f &&
+            block.DefaultState.DestroySpeed == 1.25f,
+            "The block default destroy time and initial state destroy speed must both use the configured property.");
+
+        properties.DestroyTime(3.5f);
+        Require(
+            block.GetDefaultDestroyTime() == 3.5f,
+            "BlockBehaviour.defaultDestroyTime must read the retained Properties builder rather than a construction-time copy.");
+        Require(
+            block.DefaultState.DestroySpeed == 1.25f,
+            "An existing BlockState must retain its destroy-speed snapshot when the builder is later mutated.");
+    }
+
+    private sealed class DefaultDestroyTimeBlock : Block
+    {
+        public DefaultDestroyTimeBlock(BlockProperties properties)
+            : base(properties, createIntrusiveRegistryHolder: false)
+        {
+            InitializeStateCaches();
+        }
     }
 
     private static void CheckDefaultViewBlockingTracksSuffocationProperty()

@@ -128,6 +128,9 @@ public class Block
         Properties.MapColorValue(DefaultState) ??
         throw new InvalidOperationException("A block's default map color cannot be null.");
 
+    public float GetDefaultDestroyTime() =>
+        Properties.DestroyTimeValue;
+
     public virtual bool IsRandomlyTickingState(BlockState state) => IsRandomlyTicking;
 
     protected virtual float GetMaxHorizontalOffset() => 0.25f;
