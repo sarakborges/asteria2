@@ -413,13 +413,20 @@ internal static class DensityFunctionCodecChecks
         Require(
             ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:interval_select" &&
             ops.Get(encoded, "input").GetOrThrow().GetSingle() == 0.25f &&
-            ops.Get(encoded, "thresholds").GetArrayLength() == 2 &&
-            ops.Get(encoded, "functions").GetArrayLength() == 3,
+            ops.Get(encoded, "thresholds").GetOrThrow().GetArrayLength() == 2 &&
+            ops.Get(encoded, "functions").GetOrThrow().GetArrayLength() == 3,
             "IntervalSelectFunction must serialize input, thresholds and the function list.");
 
+        IntervalSelectFunction decoded = DensityFunctions.DIRECT_CODEC
+            .Parse(ops, encoded)
+            .GetOrThrow() as IntervalSelectFunction
+            ?? throw new InvalidOperationException("IntervalSelectFunction codec returned another density-function node.");
+
         Require(
-            DensityFunctions.DIRECT_CODEC.Parse(ops, encoded).GetOrThrow().Equals(expected),
-            "IntervalSelectFunction must round-trip its threshold sequence and branches.");
+            decoded.Input.Equals(expected.Input) &&
+            decoded.Thresholds.SequenceEqual(expected.Thresholds) &&
+            decoded.Functions.SequenceEqual(expected.Functions),
+            "IntervalSelectFunction must round-trip its input, threshold sequence and branches.");
 
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
