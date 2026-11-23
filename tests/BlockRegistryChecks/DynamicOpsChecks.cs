@@ -52,6 +52,11 @@ internal static class DynamicOpsChecks
         NumberValue large = NumberValue.Parse("9223372036854775807");
         Require(large.TryGetInt64Exact(out long value) && value == long.MaxValue,
             "Integer parsing must preserve the full Int64 range.");
+
+        NumberValue sourcePrecision = NumberValue.Parse("0.9381732587751005");
+        Require(
+            sourcePrecision.DoubleValue == 0.9381732587751005,
+            "Fractional JSON numbers must use Java/Gson double parsing without an intermediate decimal conversion.");
     }
 
     private static void CheckLists()
