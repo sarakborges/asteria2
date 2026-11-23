@@ -57,7 +57,47 @@ public sealed class BlockProperties
             IsSuffocatingValue(state, level, position);
     }
 
+    private BlockProperties(BlockProperties source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        DestroyTimeValue = source.DestroyTimeValue;
+        ExplosionResistanceValue = source.ExplosionResistanceValue;
+        RequiresCorrectToolForDropsValue = source.RequiresCorrectToolForDropsValue;
+        FrictionValue = source.FrictionValue;
+        SpeedFactorValue = source.SpeedFactorValue;
+        JumpFactorValue = source.JumpFactorValue;
+        BounceRestitutionValue = source.BounceRestitutionValue;
+        FallDistanceReductionValue = source.FallDistanceReductionValue;
+        HasCollisionValue = source.HasCollisionValue;
+        CanOccludeValue = source.CanOccludeValue;
+        IsRandomlyTickingValue = source.IsRandomlyTickingValue;
+        DynamicShapeValue = source.DynamicShapeValue;
+        ForceSolidOnValue = source.ForceSolidOnValue;
+        ForceSolidOffValue = source.ForceSolidOffValue;
+        IgnitedByLavaValue = source.IgnitedByLavaValue;
+        IsLiquidValue = source.IsLiquidValue;
+        ReplaceableValue = source.ReplaceableValue;
+        SpawnTerrainParticlesValue = source.SpawnTerrainParticlesValue;
+        IsAir = source.IsAir;
+        LightEmissionValue = source.LightEmissionValue;
+        EmissiveRenderingValue = source.EmissiveRenderingValue;
+        MapColorValue = source.MapColorValue;
+        OffsetFunctionValue = source.OffsetFunctionValue;
+        IsRedstoneConductorValue = source.IsRedstoneConductorValue;
+        IsSuffocatingValue = source.IsSuffocatingValue;
+        IsViewBlockingValue = source.IsViewBlockingValue;
+        PostProcessValue = source.PostProcessValue;
+        PushReactionValue = source.PushReactionValue;
+    }
+
     public static BlockProperties Of() => new();
+
+    public static BlockProperties OfFullCopy(Block block)
+    {
+        ArgumentNullException.ThrowIfNull(block);
+        return new BlockProperties(block.Properties);
+    }
 
     public BlockProperties Strength(float destroyTime, float explosionResistance) =>
         DestroyTime(destroyTime).ExplosionResistance(explosionResistance);

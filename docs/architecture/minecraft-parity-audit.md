@@ -435,6 +435,15 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Testes cobrem cópia integral, cópia individual, preservação de outras propriedades e ausência/identidade distinta de propriedades no destino.
 
 
+## Incremento — cópia integral das propriedades de bloco (23/11/2026)
+
+- Portado `BlockBehaviour.Properties.ofFullCopy(BlockBehaviour)` como `BlockProperties.OfFullCopy(Block)`.
+- O novo builder é independente do builder original, copiando todos os valores escalares, flags, delegates, função de offset e reação de piston que Asteria atualmente modela.
+- Delegates são preservados por referência, sem wrapper que altere closure ou semântica do callback.
+- Testes cobrem valores, flags, delegates, mutabilidade independente e argumento nulo.
+- SoundType/instrument, feature flags, loot tables, description ID e predicate de spawn por EntityType ainda não existem no modelo Asteria; o factory não declara cópia desses domínios.
+
+
 ## Incremento — holder tipado do BlockState (23/11/2026)
 
 - Portado `BlockStateBase.typeHolder()` como `BlockState.TypeHolder`.

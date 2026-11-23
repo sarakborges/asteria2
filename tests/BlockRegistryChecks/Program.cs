@@ -684,6 +684,85 @@ internal static class Program
             mutableProperties.IsAir && mutableProperties.DestroyTimeValue == 9.0f &&
             mutableProperties.ExplosionResistanceValue == 20.0f && mutableProperties.FrictionValue == 0.2f,
             "The BlockBehaviour.Properties builder itself remains mutable after block construction.");
+
+        BlockProperties copySourceProperties = BlockProperties.Of()
+            .Strength(2.75f, 8.5f)
+            .Friction(0.35f)
+            .SpeedFactor(0.8f)
+            .JumpFactor(1.2f)
+            .BounceRestitution(0.4f)
+            .FallDistanceReduction(0.25f)
+            .NoCollision()
+            .RandomTicks()
+            .DynamicShape()
+            .ForceSolidOn()
+            .IgnitedByLava()
+            .Liquid()
+            .Replaceable()
+            .NoTerrainParticles()
+            .RequiresCorrectToolForDrops()
+            .Air()
+            .LightLevel(static _ => 9)
+            .EmissiveRendering(static _ => true)
+            .MapColor(MapColor.STONE)
+            .OffsetType(OffsetType.XZ)
+            .IsRedstoneConductor(static (_, _, _) => true)
+            .IsSuffocating(static (_, _, _) => true)
+            .IsViewBlocking(static (_, _, _, _) => true)
+            .PostProcess(static (_, _, position) => position.Above())
+            .PushReaction(PushReaction.BLOCK);
+        var copySourceBlock = new TestBlockDefinition(copySourceProperties);
+        BlockProperties fullCopy = BlockProperties.OfFullCopy(copySourceBlock);
+
+        Require(
+            !ReferenceEquals(copySourceProperties, fullCopy),
+            "Properties.ofFullCopy must create an independent builder instance.");
+        Require(
+            fullCopy.DestroyTimeValue == copySourceProperties.DestroyTimeValue &&
+            fullCopy.ExplosionResistanceValue == copySourceProperties.ExplosionResistanceValue &&
+            fullCopy.RequiresCorrectToolForDropsValue == copySourceProperties.RequiresCorrectToolForDropsValue &&
+            fullCopy.FrictionValue == copySourceProperties.FrictionValue &&
+            fullCopy.SpeedFactorValue == copySourceProperties.SpeedFactorValue &&
+            fullCopy.JumpFactorValue == copySourceProperties.JumpFactorValue &&
+            fullCopy.BounceRestitutionValue == copySourceProperties.BounceRestitutionValue &&
+            fullCopy.FallDistanceReductionValue == copySourceProperties.FallDistanceReductionValue,
+            "Properties.ofFullCopy must retain every modeled scalar behavior value.");
+        Require(
+            fullCopy.HasCollisionValue == copySourceProperties.HasCollisionValue &&
+            fullCopy.CanOccludeValue == copySourceProperties.CanOccludeValue &&
+            fullCopy.IsRandomlyTickingValue == copySourceProperties.IsRandomlyTickingValue &&
+            fullCopy.DynamicShapeValue == copySourceProperties.DynamicShapeValue &&
+            fullCopy.ForceSolidOnValue == copySourceProperties.ForceSolidOnValue &&
+            fullCopy.ForceSolidOffValue == copySourceProperties.ForceSolidOffValue &&
+            fullCopy.IgnitedByLavaValue == copySourceProperties.IgnitedByLavaValue &&
+            fullCopy.IsLiquidValue == copySourceProperties.IsLiquidValue &&
+            fullCopy.ReplaceableValue == copySourceProperties.ReplaceableValue &&
+            fullCopy.SpawnTerrainParticlesValue == copySourceProperties.SpawnTerrainParticlesValue &&
+            fullCopy.IsAir == copySourceProperties.IsAir,
+            "Properties.ofFullCopy must retain every modeled behavior flag.");
+        Require(
+            ReferenceEquals(fullCopy.LightEmissionValue, copySourceProperties.LightEmissionValue) &&
+            ReferenceEquals(fullCopy.EmissiveRenderingValue, copySourceProperties.EmissiveRenderingValue) &&
+            ReferenceEquals(fullCopy.MapColorValue, copySourceProperties.MapColorValue) &&
+            ReferenceEquals(fullCopy.OffsetFunctionValue, copySourceProperties.OffsetFunctionValue) &&
+            ReferenceEquals(fullCopy.IsRedstoneConductorValue, copySourceProperties.IsRedstoneConductorValue) &&
+            ReferenceEquals(fullCopy.IsSuffocatingValue, copySourceProperties.IsSuffocatingValue) &&
+            ReferenceEquals(fullCopy.IsViewBlockingValue, copySourceProperties.IsViewBlockingValue) &&
+            ReferenceEquals(fullCopy.PostProcessValue, copySourceProperties.PostProcessValue) &&
+            fullCopy.PushReactionValue == copySourceProperties.PushReactionValue,
+            "Properties.ofFullCopy must preserve the configured state delegates and piston reaction.");
+        fullCopy.DestroyTime(4.0f);
+        Require(
+            copySourceProperties.DestroyTimeValue == 2.75f &&
+            fullCopy.DestroyTimeValue == 4.0f,
+            "Mutating the copied builder must not mutate the source builder.");
+
+        ArgumentNullException nullCopySource = Capture<ArgumentNullException>(
+            () => BlockProperties.OfFullCopy(null!),
+            "Properties.ofFullCopy must reject a null source block.");
+        Require(
+            nullCopySource.ParamName == "block",
+            "Properties.ofFullCopy must report the source block parameter when null.");
     }
 
     private static void CheckRegistryHoldersAndTags()
