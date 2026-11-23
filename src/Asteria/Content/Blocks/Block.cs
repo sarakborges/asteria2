@@ -132,65 +132,6 @@ public class Block
     public virtual VoxelShape GetInteractionShape(BlockState state, BlockGetter level, BlockPos position) =>
         Shapes.Empty();
 
-    protected virtual bool HasAnalogOutputSignal(BlockState state) => false;
-
-    protected virtual bool IsSignalSource(BlockState state) => false;
-
-    protected virtual bool ShouldRedstoneWireConnectTo(
-        BlockState state,
-        BlockGetter level,
-        BlockPos position,
-        Direction? direction) =>
-        state.IsSignalSource() && direction is not null;
-
-    protected virtual int GetSignal(
-        BlockState state,
-        BlockGetter level,
-        BlockPos position,
-        Direction direction) =>
-        OwnSignal(state, level, position);
-
-    protected virtual int OwnSignal(BlockState state, BlockGetter level, BlockPos position) => 0;
-
-    protected virtual int GetDirectSignal(
-        BlockState state,
-        BlockGetter level,
-        BlockPos position,
-        Direction direction) => 0;
-
-    internal bool ShouldRedstoneWireConnectToForState(
-        BlockState state,
-        BlockGetter level,
-        BlockPos position,
-        Direction? direction) =>
-        ShouldRedstoneWireConnectTo(state, level, position, direction);
-
-    internal int GetSignalForState(
-        BlockState state,
-        BlockGetter level,
-        BlockPos position,
-        Direction direction) =>
-        GetSignal(state, level, position, direction);
-
-    internal int OwnSignalForState(
-        BlockState state,
-        BlockGetter level,
-        BlockPos position) =>
-        OwnSignal(state, level, position);
-
-    internal int GetDirectSignalForState(
-        BlockState state,
-        BlockGetter level,
-        BlockPos position,
-        Direction direction) =>
-        GetDirectSignal(state, level, position, direction);
-
-    internal bool HasAnalogOutputSignalForState(BlockState state) =>
-        HasAnalogOutputSignal(state);
-
-    internal bool IsSignalSourceForState(BlockState state) =>
-        IsSignalSource(state);
-
     protected virtual BlockState Rotate(BlockState state, Rotation rotation) => state;
 
     protected virtual BlockState Mirror(BlockState state, Mirror mirror) => state;
