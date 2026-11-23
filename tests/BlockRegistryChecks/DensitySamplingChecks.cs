@@ -67,7 +67,7 @@ internal static class DensitySamplingChecks
 
         ContextMap replaced = ContextMap.CreateBuilder()
             .WithParameter(key, 7)
-            .WithOptionalParameter(key, null)
+            .WithOptionalParameter<int>(key, null)
             .Build();
         Require(!replaced.Has(key),
             "ContextMap.withOptionalParameter must remove a parameter when its value is null.");
@@ -115,20 +115,20 @@ internal static class DensitySamplingChecks
         DensitySampler.SampleVolumeNaive(context, buffer, volume, sampler);
         float[] expected =
         {
-            -8020, -7920,
-            -7020, -6920,
-            -8019, -7919,
-            -7019, -6919
+            -8980, -8880,
+            1020, 1120,
+            -8979, -8879,
+            1021, 1121
         };
         for (int i = 0; i < expected.Length; i++)
             Require(buffer.Get(i) == expected[i],
                 "DensitySampler.sampleVolumeNaive must traverse in Z/X/Y order and use DensityVolume's Y-minor index layout.");
 
         DensitySampler.Bound bound = sampler.Bind(context);
-        Require(bound.SampleValue(-1, 11, 20) == -7910,
+        Require(bound.SampleValue(-1, 11, 20) == -8880,
             "DensitySampler.bind must retain and forward the supplied SamplerContext.");
         var boundBuffer = bound.SampleVolume(volume);
-        Require(boundBuffer.Size() == volume.Size() && boundBuffer.Get(0) == -8020,
+        Require(boundBuffer.Size() == volume.Size() && boundBuffer.Get(0) == -8980,
             "DensitySampler.Bound.sampleVolume(volume) must acquire a scoped buffer and sample into it.");
         boundBuffer.Close();
         Require(sampler.VolumeSamples == 1,
@@ -162,7 +162,7 @@ internal static class DensitySamplingChecks
             sampler.PointSamples == 8,
             "SamplerContext.sampleValueCached must read point samples directly from a matching cached volume.");
 
-        float pointValue = context.SampleValueCached(4, sampler, 50, 60, 70);
+        float pointValue = context.SampleValueCached(4, sampler, 51, 60, 70);
         int pointCount = sampler.PointSamples;
         Require(context.SampleValueCached(4, sampler, 50, 60, 70) == pointValue &&
             sampler.PointSamples == pointCount + 0,

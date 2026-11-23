@@ -64,6 +64,17 @@ public sealed class ContextMap
             return this;
         }
 
+        public Builder WithOptionalParameter<T>(ContextKey<T> key, T? value)
+            where T : struct
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            if (value.HasValue)
+                _parameters[key] = value.Value;
+            else
+                _parameters.Remove(key);
+            return this;
+        }
+
         public T GetParameter<T>(ContextKey<T> key)
         {
             ArgumentNullException.ThrowIfNull(key);
