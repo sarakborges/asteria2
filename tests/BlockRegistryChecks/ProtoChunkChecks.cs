@@ -247,6 +247,21 @@ internal static class ProtoChunkChecks
             "A post-processing section index outside the backing array must preserve the array bounds failure.");
     }
 
+    private static void RequireThrows<TException>(Action action, string message)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(message);
+    }
+
     private static void Require(bool condition, string message)
     {
         if (!condition)
