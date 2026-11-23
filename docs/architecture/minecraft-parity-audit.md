@@ -921,3 +921,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `zero` usa o singleton `DensityFunctions.Zero()`. `y` usa o gradiente Y clamped com limites `DimensionType.MIN_Y * 2` e `DimensionType.MAX_Y * 2`, derivados dos limites dimensionais locais.
 - Testes verificam a identidade do registry, as chaves/ordem/holders, o nó constante zero e a amostragem do gradiente nos extremos e fora dos limites.
 - Este incremento não declara o dataset de density functions completo nem habilita geração de chunks.
+
+## Incremento — horizontal density shifts (23/11/2026)
+
+- Estendido o prefixo do bootstrap de `NoiseRouterData` de duas para quatro entradas: `zero`, `y`, `shift_x`, `shift_z`.
+- `shift_x` usa o nó vanilla `ShiftA`; `shift_z` usa `ShiftB`. Ambos referenciam o holder registrado de `asteria:offset` (parâmetros do ruído vanilla `shift`).
+- Os testes verificam chaves e ordem, tipo de nó, identidade do holder de ruído e contrato de domínio/range.
+- Os parâmetros do ruído `offset` já estavam no dataset de ruídos; não foi criada uma cópia nem um algoritmo alternativo.
+- Correção de escopo 26.3: `vein_toggle`, `vein_ridged` e `vein_gap` não devem ser tratados como campos antigos do NoiseRouter. A versão 26.3 moveu a seleção de veios para a material rule `minecraft:ore_vein`; as density functions de suporte continuam registradas por `NoiseRouterData` e são consumidas por essa regra. A implementação da regra material permanece pendente.

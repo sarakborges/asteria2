@@ -10,7 +10,7 @@ namespace Asteria.World.LevelGen;
 /// </summary>
 internal static class BuiltInDensityFunctions
 {
-    internal const int Count = 2;
+    internal const int Count = 4;
 
     internal static void RegisterAll()
     {
@@ -32,6 +32,20 @@ internal static class BuiltInDensityFunctions
                 aboveTop,
                 belowBottom,
                 aboveTop),
+            RegistrationInfo.BuiltIn);
+
+        Holder<NormalNoise> shiftNoise =
+            BuiltInRegistries.Noise.GetHolder(Noises.SHIFT) ??
+            throw new InvalidOperationException("Missing built-in offset noise parameters.");
+
+        registry.Register(
+            DensityFunctionKeys.SHIFT_X,
+            DensityFunctionFactories.ShiftA(shiftNoise),
+            RegistrationInfo.BuiltIn);
+
+        registry.Register(
+            DensityFunctionKeys.SHIFT_Z,
+            DensityFunctionFactories.ShiftB(shiftNoise),
             RegistrationInfo.BuiltIn);
     }
 }

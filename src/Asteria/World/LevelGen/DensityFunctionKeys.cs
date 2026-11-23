@@ -11,6 +11,8 @@ public static class DensityFunctionKeys
 {
     public static RegistryKey<DensityFunction> ZERO { get; } = CreateKey("zero");
     public static RegistryKey<DensityFunction> Y { get; } = CreateKey("y");
+    public static RegistryKey<DensityFunction> SHIFT_X { get; } = CreateKey("shift_x");
+    public static RegistryKey<DensityFunction> SHIFT_Z { get; } = CreateKey("shift_z");
 
     private static RegistryKey<DensityFunction> CreateKey(string name) =>
         RegistryKey<DensityFunction>.Create(

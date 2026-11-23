@@ -25,6 +25,7 @@ internal static class BuiltInDensityFunctionChecks
         CheckRegistryAndRegistrationOrder();
         CheckZeroFunction();
         CheckYGradient();
+        CheckShiftFunctions();
     }
 
     private static void CheckRegistryAndRegistrationOrder()
@@ -40,8 +41,8 @@ internal static class BuiltInDensityFunctionChecks
             "The density-function value registry must use Asteria's worldgen/density_function registry key.");
 
         Require(
-            actualPaths.SequenceEqual(new[] { "zero", "y" }, StringComparer.Ordinal),
-            "The initial density-function registry entries must preserve the first two NoiseRouterData.bootstrap registrations: zero, then y.");
+            actualPaths.SequenceEqual(new[] { "zero", "y", "shift_x", "shift_z" }, StringComparer.Ordinal),
+            "The initial density-function registry entries must preserve the initial NoiseRouterData.bootstrap registrations: zero, y, shift_x, then shift_z.");
 
         Require(
             registry.Entries.All(holder => holder.IsBound),
@@ -97,6 +98,37 @@ internal static class BuiltInDensityFunctionChecks
             sampler.SampleValue(context, 0, belowBottom - 1, 0) == belowBottom &&
             sampler.SampleValue(context, 0, aboveTop + 1, 0) == aboveTop,
             "The y gradient must clamp samples outside the dimension-derived vertical bounds.");
+    }
+
+
+    private static void CheckShiftFunctions()
+    {
+        Holder<NormalNoise> noiseHolder =
+            BuiltInRegistries.Noise.GetHolder(Noises.SHIFT) ??
+            throw new InvalidOperationException("Missing built-in offset noise holder.");
+
+        Holder<DensityFunction>.Reference shiftXHolder =
+            BuiltInRegistries.DensityFunction.GetHolder(DensityFunctionKeys.SHIFT_X) ??
+            throw new InvalidOperationException("Missing built-in shift_x density-function holder.");
+        Holder<DensityFunction>.Reference shiftZHolder =
+            BuiltInRegistries.DensityFunction.GetHolder(DensityFunctionKeys.SHIFT_Z) ??
+            throw new InvalidOperationException("Missing built-in shift_z density-function holder.");
+
+        Require(
+            shiftXHolder.Value is ShiftNoiseFunction.ShiftA shiftX &&
+            ReferenceEquals(shiftX.OffsetNoise, noiseHolder),
+            "The shift_x density function must use the vanilla ShiftA node and the registered offset noise holder.");
+
+        Require(
+            shiftZHolder.Value is ShiftNoiseFunction.ShiftB shiftZ &&
+            ReferenceEquals(shiftZ.OffsetNoise, noiseHolder),
+            "The shift_z density function must use the vanilla ShiftB node and the registered offset noise holder.");
+
+        Require(
+            shiftXHolder.Value.DomainAxes() == (DensityFunction.AXIS_X | DensityFunction.AXIS_Z) &&
+            shiftZHolder.Value.DomainAxes() == (DensityFunction.AXIS_X | DensityFunction.AXIS_Z) &&
+            shiftXHolder.Value.Range().Equals(shiftZHolder.Value.Range()),
+            "The registered horizontal shift functions must preserve their shared X/Z domain and range contract.");
     }
 
     private static void Require(bool condition, string message)
