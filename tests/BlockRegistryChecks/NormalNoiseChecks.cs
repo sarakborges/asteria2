@@ -62,7 +62,7 @@ internal static class NormalNoiseChecks
             .SetAmplitudeModifier(2, 1.0)
             .SetLegacyNormalization()
             .Build();
-        Require(legacy.GetRange().Equals(Interval.OfSymmetric(5.0f)),
+        Require(legacy.GetRange().Equals(Interval.OfSymmetric(6.7528615f)),
             "Legacy normalization must apply the parity expected-deviation adjustment to the summed octave amplitudes.");
 
         NormalNoise enabled = NormalNoise.CreateBuilder()
