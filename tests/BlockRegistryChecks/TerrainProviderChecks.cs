@@ -67,9 +67,9 @@ internal static class TerrainProviderChecks
     private static void CheckPeaksAndValleys()
     {
         Require(
-            MathF.Abs(TerrainProvider.PeaksAndValleys(0.0f) - 1.0f) < 0.00001f &&
-            MathF.Abs(TerrainProvider.PeaksAndValleys(0.6666667f)) < 0.00001f &&
-            MathF.Abs(TerrainProvider.PeaksAndValleys(-0.6666667f)) < 0.00001f,
+            MathF.Abs(TerrainProvider.PeaksAndValleys(0.0f) + 1.0f) < 0.00001f &&
+            MathF.Abs(TerrainProvider.PeaksAndValleys(0.33333334f)) < 0.00001f &&
+            MathF.Abs(TerrainProvider.PeaksAndValleys(-0.33333334f)) < 0.00001f,
             "Peaks-and-valleys must preserve the vanilla function's center and ridge zero crossings.");
     }
 
