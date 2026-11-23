@@ -474,3 +474,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - A inicialização materializa toda a janela retangular em ordem X/Z; a transformação cria novo armazenamento e mantém a mesma área.
 - Testes cobrem limites inclusivos/exclusivos, ordem, indexação, mapping, raio zero, tipo de exceção e diagnóstico de acesso externo.
 - A classe é uma dependência direta de `ChunkStep.apply` e `ChunkGenerationTask`; não introduz scheduler customizado.
+
+
+## Incremento — Interval (23/11/2026)
+
+- Portada a classe `Interval` de Minecraft Java 26.3 para a aritmética de limites usada por Density Functions e ruídos.
+- Preservados os singletons `NaI`, `INFINITE`, `[-1;1]` e `[0;1]`, identidade específica de NaI, validação de bounds, operações intervalares e tratamentos de zero/infinito/NaN.
+- Os métodos `pow`, `log`, `lerp` e `mapMonotonic` seguem os ramos de borda da implementação 26.3. O delegate C# substitui o operador funcional fastutil sem mudar a ordem de aplicação.
+- `IntervalChecks` cobre os ramos principais e erros. A classe fornece a faixa de retorno da próxima etapa `Noise/PerlinNoise`.

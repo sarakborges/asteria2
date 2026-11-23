@@ -39,3 +39,11 @@ Network packet codecs are out of scope. Local disk persistence remains in scope.
 - `GetHeightAdjustedTemperature`, rain/snow selection, warm-enough-to-rain, cold-enough-to-snow and frozen-ocean iceberg melt threshold are implemented.
 - The 1024-entry per-thread temperature cache is implemented with packed block-position keys and FIFO eviction. As in the reference, sea level is not part of the cache key; callers must treat a biome cache as scoped to a stable level configuration.
 - Level-dependent freeze/snow checks remain pending because they require a real level reader, block/fluid state queries, light access and snow survival behavior.
+
+
+## Interval arithmetic — Minecraft Java 26.3
+
+- Portada a aritmética de intervalos fechados usada por Density Functions, incluindo `NaI`, `INFINITE`, criação canônica, encapsulamento, soma, subtração, produto, recíproco, divisão, min/max, clamp, abs, square, potência, log, mapeamento monotônico, lerp, sign, interseção e igualdade.
+- A semântica de `NaI` usa identidade com singleton, enquanto intervalos numéricos não aceitam limites NaN. Operações de produto e interpolação preservam as regras especiais para zero e infinito da referência.
+- Testes cobrem limites invertidos/NaN, ranges canônicos, aritmética com sinal, zero e infinito, potência, log, lerp, mapeamento monotônico, comparação e valores NaI.
+- Essa primitiva é pré-requisito para o contrato `Noise.range()` e para os limites intervalares do grafo de Density Functions; ainda não executa geração de chunks.
