@@ -677,3 +677,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Os eixos de domínio preservam X/Z para ShiftA/B e XYZ para Shift. Rewrite cria uma nova instância do mesmo subtipo, como na implementação vanilla (não retorna `this`).
 - Adicionadas as factories `DensityFunctions.ShiftA/B/Shift`. Codecs permanecem adiados com persistência local.
 - `ShiftNoiseFunctionChecks` verifica fórmulas escalares, range, eixos, rewrite, transposição com passos independentes, replicação vertical e liberação de buffer.
+
+
+## Incremento — TilingMode e GradientFunction (23/11/2026)
+
+- Portado `TilingMode` 26.3 com CLAMP_TO_EDGE, REPEAT e MIRRORED_REPEAT e seus nomes de serialização.
+- Portado `GradientFunction`: seleção de coordenada pelo eixo, fator linear `(toValue - fromValue) / (toCoordinate - fromCoordinate)`, range encapsulando os extremos, domainAxes associado ao eixo e rewrite identidade.
+- `ClampedSampler` usa coordenada clampada ao menor/maior endpoint mas preserva a direção do gradiente via `fromCoordinate` original. `RepeatSampler` e `MirroredRepeatSampler` usam floorMod/floorDiv Java, incluindo coordenadas negativas e coordenadas inicial/final invertidas.
+- Samplers volumétricos preservam os três caminhos específicos: X replica por Y para cada Z; Y escreve valores por plano Y; Z preenche faixas lineares por plano Z.
+- Adicionadas `DensityFunctions.Gradient` e `YClampedGradient`. A validação `fromCoordinate != toCoordinate` permanece na camada codec vanilla, não foi introduzida artificialmente no construtor runtime.
+- `GradientFunctionChecks` cobre os três tiling modes, coordenadas negativas, período espelhado, endpoints invertidos, amostras volumétricas por eixo, ranges, domínios e factories.

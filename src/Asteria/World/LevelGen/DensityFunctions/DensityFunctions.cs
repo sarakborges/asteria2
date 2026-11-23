@@ -1,3 +1,4 @@
+using Asteria.Core;
 using Asteria.Content.Registries;
 using Asteria.World.LevelGen.Synth;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
@@ -74,6 +75,22 @@ public static class DensityFunctions
 
     public static DensityFunction Noise(Holder<NormalNoise> noiseData, double yScale) =>
         Noise(noiseData, 1.0, yScale);
+
+    public static DensityFunction YClampedGradient(
+        int fromY,
+        int toY,
+        float fromValue,
+        float toValue) =>
+        Gradient(Direction.Axis.Y, TilingMode.CLAMP_TO_EDGE, fromY, toY, fromValue, toValue);
+
+    public static DensityFunction Gradient(
+        Direction.Axis axis,
+        TilingMode tiling,
+        int fromCoordinate,
+        int toCoordinate,
+        float fromValue,
+        float toValue) =>
+        new GradientFunction(axis, tiling, fromCoordinate, toCoordinate, fromValue, toValue);
 
     public static DensityFunction ShiftA(Holder<NormalNoise> noiseData) =>
         new ShiftNoiseFunction.ShiftA(noiseData);

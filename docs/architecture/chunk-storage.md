@@ -174,3 +174,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - ShiftA samples 2D horizontal noise through the regular NoiseFunction sampler. Shift uses the same sampler with vertical scaling enabled.
 - ShiftB transposes the requested volume into a Z/X plane with the corresponding block steps, samples it once, then replicates each value along the original Y dimension using `DensityBuffer.SetRange`.
 - The transposed scratch buffer is scoped to the evaluation and released. Domain axes are X/Z for ShiftA/B and X/Y/Z for Shift.
+
+
+## Gradient density function — Minecraft Java 26.3
+
+- Added `TilingMode` with clamp-to-edge, repeat and mirrored-repeat behaviors.
+- `GradientFunction` maps one axis coordinate linearly between two values, preserving reversed endpoints. Repeat modes use Java floor division/modulo behavior for negative coordinates.
+- Volume sampling has axis-specific paths that write ranges or planes directly, matching the 26.3 layout and avoiding general point traversal.
+- `Gradient` and `YClampedGradient` runtime factories are wired. The equal-endpoint validation remains part of the deferred codec layer.
