@@ -1,5 +1,6 @@
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
+using Asteria.Content.Materials;
 using Asteria.Core;
 using Asteria.Core.Shapes;
 using Asteria.World;
@@ -15,13 +16,13 @@ public static class Blocks
         BlockProperties.Of().Replaceable().NoCollision().Air());
 
     public static Block STONE { get; } = new(
-        BlockProperties.Of().Strength(1.5f, 6.0f));
+        BlockProperties.Of().MapColor(MapColor.STONE).Strength(1.5f, 6.0f));
 
     public static Block DIRT { get; } = new(
-        BlockProperties.Of().Strength(0.5f));
+        BlockProperties.Of().MapColor(MapColor.DIRT).Strength(0.5f));
 
     public static Block GRASS_BLOCK { get; } = new(
-        BlockProperties.Of().Strength(0.6f));
+        BlockProperties.Of().MapColor(MapColor.GRASS).Strength(0.6f));
 
     internal static void RegisterAll()
     {
