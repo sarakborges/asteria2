@@ -2,12 +2,15 @@ using Asteria.Content.Blocks;
 using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Content.Fluids;
 using Asteria.Core;
+using Asteria.Content.Materials;
 using Asteria.Core.Shapes;
 using Asteria.World;
 using Asteria.World.Pathfinding;
 
 internal static class BlockBehaviorChecks
 {
+    private static List<string>? _constructorOrderEvents;
+
     private sealed class OverrideBlock : Block
     {
         public OverrideBlock()
@@ -43,6 +46,7 @@ internal static class BlockBehaviorChecks
         CheckFaceSupportSemantics();
         CheckStateCacheReinitialization();
         CheckDefaultFluidStateBeforeCacheInitialization();
+        CheckStateConstructorEvaluationOrder();
     }
 
 
@@ -72,6 +76,56 @@ internal static class BlockBehaviorChecks
                 createIntrusiveRegistryHolder: false)
         {
             InitializeStateCaches();
+        }
+    }
+
+
+    private static void CheckStateConstructorEvaluationOrder()
+    {
+        var events = new List<string>();
+        var properties = BlockProperties.Of()
+            .Air()
+            .LightLevel(state =>
+            {
+                Require(!state.IsAir && state.DestroySpeed == 0.0f,
+                    "Minecraft evaluates light emission before assigning the remaining BlockStateBase property snapshots.");
+                events.Add("light");
+                return 0;
+            })
+            .MapColor(state =>
+            {
+                Require(state.IsAir && state.DestroySpeed == 0.0f,
+                    "Minecraft assigns isAir before evaluating map color, but assigns destroySpeed afterward.");
+                events.Add("map-color");
+                return MapColor.NONE;
+            });
+
+        _constructorOrderEvents = events;
+        try
+        {
+            _ = new ConstructorOrderBlock(properties);
+        }
+        finally
+        {
+            _constructorOrderEvents = null;
+        }
+
+        Require(events.SequenceEqual(new[] { "light", "shape", "map-color" }),
+            "BlockStateBase constructor callbacks must execute in Minecraft 26.3 order.");
+    }
+
+    private sealed class ConstructorOrderBlock : Block
+    {
+        public ConstructorOrderBlock(BlockProperties properties)
+            : base(properties, createIntrusiveRegistryHolder: false)
+        {
+            InitializeStateCaches();
+        }
+
+        public override bool UseShapeForLightOcclusion(BlockState state)
+        {
+            _constructorOrderEvents?.Add("shape");
+            return false;
         }
     }
 

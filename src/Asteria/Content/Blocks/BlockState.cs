@@ -192,24 +192,26 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         : base(definition, values)
     {
         BlockProperties properties = Definition.Owner.Properties;
+
+        // Preserve BlockStateBase constructor evaluation order from Minecraft 26.3.
+        _lightEmission = properties.LightEmissionValue(this);
+        UseShapeForLightOcclusion = Block.UseShapeForLightOcclusion(this);
         IsAir = properties.IsAir;
-        DestroySpeed = properties.DestroyTimeValue;
-        RequiresCorrectToolForDrops = properties.RequiresCorrectToolForDropsValue;
-        CanOcclude = properties.CanOccludeValue;
         IgnitedByLava = properties.IgnitedByLavaValue;
         IsLiquid = properties.IsLiquidValue;
         PistonPushReaction = properties.PushReactionValue;
-        IsReplaceable = properties.ReplaceableValue;
-        ShouldSpawnTerrainParticles = properties.SpawnTerrainParticlesValue;
-        UseShapeForLightOcclusion = Block.UseShapeForLightOcclusion(this);
-        _lightEmission = properties.LightEmissionValue(this);
         _mapColor = properties.MapColorValue(this) ??
             throw new InvalidOperationException("A block state's map color cannot be null.");
-        _emissiveRendering = properties.EmissiveRenderingValue;
-        _offsetFunction = properties.OffsetFunctionValue;
+        DestroySpeed = properties.DestroyTimeValue;
+        RequiresCorrectToolForDrops = properties.RequiresCorrectToolForDropsValue;
+        CanOcclude = properties.CanOccludeValue;
         _isSuffocating = properties.IsSuffocatingValue;
         _isViewBlocking = properties.IsViewBlockingValue;
         _postProcess = properties.PostProcessValue;
+        _emissiveRendering = properties.EmissiveRenderingValue;
+        _offsetFunction = properties.OffsetFunctionValue;
+        ShouldSpawnTerrainParticles = properties.SpawnTerrainParticlesValue;
+        IsReplaceable = properties.ReplaceableValue;
         global::Asteria.Content.Blocks.Block.BlockStateRegistry.Add(this);
     }
 
