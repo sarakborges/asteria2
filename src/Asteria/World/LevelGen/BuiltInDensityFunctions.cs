@@ -1,5 +1,6 @@
 using Asteria.Content.Registries;
 using Asteria.World.LevelGen.DensityFunctions;
+using DensityFunctionFactories = Asteria.World.LevelGen.DensityFunctions.DensityFunctions;
 
 namespace Asteria.World.LevelGen;
 
@@ -18,7 +19,7 @@ internal static class BuiltInDensityFunctions
         // NoiseRouterData.bootstrap registers ZERO and Y before ore-vein functions.
         registry.Register(
             DensityFunctionKeys.ZERO,
-            DensityFunctions.Zero(),
+            DensityFunctionFactories.Zero(),
             RegistrationInfo.BuiltIn);
 
         int belowBottom = NoiseSettings.DimensionMinY * 2;
@@ -26,7 +27,7 @@ internal static class BuiltInDensityFunctions
 
         registry.Register(
             DensityFunctionKeys.Y,
-            DensityFunctions.YClampedGradient(
+            DensityFunctionFactories.YClampedGradient(
                 belowBottom,
                 aboveTop,
                 belowBottom,
