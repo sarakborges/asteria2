@@ -1,3 +1,5 @@
+using Asteria.Content.Registries;
+using Asteria.World.LevelGen.Synth;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
 using Asteria.World.LevelGen.DensityFunctions.Operations;
 
@@ -54,6 +56,37 @@ public static class DensityFunctions
 
     public static DensityFunction Pow(DensityFunction @base, DensityFunction exponent) =>
         new PowFunction(@base, exponent);
+
+    public static DensityFunction Noise(Holder<NormalNoise> noiseData) =>
+        Noise(noiseData, 1.0, 1.0);
+
+    public static DensityFunction Noise(
+        Holder<NormalNoise> noiseData,
+        double xzScale,
+        double yScale) =>
+        new NoiseFunction(
+            noiseData,
+            xzScale,
+            yScale,
+            Zero(),
+            Zero(),
+            Zero());
+
+    public static DensityFunction Noise(Holder<NormalNoise> noiseData, double yScale) =>
+        Noise(noiseData, 1.0, yScale);
+
+    public static DensityFunction ShiftedNoise2d(
+        DensityFunction shiftX,
+        DensityFunction shiftZ,
+        double xzScale,
+        Holder<NormalNoise> noiseData) =>
+        new NoiseFunction(
+            noiseData,
+            xzScale,
+            0.0,
+            shiftX,
+            Zero(),
+            shiftZ);
 
     public static DensityFunction RangeChoice(
         DensityFunction input,

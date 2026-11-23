@@ -656,3 +656,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O caminho geral calcula `Math.pow(base, exponent)` sem curto-circuito extra e usa buffer escopado para a amostragem do expoente.
 - Adicionada a factory `DensityFunctions.Pow`. Codec continua adiado com persistência local.
 - `PowFunctionChecks` cobre precedência da base constante, todos os expoentes especializados positivos/negativos, expoente genérico, base constante, caminho geral, ranges, domínio, volumes, buffers e rewrite.
+
+
+## Incremento — NoiseFunction (23/11/2026)
+
+- Portado `NoiseFunction` de Minecraft Java 26.3, integrando `Holder<NormalNoise>` com `DensityFunction.CompileContext.CreateNoiseSampler` e o contrato `Noise` já portado.
+- Sem shifts, compila para `Sampler`: ponto chama `Noise.Get(x*xzScale, y*yScale, z*xzScale)`; volume inicializa o buffer com zero e usa `Noise.AddToVolume` com escalas e amplitude 1.
+- Quando há shifts X/Z sem shift Y, compila para `ShiftedXzSampler`; quando Y também existe, usa `ShiftedXyzSampler`. Os volumes preservam a ordem Z/X/Y, reutilizam o buffer de saída para shift X e liberam buffers temporários de Y/Z com escopo.
+- `Range` é o range dos dados de ruído. `DomainAxes` remove Y quando yScale=0 e X/Z quando xzScale=0, depois une os eixos de todos os shifts. Rewrite preserva a identidade quando os três shifts não mudam.
+- Adicionadas as factories `Noise(holder)`, `Noise(holder, xzScale, yScale)`, `Noise(holder, yScale)` e `ShiftedNoise2d`.
+- `NoiseFunctionChecks` cobre coordenadas, escalas, os três modos de compilação, ordem de volume, ranges, domínio, rewrite e liberação dos buffers temporários.
+- Codec de ruído segue adiado com persistência local.

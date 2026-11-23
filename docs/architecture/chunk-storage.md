@@ -158,3 +158,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - Compilation preserves vanilla specialization precedence: constant base first; otherwise constant exponent. Absolute exponents 0.5, 1, 2 and 3 reuse square-root, identity, square and cube samplers. Negative values wrap the selected operation in reciprocal.
 - General volume evaluation uses a scoped exponent buffer. No additional zero or domain short-circuit is introduced.
 - Runtime factory is wired; codec remains deferred with local persistence.
+
+
+## Noise density function — Minecraft Java 26.3
+
+- `NoiseFunction` resolves its `NormalNoise` holder through the compile context and samples the resulting `Noise` implementation.
+- The no-shift sampler uses the noise volume accumulation path. Shifted variants preserve the vanilla X/Z-only and X/Y/Z coordinate paths and Z/X/Y volume traversal.
+- Domain axes remove Y for zero Y scale and X/Z for zero horizontal scale, then union all shift child axes.
+- Noise and shifted-noise runtime factories are wired; codecs remain deferred with local persistence.
