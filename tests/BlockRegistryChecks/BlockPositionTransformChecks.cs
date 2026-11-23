@@ -288,8 +288,14 @@ internal static class BlockPositionTransformChecks
     {
         private readonly VoxelShape _shape;
 
-        public CollisionShapeTestBlock(VoxelShape shape, bool dynamicShape)
-            : base(CreateProperties(dynamicShape), createIntrusiveRegistryHolder: false)
+        public CollisionShapeTestBlock(
+            VoxelShape shape,
+            bool dynamicShape,
+            bool forceSolidOn = false,
+            bool forceSolidOff = false)
+            : base(
+                CreateProperties(dynamicShape, forceSolidOn, forceSolidOff),
+                createIntrusiveRegistryHolder: false)
         {
             _shape = shape ?? throw new ArgumentNullException(nameof(shape));
             InitializeStateCaches();
@@ -298,11 +304,23 @@ internal static class BlockPositionTransformChecks
         public override VoxelShape GetShape(BlockState state, BlockGetter level, BlockPos position) =>
             _shape;
 
-        private static BlockProperties CreateProperties(bool dynamicShape)
+        private static BlockProperties CreateProperties(
+            bool dynamicShape,
+            bool forceSolidOn,
+            bool forceSolidOff)
         {
             BlockProperties properties = BlockProperties.Of();
             if (dynamicShape)
                 properties.DynamicShape();
+            if (forceSolidOn)
+                properties.ForceSolidOn();
+            if (forceSolidOff)
+            {
+#pragma warning disable CS0618
+                properties.ForceSolidOff();
+#pragma warning restore CS0618
+            }
+
             return properties;
         }
     }
@@ -479,6 +497,28 @@ internal static class BlockPositionTransformChecks
         Require(!dynamic.IsSolid &&
                 ReferenceEquals(dynamic.GetCollisionShape(EmptyBlockGetter.Instance, BlockPos.Zero), dynamicShape),
             "Dynamic-shape states have no cached collision-shape record and therefore remain non-solid under the legacy calculation.");
+
+        BlockState forcedSolid = new CollisionShapeTestBlock(
+            Shapes.Empty(),
+            dynamicShape: false,
+            forceSolidOn: true).DefaultState;
+        Require(forcedSolid.IsSolid,
+            "forceSolidOn must take priority over an empty collision shape.");
+
+        BlockState forcedNonSolid = new CollisionShapeTestBlock(
+            Shapes.Block(),
+            dynamicShape: false,
+            forceSolidOff: true).DefaultState;
+        Require(!forcedNonSolid.IsSolid,
+            "forceSolidOff must take priority over a full collision shape.");
+
+        BlockState forceOnWins = new CollisionShapeTestBlock(
+            Shapes.Empty(),
+            dynamicShape: false,
+            forceSolidOn: true,
+            forceSolidOff: true).DefaultState;
+        Require(forceOnWins.IsSolid,
+            "forceSolidOn must take priority when both force-solid properties are enabled.");
     }
 
     private static void RequireThrows<TException>(Action action, string message)
