@@ -741,3 +741,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `PreparedCache` é interno ao compilador, retorna o sampler já preparado e permanece não serializável; não há codec alternativo. Os codecs locais e o registry de tipos de density functions continuam adiados.
 - A publicação concorrente usa `ConcurrentDictionary<DensityFunction, Lazy<DensitySampler>>` para garantir uma única compilação por chave, preservando o comportamento de `computeIfAbsent` da referência.
 - `CacheFunctionChecks` e `DensityFunctionCompilerChecks` cobrem erro de compilação direta, rewrite, metadata, inlining de holders, compilação concorrente, cache pontual, cache de volume, contexto sem cache, substituição de buffer, compartilhamento de IDs e caches aninhados.
+
+
+## Incremento — BoundedFloatFunction e CubicSpline (23/11/2026)
+
+- Portado `BoundedFloatFunction<C>` como `IBoundedFloatFunction<TContext>`, incluindo identidade, constante com intervalo pré-computado e composição de contexto (`comap`).
+- Portado `CubicSpline<TContext>` com nós Constant e Multipoint, builder com transformação de valores e pontos com derivadas explícitas.
+- A avaliação multipoint preserva a busca binária do segmento, extrapolação linear pelos declives das extremidades e a interpolação cúbica 26.3: lerp entre os valores dos pontos mais o termo `t * (1 - t) * lerp(t, a, b)`.
+- `Range` reproduz a propagação por intervalos da referência, incluindo NaI, extensões de extremidade e a estimativa de limites para segmentos com derivadas não nulas.
+- `MapCoordinates` transforma recursivamente o coordenador e as splines filhas; `ForEachCoordinate` mantém a ordem pre-order. Os codecs recursivos e a integração com SplineFunction ficam adiados para o incremento próprio, sem stubs.
+- `CubicSplineChecks` cobre funções limitadas, constante, construção, monotonicidade dos pontos, amostragem cúbica, extrapolação, splines aninhadas, traversal, mapping, propagação de range e casos NaI/erro.

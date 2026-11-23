@@ -226,3 +226,12 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - Equivalent cache inputs share a prepared sampler and cache ID; nested cache requests receive their own IDs. Prepared nodes are runtime-only and do not participate in local serialization.
 - Codec registry/bootstrap work remains deferred with local persistence; no placeholder codecs are introduced.
 - Reference: [DensityFunctionCompiler — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/densityfunction/densityfunctioncompiler/).
+
+
+## Cubic spline primitives — Minecraft Java 26.3
+
+- `IBoundedFloatFunction<TContext>` exposes context-based float sampling and an output interval. Identity, constant and context-composition helpers follow `BoundedFloatFunction`.
+- `CubicSpline<TContext>` includes constant and multipoint nodes, builder point registration, recursive coordinate mapping/traversal and interval bounds.
+- Multipoint sampling uses the reference binary segment search, derivative-based linear extension outside the point range, and the cubic Hermite expression used by Java 26.3.
+- Recursive spline codecs and `SplineFunction` sampler integration remain separate follow-ups with local persistence; no placeholder codecs are added.
+- Reference: [CubicSpline — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/cubicspline/) and [BoundedFloatFunction — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/boundedfloatfunction/).

@@ -239,6 +239,7 @@ internal static class Program
         XoroshiroRandomSourceChecks.Run();
         NormalNoiseChecks.Run();
         LegacyFbmInitializerChecks.Run();
+        CubicSplineChecks.Run();
         DensityBufferChecks.Run();
         BoundingBoxChecks.Run();
         DensityVolumeChecks.Run();
