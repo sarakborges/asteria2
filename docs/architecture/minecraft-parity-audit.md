@@ -537,3 +537,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `Builder.Build` seleciona a subclasse interna `Perlin` quando todas as camadas têm tipo exato `PerlinNoise`, conforme a especialização 26.3. Combinações mistas mantêm a pilha genérica.
 - `NoiseStackChecks` cobre faixa com amplitude negativa, composição 2D/3D, identidade das camadas, flattening, especialização Perlin, volume aditivo, pilha vazia e ruídos mistos.
 - `NormalNoise` permanece pendente do contrato de randomização posicional (`forkPositional/fromHashOf`), que ainda não existe em Asteria; não foi substituído por hash/seed próprio.
+
+
+## Incremento — randomização legada e WorldgenRandom (23/11/2026)
+
+- Expandido `IRandomSource` para o contrato comum de 26.3: fork, positional factory, reseed, draws int/long/bool/float/double/Gaussian, inclusive range, triangular e consumo.
+- `LegacyRandomSource` agora é extensível, reinicializa o cache gaussiano no reseed e implementa os draws completos do LCG de 48 bits; sua factory posicional deriva streams via `Mth.GetSeed` e Java `String.hashCode`.
+- Portados `PositionalRandomFactory` e `MarsagliaPolarGaussian` com cache do segundo resultado.
+- `WorldgenRandom` agora herda de `LegacyRandomSource` e envolve um `IRandomSource`; delega `Fork`/`ForkPositional`, incrementa o contador em cada pedido bruto de bits e preserva os métodos de seed usados em decoração, features e estruturas.
+- `LegacyRandomSourceChecks` cobre vetores Java LCG, limites por potência e rejeição, positional streams, fork, contador e cache Gaussian.
+- Xoroshiro e `RandomSupport` seguem como etapa distinta; a factory de oitavas de `NormalNoise` só será implementada depois que os dois algoritmos estiverem disponíveis.

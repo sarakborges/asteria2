@@ -70,3 +70,10 @@ Network packet codecs are out of scope. Local disk persistence remains in scope.
 - `AddStack` achata sub-stacks preservando a ordem e combinando frequency/amplitude.
 - O builder seleciona a implementação interna Perlin somente para camadas do tipo exato `PerlinNoise`; pilhas mistas continuam genéricas.
 - `NormalNoise` ainda depende de randomização posicional antes de construir as oitavas de Perlin.
+
+
+## Legacy random-source foundation — Minecraft Java 26.3
+
+- The legacy 48-bit LCG implements the shared random-source API and creates position-/name-derived child streams.
+- WorldgenRandom wraps a selected source, delegates forks and reseeding, and counts raw bit requests. The Gaussian sampler uses the shared cached Marsaglia polar implementation.
+- Xoroshiro and multi-octave noise construction remain separate steps.
