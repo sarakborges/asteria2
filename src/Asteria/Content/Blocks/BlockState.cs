@@ -5,6 +5,7 @@ using Asteria.Core;
 using Asteria.Content.Materials;
 using Asteria.Core.Shapes;
 using Asteria.World;
+using Asteria.World.Pathfinding;
 
 namespace Asteria.Content.Blocks;
 
@@ -111,6 +112,16 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public float GetDestroySpeed(BlockGetter level, BlockPos position) => DestroySpeed;
 
     public bool CanBeReplaced() => IsReplaceable;
+
+    public bool IsPathfindable(PathComputationType type) =>
+        Block.IsPathfindable(this, type);
+
+    public bool SkipRendering(BlockState neighborState, Direction direction)
+    {
+        ArgumentNullException.ThrowIfNull(neighborState);
+        ArgumentNullException.ThrowIfNull(direction);
+        return Block.SkipRendering(this, neighborState, direction);
+    }
 
     public int GetLightDampening() => LightDampening;
 
