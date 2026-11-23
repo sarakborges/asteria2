@@ -32,9 +32,6 @@ public sealed class BlockProperties
 
     public Func<BlockState, BlockPos, Vec3>? OffsetFunctionValue { get; private set; }
 
-    public Func<BlockState, BlockGetter, BlockPos, bool> IsRedstoneConductorValue { get; private set; } =
-        static (state, level, position) => state.IsCollisionShapeFullBlock(level, position);
-
     public Func<BlockState, BlockGetter, BlockPos, bool> IsSuffocatingValue { get; private set; } =
         static (state, level, position) =>
             state.Is(BlockTags.CausesSuffocation) &&
@@ -146,14 +143,6 @@ public sealed class BlockProperties
             global::Asteria.Content.Blocks.OffsetType.XYZ => CalculateThreeAxisOffset,
             _ => throw new ArgumentOutOfRangeException(nameof(offsetType))
         };
-        return this;
-    }
-
-    public BlockProperties IsRedstoneConductor(
-        Func<BlockState, BlockGetter, BlockPos, bool> predicate)
-    {
-        IsRedstoneConductorValue = predicate ??
-            throw new ArgumentNullException(nameof(predicate));
         return this;
     }
 
