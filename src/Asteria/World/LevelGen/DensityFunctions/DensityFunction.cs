@@ -3,12 +3,12 @@ using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Util;
 using Asteria.World.LevelGen.Synth;
+using Asteria.Serialization;
 
 namespace Asteria.World.LevelGen.DensityFunctions;
 
 /// <summary>
-/// Density-function graph contract from Minecraft Java 26.3.
-/// Persistence codecs are intentionally not part of this runtime-only contract slice.
+/// Density-function graph contract and registry-aware persistence codecs from Minecraft Java 26.3.
 /// </summary>
 public interface DensityFunction
 {
@@ -17,6 +17,23 @@ public interface DensityFunction
     const int AXIS_Z = 4;
     const int NO_AXES = 0;
     const int ALL_AXES = 7;
+
+    /// <summary>Registry references only; inline density values are not accepted.</summary>
+    static Codec<Holder<DensityFunction>> REFERENCE_CODEC { get; } =
+        RegistryCodecs.Holder(Registries.DENSITY_FUNCTION);
+
+    /// <summary>Registered density references or inline density-function definitions.</summary>
+    static Codec<DensityFunction> CODEC { get; } =
+        RegistryCodecs.Holder(
+                Registries.DENSITY_FUNCTION,
+                DensityFunctions.DIRECT_CODEC)
+            .XMap<DensityFunction>(
+                static holder => holder.Kind == HolderKind.Direct
+                    ? holder.Value
+                    : new DensityFunctions.HolderHolder(holder),
+                static function => function is DensityFunctions.HolderHolder holder
+                    ? holder.Function
+                    : Holder<DensityFunction>.Direct(function));
 
     static int AxesFrom(Direction.Axis axis)
     {
