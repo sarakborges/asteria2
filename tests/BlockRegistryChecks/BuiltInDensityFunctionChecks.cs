@@ -60,7 +60,8 @@ internal static class BuiltInDensityFunctionChecks
                 "overworld/temperature", "overworld_large_biomes/temperature",
                 "overworld/vegetation", "overworld_large_biomes/vegetation",
                 "overworld/continents", "overworld/erosion", "overworld/ridges",
-                "overworld/ridges_folded"
+                "overworld/ridges_folded",
+                "overworld_large_biomes/continents", "overworld_large_biomes/erosion"
             }, StringComparer.Ordinal),
             "The density-function registry must preserve the Minecraft 26.3 NoiseRouterData.bootstrap order for the ported entries.");
 
@@ -259,6 +260,18 @@ internal static class BuiltInDensityFunctionChecks
         CheckShiftedClimateNoise(
             DensityFunctionKeys.RIDGES,
             Noises.RIDGE,
+            shiftX,
+            shiftZ,
+            cached: true);
+        CheckShiftedClimateNoise(
+            DensityFunctionKeys.OVERWORLD_LARGE_CONTINENTS,
+            Noises.CONTINENTALNESS_LARGE,
+            shiftX,
+            shiftZ,
+            cached: true);
+        CheckShiftedClimateNoise(
+            DensityFunctionKeys.OVERWORLD_LARGE_EROSION,
+            Noises.EROSION_LARGE,
             shiftX,
             shiftZ,
             cached: true);

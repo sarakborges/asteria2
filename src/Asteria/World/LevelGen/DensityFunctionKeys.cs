@@ -28,6 +28,8 @@ public static class DensityFunctionKeys
     public static RegistryKey<DensityFunction> OVERWORLD_LARGE_VEGETATION { get; } = CreateKey("overworld_large_biomes/vegetation");
     public static RegistryKey<DensityFunction> OVERWORLD_CONTINENTS { get; } = CreateKey("overworld/continents");
     public static RegistryKey<DensityFunction> OVERWORLD_EROSION { get; } = CreateKey("overworld/erosion");
+    public static RegistryKey<DensityFunction> OVERWORLD_LARGE_CONTINENTS { get; } = CreateKey("overworld_large_biomes/continents");
+    public static RegistryKey<DensityFunction> OVERWORLD_LARGE_EROSION { get; } = CreateKey("overworld_large_biomes/erosion");
     public static RegistryKey<DensityFunction> RIDGES { get; } = CreateKey("overworld/ridges");
     public static RegistryKey<DensityFunction> RIDGES_FOLDED { get; } = CreateKey("overworld/ridges_folded");
 

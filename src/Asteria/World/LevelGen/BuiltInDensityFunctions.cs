@@ -12,7 +12,7 @@ namespace Asteria.World.LevelGen;
 /// </summary>
 internal static class BuiltInDensityFunctions
 {
-    internal const int Count = 21;
+    internal const int Count = 23;
 
     private readonly record struct OreVeinDefinition(
         RegistryKey<DensityFunction> DensityKey,
@@ -56,6 +56,12 @@ internal static class BuiltInDensityFunctions
         new(DensityFunctionKeys.OVERWORLD_CONTINENTS, Noises.CONTINENTALNESS, true),
         new(DensityFunctionKeys.OVERWORLD_EROSION, Noises.EROSION, true),
         new(DensityFunctionKeys.RIDGES, Noises.RIDGE, true)
+    ];
+
+    private static readonly ClimateNoiseDefinition[] LargeBiomeTerrainClimateNoises =
+    [
+        new(DensityFunctionKeys.OVERWORLD_LARGE_CONTINENTS, Noises.CONTINENTALNESS_LARGE, true),
+        new(DensityFunctionKeys.OVERWORLD_LARGE_EROSION, Noises.EROSION_LARGE, true)
     ];
 
     internal static void RegisterAll()
@@ -138,6 +144,20 @@ internal static class BuiltInDensityFunctions
             DensityFunctionKeys.RIDGES_FOLDED,
             PeaksAndValleys(ridges),
             RegistrationInfo.BuiltIn);
+
+        foreach (ClimateNoiseDefinition definition in LargeBiomeTerrainClimateNoises)
+        {
+            DensityFunction shiftedNoise = DensityFunctionFactories.ShiftedNoise2d(
+                shiftX,
+                shiftZ,
+                0.25,
+                GetNoise(definition.NoiseKey));
+
+            RegisterAndWrap(
+                registry,
+                definition.DensityKey,
+                DensityFunctionFactories.Cache(shiftedNoise));
+        }
     }
 
     private static DensityFunction PeaksAndValleys(DensityFunction weirdness)
