@@ -58,10 +58,10 @@ public sealed class EndIslandFunction : DensityFunction
                     (Math.Abs(totalChunkX) * 3439.0f +
                      Math.Abs(totalChunkZ) * 147.0f) % 13.0f + 9.0f;
 
-                double xd = subSectionX - xOffset * 2;
-                double zd = subSectionZ - zOffset * 2;
+                float xd = subSectionX - xOffset * 2;
+                float zd = subSectionZ - zOffset * 2;
                 float newOffset = 100.0f -
-                    (float)Math.Sqrt(xd * xd + zd * zd) * islandSize;
+                    MathF.Sqrt(xd * xd + zd * zd) * islandSize;
                 newOffset = Math.Clamp(newOffset, -100.0f, 80.0f);
                 offset = Math.Max(offset, newOffset);
             }
