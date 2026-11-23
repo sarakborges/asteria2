@@ -11,7 +11,7 @@ namespace Asteria.World.LevelGen;
 /// </summary>
 internal static class BuiltInDensityFunctions
 {
-    internal const int Count = 4;
+    internal const int Count = 7;
 
     internal static void RegisterAll()
     {
@@ -47,6 +47,22 @@ internal static class BuiltInDensityFunctions
         registry.Register(
             DensityFunctionKeys.SHIFT_Z,
             DensityFunctionFactories.ShiftB(shiftNoise),
+            RegistrationInfo.BuiltIn);
+
+        // NoiseRouterData.bootstrap: the three legacy blended-noise dimension bases.
+        registry.Register(
+            DensityFunctionKeys.BASE_3D_NOISE_OVERWORLD,
+            new BlendedNoise(0.25, 0.125, 80.0, 160.0, 8.0),
+            RegistrationInfo.BuiltIn);
+
+        registry.Register(
+            DensityFunctionKeys.BASE_3D_NOISE_NETHER,
+            new BlendedNoise(0.25, 0.375, 80.0, 60.0, 8.0),
+            RegistrationInfo.BuiltIn);
+
+        registry.Register(
+            DensityFunctionKeys.BASE_3D_NOISE_END,
+            new BlendedNoise(0.25, 0.25, 80.0, 160.0, 4.0),
             RegistrationInfo.BuiltIn);
     }
 }

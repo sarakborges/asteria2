@@ -931,3 +931,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Correção de escopo 26.3: `vein_toggle`, `vein_ridged` e `vein_gap` não devem ser tratados como campos antigos do NoiseRouter. A versão 26.3 moveu a seleção de veios para a material rule `minecraft:ore_vein`; as density functions de suporte continuam registradas por `NoiseRouterData` e são consumidas por essa regra. A implementação da regra material permanece pendente.
 
 - Validação final: executar o harness e o build Godot no HEAD corrigido do incremento de shifts.
+
+
+## Incremento — dimension base 3D density functions (23/11/2026)
+
+- Registradas as três entradas seguintes de `NoiseRouterData.bootstrap`: `overworld/base_3d_noise`, `nether/base_3d_noise` e `end/base_3d_noise`.
+- As três usam o tipo vanilla `old_blended_noise`, já implementado em `BlendedNoise`; nenhuma implementação paralela ou aproximação foi criada.
+- Parâmetros preservados: Overworld `(0.25, 0.125, 80, 160, 8)`; Nether `(0.25, 0.375, 80, 60, 8)`; End `(0.25, 0.25, 80, 160, 4)`.
+- Testes verificam identidade, tipo, ordem e os cinco parâmetros de cada entrada. O registro não equivale à integração desses nós em `NoiseRouter` nem habilita geração de chunks.

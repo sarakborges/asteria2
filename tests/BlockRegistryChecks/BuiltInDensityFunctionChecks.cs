@@ -26,6 +26,7 @@ internal static class BuiltInDensityFunctionChecks
         CheckZeroFunction();
         CheckYGradient();
         CheckShiftFunctions();
+        CheckBase3dNoiseFunctions();
     }
 
     private static void CheckRegistryAndRegistrationOrder()
@@ -129,6 +130,54 @@ internal static class BuiltInDensityFunctionChecks
             shiftZHolder.Value.DomainAxes() == (DensityFunction.AXIS_X | DensityFunction.AXIS_Z) &&
             shiftXHolder.Value.Range().Equals(shiftZHolder.Value.Range()),
             "The registered horizontal shift functions must preserve their shared X/Z domain and range contract.");
+    }
+
+    private static void CheckBase3dNoiseFunctions()
+    {
+        CheckBase3dNoise(
+            DensityFunctionKeys.BASE_3D_NOISE_OVERWORLD,
+            0.25, 0.125, 80.0, 160.0, 8.0,
+            "overworld/base_3d_noise");
+        CheckBase3dNoise(
+            DensityFunctionKeys.BASE_3D_NOISE_NETHER,
+            0.25, 0.375, 80.0, 60.0, 8.0,
+            "nether/base_3d_noise");
+        CheckBase3dNoise(
+            DensityFunctionKeys.BASE_3D_NOISE_END,
+            0.25, 0.25, 80.0, 160.0, 4.0,
+            "end/base_3d_noise");
+    }
+
+    private static void CheckBase3dNoise(
+        RegistryKey<DensityFunction> key,
+        double xzScale,
+        double yScale,
+        double xzFactor,
+        double yFactor,
+        double smearScaleMultiplier,
+        string expectedPath)
+    {
+        Holder<DensityFunction>.Reference holder =
+            BuiltInRegistries.DensityFunction.GetHolder(key) ??
+            throw new InvalidOperationException($"Missing built-in {expectedPath} density-function holder.");
+
+        Require(
+            holder.IsBound &&
+            holder.Key.Location.Path == expectedPath &&
+            holder.Value is BlendedNoise
+            {
+                XzScale: var actualXzScale,
+                YScale: var actualYScale,
+                XzFactor: var actualXzFactor,
+                YFactor: var actualYFactor,
+                SmearScaleMultiplier: var actualSmearScaleMultiplier
+            } &&
+            actualXzScale == xzScale &&
+            actualYScale == yScale &&
+            actualXzFactor == xzFactor &&
+            actualYFactor == yFactor &&
+            actualSmearScaleMultiplier == smearScaleMultiplier,
+            $"The {expectedPath} entry must use the vanilla old_blended_noise node and exact 26.3 parameters.");
     }
 
     private static void Require(bool condition, string message)
