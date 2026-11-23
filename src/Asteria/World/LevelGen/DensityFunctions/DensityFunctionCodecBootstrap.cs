@@ -19,6 +19,7 @@ internal static class DensityFunctionCodecBootstrap
         IReadOnlyDictionary<BinaryFunction.Type, MapCodec<DensityFunction>> Binary,
         IReadOnlyDictionary<RoundFunction.Type, MapCodec<DensityFunction>> Round,
         MapCodec<DensityFunction> Pow,
+        MapCodec<DensityFunction> Spline,
         MapCodec<DensityFunction> Lerp,
         MapCodec<DensityFunction> Cache,
         MapCodec<DensityFunction> Interpolated,
@@ -50,6 +51,7 @@ internal static class DensityFunctionCodecBootstrap
             Register(registry, BinaryFunction.GetId(operation), codecs.Binary[operation]);
 
         Register(registry, "pow", codecs.Pow);
+        Register(registry, "spline", codecs.Spline);
         Register(registry, "lerp", codecs.Lerp);
         Register(registry, "clamp", codecs.Clamp);
         Register(registry, "range_choice", codecs.RangeChoice);
@@ -71,6 +73,7 @@ internal static class DensityFunctionCodecBootstrap
             BinaryFunction binary => codecs.Binary[binary.Operation],
             RoundFunction round => codecs.Round[round.Operation],
             PowFunction => codecs.Pow,
+            SplineFunction => codecs.Spline,
             LerpFunction => codecs.Lerp,
             CacheFunction => codecs.Cache,
             InterpolatedFunction => codecs.Interpolated,
@@ -152,6 +155,7 @@ internal static class DensityFunctionCodecBootstrap
             binary,
             round,
             CreatePowCodec(),
+            CreateSplineCodec(),
             CreateLerpCodec(),
             CreateCacheCodec(),
             CreateInterpolatedCodec(),
@@ -196,6 +200,11 @@ internal static class DensityFunctionCodecBootstrap
             .XMap<DensityFunction>(
                 static function => function,
                 function => (PowFunction)function);
+
+    private static MapCodec<DensityFunction> CreateSplineCodec() =>
+        SplineFunction.CODEC.XMap<DensityFunction>(
+            static function => function,
+            static function => (SplineFunction)function);
 
     private static MapCodec<DensityFunction> CreateLerpCodec() =>
         RecordCodecBuilder.MapCodec<LerpFunction>(instance =>
