@@ -1,4 +1,5 @@
 using Asteria.Content.Registries;
+using Asteria.Content.Blocks.StateProperties;
 using Asteria.Serialization;
 using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Content.Fluids;
