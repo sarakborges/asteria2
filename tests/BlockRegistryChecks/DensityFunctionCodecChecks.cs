@@ -29,14 +29,15 @@ internal static class DensityFunctionCodecChecks
         CheckGradientCodec();
         CheckSplineCodec();
         CheckDistanceToPointCodec();
+        CheckEndIslandCodec();
         CheckRejectedInputs();
     }
 
     private static void CheckTypeRegistry()
     {
         Require(
-            BuiltInRegistries.DensityFunctionType.Count == 33,
-            "The density-function codec slice must register constant, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient, spline and distance_to_point.");
+            BuiltInRegistries.DensityFunctionType.Count == 34,
+            "The density-function codec slice must register constant, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient, spline, distance_to_point and end_outer_islands.");
 
         Require(
             BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:constant")) &&
@@ -700,6 +701,33 @@ internal static class DensityFunctionCodecChecks
             DistanceMetric.MANHATTAN.Compute(3.0f, 4.0f) == 7.0f &&
             DistanceMetric.CHEBYSHEV.Compute(3.0f, 4.0f) == 4.0f,
             "DistanceMetric must preserve all four horizontal distance calculations.");
+    }
+
+    private static void CheckEndIslandCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        var expected = new EndIslandFunction();
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:end_outer_islands" &&
+            ops.GetMap(encoded).GetOrThrow().Count == 1,
+            "EndIslandFunction must use the vanilla unit map codec without extra fields.");
+
+        DensityFunction decoded = DensityFunctions.DIRECT_CODEC
+            .Parse(ops, encoded)
+            .GetOrThrow();
+
+        Require(
+            decoded is EndIslandFunction &&
+            decoded.Range().Min() == -0.84375f &&
+            decoded.Range().Max() == 0.5625f &&
+            decoded.DomainAxes() == (DensityFunction.AXIS_X | DensityFunction.AXIS_Z) &&
+            ReferenceEquals(decoded.RewriteChildren(static function => function), decoded),
+            "EndIslandFunction must preserve its vanilla range, horizontal axes and leaf rewrite behavior.");
     }
 
     private static void CheckRejectedInputs()
