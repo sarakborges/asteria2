@@ -285,9 +285,9 @@ public static class Climate
             return best;
         }
 
-        private readonly record struct ParameterEntry<TValue>(
+        private readonly record struct ParameterEntry<T>(
             ParameterPoint Parameters,
-            TValue Value);
+            T Value);
     }
 
     private static long Square(long value) =>
@@ -411,10 +411,10 @@ public static class Climate
     private sealed class RTree<T>
     {
         private const int DefaultChildrenPerNode = 19;
-        private readonly Node<T> _root;
-        private readonly ThreadLocal<Leaf<T>?> _lastResult = new();
+        private readonly Node _root;
+        private readonly ThreadLocal<Leaf?> _lastResult = new();
 
-        private RTree(Node<T> root) => _root = root;
+        private RTree(Node root) => _root = root;
 
         public static RTree<T> Create(
             IReadOnlyList<Pair<ParameterPoint, T>> values,
@@ -431,16 +431,16 @@ public static class Climate
                 throw new InvalidOperationException(
                     $"Expecting parameter space to be {ParameterCount}, got {dimensions}");
 
-            List<Node<T>> leaves = values
-                .Select(pair => (Node<T>)new Leaf<T>(pair.First, pair.Second))
+            List<Node> leaves = values
+                .Select(pair => (Node)new Leaf(pair.First, pair.Second))
                 .ToList();
 
             return new RTree<T>(Build(dimensions, leaves, childrenPerNode));
         }
 
-        private static Node<T> Build(
+        private static Node Build(
             int dimensions,
-            List<Node<T>> children,
+            List<Node> children,
             int childrenPerNode)
         {
             if (children.Count == 0)
@@ -451,22 +451,22 @@ public static class Climate
 
             if (children.Count <= childrenPerNode)
             {
-                List<Node<T>> sorted = children
+                List<Node> sorted = children
                     .OrderBy(TotalMagnitude)
                     .ToList();
-                return new SubTree<T>(sorted);
+                return new SubTree(sorted);
             }
 
             long minCost = long.MaxValue;
             int minDimension = -1;
-            List<SubTree<T>>? minBuckets = null;
+            List<SubTree>? minBuckets = null;
 
             for (int dimension = 0; dimension < dimensions; dimension++)
             {
                 Sort(children, dimensions, dimension, absolute: false);
-                List<SubTree<T>> buckets = Bucketize(children, childrenPerNode);
+                List<SubTree> buckets = Bucketize(children, childrenPerNode);
                 long totalCost = 0L;
-                foreach (SubTree<T> bucket in buckets)
+                foreach (SubTree bucket in buckets)
                     totalCost = unchecked(totalCost + Cost(bucket.ParameterSpace));
 
                 if (minCost <= totalCost)
@@ -480,19 +480,19 @@ public static class Climate
             if (minBuckets is null)
                 throw new InvalidOperationException("Unable to construct climate parameter search tree.");
 
-            List<SubTree<T>> sortedBuckets = SortBuckets(
+            List<SubTree> sortedBuckets = SortBuckets(
                 minBuckets, dimensions, minDimension, absolute: true);
-            List<Node<T>> rebuilt = sortedBuckets
-                .Select(bucket => (Node<T>)Build(
+            List<Node> rebuilt = sortedBuckets
+                .Select(bucket => (Node)Build(
                     dimensions,
                     bucket.Children.ToList(),
                     childrenPerNode))
                 .ToList();
 
-            return new SubTree<T>(rebuilt);
+            return new SubTree(rebuilt);
         }
 
-        private static long TotalMagnitude(Node<T> node)
+        private static long TotalMagnitude(Node node)
         {
             long result = 0L;
             foreach (Parameter parameter in node.ParameterSpace)
@@ -505,19 +505,19 @@ public static class Climate
         }
 
         private static void Sort(
-            List<Node<T>> children,
+            List<Node> children,
             int dimensions,
             int dimension,
             bool absolute)
         {
-            Comparer<Node<T>> comparer = Comparer<Node<T>>.Create((left, right) =>
+            Comparer<Node> comparer = Comparer<Node>.Create((left, right) =>
                 CompareParameterSpaces(
                     left.ParameterSpace,
                     right.ParameterSpace,
                     dimensions,
                     dimension,
                     absolute));
-            List<Node<T>> sorted = children
+            List<Node> sorted = children
                 .Select((node, index) => (Node: node, Index: index))
                 .OrderBy(entry => entry.Node, comparer)
                 .ThenBy(entry => entry.Index)
@@ -553,15 +553,15 @@ public static class Climate
             return 0;
         }
 
-        private static List<SubTree<T>> SortBuckets(
-            List<SubTree<T>> buckets,
+        private static List<SubTree> SortBuckets(
+            List<SubTree> buckets,
             int dimensions,
             int dimension,
             bool absolute)
         {
             return buckets
                 .Select((bucket, index) => (Bucket: bucket, Index: index))
-                .OrderBy(entry => entry.Bucket, Comparer<SubTree<T>>.Create((left, right) =>
+                .OrderBy(entry => entry.Bucket, Comparer<SubTree>.Create((left, right) =>
                     CompareParameterSpaces(
                         left.ParameterSpace,
                         right.ParameterSpace,
@@ -573,28 +573,28 @@ public static class Climate
                 .ToList();
         }
 
-        private static List<SubTree<T>> Bucketize(
-            List<Node<T>> nodes,
+        private static List<SubTree> Bucketize(
+            List<Node> nodes,
             int childrenPerNode)
         {
             int expectedChildrenCount = (int)Math.Pow(
                 childrenPerNode,
                 Math.Floor(Math.Log(nodes.Count - 0.01) / Math.Log(childrenPerNode)));
 
-            var buckets = new List<SubTree<T>>();
-            var current = new List<Node<T>>();
-            foreach (Node<T> node in nodes)
+            var buckets = new List<SubTree>();
+            var current = new List<Node>();
+            foreach (Node node in nodes)
             {
                 current.Add(node);
                 if (current.Count < expectedChildrenCount)
                     continue;
 
-                buckets.Add(new SubTree<T>(current));
-                current = new List<Node<T>>();
+                buckets.Add(new SubTree(current));
+                current = new List<Node>();
             }
 
             if (current.Count > 0)
-                buckets.Add(new SubTree<T>(current));
+                buckets.Add(new SubTree(current));
 
             return buckets;
         }
@@ -611,13 +611,13 @@ public static class Climate
             return result;
         }
 
-        private static Parameter[] BuildParameterSpace(IReadOnlyList<Node<T>> children)
+        private static Parameter[] BuildParameterSpace(IReadOnlyList<Node> children)
         {
             if (children.Count == 0)
                 throw new ArgumentException("SubTree needs at least one child.", nameof(children));
 
             var bounds = new Parameter?[ParameterCount];
-            foreach (Node<T> child in children)
+            foreach (Node child in children)
             {
                 for (int dimension = 0; dimension < ParameterCount; dimension++)
                 {
@@ -635,7 +635,7 @@ public static class Climate
         public T Search(TargetPoint target)
         {
             long[] targetArray = target.ToParameterArray();
-            Leaf<T> result = _root.Search(targetArray, _lastResult.Value, static (node, values) =>
+            Leaf result = _root.Search(targetArray, _lastResult.Value, static (node, values) =>
                 node.Distance(values));
             _lastResult.Value = result;
             return result.Value;
@@ -644,17 +644,17 @@ public static class Climate
         private static long JavaAbs(long value) =>
             value == long.MinValue ? long.MinValue : Math.Abs(value);
 
-        private abstract class Node<TValue>
+        private abstract class Node
         {
             protected Node(IReadOnlyList<Parameter> parameterSpace) =>
                 ParameterSpace = parameterSpace.ToArray();
 
             public Parameter[] ParameterSpace { get; }
 
-            public abstract Leaf<TValue> Search(
+            public abstract Leaf Search(
                 long[] target,
-                Leaf<TValue>? candidate,
-                Func<Node<TValue>, long[], long> distanceMetric);
+                Leaf? candidate,
+                Func<Node, long[], long> distanceMetric);
 
             public long Distance(long[] target)
             {
@@ -671,33 +671,33 @@ public static class Climate
             }
         }
 
-        private sealed class SubTree<TValue> : Node<TValue>
+        private sealed class SubTree : Node
         {
-            public SubTree(IReadOnlyList<Node<TValue>> children)
+            public SubTree(IReadOnlyList<Node> children)
                 : base(BuildParameterSpace(children))
             {
                 Children = children.ToArray();
             }
 
-            public Node<TValue>[] Children { get; }
+            public Node[] Children { get; }
 
-            public override Leaf<TValue> Search(
+            public override Leaf Search(
                 long[] target,
-                Leaf<TValue>? candidate,
-                Func<Node<TValue>, long[], long> distanceMetric)
+                Leaf? candidate,
+                Func<Node, long[], long> distanceMetric)
             {
                 long minDistance = candidate is null
                     ? long.MaxValue
                     : distanceMetric(candidate, target);
-                Leaf<TValue>? closestLeaf = candidate;
+                Leaf? closestLeaf = candidate;
 
-                foreach (Node<TValue> child in Children)
+                foreach (Node child in Children)
                 {
                     long childDistance = distanceMetric(child, target);
                     if (minDistance <= childDistance)
                         continue;
 
-                    Leaf<TValue> leaf = child.Search(target, closestLeaf, distanceMetric);
+                    Leaf leaf = child.Search(target, closestLeaf, distanceMetric);
                     long leafDistance = ReferenceEquals(child, leaf)
                         ? childDistance
                         : distanceMetric(leaf, target);
@@ -713,18 +713,18 @@ public static class Climate
             }
         }
 
-        private sealed class Leaf<TValue> : Node<TValue>
+        private sealed class Leaf : Node
         {
-            public Leaf(ParameterPoint parameterPoint, TValue value)
+            public Leaf(ParameterPoint parameterPoint, T value)
                 : base(parameterPoint.ParameterSpace()) =>
                 Value = value;
 
-            public TValue Value { get; }
+            public T Value { get; }
 
-            public override Leaf<TValue> Search(
+            public override Leaf Search(
                 long[] target,
-                Leaf<TValue>? candidate,
-                Func<Node<TValue>, long[], long> distanceMetric) =>
+                Leaf? candidate,
+                Func<Node, long[], long> distanceMetric) =>
                 this;
         }
     }
