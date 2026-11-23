@@ -28,14 +28,15 @@ internal static class DensityFunctionCodecChecks
         CheckSliceCodec();
         CheckGradientCodec();
         CheckSplineCodec();
+        CheckDistanceToPointCodec();
         CheckRejectedInputs();
     }
 
     private static void CheckTypeRegistry()
     {
         Require(
-            BuiltInRegistries.DensityFunctionType.Count == 32,
-            "The density-function codec slice must register constant, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient and spline.");
+            BuiltInRegistries.DensityFunctionType.Count == 33,
+            "The density-function codec slice must register constant, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient, spline and distance_to_point.");
 
         Require(
             BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:constant")) &&
@@ -627,6 +628,78 @@ internal static class DensityFunctionCodecChecks
                 ParseJson("""{"type":"asteria:spline","spline":{"coordinate":0.0,"points":[]}}"""))
                 .IsError,
             "Multipoint spline codecs must reject empty point lists.");
+    }
+
+    private static void CheckDistanceToPointCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        var expected = new DistanceToPointFunction(
+            new Vec3i(10, -20, 30),
+            DistanceMetric.MANHATTAN);
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        JsonElement point = ops.Get(encoded, "point").GetOrThrow();
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:distance_to_point" &&
+            point.GetArrayLength() == 3 &&
+            point[0].GetInt32() == 10 &&
+            point[1].GetInt32() == -20 &&
+            point[2].GetInt32() == 30 &&
+            ops.Get(encoded, "metric").GetOrThrow().GetString() == "manhattan",
+            "DistanceToPointFunction must use the Vec3i int-stream and named metric fields.");
+
+        DistanceToPointFunction decoded = DensityFunctions.DIRECT_CODEC
+            .Parse(ops, encoded)
+            .GetOrThrow() as DistanceToPointFunction
+            ?? throw new InvalidOperationException("Distance-to-point codec returned another density-function node.");
+
+        Require(
+            decoded.Point.Equals(expected.Point) &&
+            decoded.Metric == expected.Metric,
+            "DistanceToPointFunction must round-trip its fixed point and metric.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:distance_to_point","point":[1,2],"metric":"euclidean"}"""))
+                .IsError,
+            "Vec3i codec must reject input lists that do not contain exactly three integers.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:distance_to_point","point":[1,2,3],"metric":"taxicab"}"""))
+                .IsError,
+            "DistanceMetric codec must reject unknown serialized names.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:distance_to_point","point":[1,2,3],"metric":"euclidean_squared"}"""))
+                .IsSuccess,
+            "DistanceMetric codec must accept the full canonical enum name.");
+
+        Require(
+            expected.Range().Min() == 0.0f &&
+            float.IsPositiveInfinity(expected.Range().Max()),
+            "DistanceToPointFunction range must be [0, positive infinity].");
+
+        Require(
+            DistanceMetric.EUCLIDEAN.Compute(3.0f, -4.0f, 12.0f) == 13.0f &&
+            DistanceMetric.EUCLIDEAN_SQUARED.Compute(3.0f, -4.0f, 12.0f) == 169.0f &&
+            DistanceMetric.MANHATTAN.Compute(3.0f, -4.0f, 12.0f) == 19.0f &&
+            DistanceMetric.CHEBYSHEV.Compute(3.0f, -4.0f, 12.0f) == 12.0f,
+            "DistanceMetric must preserve all four vanilla three-axis distance calculations.");
+
+        Require(
+            DistanceMetric.EUCLIDEAN.Compute(3.0f, 4.0f) == 5.0f &&
+            DistanceMetric.EUCLIDEAN_SQUARED.Compute(3.0f, 4.0f) == 25.0f &&
+            DistanceMetric.MANHATTAN.Compute(3.0f, 4.0f) == 7.0f &&
+            DistanceMetric.CHEBYSHEV.Compute(3.0f, 4.0f) == 4.0f,
+            "DistanceMetric must preserve all four horizontal distance calculations.");
     }
 
     private static void CheckRejectedInputs()
