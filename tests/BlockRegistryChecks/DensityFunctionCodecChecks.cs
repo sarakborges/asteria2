@@ -32,6 +32,7 @@ internal static class DensityFunctionCodecChecks
         CheckSplineCodec();
         CheckDistanceToPointCodec();
         CheckEndIslandCodec();
+        CheckHolderCodecs();
         CheckRejectedInputs();
     }
 
@@ -771,6 +772,173 @@ internal static class DensityFunctionCodecChecks
                 }
             }
         }
+    }
+
+    private static void CheckHolderCodecs()
+    {
+        DynamicOps<JsonElement> jsonOps = JsonOps.INSTANCE;
+        var registry = new Registry<DensityFunction>(Registries.DENSITY_FUNCTION.Location);
+        RegistryKey<DensityFunction> entryKey = RegistryKey<DensityFunction>.Create(
+            Registries.DENSITY_FUNCTION,
+            ResourceLocation.Parse("asteria:shared_density"));
+        DensityFunction registeredValue = new BinaryFunction(
+            BinaryFunction.Type.ADD,
+            new ConstantFunction(1.25f),
+            new ConstantFunction(2.5f));
+
+        Holder<DensityFunction>.Reference registeredHolder = registry.Register(
+            entryKey,
+            registeredValue,
+            RegistrationInfo.BuiltIn);
+
+        Require(
+            registeredHolder.IsBound && ReferenceEquals(registeredHolder.Value, registeredValue),
+            "Registry.Register must bind the registered value into its reference holder.");
+
+        HolderLookupProvider lookupProvider =
+            HolderLookupProvider.Create(new IRegistryLookup[] { registry });
+        RegistryOps<JsonElement> registryOps =
+            RegistryOps<JsonElement>.Create(jsonOps, lookupProvider);
+
+        JsonElement referenceEncoded = DensityFunction.REFERENCE_CODEC
+            .EncodeStart(registryOps, registeredHolder)
+            .GetOrThrow();
+
+        Require(
+            referenceEncoded.ValueKind == JsonValueKind.String &&
+            referenceEncoded.GetString() == "asteria:shared_density",
+            "REFERENCE_CODEC must encode a registry reference as its identifier.");
+
+        Holder<DensityFunction> referenceDecoded = DensityFunction.REFERENCE_CODEC
+            .Parse(registryOps, referenceEncoded)
+            .GetOrThrow();
+
+        Require(
+            referenceDecoded.Kind == HolderKind.Reference &&
+            ReferenceEquals(referenceDecoded, registeredHolder),
+            "REFERENCE_CODEC must resolve identifiers to the registry's canonical holder instance.");
+
+        Require(
+            DensityFunction.REFERENCE_CODEC.Parse(registryOps, ParseJson("1.0")).IsError,
+            "REFERENCE_CODEC must reject inline numeric density values.");
+
+        Require(
+            DensityFunction.REFERENCE_CODEC.Parse(
+                jsonOps,
+                ParseJson("\"" + "asteria:shared_density" + "\"")).IsError,
+            "REFERENCE_CODEC must reject identifiers when no registry context is available.");
+
+        Require(
+            DensityFunction.REFERENCE_CODEC.Parse(
+                registryOps,
+                ParseJson("\"" + "asteria:missing_density" + "\"")).IsError,
+            "REFERENCE_CODEC must reject identifiers missing from the selected registry.");
+
+        JsonElement inlineEncoded = DensityFunction.CODEC
+            .EncodeStart(registryOps, new ConstantFunction(3.75f))
+            .GetOrThrow();
+
+        Require(
+            inlineEncoded.ValueKind == JsonValueKind.Number &&
+            inlineEncoded.GetSingle() == 3.75f,
+            "DensityFunction.CODEC must preserve inline constant encoding when registry context is present.");
+
+        DensityFunction inlineDecoded = DensityFunction.CODEC
+            .Parse(registryOps, inlineEncoded)
+            .GetOrThrow();
+
+        Require(
+            inlineDecoded is ConstantFunction { Value: 3.75f },
+            "DensityFunction.CODEC must decode inline definitions into direct density nodes.");
+
+        JsonElement holderEncoded = DensityFunction.CODEC
+            .EncodeStart(registryOps, new DensityFunctions.HolderHolder(registeredHolder))
+            .GetOrThrow();
+
+        Require(
+            holderEncoded.ValueKind == JsonValueKind.String &&
+            holderEncoded.GetString() == "asteria:shared_density",
+            "DensityFunction.CODEC must serialize HolderHolder as its registered identifier.");
+
+        DensityFunctions.HolderHolder holderDecoded = DensityFunction.CODEC
+            .Parse(registryOps, holderEncoded)
+            .GetOrThrow() as DensityFunctions.HolderHolder
+            ?? throw new InvalidOperationException("DensityFunction.CODEC did not preserve a registered holder.");
+
+        Require(
+            ReferenceEquals(holderDecoded.Function, registeredHolder),
+            "DensityFunction.CODEC must reconstruct HolderHolder around the canonical registry reference.");
+
+        var parentGraph = new BinaryFunction(
+            BinaryFunction.Type.MUL,
+            new DensityFunctions.HolderHolder(registeredHolder),
+            new ConstantFunction(-4.0f));
+
+        JsonElement graphEncoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(registryOps, parentGraph)
+            .GetOrThrow();
+
+        Require(
+            registryOps.Get(graphEncoded, "left").GetOrThrow().GetString() == "asteria:shared_density" &&
+            registryOps.Get(graphEncoded, "right").GetOrThrow().GetSingle() == -4.0f,
+            "Density graph child codecs must encode references by key and direct children inline.");
+
+        BinaryFunction graphDecoded = DensityFunctions.DIRECT_CODEC
+            .Parse(registryOps, graphEncoded)
+            .GetOrThrow() as BinaryFunction
+            ?? throw new InvalidOperationException("Density graph decode returned another node type.");
+
+        Require(
+            graphDecoded.Left is DensityFunctions.HolderHolder leftReference &&
+            ReferenceEquals(leftReference.Function, registeredHolder) &&
+            graphDecoded.Right is ConstantFunction { Value: -4.0f },
+            "Density graph decoding must preserve registered child holders while decoding inline siblings.");
+
+        Require(
+            DensityFunction.CODEC.Parse(
+                jsonOps,
+                ParseJson("""{"type":"asteria:add","left":1.0,"right":2.0}"""))
+                .IsSuccess,
+            "DensityFunction.CODEC must allow inline definitions when no RegistryOps context exists.");
+
+        Codec<Holder<DensityFunction>> inlineDisabled = RegistryCodecs.Holder(
+            Registries.DENSITY_FUNCTION,
+            DensityFunctions.DIRECT_CODEC,
+            allowInline: false);
+
+        Require(
+            inlineDisabled.Parse(
+                registryOps,
+                ParseJson("""{"type":"asteria:constant","value":1.0}"""))
+                .IsError,
+            "Registry file codecs must reject inline definitions when allowInline is false in registry context.");
+
+        Require(
+            inlineDisabled.Parse(
+                jsonOps,
+                ParseJson("""{"type":"asteria:constant","value":1.0}"""))
+                .IsSuccess,
+            "Registry file codecs without RegistryOps must follow vanilla inline fallback behavior.");
+
+        var foreignRegistry = new Registry<DensityFunction>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "foreign_density"));
+        RegistryKey<Registry<DensityFunction>> foreignRegistryKey =
+            RegistryKey<DensityFunction>.CreateRegistryKey(foreignRegistry.Location);
+        RegistryKey<DensityFunction> foreignEntryKey =
+            RegistryKey<DensityFunction>.Create(
+                foreignRegistryKey,
+                ResourceLocation.Parse("asteria:foreign"));
+        Holder<DensityFunction>.Reference foreignHolder = foreignRegistry.Register(
+            foreignEntryKey,
+            new ConstantFunction(9.0f),
+            RegistrationInfo.BuiltIn);
+
+        Require(
+            DensityFunction.CODEC.EncodeStart(
+                registryOps,
+                new DensityFunctions.HolderHolder(foreignHolder))
+                .IsError,
+            "Registry file codecs must reject references owned by a different registry.");
     }
 
     private static void CheckRejectedInputs()
