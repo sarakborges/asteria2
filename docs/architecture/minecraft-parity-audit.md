@@ -47,7 +47,7 @@ Asteria ainda não é um jogo funcional completo: mundo, chunks completos, bioma
 | `CrudeIncrementalIntIdentityHashBiMap<T>` | `CrudeIncrementalIntIdentityHashBiMap<T>` | Hash mixer, sondagem, crescimento, carga, mapeamento esparso e cópia comparados com a implementação 26.3. |
 | `PalettedContainerStrategy<T>` | `Strategy<T>` / `Configuration` | Dimensões, ordem X/Z/Y, larguras e transições single/local/global comparadas. |
 | `SingleValuePalette`, `LinearPalette`, `HashMapPalette`, `GlobalPalette` | Paletas homônimas | Alocação, lookup, overflow, promoção e identidade comparados. |
-| `PalettedContainer<T>` | `PalettedContainer<T>` | Resize, remapeamento de IDs, cópia, contagem, lookup e publicação do snapshot comparados. O cache do último ID antigo durante resize também existe na referência 26.3. |
+| `PalettedContainer<T>` | `PalettedContainer<T>` / `PalettedContainerRO<T>` | Armazenamento single-value/local/global, resize, remapeamento de IDs, cópia, contagem, lookup e publicação de snapshot. `Pack`/`Unpack` agora serializam palette em primeira ocorrência e long array opcional, validam bit count/tamanho e fazem repacking de palette global para IDs compactos. Os codecs do record `palette`/`data` e uso integrado em save/load de chunk ainda pendem; packet IO permanece fora do escopo single-player. |
 | `PackedBitStorage` | `SimpleBitStorage` | Packing por palavra, limite sem cruzamento de palavra, tabela de divisão, get/set/fill/getAll/unpack e raw data comparados. |
 | `ZeroBitStorage` | `ZeroBitStorage` | Semântica de zero bits, validação de índice/valor, unpack e cópia comparados. |
 | `ThreadingDetector` | `ThreadingDetector` | Protocolo de exclusão de escritor e detecção de concorrência equivalentes. A representação do erro é adaptada: Asteria lança `InvalidOperationException`; o jogo usa `ReportedException` com `CrashReport` e logging. |
@@ -869,3 +869,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Preservadas as mensagens `Unknown element name` e `Unknown element id`; o mapeamento de ID segue a ordem dos seis valores declarados.
 - `ChunkChecks` cobre os seis nomes, os seis IDs compactados, round-trip e ambos os casos desconhecidos.
 - Commit: `2873b42`; CI: [checks](https://github.com/sarakborges/asteria2/actions/runs/45227917515) — sucesso.
+
+## Incremento — pack/unpack de PalettedContainer (23/11/2026)
+
+- Portado o contrato de `PalettedContainerRO.PackedData`: palette de entradas, armazenamento `long[]` opcional e `bitsPerEntry` (incluindo `-1` como valor desconhecido).
+- `PalettedContainer.Pack` reencoda o conteúdo em IDs locais compactos na ordem da primeira ocorrência; palettes globais são serializadas com IDs locais e largura de bits derivada da palette no disco.
+- `PalettedContainer.Unpack` valida bit count, ausência de storage e tamanho do long array; reconstrói palettes locais e globais, incluindo remapeamento para IDs do registry.
+- Testes cobrem palette single-value, local, global (257 valores), round-trip XYZ e dados/arrays inválidos.
+- Commits: `51f6c8e`, `65ff33e`, `5ae5d3b`; CI: [checks](https://github.com/sarakborges/asteria2/actions/runs/45229599908) — sucesso.
