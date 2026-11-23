@@ -18,6 +18,8 @@ using Asteria.World.Clocks;
 using Asteria.World.Timelines;
 using Asteria.Serialization;
 using Asteria.World.LevelGen.DensityFunctions;
+using Asteria.World.LevelGen.Synth;
+using BuiltInNoises = Asteria.World.LevelGen.BuiltInNoises;
 
 namespace Asteria.Content.Registries;
 
@@ -56,6 +58,11 @@ public static class BuiltInRegistries
             ResourceLocation.FromNamespaceAndPath("asteria", "biome"),
             ResourceLocation.FromNamespaceAndPath("asteria", "plains"),
             static () => BuiltInBiomes.RegisterAll());
+
+    public static Registry<NormalNoise> Noise { get; } =
+        RegisterSimple<NormalNoise>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/noise"),
+            static () => BuiltInNoises.RegisterAll());
 
     public static Registry<MapCodec<DensityFunction>> DensityFunctionType { get; } =
         RegisterSimple<MapCodec<DensityFunction>>(
