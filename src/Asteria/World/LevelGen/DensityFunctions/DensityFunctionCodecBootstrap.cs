@@ -1,5 +1,6 @@
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
+using Asteria.Core;
 using Asteria.Serialization;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
 using Asteria.World.LevelGen.DensityFunctions.Operations;
@@ -23,7 +24,8 @@ internal static class DensityFunctionCodecBootstrap
         MapCodec<DensityFunction> Interpolated,
         MapCodec<DensityFunction> Clamp,
         MapCodec<DensityFunction> RangeChoice,
-        MapCodec<DensityFunction> IntervalSelect);
+        MapCodec<DensityFunction> IntervalSelect,
+        MapCodec<DensityFunction> Slice);
 
     // Lazy initialization is required because these map codecs compose DIRECT_CODEC,
     // whose registry dispatch is created while DensityFunctions itself is initialized.
@@ -52,6 +54,7 @@ internal static class DensityFunctionCodecBootstrap
         Register(registry, "interval_select", codecs.IntervalSelect);
         Register(registry, "cache", codecs.Cache);
         Register(registry, "interpolated", codecs.Interpolated);
+        Register(registry, "slice", codecs.Slice);
     }
 
     internal static MapCodec<DensityFunction>? GetCodec(DensityFunction function)
@@ -72,6 +75,7 @@ internal static class DensityFunctionCodecBootstrap
             ClampFunction => codecs.Clamp,
             RangeChoiceFunction => codecs.RangeChoice,
             IntervalSelectFunction => codecs.IntervalSelect,
+            SliceFunction => codecs.Slice,
             _ => null
         };
     }
@@ -150,7 +154,8 @@ internal static class DensityFunctionCodecBootstrap
             CreateInterpolatedCodec(),
             CreateClampCodec(),
             CreateRangeChoiceCodec(),
-            CreateIntervalSelectCodec());
+            CreateIntervalSelectCodec(),
+            CreateSliceCodec());
     }
 
     private static MapCodec<DensityFunction> CreateUnaryCodec(UnaryFunction.Type operation) =>
@@ -356,6 +361,35 @@ internal static class DensityFunctionCodecBootstrap
     private sealed record RangeChoiceBranches(
         DensityFunction WhenInRange,
         DensityFunction WhenOutOfRange);
+
+    private static MapCodec<DensityFunction> CreateSliceCodec() =>
+        RecordCodecBuilder.MapCodec<SliceFunction>(instance =>
+            instance.Group(
+                    AxisCodec.FieldOf("axis")
+                        .ForGetter<SliceFunction>(static function => function.Axis),
+                    Codecs.INT.FieldOf("coordinate")
+                        .ForGetter<SliceFunction>(static function => function.Coordinate),
+                    DensityFunctions.DIRECT_CODEC.FieldOf("input")
+                        .ForGetter<SliceFunction>(static function => function.Input))
+                .Apply(
+                    instance,
+                    static (axis, coordinate, input) =>
+                        new SliceFunction(axis, coordinate, input)))
+            .XMap<DensityFunction>(
+                static function => function,
+                function => (SliceFunction)function);
+
+    private static Codec<Direction.Axis> AxisCodec { get; } =
+        Codecs.STRING.FlatXMap(
+            name =>
+            {
+                Direction.Axis? axis = Direction.Axis.ByName(name);
+                return axis is not null
+                    ? DataResult<Direction.Axis>.Success(axis)
+                    : DataResult<Direction.Axis>.Error(
+                        () => $"Unknown axis: {name}");
+            },
+            axis => DataResult<string>.Success(axis.GetSerializedName()));
 
     private static MapCodec<DensityFunction> CreateRoundCodec(RoundFunction.Type operation) =>
         RecordCodecBuilder.MapCodec<RoundFunction>(instance =>
