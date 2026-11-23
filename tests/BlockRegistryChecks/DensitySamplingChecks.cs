@@ -162,10 +162,10 @@ internal static class DensitySamplingChecks
             sampler.PointSamples == 8,
             "SamplerContext.sampleValueCached must read point samples directly from a matching cached volume.");
 
-        float pointValue = context.SampleValueCached(4, sampler, 51, 60, 70);
+        float pointValue = context.SampleValueCached(4, sampler, 50, 60, 70);
         int pointCount = sampler.PointSamples;
         Require(context.SampleValueCached(4, sampler, 50, 60, 70) == pointValue &&
-            sampler.PointSamples == pointCount + 0,
+            sampler.PointSamples == pointCount,
             "SamplerContext.sampleValueCached must reuse a matching non-NaN point cache entry.");
 
         var differentVolume = new DensityVolume(2, 2, 2, 20, 5, 0);
@@ -173,7 +173,7 @@ internal static class DensitySamplingChecks
         Require(arena.Acquired == 2 && arena.Released == 1 && sampler.VolumeSamples == 2,
             "SamplerContext.sampleVolumeCached must close and replace a cached buffer when the volume changes.");
 
-        context.SampleValueCached(4, sampler, 50, 60, 70);
+        context.SampleValueCached(4, sampler, 51, 60, 70);
         Require(sampler.PointSamples == pointCount + 1,
             "Point cache entries must be invalidated by a different coordinate.");
     }
