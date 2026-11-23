@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Asteria.Content.Biomes;
 using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
@@ -6,6 +7,7 @@ using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
 using Asteria.Content.Storage;
 using Asteria.Core;
+using Asteria.Serialization;
 using Asteria.Core.Shapes;
 using Asteria.World;
 using Asteria.World.Lighting;
@@ -785,6 +787,25 @@ internal static class ChunkChecks
         Require(
             ChunkPos.IsValid(int.MinValue, 0),
             "ChunkPos.IsValid must preserve Java Mth.absMax integer-overflow behavior for int.MinValue.");
+        
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        ChunkPos source = new(-117, 284);
+        JsonElement encoded = ChunkPos.CODEC.EncodeStart(ops, source).GetOrThrow();
+        IReadOnlyList<JsonElement> coordinates = ops.GetList(encoded).GetOrThrow();
+        DataResult<ChunkPos> decoded = ChunkPos.CODEC.Parse(ops, encoded);
+
+        Require(
+            coordinates.Count == 2 &&
+            coordinates[0].GetInt32() == source.X &&
+            coordinates[1].GetInt32() == source.Z &&
+            decoded.GetOrThrow() == source &&
+            ReferenceEquals(decoded.Lifecycle, Lifecycle.Stable()),
+            "ChunkPos.CODEC must round-trip X/Z in order and expose stable lifecycle metadata.");
+
+        Require(
+            ChunkPos.CODEC.Parse(ops, ops.CreateList(new[] { ops.CreateInt(1) })).IsError &&
+            ChunkPos.CODEC.Parse(ops, ops.CreateList(new[] { ops.CreateInt(1), ops.CreateInt(2), ops.CreateInt(3) })).IsError,
+            "ChunkPos.CODEC must reject lists whose coordinate count is not exactly two.");
     }
 
     private static void CheckHeightAccessor()

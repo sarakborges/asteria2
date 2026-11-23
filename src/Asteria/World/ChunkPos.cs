@@ -1,5 +1,7 @@
 using Asteria.Content.Chunks.Status;
+using Asteria.Content.Registries;
 using Asteria.Core;
+using Asteria.Serialization;
 
 namespace Asteria.World;
 
@@ -17,6 +19,14 @@ public readonly record struct ChunkPos(int X, int Z)
 
     public static readonly ChunkPos Zero = new(0, 0);
     public static readonly long InvalidChunkPos = Pack(1_875_066, 1_875_066);
+
+    /// <summary>Encodes the X and Z chunk coordinates as a stable two-integer list, matching ChunkPos.CODEC.</summary>
+    public static Codec<ChunkPos> CODEC { get; } =
+        Codecs.INT.ListOf(2, 2)
+            .XMap(
+                static coordinates => new ChunkPos(coordinates[0], coordinates[1]),
+                static chunkPosition => new[] { chunkPosition.X, chunkPosition.Z })
+            .WithLifecycle(Lifecycle.Stable());
 
     public static ChunkPos Containing(BlockPos position)
     {
