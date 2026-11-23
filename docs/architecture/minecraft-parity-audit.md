@@ -909,4 +909,5 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Portada a R-tree 7D de seleção de bioma, com fan-out padrão 19, bucketização por custo, ordenação por dimensão e cache thread-local da última folha.
 - Os testes comparam a busca indexada com força bruta em diferentes fan-outs, validam codecs e limites, e verificam amostragem nas coordenadas quart.
 - O port ainda não inclui `BiomeSource`, dados climáticos vanilla nem integração com a geração do mundo.
-- Commit de implementação e testes: `085e770`; validação CI: executar no commit mais recente desta branch.
+- Commits de implementação, correção e testes: `dc953b5`, `4b374c3`, `3ecee9d`, `399c6d1`, `e5ee06b`, `127f7b1`, `085e770`, `378f296` e `49a7a0d`.
+- CI 921: [checks](https://github.com/sarakborges/asteria2/actions/runs/45237271508) — harness de paridade e build Godot concluídos com sucesso.
