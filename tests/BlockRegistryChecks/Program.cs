@@ -192,7 +192,7 @@ internal static class Program
 
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&
-            Block.BlockStateRegistry.Count == 10 &&
+            Block.BlockStateRegistry.Count == 11 &&
             !BuiltInRegistries.AreFrozen,
             "Block states must receive IDs during block construction, before registry bootstrap.");
         CheckBuiltInRegistryRoot();
@@ -217,7 +217,7 @@ internal static class Program
                     RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Item.Location)),
                 BuiltInRegistries.Item),
             "The root registry must resolve the item registry by its registry key.");
-        Require(BuiltInRegistries.Block.Count == 4, "The four initial production blocks should be registered.");
+        Require(BuiltInRegistries.Block.Count == 5, "The five initial production blocks should be registered.");
         Require(
             ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("asteria:stone")), Blocks.STONE) &&
             ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("asteria:dirt")), Blocks.DIRT) &&
@@ -266,7 +266,7 @@ internal static class Program
         Require(BuiltInRegistries.AttributeType.Count == 9, "The attribute-type registry must contain the seven existing value types plus particle and ambient-particle types.");
         Require(Fluid.FluidStateRegistry.Count == 1, "The fluid-state ID map must contain every registered fluid state.");
         Require(ReferenceEquals(Blocks.AIR.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState), "Air must contain the empty fluid state.");
-        Require(Block.BlockStateRegistry.Count == 10, "Expected one air state and six test states.");
+        Require(Block.BlockStateRegistry.Count == 11, "Expected five built-in block states and six test states.");
         FluidChecks.Run();
         BlockTagChecks.Run();
         BlockPositionTransformChecks.Run();
@@ -521,6 +521,13 @@ internal static class Program
 
         Require(ReferenceEquals(BuiltInRegistries.Block.GetValue(airId), Blocks.AIR), "The air block must be registered.");
         Require(
+            ReferenceEquals(
+                BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("asteria:void_air")),
+                Blocks.VOID_AIR) &&
+            Blocks.VOID_AIR.DefaultState.IsAir &&
+            !ReferenceEquals(Blocks.VOID_AIR, Blocks.AIR),
+            "VOID_AIR must be a distinct registered air state for out-of-build-height chunk reads.");
+        Require(
             ReferenceEquals(BuiltInRegistries.Block.GetValue(missingId), Blocks.AIR),
             "Defaulted GetValue(identifier) lookups must resolve unknown identifiers to air.");
         Require(
@@ -545,10 +552,10 @@ internal static class Program
             BuiltInRegistries.Block.GetHolder(missingKey) is null,
             "Defaulted registries must keep resource-key, optional, and holder lookups exact rather than falling back.");
         Require(
-            BuiltInRegistries.Block.Count == 4 &&
+            BuiltInRegistries.Block.Count == 5 &&
             ReferenceEquals(BuiltInRegistries.Block.GetValue(airKey), Blocks.AIR) &&
             ReferenceEquals(BuiltInRegistries.Block.GetOptional(airKey), Blocks.AIR),
-            "The production block registry must contain the four built-in gameplay blocks; test fixtures must stay outside it.");
+            "The production block registry must contain the five built-in blocks, including VOID_AIR; test fixtures must stay outside it.");
         Require(ReferenceEquals(BuiltInRegistries.Block.GetAny(), Blocks.AIR.BuiltInRegistryHolder), "DefaultedMappedRegistry.getAny must return its default holder.");
         Holder<Block>.Reference? randomDefaultedHolder = BuiltInRegistries.Block.GetRandom(new Random(0));
         Require(
