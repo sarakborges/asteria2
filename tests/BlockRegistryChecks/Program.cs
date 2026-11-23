@@ -230,6 +230,7 @@ internal static class Program
         FluidChecks.Run();
         BlockTagChecks.Run();
         BlockPositionTransformChecks.Run();
+        BlockBehaviorChecks.Run();
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState, FluidChecks.SourceFluidState);
         BiomeChecks.Run();
         EnvironmentAttributeChecks.Run();
