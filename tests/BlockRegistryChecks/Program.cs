@@ -241,6 +241,7 @@ internal static class Program
         LegacyFbmInitializerChecks.Run();
         CubicSplineChecks.Run();
         SplineFunctionChecks.Run();
+        DensitySamplerContextBindingChecks.Run();
         DensityBufferChecks.Run();
         BoundingBoxChecks.Run();
         DensityVolumeChecks.Run();

@@ -244,3 +244,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - Point evaluation caches coordinate values for one point. Volume evaluation lazily samples each coordinate into a scoped buffer and closes all leases after the full volume, including exceptional exits.
 - Range comes from the cubic spline; domain axes are the union of coordinate density-function domains. Child rewrite traverses nested spline coordinates and retains identity when unchanged.
 - Recursive spline codecs and local save/load integration remain deferred; no placeholder codec is registered.
+
+
+## Context-bound density sampling — Minecraft Java 26.3
+
+- `ContextBoundSampler` resolves its typed `ContextKey<DensitySampler>` on each point or volume request and delegates to the selected sampler, falling back when the context field is absent.
+- `DensitySamplerSet` resolves a density function to a `DensitySampler.Bound`; its default point helper samples through that bound.
+- Both components use the existing context map and bound sampler contracts without adding global state or alternate cache behavior.
+- References: [ContextBoundSampler — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/densityfunction/contextboundsampler/) and [DensitySamplerSet — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/densityfunction/densitysamplerset/).

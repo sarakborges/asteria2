@@ -765,3 +765,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adaptação C# documentada: o parâmetro genérico existente em CubicSpline<TContext> representa o contexto de avaliação; por isso o spline descritivo usa CubicSpline<SplineFunction.Unit> e o compilado usa CubicSpline<SplineInput>. A API Java parametriza o nó por I extends BoundedFloatFunction<?>; a semântica de amostragem e a ordem de traversal são preservadas.
 - Os codecs recursivos permanecem adiados com persistência local; nenhuma implementação substituta foi criada.
 - SplineFunctionChecks cobre ponto, volume, range, domínio, coordenadas aninhadas, spline constante, rewrite e liberação de buffers no caminho de exceção.
+
+
+## Incremento — ContextBoundSampler e DensitySamplerSet (23/11/2026)
+
+- Portado `ContextBoundSampler(key, fallbackSampler)`: cada amostragem pontual ou volumétrica consulta `SamplerContext.GetFieldOrDefault` e delega integralmente ao sampler encontrado ou ao fallback.
+- Portada a interface funcional `DensitySamplerSet`: `Get(function)` retorna `DensitySampler.Bound`; o método default `SampleValue` resolve o bound e encaminha a amostragem pontual.
+- Os dois componentes reutilizam `ContextKey<DensitySampler>`, `ContextMap`, `SamplerContext` e `DensitySampler.Bound` já existentes, sem novo estado global, cache ou dependência.
+- `DensitySamplerContextBindingChecks` cobre fallback ausente, override de contexto para ponto/volume e lookup do sampler set com contexto vinculado.
