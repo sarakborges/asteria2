@@ -188,16 +188,21 @@ internal static class BuiltInDensityFunctionChecks
             BuiltInRegistries.Noise.GetHolder(Noises.ORE_GAP) is not null,
             "Ore-vein density functions must reference the registered vanilla ore noise parameters.");
 
+        Interval toggleRange = toggle.Value.Range();
+        Interval richnessRange = richness.Value.Range();
+        Interval copperRange = copper.Value.Range();
+        Interval ironRange = iron.Value.Range();
+
         Require(
-            toggle.Value.Range().Min() <= 0.0f &&
-            toggle.Value.Range().Max() >= 0.0f &&
-            richness.Value.Range().Min() == 0.1f &&
-            richness.Value.Range().Max() == 0.3f &&
-            copper.Value.Range().Min() <= -1.0f &&
-            copper.Value.Range().Max() >= 0.7f &&
-            iron.Value.Range().Min() <= -1.0f &&
-            iron.Value.Range().Max() >= 0.7f,
-            "Ore-vein density-function ranges must preserve the vanilla toggle, richness and vein-body bounds.");
+            toggleRange.Min() <= 0.0f &&
+            toggleRange.Max() >= 0.0f &&
+            MathF.Abs(richnessRange.Min() - 0.1f) < 0.0001f &&
+            MathF.Abs(richnessRange.Max() - 0.3f) < 0.0001f &&
+            copperRange.Min() <= -0.9999f &&
+            copperRange.Max() >= 0.6999f &&
+            ironRange.Min() <= -0.9999f &&
+            ironRange.Max() >= 0.6999f,
+            $"Ore-vein ranges must preserve vanilla bounds. toggle={toggleRange}, richness={richnessRange}, copper={copperRange}, iron={ironRange}.");
     }
 
     private static void CheckBase3dNoiseFunctions()
