@@ -402,3 +402,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O ramo de objeto de `BlockStateCodec` agora aplica `Lifecycle.Stable()` ao resultado de encode e decode, inclusive resultados de erro, reproduzindo `BlockState.FULL_CODEC = codec(...).stable()` de Minecraft 26.3.
 - O ramo compacto por identificador continua preservando o lifecycle do `Registry.byNameCodec()`, em vez de forçar estabilidade sobre o codec do registry.
 - Testes verificam o lifecycle em encode/decode dos formatos compacto e completo e do codec completo estrito.
+
+
+## Incremento — visibilidade do construtor de StateDefinition (23/11/2026)
+
+- O construtor genérico de `StateDefinition` deixou de ser público e passou a `protected internal`, alinhando-se ao construtor protegido do Minecraft 26.3.
+- O builder interno continua podendo materializar a definição, e tipos derivados externos podem continuar estendendo o contrato.
+- Teste de reflexão garante que consumidores externos não conseguem contornar a validação de propriedades feita pelo `StateDefinitionBuilder`.

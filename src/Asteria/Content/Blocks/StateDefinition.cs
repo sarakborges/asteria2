@@ -18,7 +18,7 @@ public class StateDefinition<TOwner, TState>
     public IReadOnlyList<TState> PossibleStates => _readOnlyStates;
     public bool IsSingletonState => _properties.Length == 0;
 
-    public StateDefinition(
+    protected internal StateDefinition(
         TOwner owner,
         IReadOnlyList<StateProperty> properties,
         Func<StateDefinition<TOwner, TState>, object[], TState> stateFactory)

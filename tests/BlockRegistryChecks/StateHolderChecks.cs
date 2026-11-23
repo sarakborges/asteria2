@@ -1,3 +1,4 @@
+using System.Reflection;
 using Asteria.Content.Blocks;
 using Asteria.Content.Fluids;
 
@@ -5,8 +6,23 @@ internal static class StateHolderChecks
 {
     public static void Run()
     {
+        CheckDefinitionConstructionVisibility();
         CheckBlockStateIdentity();
         CheckFluidStateIdentity();
+    }
+
+
+    private static void CheckDefinitionConstructionVisibility()
+    {
+        Type definitionType = typeof(StateDefinition<,>);
+        Require(
+            definitionType.GetConstructors(BindingFlags.Instance | BindingFlags.Public).Length == 0,
+            "StateDefinition must not expose a public constructor that bypasses StateDefinitionBuilder property validation.");
+
+        Require(
+            definitionType.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
+                .Any(constructor => constructor.IsFamilyOrAssembly),
+            "StateDefinition construction must remain available to in-assembly builders and derived extension types, matching the protected vanilla constructor.");
     }
 
     private static void CheckBlockStateIdentity()

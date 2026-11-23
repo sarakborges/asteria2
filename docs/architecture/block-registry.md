@@ -90,3 +90,8 @@ The state constructor preserves Minecraft 26.3 callback evaluation order: light 
 ## Block-state codec lifecycle
 
 The full block-state form applies Minecraft 26.3 `FULL_CODEC.stable()` semantics to both successful and failed encode/decode results. When the compact string form is enabled, that branch preserves the registry name codec lifecycle; object-form states retain the stable full-codec lifecycle.
+
+
+## StateDefinition construction boundary
+
+The generic `StateDefinition` constructor is protected-internal rather than public. This matches Minecraft 26.3's protected constructor while retaining access for the in-assembly validated builder. External callers must create definitions through `StateDefinitionBuilder`, so property name, value-count, serialized-value, and duplicate-name validation cannot be bypassed accidentally.
