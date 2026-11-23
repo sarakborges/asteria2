@@ -829,3 +829,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - A janela acumulada de `GENERATION_PYRAMID/FULL` é verificada contra os 12 anéis vanilla; `LOADING_PYRAMID/FULL` exige `SPAWN` no centro e `INITIALIZE_LIGHT` no anel adjacente.
 - Portada também a margem de segurança usada para limitar coordenadas máximas de chunk.
 - Delimitação: estes tipos contêm os metadados de agendamento. `ChunkStep.apply`, delegates de tarefas, profiling, `WorldGenContext`, `GenerationChunkHolder` e o scheduler ainda dependem de gerador/mundo local e não foram substituídos por callbacks ou no-ops artificiais.
+
+
+## Incremento — contrato de mutação de ChunkAccess (23/11/2026)
+
+- Portada a sobrecarga compartilhada `ChunkAccess.SetBlockState(position, state)`, que encaminha para a mutação concreta com flags padrão `3`.
+- A sobrecarga com flags agora é abstrata em `ChunkAccess`, como na referência, e `ProtoChunk` a implementa diretamente.
+- Testes verificam o valor padrão 3, passagem sem alteração de flags explícitas, retorno do estado anterior, estado armazenado e a resposta concreta fora da altura do mundo.

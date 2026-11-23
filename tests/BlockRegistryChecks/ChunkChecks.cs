@@ -22,6 +22,7 @@ internal static class ChunkChecks
 
         CheckHeightAccessor();
         CheckChunkAccessLifecycle();
+        CheckChunkBlockMutationContract(nonAirState);
         CheckBlockGetterContract(fluidState);
         CheckBlockGetterDefaultMethods(nonAirState);
         CheckBlockGetterTraversal();
@@ -69,6 +70,41 @@ internal static class ChunkChecks
         chunk.TryMarkSaved();
         chunk.SetLightCorrect(false);
         Require(!chunk.IsLightCorrect() && chunk.IsUnsaved(), "Changing light correctness must mark the chunk unsaved.");
+    }
+
+    private static void CheckChunkBlockMutationContract(BlockState nonAirState)
+    {
+        LevelHeightAccessor height = LevelHeightAccessor.Create(-64, 384);
+        var chunk = new TestChunkAccess(
+            new ChunkPos(-2, 3),
+            height,
+            PalettedContainerFactory.CreateBuiltIn());
+        var position = new BlockPos(
+            chunk.GetPos().GetMinBlockX() + 4,
+            12,
+            chunk.GetPos().GetMinBlockZ() + 7);
+
+        BlockState firstPrevious = chunk.SetBlockState(position, nonAirState);
+        Require(
+            ReferenceEquals(firstPrevious, Blocks.AIR.DefaultState) &&
+            ReferenceEquals(chunk.GetBlockState(position), nonAirState) &&
+            chunk.LastSetBlockFlags == 3,
+            "ChunkAccess.SetBlockState(position, state) must delegate to the abstract mutator with the default flags value 3.");
+
+        BlockState secondPrevious = chunk.SetBlockState(position, Blocks.AIR.DefaultState, flags: 19);
+        Require(
+            ReferenceEquals(secondPrevious, nonAirState) &&
+            ReferenceEquals(chunk.GetBlockState(position), Blocks.AIR.DefaultState) &&
+            chunk.LastSetBlockFlags == 19,
+            "The explicit-flags overload must pass the caller's flags unchanged to the concrete chunk.");
+
+        BlockPos outside = new(position.GetX(), height.GetMinY() - 1, position.GetZ());
+        BlockState outsidePrevious = chunk.SetBlockState(outside, nonAirState);
+        Require(
+            ReferenceEquals(outsidePrevious, Blocks.VOID_AIR.DefaultState) &&
+            ReferenceEquals(chunk.GetBlockState(outside), Blocks.AIR.DefaultState) &&
+            chunk.LastSetBlockFlags == 3,
+            "The shared overload must preserve the concrete chunk's outside-build-height return behavior.");
     }
 
     private static void CheckBlockGetterContract(BlockState fluidState)
@@ -1038,6 +1074,25 @@ internal static class ChunkChecks
     private sealed class TestChunkAccess : ChunkAccess
     {
         public override ChunkStatus GetPersistedStatus() => ChunkStatus.EMPTY;
+
+        public int LastSetBlockFlags { get; private set; }
+
+        public override BlockState SetBlockState(BlockPos position, BlockState state, int flags)
+        {
+            ArgumentNullException.ThrowIfNull(position);
+            ArgumentNullException.ThrowIfNull(state);
+            LastSetBlockFlags = flags;
+
+            int y = position.GetY();
+            if (IsOutsideBuildHeight(y))
+                return Blocks.VOID_AIR.DefaultState;
+
+            return GetSection(GetSectionIndex(y)).SetBlockState(
+                position.GetX() & SectionPos.SectionMask,
+                y & SectionPos.SectionMask,
+                position.GetZ() & SectionPos.SectionMask,
+                state);
+        }
 
         public TestChunkAccess(
             ChunkPos chunkPos,

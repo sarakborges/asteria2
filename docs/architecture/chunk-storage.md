@@ -303,3 +303,10 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - The generation FULL dependency window has twelve rings; the loading FULL window requires SPAWN at the center and INITIALIZE_LIGHT in the adjacent ring.
 - The maximum chunk coordinate uses the reference generation-pyramid safety margin.
 - This increment ports scheduling metadata only. Task delegates, apply/profiling, WorldGenContext, GenerationChunkHolder and the generation scheduler remain dependent on the local world/generator lifecycle and are not represented by placeholders.
+
+
+## ChunkAccess block mutation contract — Minecraft Java 26.3
+
+- The base `SetBlockState(position, state)` overload delegates to the concrete three-argument mutator with default flags 3.
+- The flags overload is an abstract chunk contract; ProtoChunk implements the mutation semantics, while other chunk types can supply their own lifecycle behavior.
+- Tests verify default and explicit flags, previous-state return, stored state and out-of-build-height behavior.

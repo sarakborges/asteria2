@@ -116,6 +116,14 @@ public abstract class ChunkAccess : BlockGetter
     public abstract FluidState GetFluidState(BlockPos position);
 
     /// <summary>
+    /// Uses the default block-update flags (3), matching ChunkAccess.setBlockState(position, state).
+    /// </summary>
+    public BlockState SetBlockState(BlockPos position, BlockState state) =>
+        SetBlockState(position, state, 3);
+
+    public abstract BlockState SetBlockState(BlockPos position, BlockState state, int flags);
+
+    /// <summary>
     /// Returns the backing array, matching ChunkAccess.getSections().
     /// Callers must not insert null entries.
     /// </summary>

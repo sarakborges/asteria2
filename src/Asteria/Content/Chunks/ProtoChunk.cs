@@ -85,9 +85,6 @@ public sealed class ProtoChunk : ChunkAccess
             position.GetZ() & SectionPos.SectionMask);
     }
 
-    public BlockState SetBlockState(BlockPos position, BlockState state) =>
-        SetBlockState(position, state, flags: 3);
-
     /// <summary>
     /// The update flags are accepted for API parity; ProtoChunk itself does not dispatch world neighbor updates.
     /// </summary>
@@ -134,7 +131,7 @@ public sealed class ProtoChunk : ChunkAccess
         return new BlockPos(x, y, z);
     }
 
-    public BlockState SetBlockState(BlockPos position, BlockState state, int flags)
+    public override BlockState SetBlockState(BlockPos position, BlockState state, int flags)
     {
         ArgumentNullException.ThrowIfNull(position);
         ArgumentNullException.ThrowIfNull(state);
