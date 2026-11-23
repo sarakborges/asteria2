@@ -38,9 +38,9 @@ public readonly struct NumberValue : IEquatable<NumberValue>
             return Of(integer);
         }
 
-        if (decimal.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal decimalValue))
-            return Of(decimalValue);
-
+        // Gson's lazily parsed JSON number exposes Double.parseDouble semantics for
+        // fractional values. Parsing through decimal first can change the final binary
+        // double bit, which is observable in NormalNoise parameters and other codecs.
         return Of(double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture));
     }
 
