@@ -42,6 +42,7 @@ internal static class BlockBehaviorChecks
         CheckBlockSeed();
         CheckOffsetCacheValidation();
         CheckDefaultViewBlockingTracksSuffocationProperty();
+        CheckRedstoneConductorPredicate();
         CheckDefaultDestroyTime();
         CheckFaceSupportSemantics();
         CheckStateCacheReinitialization();
@@ -295,6 +296,37 @@ internal static class BlockBehaviorChecks
     {
         public DynamicSupportBlock()
             : base(BlockProperties.Of().DynamicShape(), createIntrusiveRegistryHolder: false)
+        {
+            InitializeStateCaches();
+        }
+    }
+
+    private static void CheckRedstoneConductorPredicate()
+    {
+        BlockState air = Blocks.AIR.DefaultState;
+        BlockState stone = Blocks.STONE.DefaultState;
+
+        Require(
+            !air.IsRedstoneConductor(EmptyBlockGetter.Instance, BlockPos.Zero),
+            "The default redstone-conductor predicate must reject a non-full collision shape.");
+        Require(
+            stone.IsRedstoneConductor(EmptyBlockGetter.Instance, BlockPos.Zero),
+            "The default redstone-conductor predicate must use the state's full collision shape.");
+
+        var targetPosition = new BlockPos(4, 5, 6);
+        var block = new RedstoneConductorPredicateBlock(
+            BlockProperties.Of().IsRedstoneConductor(
+                (_, _, position) => position.Equals(targetPosition)));
+        Require(
+            block.DefaultState.IsRedstoneConductor(EmptyBlockGetter.Instance, targetPosition) &&
+            !block.DefaultState.IsRedstoneConductor(EmptyBlockGetter.Instance, BlockPos.Zero),
+            "A configured redstone-conductor predicate must receive the queried position and determine the result.");
+    }
+
+    private sealed class RedstoneConductorPredicateBlock : Block
+    {
+        public RedstoneConductorPredicateBlock(BlockProperties properties)
+            : base(properties, createIntrusiveRegistryHolder: false)
         {
             InitializeStateCaches();
         }

@@ -95,3 +95,8 @@ The full block-state form applies Minecraft 26.3 `FULL_CODEC.stable()` semantics
 ## StateDefinition construction boundary
 
 The generic `StateDefinition` constructor is protected-internal rather than public. This matches Minecraft 26.3's protected constructor while retaining access for the in-assembly validated builder. External callers must create definitions through `StateDefinitionBuilder`, so property name, value-count, serialized-value, and duplicate-name validation cannot be bypassed accidentally.
+
+
+## Redstone conductor predicate
+
+`BlockProperties.IsRedstoneConductor` and `BlockState.IsRedstoneConductor(level, position)` port the generic `BlockBehaviour.Properties.isRedstoneConductor` contract. The default predicate delegates to the state's full-collision-shape test; a configured predicate is retained by each state and evaluated with the query's level and position.

@@ -409,3 +409,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O construtor genérico de `StateDefinition` deixou de ser público e passou a `protected internal`, alinhando-se ao construtor protegido do Minecraft 26.3.
 - O builder interno continua podendo materializar a definição, e tipos derivados externos podem continuar estendendo o contrato.
 - Teste de reflexão garante que consumidores externos não conseguem contornar a validação de propriedades feita pelo `StateDefinitionBuilder`.
+
+
+## Incremento — predicado genérico de redstone conductor (23/11/2026)
+
+- Portados `BlockBehaviour.Properties.isRedstoneConductor` e `BlockStateBase.isRedstoneConductor(level, pos)` como propriedade genérica do estado.
+- O padrão da referência é `BlockStateBase::isCollisionShapeFullBlock`; a configuração permite substituir o predicado e recebe level/position da consulta.
+- Testes cobrem o padrão em ar/pedra e a avaliação contextual de um predicado configurado.
