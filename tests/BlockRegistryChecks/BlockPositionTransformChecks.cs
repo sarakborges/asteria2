@@ -299,6 +299,48 @@ internal static class BlockPositionTransformChecks
 
     private static void CheckMapColor()
     {
+        int[] expectedColors =
+        {
+            0, 8368696, 16247203, 13092807, 16711680, 10526975, 10987431, 31744,
+            16777215, 10791096, 9923917, 7368816, 4210943, 9402184, 16776437,
+            14188339, 11685080, 6724056, 15066419, 8375321, 15892389, 5000268,
+            10066329, 5013401, 8339378, 3361970, 6704179, 6717235, 10040115,
+            1644825, 16445005, 6085589, 4882687, 55610, 8476209, 7340544,
+            13742497, 10441252, 9787244, 7367818, 12223780, 6780213, 10505550,
+            3746083, 8874850, 5725276, 8014168, 4996700, 4993571, 5001770,
+            9321518, 2430480, 12398641, 9715553, 6035741, 1474182, 3837580,
+            5647422, 1356933, 6579300, 14200723, 8365974
+        };
+        Require(expectedColors.Length == 62,
+            "The reference map-color palette must have exactly 62 populated entries.");
+        for (int id = 0; id < expectedColors.Length; id++)
+        {
+            MapColor color = MapColor.ById(id);
+            Require(color.Id == id && color.Col == expectedColors[id],
+                "Every populated map-color slot must preserve its exact 26.3 ID and RGB value.");
+        }
+
+        MapColor.Brightness[] brightnesses =
+        {
+            MapColor.Brightness.LOW,
+            MapColor.Brightness.NORMAL,
+            MapColor.Brightness.HIGH,
+            MapColor.Brightness.LOWEST
+        };
+        for (int id = 0; id < expectedColors.Length; id++)
+        {
+            MapColor color = MapColor.ById(id);
+            for (int brightnessId = 0; brightnessId < brightnesses.Length; brightnessId++)
+            {
+                byte encoded = color.GetPackedId(brightnesses[brightnessId]);
+                int expectedPacked = id << 2 | brightnessId;
+                Require(encoded == expectedPacked &&
+                        MapColor.GetColorFromPackedId(encoded) ==
+                        color.CalculateArgbColor(brightnesses[brightnessId]),
+                    "Every map-color/brightness combination must preserve the reference packed-byte contract.");
+            }
+        }
+
         Require(MapColor.ById(0) == MapColor.NONE &&
                 MapColor.ById(1) == MapColor.GRASS &&
                 MapColor.ById(61) == MapColor.GLOW_LICHEN &&
@@ -362,9 +404,18 @@ internal static class BlockPositionTransformChecks
                 MapColor.WOOD),
             "The fixed map-color property overload must apply the same palette entry to every state.");
         Require(ReferenceEquals(
-                Blocks.STONE.DefaultState.GetMapColor(EmptyBlockGetter.Instance, BlockPos.Zero),
-                MapColor.NONE),
-            "Block map colors must default to MapColor.NONE.");
+                Blocks.AIR.DefaultState.GetMapColor(EmptyBlockGetter.Instance, BlockPos.Zero),
+                MapColor.NONE) &&
+                ReferenceEquals(
+                    Blocks.STONE.DefaultState.GetMapColor(EmptyBlockGetter.Instance, BlockPos.Zero),
+                    MapColor.STONE) &&
+                ReferenceEquals(
+                    Blocks.DIRT.DefaultState.GetMapColor(EmptyBlockGetter.Instance, BlockPos.Zero),
+                    MapColor.DIRT) &&
+                ReferenceEquals(
+                    Blocks.GRASS_BLOCK.DefaultState.GetMapColor(EmptyBlockGetter.Instance, BlockPos.Zero),
+                    MapColor.GRASS),
+            "Built-in air, stone, dirt and grass blocks must use their configured reference map colors.");
         RequireThrows<InvalidOperationException>(
             () => new MapColorTestBlock(
                 BlockProperties.Of().MapColor(static _ => null!),
