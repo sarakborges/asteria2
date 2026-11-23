@@ -28,6 +28,7 @@ internal static class DensityFunctionChecks
         CheckAxisDomainContract();
         CheckConstantNode();
         CheckRewriteSequence();
+        CheckHolderHolder();
         CheckCompileContextSurface();
     }
 
@@ -118,6 +119,71 @@ internal static class DensityFunctionChecks
 
         Require(ReferenceEquals(DfRewriteRules.Sequence()(original), original),
             "An empty DfRewriteRules.sequence must preserve the original density function.");
+    }
+
+
+    private static void CheckHolderHolder()
+    {
+        var registry = new Registry<DensityFunction>(
+            ResourceLocation.Parse("asteria:test_density_functions"));
+        RegistryKey<DensityFunction> registryKey =
+            RegistryKey<DensityFunction>.CreateRegistryKey(registry.Location);
+        RegistryKey<DensityFunction> key = RegistryKey<DensityFunction>.Create(
+            registryKey,
+            ResourceLocation.Parse("asteria:constant"));
+
+        DensityFunction input = DensityFunctions.Constant(2.75f);
+        Holder<DensityFunction>.Reference reference =
+            registry.Register(key, input, RegistrationInfo.BuiltIn);
+        var holderFunction = new DensityFunctions.HolderHolder(reference);
+
+        Require(
+            ReferenceEquals(holderFunction.Function, reference),
+            "HolderHolder must retain the exact supplied holder reference.");
+        Require(
+            holderFunction.Range().Equals(Interval.OfExact(2.75f)) &&
+            holderFunction.DomainAxes() == DensityFunction.NO_AXES,
+            "HolderHolder must delegate range and domain axes to the referenced density function.");
+
+        DensitySampler sampler = holderFunction.CompileSampler(new UnusedCompileContext());
+        Require(
+            sampler.SampleValue(SamplerContext.EmptyUncached, -100, 64, 200) == 2.75f,
+            "HolderHolder must compile and sample the referenced density function.");
+
+        int rewriteCalls = 0;
+        DensityFunction unchanged = holderFunction.RewriteChildren(function =>
+        {
+            rewriteCalls++;
+            return function;
+        });
+        Require(
+            ReferenceEquals(unchanged, holderFunction) && rewriteCalls == 1,
+            "HolderHolder must preserve its identity when rewriting leaves the referenced function unchanged.");
+
+        DensityFunction replacement = DensityFunctions.Constant(-9.5f);
+        DensityFunction rewritten = holderFunction.RewriteChildren(function =>
+            ReferenceEquals(function, input) ? replacement : function);
+        Require(
+            ReferenceEquals(rewritten, replacement) && rewritten is not DensityFunctions.HolderHolder,
+            "HolderHolder must return a replacement density function directly instead of wrapping it again.");
+
+        RegistryKey<DensityFunction> unboundKey = RegistryKey<DensityFunction>.Create(
+            registryKey,
+            ResourceLocation.Parse("asteria:unbound"));
+        Holder<DensityFunction>.Reference unboundReference =
+            Holder<DensityFunction>.Reference.CreateStandAlone(registry, unboundKey);
+        var unboundFunction = new DensityFunctions.HolderHolder(unboundReference);
+        try
+        {
+            _ = unboundFunction.Range();
+        }
+        catch (InvalidOperationException)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            "HolderHolder must preserve the holder's failure when its referenced value is unbound.");
     }
 
     private static void CheckCompileContextSurface()

@@ -1,4 +1,5 @@
 using Asteria.Core;
+using Asteria.Util;
 using Asteria.Content.Registries;
 using Asteria.World.LevelGen.Synth;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
@@ -212,5 +213,25 @@ public static class DensityFunctions
         DensityFunction second) =>
         Lerp(alpha, Constant(first), second);
 
+    /// <summary>
+    /// Holder-backed density-function reference from Minecraft Java 26.3.
+    /// </summary>
+    public sealed record HolderHolder(Holder<DensityFunction> Function) : DensityFunction
+    {
+        public DensitySampler CompileSampler(DensityFunction.CompileContext context) =>
+            Function.Value.CompileSampler(context);
+
+        public DensityFunction RewriteChildren(DfRewriteRule rule)
+        {
+            DensityFunction rewritten = rule(Function.Value);
+            return ReferenceEquals(rewritten, Function.Value) ? this : rewritten;
+        }
+
+        public Interval Range() =>
+            Function.Value.Range();
+
+        public int DomainAxes() =>
+            Function.Value.DomainAxes();
+    }
 
 }
