@@ -1737,6 +1737,11 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
     private static void CheckBlockStateTransitions()
     {
         BlockState defaultState = TestBlocks.TEST_BLOCK.DefaultState;
+        Require(
+            defaultState.TypeHolder.Kind == HolderKind.Direct &&
+            ReferenceEquals(defaultState.TypeHolder.Value, TestBlocks.TEST_BLOCK),
+            "Unregistered test blocks must expose the same stable direct holder used by the block-state base contract.");
+
         BlockState changedState = defaultState.SetValue(TestBlocks.TEST_STAGE, 2).SetValue(TestBlocks.TEST_POWERED, true);
         Require(changedState.GetValue(TestBlocks.TEST_POWERED), "powered must transition to true.");
         Require(changedState.GetValue(TestBlocks.TEST_STAGE) == 2, "stage must transition to two.");

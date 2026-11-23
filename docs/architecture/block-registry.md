@@ -37,7 +37,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 - `BlockProperties` is a mutable fluent builder for the modeled `BlockBehaviour.Properties` values: destroy time, explosion resistance, friction, speed/jump factors, bounce restitution, fall-distance reduction, collision/occlusion, random ticking, dynamic shape, `forceSolidOn`, deprecated `forceSolidOff`, air/tool flags, lava ignition, the deprecated liquid compatibility flag, replaceability, terrain particles, map color, piston push reaction, light/emissive behavior, deterministic offset, suffocation, view blocking and post-process position. Map color accepts either one fixed palette entry or a state-dependent selector. Defaults and setter behavior follow the reference contract. Redstone signal and circuit properties remain outside this offline product. The generic `IsRedstoneConductor` state predicate is the explicit exception: its vanilla default is a full collision shape, and it does not implement signal propagation.
 - `Block` snapshots block-level values at construction: explosion resistance, friction, speed/jump factors, bounce restitution, fall-distance reduction, collision, random ticking, and dynamic-shape flags. `GetDefaultMapColor` evaluates the configured map-color selector against the block's current default state. `GetDefaultDestroyTime` reads the retained mutable `BlockProperties.DestroyTimeValue` each time, while each `BlockState.DestroySpeed` keeps the value captured when that state was constructed. It creates its intrusive holder before building states and calls the virtual `CreateBlockStateDefinition` extension point.
 - `StateProperty<T>` exposes a name, value type, ordered possible values, parsing, serialization, typed `Property.Value` wrappers, `GetAllValues`, and overridable public hash generation. Hashing follows the reference class-identity/string formula, including ordered integer/enum value-list hashing, and `hashCode` caches its generated result.
-- `BlockState.GetProperties` exposes the immutable, sorted property collection. `BlockState.GetValues` enumerates typed property/value pairs in the same state-definition order.
+- `BlockState.GetProperties` exposes the immutable, sorted property collection. `BlockState.GetValues` enumerates typed property/value pairs in the same state-definition order. `BlockState.TypeHolder` returns the owning block's existing holder; registered blocks expose their intrusive built-in registry holder, while unregistered test fixtures use their direct holder.
 - `StateDefinition` sorts property names, materializes the Cartesian product in reference order, and links each state to precomputed neighbor states.
 - The generic `StateHolder` retains reference identity: `Equals` is sealed and delegates to `Object.Equals`, while `GetHashCode` delegates to `Object.GetHashCode` and remains overridable, matching the vanilla `equals`/ `hashCode` declarations.
 - `SupportType` preserves the `FULL`, `CENTER`, `RIGID` order and the 26.3 face-support geometry. `BlockState.IsFaceSturdy` uses the precomputed six-face/support-type cache for static shapes and evaluates the predicate directly for dynamic shapes.
@@ -105,6 +105,11 @@ The generic `StateDefinition` constructor is protected-internal rather than publ
 ## Property.parseValue partial-result contract
 
 `StateProperty<T>.ParseValue` mirrors Minecraft 26.3 `Property.parseValue`: decode a serialized property value through `DynamicOps`, transition to the corresponding precomputed state on success, and attach the original state as the partial value on any parsing error. This keeps callers able to retain the original state while reporting invalid input.
+
+
+## BlockState type-holder contract
+
+`BlockState.TypeHolder` mirrors `BlockStateBase.typeHolder()`: it exposes the holder of the owning block, reusing the existing registry reference rather than constructing another holder. Test-only unregistered blocks expose the already-established direct holder used by the block-state diagnostics.
 
 
 ## BlockState property-copy contracts

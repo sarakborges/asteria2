@@ -65,6 +65,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         new BlockStateCodec(ownerCodec, allowCompactBlockId: false);
 
     public Block Block => Owner;
+    public Holder<Block> TypeHolder => Block.SolidDebugHolder;
     public new StateDefinition Definition => (StateDefinition)base.Definition;
 
     public bool IsAir { get; }

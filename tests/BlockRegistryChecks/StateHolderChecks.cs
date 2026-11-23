@@ -8,6 +8,7 @@ internal static class StateHolderChecks
     {
         CheckDefinitionConstructionVisibility();
         CheckBlockStateIdentity();
+        CheckBlockTypeHolder();
         CheckFluidStateIdentity();
     }
 
@@ -37,6 +38,19 @@ internal static class StateHolderChecks
         Require(
             states.Count == 2,
             "Block-state hash collections must preserve distinct state instances using reference identity.");
+    }
+
+    private static void CheckBlockTypeHolder()
+    {
+        Block block = Blocks.STONE;
+        BlockState state = block.DefaultState;
+
+        Require(
+            ReferenceEquals(state.TypeHolder, block.BuiltInRegistryHolder),
+            "BlockStateBase.typeHolder must return the owning block's existing built-in registry holder.");
+        Require(
+            ReferenceEquals(state.TypeHolder.Value, block),
+            "The block-state type holder must resolve to the exact owning block instance.");
     }
 
     private static void CheckFluidStateIdentity()

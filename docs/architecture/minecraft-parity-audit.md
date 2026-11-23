@@ -433,3 +433,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `CopyProperty` usa `TrySetValue` para copiar somente a propriedade solicitada. A identidade da instância da propriedade é preservada; propriedade ausente ou homônima mas distinta não altera o destino.
 - `Block.WithPropertiesOf` permanece como wrapper de conveniência sobre o estado default, sem duplicar a lógica.
 - Testes cobrem cópia integral, cópia individual, preservação de outras propriedades e ausência/identidade distinta de propriedades no destino.
+
+
+## Incremento — holder tipado do BlockState (23/11/2026)
+
+- Portado `BlockStateBase.typeHolder()` como `BlockState.TypeHolder`.
+- Estados de blocos registrados retornam a mesma referência intrusive já criada pelo registry, preservando identidade e metadados.
+- Fixtures não registradas retornam o holder direto já usado internamente para diagnóstico, sem criar um novo objeto por consulta.
+- Testes cobrem identidade do holder registrado e resolução do holder direto de uma fixture.
