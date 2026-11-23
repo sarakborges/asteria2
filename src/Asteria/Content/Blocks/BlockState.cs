@@ -74,6 +74,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public PushReaction PistonPushReaction { get; }
     public bool IsReplaceable { get; }
     public bool ShouldSpawnTerrainParticles { get; }
+    public bool IsSolid { get; private set; }
     public bool IsSolidRender { get; private set; }
     public bool PropagatesSkylightDown { get; private set; }
     public int LightDampening { get; private set; }
@@ -223,6 +224,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
             }
         }
 
+        IsSolid = CalculateLegacySolid();
         _occlusionShape = CanOcclude ? Block.GetOcclusionShape(this) : Shapes.Empty();
         IsSolidRender = Block.IsShapeFullBlock(_occlusionShape);
 
@@ -244,6 +246,16 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         PropagatesSkylightDown = Block.PropagatesSkylightDown(this);
         LightDampening = Block.GetLightDampening(this);
         _cacheInitialized = true;
+    }
+
+    private bool CalculateLegacySolid()
+    {
+        if (_collisionShape is null || _collisionShape.IsEmpty())
+            return false;
+
+        AABB bounds = _collisionShape.Bounds();
+        return bounds.GetSize() >= 0.7291666666666666 ||
+            bounds.GetYSize() >= 1.0;
     }
 
     private static bool IsLargeCollisionShape(VoxelShape shape)
