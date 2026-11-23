@@ -142,3 +142,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - `ClampFunction` compiles its child once and clamps scalar/volume samples with the float-specific `Mth.clamp` operation.
 - Range propagation uses `Interval.clamp`; the node inherits its input's domain axes and preserves identity when child rewrite does not change the input.
 - Runtime constructor does not enforce min/max ordering; vanilla validates this in its codec layer, which remains deferred with local persistence.
+
+
+## RangeChoice density function — Minecraft Java 26.3
+
+- `RangeChoiceFunction` chooses the in-range branch for `input >= minInclusive && input < maxExclusive`; the upper limit is exclusive.
+- The constant sampler is selected only when both output functions are constant nodes. Otherwise, the generic sampler evaluates both branches into separate buffers and selects values by input.
+- The range encloses only the two output ranges; domain axes union input and both branches. Rewrite traverses all three children.
+- Runtime factory is wired; codec is deferred with local persistence.

@@ -636,3 +636,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionadas `DensityFunctions.Clamp` e `DensityFunction.Clamp`.
 - A validação `min <= max` do codec vanilla permanece associada ao codec, não foi movida para o construtor runtime. Os codecs continuam adiados junto da persistência local.
 - `ClampFunctionChecks` cobre valores abaixo/dentro/acima dos limites, NaN, intervalos disjuntos, volume, rewrite e domínio de eixos.
+
+
+## Incremento — RangeChoiceFunction (23/11/2026)
+
+- Portado `RangeChoiceFunction` de Minecraft Java 26.3: o input seleciona `whenInRange` no intervalo `[minInclusive, maxExclusive)`; os outros valores usam `whenOutOfRange`.
+- O compilador primeiro compila o input. Só cria `ConstSampler` quando as duas saídas são `ConstantFunction`; se uma delas não for constante, compila ambas e usa o sampler genérico.
+- O sampler constante mantém o par de valores como floats e apenas transforma o buffer do input. O sampler genérico amostra `whenInRange` no buffer de saída, o input e `whenOutOfRange` em buffers escopados, substituindo os índices fora do intervalo e liberando ambos os buffers ao final.
+- `Range` encapsula apenas os intervalos das duas saídas; `DomainAxes` une input e saídas. Rewrite reescreve os três filhos e preserva identidade quando nenhum muda.
+- Adicionada `DensityFunctions.RangeChoice`; codec permanece adiado com persistência local.
+- `RangeChoiceFunctionChecks` cobre fronteiras min/max, valores interiores/exteriores, caminhos constante/genérico, avaliação escalar/volumétrica, ranges, domínios, buffer lifecycle e rewrite.

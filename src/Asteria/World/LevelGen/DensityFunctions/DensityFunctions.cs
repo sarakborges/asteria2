@@ -52,6 +52,14 @@ public static class DensityFunctions
     public static DensityFunction Clamp(DensityFunction input, float min, float max) =>
         new ClampFunction(input, min, max);
 
+    public static DensityFunction RangeChoice(
+        DensityFunction input,
+        float minInclusive,
+        float maxExclusive,
+        DensityFunction whenInRange,
+        DensityFunction whenOutOfRange) =>
+        new RangeChoiceFunction(input, minInclusive, maxExclusive, whenInRange, whenOutOfRange);
+
     public static DensityFunction Add(DensityFunction left, DensityFunction right) =>
         new BinaryFunction(BinaryFunction.Type.ADD, left, right);
 
