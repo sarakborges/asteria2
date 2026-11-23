@@ -4,15 +4,27 @@ using Asteria.Content.Registries;
 using Asteria.World.LevelGen.Synth;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
 using Asteria.World.LevelGen.DensityFunctions.Operations;
+using Asteria.Serialization;
 
 namespace Asteria.World.LevelGen.DensityFunctions;
 
 /// <summary>
-/// Runtime density-function constructors from Minecraft Java 26.3.
-/// Registry/bootstrap and codec APIs are deferred with local persistence.
+/// Runtime density-function constructors and direct codecs from Minecraft Java 26.3.
+/// Density-function map-codec registration is an explicitly incremental port.
 /// </summary>
 public static class DensityFunctions
 {
+    public const float MAX_REASONABLE_NOISE_VALUE = 1_000_000.0f;
+
+    public static Codec<float> NOISE_VALUE_CODEC { get; } =
+        Codecs.FloatRange(-MAX_REASONABLE_NOISE_VALUE, MAX_REASONABLE_NOISE_VALUE);
+
+    public static Codec<DensityFunction> FULL_DIRECT_CODEC { get; } =
+        DensityFunctionCodecBootstrap.CreateFullDirectCodec();
+
+    public static Codec<DensityFunction> DIRECT_CODEC { get; } =
+        new DensityFunctionDirectCodec(NOISE_VALUE_CODEC, FULL_DIRECT_CODEC);
+
     private static readonly DensityFunction ZERO = new ConstantFunction(0.0f);
 
     public static DensityFunction Zero() => ZERO;
