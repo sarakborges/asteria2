@@ -240,6 +240,7 @@ internal static class Program
         LegacyRandomSourceChecks.Run();
         XoroshiroRandomSourceChecks.Run();
         NormalNoiseChecks.Run();
+        NoiseSettingsChecks.Run();
         LegacyFbmInitializerChecks.Run();
         CubicSplineChecks.Run();
         SplineFunctionChecks.Run();
