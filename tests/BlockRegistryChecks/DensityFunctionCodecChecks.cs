@@ -4,9 +4,11 @@ using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Serialization;
 using Asteria.Util;
+using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
 using Asteria.World.LevelGen.DensityFunctions.Operations;
+using Asteria.World.LevelGen.Synth;
 
 internal static class DensityFunctionCodecChecks
 {
@@ -728,6 +730,47 @@ internal static class DensityFunctionCodecChecks
             decoded.DomainAxes() == (DensityFunction.AXIS_X | DensityFunction.AXIS_Z) &&
             ReferenceEquals(decoded.RewriteChildren(static function => function), decoded),
             "EndIslandFunction must preserve its vanilla range, horizontal axes and leaf rewrite behavior.");
+
+        var compileContext = new EndIslandCompileContext();
+        DensitySampler sampler = expected.CompileSampler(compileContext);
+        SamplerContext samplerContext = SamplerContext.EmptyUncached;
+
+        foreach ((int x, int z) in new[] { (-1024, -512), (0, 0), (512, 1024), (4096, -2048) })
+        {
+            float value = sampler.SampleValue(samplerContext, x, 0, z);
+            Require(
+                value >= expected.Range().Min() && value <= expected.Range().Max(),
+                "End-island samples must remain inside the exact vanilla density range.");
+        }
+
+        var volume = new DensityVolume(
+            sizeX: 2,
+            sizeY: 3,
+            sizeZ: 2,
+            minBlockX: -64,
+            minBlockY: -2,
+            minBlockZ: 96);
+        DensityBuffer output = DensityBuffer.CreateUnpooled(volume.Size());
+        sampler.SampleVolume(samplerContext, output, volume);
+
+        for (int z = 0; z < volume.SizeZ; z++)
+        {
+            for (int x = 0; x < volume.SizeX; x++)
+            {
+                float expectedColumn = sampler.SampleValue(
+                    samplerContext,
+                    volume.BlockX(x),
+                    0,
+                    volume.BlockZ(z));
+
+                for (int y = 0; y < volume.SizeY; y++)
+                {
+                    Require(
+                        output.Get(volume.IndexUnchecked(x, y, z)) == expectedColumn,
+                        "End-island volume sampling must write one identical value through every Y cell.");
+                }
+            }
+        }
     }
 
     private static void CheckRejectedInputs()
@@ -768,5 +811,16 @@ internal static class DensityFunctionCodecChecks
     {
         if (!condition)
             throw new InvalidOperationException(message);
+    }
+    private sealed class EndIslandCompileContext : DensityFunction.CompileContext
+    {
+        public Noise CreateNoiseSampler(Holder<NormalNoise> parameters) =>
+            throw new NotSupportedException("EndIslandFunction does not request registered normal-noise holders.");
+
+        public IRandomSource CreateRandom(ResourceLocation seed) =>
+            throw new NotSupportedException("EndIslandFunction uses the dedicated end-island random source.");
+
+        public IRandomSource CreateEndIslandRandom() =>
+            new LegacyRandomSource(0x5EEDL);
     }
 }
