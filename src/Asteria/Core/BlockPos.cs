@@ -11,7 +11,7 @@ namespace Asteria.Core;
 public class BlockPos : Vec3i
 {
     /// <summary>Exactly three signed integer coordinates in X/Y/Z order.</summary>
-    public static Codec<BlockPos> CODEC { get; } =
+    public new static Codec<BlockPos> CODEC { get; } =
         Codecs.INT.ListOf().FlatXMap(
             static values => values.Count == 3
                 ? DataResult<BlockPos>.Success(new BlockPos(values[0], values[1], values[2]))
