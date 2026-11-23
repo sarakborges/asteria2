@@ -12,7 +12,7 @@ namespace Asteria.World.LevelGen;
 /// </summary>
 internal static class BuiltInDensityFunctions
 {
-    internal const int Count = 13;
+    internal const int Count = 21;
 
     private const int CopperVeinMinY = 0;
     private const int CopperVeinMaxY = 50;
@@ -70,6 +70,76 @@ internal static class BuiltInDensityFunctions
             DensityFunctionKeys.BASE_3D_NOISE_END,
             new BlendedNoise(0.25, 0.25, 80.0, 160.0, 4.0),
             RegistrationInfo.BuiltIn);
+
+        RegisterOverworldClimateFunctions(registry);
+    }
+
+    private static void RegisterOverworldClimateFunctions(Registry<DensityFunction> registry)
+    {
+        DensityFunction shiftX = GetFunction(registry, DensityFunctionKeys.SHIFT_X);
+        DensityFunction shiftZ = GetFunction(registry, DensityFunctionKeys.SHIFT_Z);
+
+        RegisterAndWrap(
+            registry,
+            DensityFunctionKeys.OVERWORLD_TEMPERATURE,
+            DensityFunctionFactories.ShiftedNoise2d(
+                shiftX, shiftZ, 0.25, GetNoise(Noises.TEMPERATURE)));
+
+        RegisterAndWrap(
+            registry,
+            DensityFunctionKeys.OVERWORLD_LARGE_TEMPERATURE,
+            DensityFunctionFactories.ShiftedNoise2d(
+                shiftX, shiftZ, 0.25, GetNoise(Noises.TEMPERATURE_LARGE)));
+
+        RegisterAndWrap(
+            registry,
+            DensityFunctionKeys.OVERWORLD_VEGETATION,
+            DensityFunctionFactories.ShiftedNoise2d(
+                shiftX, shiftZ, 0.25, GetNoise(Noises.VEGETATION)));
+
+        RegisterAndWrap(
+            registry,
+            DensityFunctionKeys.OVERWORLD_LARGE_VEGETATION,
+            DensityFunctionFactories.ShiftedNoise2d(
+                shiftX, shiftZ, 0.25, GetNoise(Noises.VEGETATION_LARGE)));
+
+        RegisterAndWrap(
+            registry,
+            DensityFunctionKeys.OVERWORLD_CONTINENTS,
+            DensityFunctionFactories.Cache(
+                DensityFunctionFactories.ShiftedNoise2d(
+                    shiftX, shiftZ, 0.25, GetNoise(Noises.CONTINENTALNESS))));
+
+        RegisterAndWrap(
+            registry,
+            DensityFunctionKeys.OVERWORLD_EROSION,
+            DensityFunctionFactories.Cache(
+                DensityFunctionFactories.ShiftedNoise2d(
+                    shiftX, shiftZ, 0.25, GetNoise(Noises.EROSION))));
+
+        DensityFunction ridges = RegisterAndWrap(
+            registry,
+            DensityFunctionKeys.RIDGES,
+            DensityFunctionFactories.Cache(
+                DensityFunctionFactories.ShiftedNoise2d(
+                    shiftX, shiftZ, 0.25, GetNoise(Noises.RIDGE))));
+
+        registry.Register(
+            DensityFunctionKeys.RIDGES_FOLDED,
+            PeaksAndValleys(ridges),
+            RegistrationInfo.BuiltIn);
+    }
+
+    private static DensityFunction PeaksAndValleys(DensityFunction weirdness)
+    {
+        DensityFunction absoluteOffset = DensityFunctionFactories.Abs(
+            DensityFunctionFactories.Add(
+                DensityFunctionFactories.Abs(weirdness),
+                -0.6666667f));
+        DensityFunction centered = DensityFunctionFactories.Add(
+            absoluteOffset,
+            -0.33333334f);
+        return DensityFunctionFactories.Mul(centered, -3.0f);
     }
 
     private static void RegisterOreVeins(Registry<DensityFunction> registry)

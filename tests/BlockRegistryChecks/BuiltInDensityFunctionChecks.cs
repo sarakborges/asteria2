@@ -30,6 +30,7 @@ internal static class BuiltInDensityFunctionChecks
         CheckOreVeinFunctions();
         CheckShiftFunctions();
         CheckBase3dNoiseFunctions();
+        CheckOverworldClimateFunctions();
     }
 
     private static void CheckRegistryAndRegistrationOrder()
@@ -55,7 +56,11 @@ internal static class BuiltInDensityFunctionChecks
                 "overworld/ore_vein/iron_density",
                 "overworld/ore_vein/gap",
                 "shift_x", "shift_z",
-                "overworld/base_3d_noise", "nether/base_3d_noise", "end/base_3d_noise"
+                "overworld/base_3d_noise", "nether/base_3d_noise", "end/base_3d_noise",
+                "overworld/temperature", "overworld_large_biomes/temperature",
+                "overworld/vegetation", "overworld_large_biomes/vegetation",
+                "overworld/continents", "overworld/erosion", "overworld/ridges",
+                "overworld/ridges_folded"
             }, StringComparer.Ordinal),
             "The density-function registry must preserve the Minecraft 26.3 NoiseRouterData.bootstrap order for the ported entries.");
 
@@ -204,6 +209,122 @@ internal static class BuiltInDensityFunctionChecks
             ironRange.Min() <= -0.9999f &&
             ironRange.Max() >= 0.6999f,
             $"Ore-vein ranges must preserve vanilla bounds. toggle={toggleRange}, richness={richnessRange}, copper={copperRange}, iron={ironRange}.");
+    }
+
+    private static void CheckOverworldClimateFunctions()
+    {
+        Holder<DensityFunction>.Reference shiftX =
+            BuiltInRegistries.DensityFunction.GetHolder(DensityFunctionKeys.SHIFT_X) ??
+            throw new InvalidOperationException("Missing shift_x density function.");
+        Holder<DensityFunction>.Reference shiftZ =
+            BuiltInRegistries.DensityFunction.GetHolder(DensityFunctionKeys.SHIFT_Z) ??
+            throw new InvalidOperationException("Missing shift_z density function.");
+
+        CheckShiftedClimateNoise(
+            DensityFunctionKeys.OVERWORLD_TEMPERATURE,
+            Noises.TEMPERATURE,
+            shiftX,
+            shiftZ,
+            cached: false);
+        CheckShiftedClimateNoise(
+            DensityFunctionKeys.OVERWORLD_LARGE_TEMPERATURE,
+            Noises.TEMPERATURE_LARGE,
+            shiftX,
+            shiftZ,
+            cached: false);
+        CheckShiftedClimateNoise(
+            DensityFunctionKeys.OVERWORLD_VEGETATION,
+            Noises.VEGETATION,
+            shiftX,
+            shiftZ,
+            cached: false);
+        CheckShiftedClimateNoise(
+            DensityFunctionKeys.OVERWORLD_LARGE_VEGETATION,
+            Noises.VEGETATION_LARGE,
+            shiftX,
+            shiftZ,
+            cached: false);
+        CheckShiftedClimateNoise(
+            DensityFunctionKeys.OVERWORLD_CONTINENTS,
+            Noises.CONTINENTALNESS,
+            shiftX,
+            shiftZ,
+            cached: true);
+        CheckShiftedClimateNoise(
+            DensityFunctionKeys.OVERWORLD_EROSION,
+            Noises.EROSION,
+            shiftX,
+            shiftZ,
+            cached: true);
+        CheckShiftedClimateNoise(
+            DensityFunctionKeys.RIDGES,
+            Noises.RIDGE,
+            shiftX,
+            shiftZ,
+            cached: true);
+
+        Holder<DensityFunction>.Reference ridgesFolded =
+            BuiltInRegistries.DensityFunction.GetHolder(DensityFunctionKeys.RIDGES_FOLDED) ??
+            throw new InvalidOperationException("Missing ridges_folded density function.");
+
+        Require(
+            ridgesFolded.Value is BinaryFunction
+            {
+                Operation: BinaryFunction.Type.MUL,
+                Right: ConstantFunction { Value: -3.0f },
+                Left: BinaryFunction
+                {
+                    Operation: BinaryFunction.Type.ADD,
+                    Right: ConstantFunction { Value: -0.33333334f },
+                    Left: UnaryFunction
+                    {
+                        Operation: UnaryFunction.Type.ABS,
+                        Input: BinaryFunction
+                        {
+                            Operation: BinaryFunction.Type.ADD,
+                            Right: ConstantFunction { Value: -0.6666667f },
+                            Left: UnaryFunction { Operation: UnaryFunction.Type.ABS }
+                        }
+                    }
+                }
+            },
+            "ridges_folded must preserve the vanilla peaks-and-valleys expression tree.");
+    }
+
+    private static void CheckShiftedClimateNoise(
+        RegistryKey<DensityFunction> key,
+        RegistryKey<NormalNoise> noiseKey,
+        Holder<DensityFunction>.Reference shiftX,
+        Holder<DensityFunction>.Reference shiftZ,
+        bool cached)
+    {
+        Holder<DensityFunction>.Reference holder =
+            BuiltInRegistries.DensityFunction.GetHolder(key) ??
+            throw new InvalidOperationException($"Missing climate density function: {key.Location}");
+
+        DensityFunction node = cached
+            ? holder.Value is CacheFunction cache
+                ? cache.Input
+                : throw new InvalidOperationException($"{key.Location} must be wrapped in cache.")
+            : holder.Value;
+
+        Holder<NormalNoise> noiseHolder =
+            BuiltInRegistries.Noise.GetHolder(noiseKey) ??
+            throw new InvalidOperationException($"Missing climate noise parameters: {noiseKey.Location}");
+
+        Require(
+            node is NoiseFunction
+            {
+                XzScale: 0.25,
+                YScale: 0.0,
+                ShiftX: DensityFunctions.HolderHolder { Function: var actualShiftX },
+                ShiftY: ConstantFunction { Value: 0.0f },
+                ShiftZ: DensityFunctions.HolderHolder { Function: var actualShiftZ }
+            } noise &&
+            ReferenceEquals(noise.NoiseData, noiseHolder) &&
+            ReferenceEquals(actualShiftX, shiftX) &&
+            ReferenceEquals(actualShiftZ, shiftZ),
+            $"The {key.Location} density function must use its vanilla noise holder, 0.25 horizontal scale, zero Y scale and registered shift holders.");
     }
 
     private static void CheckBase3dNoiseFunctions()

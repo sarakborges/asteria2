@@ -22,6 +22,14 @@ public static class DensityFunctionKeys
     public static RegistryKey<DensityFunction> BASE_3D_NOISE_OVERWORLD { get; } = CreateKey("overworld/base_3d_noise");
     public static RegistryKey<DensityFunction> BASE_3D_NOISE_NETHER { get; } = CreateKey("nether/base_3d_noise");
     public static RegistryKey<DensityFunction> BASE_3D_NOISE_END { get; } = CreateKey("end/base_3d_noise");
+    public static RegistryKey<DensityFunction> OVERWORLD_TEMPERATURE { get; } = CreateKey("overworld/temperature");
+    public static RegistryKey<DensityFunction> OVERWORLD_LARGE_TEMPERATURE { get; } = CreateKey("overworld_large_biomes/temperature");
+    public static RegistryKey<DensityFunction> OVERWORLD_VEGETATION { get; } = CreateKey("overworld/vegetation");
+    public static RegistryKey<DensityFunction> OVERWORLD_LARGE_VEGETATION { get; } = CreateKey("overworld_large_biomes/vegetation");
+    public static RegistryKey<DensityFunction> OVERWORLD_CONTINENTS { get; } = CreateKey("overworld/continents");
+    public static RegistryKey<DensityFunction> OVERWORLD_EROSION { get; } = CreateKey("overworld/erosion");
+    public static RegistryKey<DensityFunction> RIDGES { get; } = CreateKey("overworld/ridges");
+    public static RegistryKey<DensityFunction> RIDGES_FOLDED { get; } = CreateKey("overworld/ridges_folded");
 
     private static RegistryKey<DensityFunction> CreateKey(string name) =>
         RegistryKey<DensityFunction>.Create(

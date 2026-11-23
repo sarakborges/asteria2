@@ -949,3 +949,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `clampedMap` segue a expansão vanilla: clamp do input, fator `(toMax-toMin)/(fromMax-fromMin)` e offset `toMin-fromMin*factor`, usando os nós existentes de clamp/multiplicação/adição. Não foi introduzido um operador novo nem lógica de colocação de blocos.
 - Testes verificam sequência integral dos 13 registros atualmente portados, tipos de nós, disponibilidade dos quatro ruídos e intervalos das funções.
 - A aplicação de minério continua fora deste incremento: as densidades ainda precisam ser consumidas pela material rule `minecraft:ore_vein`.
+
+
+## Incremento — funções climáticas do Overworld (23/11/2026)
+
+- Portadas as quatro funções de temperatura/vegetação para Overworld normal e biomas grandes, com os respectivos holders de ruído e shifts X/Z compartilhados.
+- Portadas as funções de continentes, erosão e ridges, preservando os wrappers `cache` do bootstrap 26.3.
+- Portada `ridges_folded` com a árvore exata de `peaksAndValleys`, incluindo as constantes float originais.
+- Testes verificam ordem dos oito registros, identidade dos holders, escalas, dependências de shift, presença dos caches e árvore de expressão de ridges_folded.
+- Permanecem pendentes as splines de terreno, offset/factor/jaggedness/depth, superfícies preliminares e finais, além da montagem dos NoiseRouters dimensionais.
