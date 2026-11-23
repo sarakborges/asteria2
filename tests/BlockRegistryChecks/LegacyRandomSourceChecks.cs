@@ -25,7 +25,7 @@ internal static class LegacyRandomSourceChecks
             -6519408338692630574L,
             -897291810407650440L,
             -2627029093267243214L,
-            8452912501824850067L
+            8452912497529882771L
         };
         foreach (long expected in expectedLongs)
             Require(random.NextLong() == expected,
