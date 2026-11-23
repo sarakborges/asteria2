@@ -107,11 +107,11 @@ internal static class BinaryFunctionChecks
             new RangeSampler(Interval.Of(-10.0f, 10.0f), -3.0f));
 
         Require(Compile(DensityFunctions.Add(dynamic, 5.0f)) is BinaryFunction.ConstAddSampler &&
-            Compile(DensityFunctions.Add(5.0f, dynamic)) is BinaryFunction.ConstAddSampler &&
+            Compile(DensityFunctions.Add(DensityFunctions.Constant(5.0f), dynamic)) is BinaryFunction.ConstAddSampler &&
             Compile(DensityFunctions.Sub(5.0f, dynamic)) is BinaryFunction.ConstSubSampler &&
             Compile(DensityFunctions.Sub(dynamic, 5.0f)) is BinaryFunction.ConstAddSampler &&
             Compile(DensityFunctions.Mul(dynamic, 5.0f)) is BinaryFunction.ConstMulSampler &&
-            Compile(DensityFunctions.Mul(5.0f, dynamic)) is BinaryFunction.ConstMulSampler &&
+            Compile(DensityFunctions.Mul(DensityFunctions.Constant(5.0f), dynamic)) is BinaryFunction.ConstMulSampler &&
             Compile(DensityFunctions.Div(5.0f, dynamic)) is BinaryFunction.ConstDivSampler &&
             Compile(DensityFunctions.Div(dynamic, 5.0f)) is BinaryFunction.ConstMulSampler,
             "BinaryFunction.compileSampler must select the vanilla constant-specialized sampler in operand order.");
