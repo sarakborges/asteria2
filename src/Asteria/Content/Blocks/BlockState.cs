@@ -1,5 +1,6 @@
 using Asteria.Content.Registries;
 using Asteria.Serialization;
+using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Content.Fluids;
 using Asteria.Core;
 using Asteria.Content.Materials;
@@ -16,7 +17,7 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     private static readonly Direction[] DIRECTIONS = Direction.GetValues();
     private static readonly SupportType[] SUPPORT_TYPES = Enum.GetValues<SupportType>();
 
-    private FluidState _fluidState = Fluids.EMPTY.DefaultFluidState;
+    private FluidState _fluidState = BuiltInFluids.EMPTY.DefaultFluidState;
     private VoxelShape? _collisionShape;
     private VoxelShape _occlusionShape = Shapes.Empty();
     private VoxelShape[] _occlusionShapesByFace = EMPTY_OCCLUSION_SHAPES;

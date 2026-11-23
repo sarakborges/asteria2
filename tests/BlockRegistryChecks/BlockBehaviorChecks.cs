@@ -1,4 +1,5 @@
 using Asteria.Content.Blocks;
+using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Content.Fluids;
 using Asteria.Core;
 using Asteria.Core.Shapes;
@@ -50,7 +51,7 @@ internal static class BlockBehaviorChecks
         var block = new InitialFluidStateBlock();
 
         Require(
-            ReferenceEquals(block.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState),
+            ReferenceEquals(block.DefaultState.GetFluidState(), BuiltInFluids.EMPTY.DefaultFluidState),
             "A newly constructed BlockState must expose the empty fluid state before initCache replaces it with the owning block's fluid state.");
     }
 
@@ -60,10 +61,10 @@ internal static class BlockBehaviorChecks
             : base(
                 BlockProperties.Of().LightLevel(static state =>
                 {
-                    if (!ReferenceEquals(state.GetFluidState(), Fluids.EMPTY.DefaultFluidState))
+                    if (!ReferenceEquals(state.GetFluidState(), BuiltInFluids.EMPTY.DefaultFluidState))
                     {
                         throw new InvalidOperationException(
-                            "BlockState must expose Fluids.EMPTY while the state constructor evaluates its light-emission property.");
+                            "BlockState must expose BuiltInFluids.EMPTY while the state constructor evaluates its light-emission property.");
                     }
 
                     return 0;
@@ -150,14 +151,14 @@ internal static class BlockBehaviorChecks
         BlockState nonSolid = noCollisionBlock.DefaultState;
 
         Require(
-            air.CanBeReplaced(Fluids.EMPTY),
+            air.CanBeReplaced(BuiltInFluids.EMPTY),
             "A block with the replaceable property must remain fluid-replaceable.");
         Require(
-            !stone.CanBeReplaced(Fluids.EMPTY),
+            !stone.CanBeReplaced(BuiltInFluids.EMPTY),
             "A solid, non-replaceable block must reject fluid replacement.");
         Require(
             !nonSolid.IsReplaceable && !nonSolid.IsSolid &&
-            nonSolid.CanBeReplaced(Fluids.EMPTY),
+            nonSolid.CanBeReplaced(BuiltInFluids.EMPTY),
             "Fluid replacement must allow a non-solid state even when its replaceable property is false.");
     }
 
