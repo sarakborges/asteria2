@@ -714,7 +714,7 @@ internal static class DensityFunctionCodecChecks
 
         Require(
             ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:end_outer_islands" &&
-            ops.GetMap(encoded).GetOrThrow().Count == 1,
+            encoded.EnumerateObject().Count() == 1,
             "EndIslandFunction must use the vanilla unit map codec without extra fields.");
 
         DensityFunction decoded = DensityFunctions.DIRECT_CODEC
