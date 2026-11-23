@@ -47,6 +47,41 @@ public static class Mth
         return (int)floor;
     }
 
+    public static float Lerp(float alpha, float from, float to) =>
+        from + alpha * (to - from);
+
+    public static float Lerp2(
+        float alpha1,
+        float alpha2,
+        float x00,
+        float x10,
+        float x01,
+        float x11) =>
+        Lerp(alpha2, Lerp(alpha1, x00, x10), Lerp(alpha1, x01, x11));
+
+    public static float Lerp3(
+        float alpha1,
+        float alpha2,
+        float alpha3,
+        float x000,
+        float x100,
+        float x010,
+        float x110,
+        float x001,
+        float x101,
+        float x011,
+        float x111) =>
+        Lerp(
+            alpha3,
+            Lerp2(alpha1, alpha2, x000, x100, x010, x110),
+            Lerp2(alpha1, alpha2, x001, x101, x011, x111));
+
+    public static float Smoothstep(float value) =>
+        value * value * value * (value * (value * 6.0f - 15.0f) + 10.0f);
+
+    public static float SmoothstepDerivative(float value) =>
+        30.0f * value * value * (value - 1.0f) * (value - 1.0f);
+
     public static double Lerp(double alpha, double from, double to) =>
         from + alpha * (to - from);
 

@@ -54,3 +54,11 @@ Network packet codecs are out of scope. Local disk persistence remains in scope.
 - O modelo `SimplexNoise` agora oferece `Get(x,y,z)` com escala 3D, quatro gradientes de canto e ranking das coordenadas locais por tetraedro.
 - `GradientNoise` centraliza a tabela de gradientes, permutação e wrap de coordenadas 2^25 usados pelas variantes Simplex e Perlin.
 - A variante 2D continua disponível para o modificador de cor de bioma e as funções ambientais existentes.
+
+
+## Noise contract and Perlin sampling — Minecraft Java 26.3
+
+- The shared `Noise` contract now exposes its output interval, 2D/3D point samples and default volume traversal. `SimplexNoise` implements the contract without changing its existing 2D/3D algorithms.
+- `PerlinNoise` provides gradient lattice interpolation, derivative accumulation, and the optimized volume path from the 26.3 source. Volume evaluation keeps its distinct Z/X/Y traversal and float rounding.
+- The float `Mth` helpers used by Perlin use the same smoothstep curve and nested X/Y/Z lerp order as the reference.
+- Multi-octave construction through `NormalNoise` and `NoiseStack.Perlin` remains a separate stage.

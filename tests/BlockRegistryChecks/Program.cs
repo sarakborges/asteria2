@@ -233,6 +233,7 @@ internal static class Program
         StaticCache2DChecks.Run();
         IntervalChecks.Run();
         SimplexNoiseChecks.Run();
+        PerlinNoiseChecks.Run();
         DensityBufferChecks.Run();
         BoundingBoxChecks.Run();
         DensityVolumeChecks.Run();

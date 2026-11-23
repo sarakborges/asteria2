@@ -517,3 +517,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `Intersects` usa `BoundingBox` em coordenadas mundiais inclusivas. Os construtores validam todas as dimensões e passos positivos com os diagnósticos da referência.
 - Testes cobrem volume unitário e stepped, máximos, índices, interseção, igualdade do record e erros de configuração.
 - A geometria e o armazenamento necessários para `Noise.addToVolume` estão agora presentes; o próximo passo é conectar o contrato de ruído e o amostrador Perlin 26.3.
+
+
+## Incremento — Noise e PerlinNoise (23/11/2026)
+
+- Portado o contrato `Noise` com `range/get(2D)/get(3D)` e o percurso de volume default Z/X/Y da referência Minecraft Java 26.3; `SimplexNoise` agora implementa essa interface.
+- Portado `PerlinNoise` com o range `[-2,2]`, desvio padrão vanilla, amostragem 2D no plano XZ, interpolação 3D dos oito gradientes, derivadas e configuração de paridade.
+- O override `addToVolume` foi portado como caminho otimizado da referência: pré-calcula os oito gradientes por coluna quando a célula Y muda, separa o produto XZ da contribuição Y e acumula no buffer em ordem Z/X/Y. Não é substituído por chamadas ponto-a-ponto.
+- Acrescentados os helpers `Mth.Lerp/Lerp2/Lerp3/Smoothstep/SmoothstepDerivative` em precisão `float`, conforme a revisão 26.3 que mudou os cálculos de density/noise para precisão simples.
+- `NoiseUtils` fornece os dois contratos utilizados por `PerlinNoise`: bias toward extreme e texto de paridade do octave.
+- `PerlinNoiseChecks` inclui golden samples fixos, derivadas acumulativas, valores exatos da rota volumétrica otimizada, acumulação sobre buffer existente, configuração seed/permutation e interpolação float.
+- A construção e a combinação em fractal de múltiplos octaves (`NormalNoise`, `NoiseStack.Perlin`) permanecem etapas posteriores; nenhum conjunto de octaves ou seed derivado foi inventado aqui.

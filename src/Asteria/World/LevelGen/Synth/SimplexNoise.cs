@@ -7,7 +7,7 @@ namespace Asteria.World.LevelGen.Synth;
 /// <summary>
 /// Two- and three-dimensional simplex noise ported from Minecraft Java 26.3.
 /// </summary>
-public sealed class SimplexNoise : GradientNoise
+public sealed class SimplexNoise : GradientNoise, Noise
 {
     private const double Sqrt3 = 1.7320508075688772;
     private static readonly double F2 = 0.5 * (Sqrt3 - 1.0);
