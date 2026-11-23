@@ -3,7 +3,6 @@ using Asteria.Content.Blocks;
 using Asteria.Content.Blocks.StateProperties;
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
-using Asteria.Content.Registries;
 using Asteria.Serialization;
 
 internal static class BlockStateCodecChecks
