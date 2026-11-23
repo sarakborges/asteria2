@@ -43,7 +43,7 @@ public sealed class ProtoChunk : ChunkAccess
 
     public override Holder<Biome> GetNoiseBiome(int quartX, int quartY, int quartZ)
     {
-        if (_status.IsOrAfter(ChunkStatus.BIOMES))
+        if (GetHighestGeneratedStatus().IsOrAfter(ChunkStatus.BIOMES))
             return base.GetNoiseBiome(quartX, quartY, quartZ);
 
         throw new InvalidOperationException("Asking for biomes before we have biomes");

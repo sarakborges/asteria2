@@ -286,3 +286,10 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - ProtoChunk rejects `GetNoiseBiome` calls until its persisted status reaches `BIOMES`, using the reference error message.
 - Once promoted, lookup delegates to ChunkAccess, retaining quart-section addressing and vertical clamping.
 - Palette filling does not itself promote the chunk status; the lifecycle stage owns that transition.
+
+
+## Highest generated chunk status — Minecraft Java 26.3
+
+- `ChunkAccess.GetHighestGeneratedStatus` provides the distinct lifecycle query used by status-gated consumers.
+- While below-zero retrogen is not represented in Asteria, it returns the persisted status; once retrogen is ported, it must return the maximum of the target and persisted statuses as in the reference.
+- ProtoChunk biome lookup uses this query rather than directly reading the backing status field.

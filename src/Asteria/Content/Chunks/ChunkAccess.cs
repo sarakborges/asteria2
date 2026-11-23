@@ -265,6 +265,14 @@ public abstract class ChunkAccess : BlockGetter
     public abstract ChunkStatus GetPersistedStatus();
 
     /// <summary>
+    /// Returns the furthest status represented by the chunk. Without below-zero retrogen data,
+    /// this is the persisted status, matching Minecraft Java 26.3.
+    /// </summary>
+    public virtual ChunkStatus GetHighestGeneratedStatus() =>
+        GetPersistedStatus();
+
+
+    /// <summary>
     /// Returns the backing per-section post-processing array, matching ChunkAccess.getPostProcessing().
     /// </summary>
     public List<short>?[] GetPostProcessing() => _postProcessing;

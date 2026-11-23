@@ -812,3 +812,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `ProtoChunk.GetNoiseBiome` agora só expõe a palette quando `GetPersistedStatus()` alcança `BIOMES`; antes disso lança `InvalidOperationException` com a mensagem vanilla.
 - Após o estágio, a consulta delega ao lookup da classe base, preservando o mapeamento quart/section e o clamp vertical do mundo.
 - Testes verificam erro antes e depois do preenchimento mas antes da promoção de status, contagem de 64 células por seção, consulta após BIOMES e limites inferior/superior de quart Y.
+
+
+## Incremento — highest generated chunk status (23/11/2026)
+
+- Adicionado `ChunkAccess.GetHighestGeneratedStatus`, separado de `GetPersistedStatus`, conforme o contrato 26.3.
+- No modelo atual, que ainda não possui `BelowZeroRetrogen`, o maior status gerado é o status persistido. A separação permite que a integração de retrogen seja adicionada quando seus tipos/dependências forem portados, sem alterar consumidores.
+- `ProtoChunk.GetNoiseBiome` usa agora `GetHighestGeneratedStatus` para decidir quando a palette pode ser consultada.
+- Testes cobrem igualdade entre os dois status no estado atual, mudança após `SetPersistedStatus` e a guarda de biomas.

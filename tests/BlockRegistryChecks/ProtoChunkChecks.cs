@@ -180,15 +180,17 @@ internal static class ProtoChunkChecks
         ProtoChunk chunk = CreateChunk();
         Require(
             ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.EMPTY) &&
+            ReferenceEquals(chunk.GetHighestGeneratedStatus(), ChunkStatus.EMPTY) &&
             !chunk.IsUnsaved(),
-            "A new ProtoChunk must start at EMPTY and clean.");
+            "A new ProtoChunk without retrogen must report EMPTY as both persisted and highest generated status.");
 
         chunk.SetPersistedStatus(ChunkStatus.BIOMES);
         Require(
             ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.BIOMES) &&
+            ReferenceEquals(chunk.GetHighestGeneratedStatus(), ChunkStatus.BIOMES) &&
             chunk.IsUnsaved() &&
             chunk.TryMarkSaved(),
-            "Changing the persisted chunk status must mark the ProtoChunk unsaved.");
+            "Without below-zero retrogen, the highest generated status must track the persisted status.");
     }
 
     private static void CheckPostProcessingOffsets()
