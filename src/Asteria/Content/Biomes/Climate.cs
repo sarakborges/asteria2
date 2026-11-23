@@ -99,7 +99,7 @@ public static class Climate
         long Offset)
     {
         public static Codec<ParameterPoint> CODEC { get; } =
-            new ParameterPointCodec();
+            new ParameterPointMapCodec().Codec();
 
         public long Fitness(TargetPoint target)
         {
@@ -301,7 +301,7 @@ public static class Climate
         Parameter Depth,
         Parameter Weirdness);
 
-    private sealed class ParameterPointCodec : Codec<ParameterPoint>
+    private sealed class ParameterPointMapCodec : MapCodec<ParameterPoint>
     {
         private static readonly Codec<float> OffsetCodec = Codecs.FloatRange(0.0F, 1.0F);
 
@@ -316,52 +316,48 @@ public static class Climate
             "offset"
         ];
 
-        public override DataResult<Pair<ParameterPoint, TData>> Decode<TData>(
+        public override DataResult<ParameterPoint> Decode<TData>(
             DynamicOps<TData> ops,
-            TData input)
+            MapLike<TData> input)
         {
-            return ops.GetMap(input).FlatMap(map =>
-            {
-                DataResult<Parameter> GetParameter(string name) =>
-                    map.Get(name).FlatMap(value => Parameter.CODEC.Parse(ops, value));
+            DataResult<Parameter> GetParameter(string name) =>
+                input.Get(name).FlatMap(value => Parameter.CODEC.Parse(ops, value));
 
-                DataResult<Parameter> temperature = GetParameter("temperature");
-                DataResult<Parameter> humidity = GetParameter("humidity");
-                DataResult<Parameter> continentalness = GetParameter("continentalness");
-                DataResult<Parameter> erosion = GetParameter("erosion");
-                DataResult<Parameter> depth = GetParameter("depth");
-                DataResult<Parameter> weirdness = GetParameter("weirdness");
-                DataResult<float> offset = map.Get("offset")
-                    .FlatMap(value => OffsetCodec.Parse(ops, value));
+            DataResult<Parameter> temperature = GetParameter("temperature");
+            DataResult<Parameter> humidity = GetParameter("humidity");
+            DataResult<Parameter> continentalness = GetParameter("continentalness");
+            DataResult<Parameter> erosion = GetParameter("erosion");
+            DataResult<Parameter> depth = GetParameter("depth");
+            DataResult<Parameter> weirdness = GetParameter("weirdness");
+            DataResult<float> offset = input.Get("offset")
+                .FlatMap(value => OffsetCodec.Parse(ops, value));
 
-                return temperature.Apply2(
-                        static (first, second) => new ClimateAxes(
-                            first, second, default, default, default, default),
-                        humidity)
-                    .Apply2(
-                        static (values, next) => values with { Continentalness = next },
-                        continentalness)
-                    .Apply2(
-                        static (values, next) => values with { Erosion = next },
-                        erosion)
-                    .Apply2(
-                        static (values, next) => values with { Depth = next },
-                        depth)
-                    .Apply2(
-                        static (values, next) => values with { Weirdness = next },
-                        weirdness)
-                    .Apply2(
-                        static (values, offsetValue) => new ParameterPoint(
-                            values.Temperature,
-                            values.Humidity,
-                            values.Continentalness,
-                            values.Erosion,
-                            values.Depth,
-                            values.Weirdness,
-                            QuantizeCoord(offsetValue)),
-                        offset)
-                    .Map(point => new Pair<ParameterPoint, TData>(point, ops.Empty));
-            });
+            return temperature.Apply2(
+                    static (first, second) => new ClimateAxes(
+                        first, second, default, default, default, default),
+                    humidity)
+                .Apply2(
+                    static (values, next) => values with { Continentalness = next },
+                    continentalness)
+                .Apply2(
+                    static (values, next) => values with { Erosion = next },
+                    erosion)
+                .Apply2(
+                    static (values, next) => values with { Depth = next },
+                    depth)
+                .Apply2(
+                    static (values, next) => values with { Weirdness = next },
+                    weirdness)
+                .Apply2(
+                    static (values, offsetValue) => new ParameterPoint(
+                        values.Temperature,
+                        values.Humidity,
+                        values.Continentalness,
+                        values.Erosion,
+                        values.Depth,
+                        values.Weirdness,
+                        QuantizeCoord(offsetValue)),
+                    offset);
         }
 
         public override DataResult<TData> Encode<TData>(
