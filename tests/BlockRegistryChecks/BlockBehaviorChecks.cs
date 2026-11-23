@@ -2,6 +2,7 @@ using Asteria.Content.Blocks;
 using Asteria.Content.Fluids;
 using Asteria.Core;
 using Asteria.Core.Shapes;
+using Asteria.World;
 using Asteria.World.Pathfinding;
 
 internal static class BlockBehaviorChecks
