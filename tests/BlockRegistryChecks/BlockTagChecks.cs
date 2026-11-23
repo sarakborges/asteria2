@@ -65,6 +65,21 @@ internal static class BlockTagChecks
         Require(
             airHolder.Is(markerTag) && Blocks.AIR.DefaultState.Is(markerTag),
             "Applying a tag reload must expose membership through both block holders and block states.");
+
+        int predicateCalls = 0;
+        Require(
+            Blocks.AIR.DefaultState.Is(markerTag, state => ReferenceEquals(state, Blocks.AIR.DefaultState)),
+            "BlockState.Is(tag, predicate) must evaluate the predicate for a matching tag member.");
+        Require(
+            !Blocks.AIR.DefaultState.Is(markerTag, _ => false),
+            "BlockState.Is(tag, predicate) must return false when a matching member fails the predicate.");
+        Require(
+            !Blocks.STONE.DefaultState.Is(markerTag, _ =>
+            {
+                predicateCalls++;
+                return true;
+            }) && predicateCalls == 0,
+            "BlockState.Is(tag, predicate) must short-circuit without evaluating the predicate for a non-member.");
         Require(
             !Blocks.AIR.DefaultState.Is(BlockTags.BlocksMotionInHeightmap) &&
             !Blocks.AIR.DefaultState.Is(BlockTags.BlocksMotionInHeightmapNoLeaves) &&

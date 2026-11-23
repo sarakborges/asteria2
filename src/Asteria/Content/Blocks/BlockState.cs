@@ -318,6 +318,9 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public bool Is(TagKey<Block> tag) =>
         Block.BuiltInRegistryHolder?.Is(tag) ?? false;
 
+    public bool Is(TagKey<Block> tag, Predicate<BlockState> predicate) =>
+        Is(tag) && predicate(this);
+
     public FluidState GetFluidState() =>
         _fluidState ?? throw new InvalidOperationException(
             "BlockState cache has not been initialized. Initialize its owning block after construction.");
