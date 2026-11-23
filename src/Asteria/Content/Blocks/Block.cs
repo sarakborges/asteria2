@@ -96,6 +96,10 @@ public class Block
         return global::Asteria.Content.Fluids.Fluids.EMPTY.DefaultFluidState;
     }
 
+    public MapColor GetDefaultMapColor() =>
+        Properties.MapColorValue(DefaultState) ??
+        throw new InvalidOperationException("A block's default map color cannot be null.");
+
     public virtual bool IsRandomlyTickingState(BlockState state) => IsRandomlyTicking;
 
     protected virtual float GetMaxHorizontalOffset() => 0.25f;
