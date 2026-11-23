@@ -556,3 +556,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `WorldgenRandom.Algorithm` seleciona as famílias LEGACY e XOROSHIRO. Em C#, o `enum` vanilla foi adaptado a um tipo fechado com instâncias nomeadas porque enums C# não podem declarar o método de fábrica `NewInstance`.
 - `XoroshiroRandomSourceChecks` verifica vetores 26.3 do estado inicial, stream nextLong, bounded int, MD5, factory por coordenada/nome/seed, wrapper WorldgenRandom e cache Gaussian.
 - Codec de serialização do estado Xoroshiro continua fora deste incremento; a integração de geração passa a poder usar os dois algoritmos e será exercitada por `NormalNoise`.
+
+
+## Incremento — NormalNoise e composição multi-octave (23/11/2026)
+
+- Portado `NormalNoise` de Minecraft Java 26.3: construção das oitavas pelo expoente base, persistência 0.5, lacunaridade 2.0, modifiers, normalização desativada/habilitada/legada, estimativa de desvio e range intervalar.
+- A criação de ruído usa duas `PositionalRandomFactory` independentes. Cada oitava é semeada pelo nome `octave_<index>` via hash da factory e produz dois `PerlinNoise`: frequências `f` e `f * 1.0181268882175227`, com a mesma amplitude normalizada.
+- Portados `CreateParity` e suas fórmulas antigas de normalização para preservar configurações com listas de amplitude existentes.
+- O builder mantém os defaults vanilla (base amplitude 1, base octave 0, uma oitava, normalização ENABLED, modifiers vazios) e as falhas/ordem de configuração de `setOctaveCount` e `setAmplitudeModifier`.
+- `createForLegacyNetherBiome` não foi substituído por ruído novo: continua pendente do port integral de `LegacyFbmInitializer`. Os codecs de parâmetros também seguem pendentes do escopo de persistência local.
+- `NormalNoiseChecks` verifica faixas, fórmulas de normalização, configurações parity, factories posicionais independentes, sampling 3D e seleção de oitavas.

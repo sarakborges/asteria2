@@ -237,6 +237,7 @@ internal static class Program
         NoiseStackChecks.Run();
         LegacyRandomSourceChecks.Run();
         XoroshiroRandomSourceChecks.Run();
+        NormalNoiseChecks.Run();
         DensityBufferChecks.Run();
         BoundingBoxChecks.Run();
         DensityVolumeChecks.Run();

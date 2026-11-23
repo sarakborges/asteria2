@@ -84,3 +84,11 @@ Network packet codecs are out of scope. Local disk persistence remains in scope.
 - The Xoroshiro128++ generator and RandomSupport seed mixer are ported alongside the legacy LCG.
 - Named streams use MD5 over UTF-8, positional streams use the vanilla coordinate seed mix, and both source families are selectable through WorldgenRandom.
 - Runtime seed generation and the random draws used by noise construction are included. State codecs remain deferred with persistence.
+
+
+## NormalNoise — Minecraft Java 26.3
+
+- Multi-octave normal noise constructs two independent sets of Perlin octaves from separate positional factories, using the stable name `octave_<index>` for each octave.
+- The second Perlin octave set samples at `frequency * 1.0181268882175227`; both sets share the normalized amplitude factor.
+- The builder supports DISABLED, ENABLED and LEGACY normalization, plus per-octave amplitude modifiers. `CreateParity` preserves the legacy amplitude-array normalization conversion.
+- Legacy Nether biome FBM and parameter codecs are deferred until their actual initializer and local persistence dependencies are ported.
