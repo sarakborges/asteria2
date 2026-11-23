@@ -134,7 +134,7 @@ internal static class NoiseFunctionChecks
 
         Require(sampler is NoiseFunction.ShiftedXzSampler,
             "NoiseFunction must select ShiftedXzSampler when X/Z shifts exist but Y shift is zero.");
-        Require(sampler.SampleValue(SamplerContext.EmptyUncached, -2, 10, 20) == 3799.0f,
+        Require(sampler.SampleValue(SamplerContext.EmptyUncached, -2, 10, 20) == 3499.0f,
             "ShiftedXzSampler must add the X/Z shift samples after horizontal scaling and leave Y unshifted.");
 
         var volume = new DensityVolume(2, 2, 2, -1, 10, 20);
@@ -143,7 +143,7 @@ internal static class NoiseFunctionChecks
         SamplerContext sampleContext = SamplerContext.CreateBuilder().UseBufferArena(arena).Build();
         sampler.SampleVolume(sampleContext, output, volume);
 
-        Require(output.Get(0) == 3801.0f && arena.Acquired == 1 && arena.Released == 1,
+        Require(output.Get(0) == 3501.0f && arena.Acquired == 1 && arena.Released == 1,
             "ShiftedXzSampler volume path must apply both shifts and release its Z scratch buffer.");
     }
 
