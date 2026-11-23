@@ -233,15 +233,15 @@ public static class Climate
         {
             ArgumentNullException.ThrowIfNull(valueCodec);
 
-            Codec<ParameterEntry<T>> entryCodec =
-                RecordCodecBuilder.Create<ParameterEntry<T>>(instance =>
+            Codec<ParameterEntry<TValue>> entryCodec =
+                RecordCodecBuilder.Create<ParameterEntry<TValue>>(instance =>
                     instance.Group(
                         ParameterPoint.CODEC.FieldOf("parameters")
-                            .ForGetter<ParameterEntry<T>>(static entry => entry.Parameters),
-                        valueCodec.ForGetter<ParameterEntry<T>>(static entry => entry.Value))
+                            .ForGetter<ParameterEntry<TValue>>(static entry => entry.Parameters),
+                        valueCodec.ForGetter<ParameterEntry<TValue>>(static entry => entry.Value))
                     .Apply(
                         instance,
-                        static (parameters, value) => new ParameterEntry<T>(parameters, value)));
+                        static (parameters, value) => new ParameterEntry<TValue>(parameters, value)));
 
             return entryCodec.ListOf(minSize: 1).XMap(
                 static entries => new ParameterList<T>(
@@ -249,7 +249,7 @@ public static class Climate
                         entry.Parameters,
                         entry.Value)).ToList()),
                 static list => list._values.Select(pair =>
-                    new ParameterEntry<T>(pair.First, pair.Second)).ToList());
+                    new ParameterEntry<TValue>(pair.First, pair.Second)).ToList());
         }
 
         public ParameterList(IReadOnlyList<Pair<ParameterPoint, T>> values)
@@ -298,9 +298,9 @@ public static class Climate
             return best;
         }
 
-        private readonly record struct ParameterEntry<T>(
+        private readonly record struct ParameterEntry<TValue>(
             ParameterPoint Parameters,
-            T Value);
+            TValue Value);
     }
 
     private static long Square(long value) =>
@@ -378,45 +378,30 @@ public static class Climate
             DynamicOps<TData> ops,
             TData prefix)
         {
-            DataResult<TData> temperature = Parameter.CODEC.EncodeStart(ops, input.Temperature);
-            DataResult<TData> humidity = Parameter.CODEC.EncodeStart(ops, input.Humidity);
-            DataResult<TData> continentalness = Parameter.CODEC.EncodeStart(ops, input.Continentalness);
-            DataResult<TData> erosion = Parameter.CODEC.EncodeStart(ops, input.Erosion);
-            DataResult<TData> depth = Parameter.CODEC.EncodeStart(ops, input.Depth);
-            DataResult<TData> weirdness = Parameter.CODEC.EncodeStart(ops, input.Weirdness);
-            DataResult<TData> offset = OffsetCodec.EncodeStart(ops, UnquantizeCoord(input.Offset));
-
-            return CombineMaps(ops, temperature, humidity, continentalness, erosion, depth, weirdness, offset)
-                .FlatMap(entries => ops.MergeToMap(prefix, entries));
+            return EncodeParameter(ops, prefix, "temperature", input.Temperature)
+                .FlatMap(map => EncodeParameter(ops, map, "humidity", input.Humidity))
+                .FlatMap(map => EncodeParameter(ops, map, "continentalness", input.Continentalness))
+                .FlatMap(map => EncodeParameter(ops, map, "erosion", input.Erosion))
+                .FlatMap(map => EncodeParameter(ops, map, "depth", input.Depth))
+                .FlatMap(map => EncodeParameter(ops, map, "weirdness", input.Weirdness))
+                .FlatMap(map => OffsetCodec.EncodeStart(ops, UnquantizeCoord(input.Offset))
+                    .FlatMap(value => ops.MergeToMap(
+                        map,
+                        ops.CreateString("offset"),
+                        value)));
         }
 
         public override IReadOnlyList<TData> Keys<TData>(DynamicOps<TData> ops) =>
             FieldNames.Select(name => ops.CreateString(name)).ToArray();
 
-        private static DataResult<IReadOnlyList<KeyValuePair<TData, TData>>> CombineMaps<TData>(
+        private static DataResult<TData> EncodeParameter<TData>(
             DynamicOps<TData> ops,
-            params DataResult<TData>[] maps)
-        {
-            DataResult<IReadOnlyList<KeyValuePair<TData, TData>>> combined =
-                DataResult<IReadOnlyList<KeyValuePair<TData, TData>>>.Success(
-                    Array.Empty<KeyValuePair<TData, TData>>());
+            TData prefix,
+            string fieldName,
+            Parameter parameter) =>
+            Parameter.CODEC.EncodeStart(ops, parameter).FlatMap(value =>
+                ops.MergeToMap(prefix, ops.CreateString(fieldName), value));
 
-            foreach (DataResult<TData> map in maps)
-            {
-                combined = combined.FlatMap(current =>
-                    map.FlatMap(value =>
-                        ops.GetMapValues(value).Map(entries =>
-                        {
-                            var result = new List<KeyValuePair<TData, TData>>(
-                                current.Count + entries.Count);
-                            result.AddRange(current);
-                            result.AddRange(entries);
-                            return (IReadOnlyList<KeyValuePair<TData, TData>>)result;
-                        })));
-            }
-
-            return combined;
-        }
 
         public override string ToString() => "Climate.ParameterPoint";
     }
