@@ -53,17 +53,16 @@ internal static class TickChecks
         var tick = new SavedTick<Block>(
             Blocks.STONE, new BlockPos(-17, 64, 31), 120, TickPriority.VERY_HIGH);
         JsonElement encoded = blockCodec.EncodeStart(ops, tick).GetOrThrow();
-        JsonElement position = ops.Get(encoded, "pos").GetOrThrow();
 
         Require(
             ops.Get(encoded, "i").GetOrThrow().GetString() == "asteria:stone" &&
-            ops.Get(position, "x").GetOrThrow().GetInt32() == -17 &&
-            ops.Get(position, "y").GetOrThrow().GetInt32() == 64 &&
-            ops.Get(position, "z").GetOrThrow().GetInt32() == 31 &&
+            ops.Get(encoded, "x").GetOrThrow().GetInt32() == -17 &&
+            ops.Get(encoded, "y").GetOrThrow().GetInt32() == 64 &&
+            ops.Get(encoded, "z").GetOrThrow().GetInt32() == 31 &&
             ops.Get(encoded, "t").GetOrThrow().GetInt32() == 120 &&
             ops.Get(encoded, "p").GetOrThrow().GetInt32() == -2 &&
             ops.Get(encoded, "x").IsError,
-            "SavedTick codec must use i, pos{x/y/z}, t and p fields with the reference block registry key.");
+            "SavedTick codec must use the flat i, x, y, z, t and p fields from Minecraft Java 26.3.");
 
         SavedTick<Block> decoded = blockCodec.Parse(ops, encoded).GetOrThrow();
         Require(
