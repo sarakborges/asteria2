@@ -18,6 +18,7 @@ internal static class TerrainProviderChecks
 
     public static void Run()
     {
+        OverworldFunctionSetChecks.Run();
         CheckSharedSplineTopologyAndAmplification();
         CheckPeaksAndValleys();
         CheckErosionOffsetSpline();
