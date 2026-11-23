@@ -18,6 +18,8 @@ internal static class RandomStateChecks
         public Holder<NormalNoise>.Reference NetherTemperature { get; }
         public Holder<NormalNoise>.Reference NetherVegetation { get; }
         public NormalNoise NormalNoise { get; }
+        public NormalNoise NetherTemperatureNoise { get; }
+        public NormalNoise NetherVegetationNoise { get; }
 
         public NoiseFixture()
         {
@@ -25,10 +27,18 @@ internal static class RandomStateChecks
                 .SetBaseOctave(-2)
                 .SetOctaveCount(4)
                 .Build();
+            NetherTemperatureNoise = NormalNoise.CreateBuilder()
+                .SetBaseOctave(-3)
+                .SetOctaveCount(4)
+                .Build();
+            NetherVegetationNoise = NormalNoise.CreateBuilder()
+                .SetBaseOctave(-4)
+                .SetOctaveCount(4)
+                .Build();
 
             Temperature = Register(Noises.TEMPERATURE, NormalNoise);
-            NetherTemperature = Register(Noises.TEMPERATURE_NETHER, NormalNoise);
-            NetherVegetation = Register(Noises.VEGETATION_NETHER, NormalNoise);
+            NetherTemperature = Register(Noises.TEMPERATURE_NETHER, NetherTemperatureNoise);
+            NetherVegetation = Register(Noises.VEGETATION_NETHER, NetherVegetationNoise);
             Registry.Freeze();
         }
 
@@ -198,9 +208,9 @@ internal static class RandomStateChecks
         var state = new RandomState(fixture.Registry, seed, false, router);
 
 #pragma warning disable CS0618
-        Noise expectedTemperature = fixture.NormalNoise.CreateForLegacyNetherBiome(
+        Noise expectedTemperature = fixture.NetherTemperatureNoise.CreateForLegacyNetherBiome(
             new LegacyRandomSource(seed));
-        Noise expectedVegetation = fixture.NormalNoise.CreateForLegacyNetherBiome(
+        Noise expectedVegetation = fixture.NetherVegetationNoise.CreateForLegacyNetherBiome(
             new LegacyRandomSource(unchecked(seed + 1L)));
 #pragma warning restore CS0618
 
