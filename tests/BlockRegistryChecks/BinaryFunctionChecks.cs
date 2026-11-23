@@ -296,24 +296,6 @@ internal static class BinaryFunctionChecks
         public void Release(ScopedDensityBuffer buffer) => Released++;
     }
 
-    private sealed record RangeFunction(
-        Interval ValueRange,
-        int Axes,
-        RangeSampler Sampler) : DensityFunction
-    {
-        public DensitySampler CompileSampler(DensityFunction.CompileContext context) => Sampler;
-        public DensityFunction RewriteChildren(DfRewriteRule rule) => this;
-        public Interval Range() => ValueRange;
-        public int DomainAxes() => Axes;
-    }
-
-    private sealed record RangeSampler(Interval ValueRange, float Value) : DensitySampler
-    {
-        public void SampleVolume(SamplerContext context, DensityBuffer outputBuffer, DensityVolume volume) =>
-            outputBuffer.Fill(Value);
-        public float SampleValue(SamplerContext context, int blockX, int blockY, int blockZ) => Value;
-    }
-
     private static void Require(bool condition, string message)
     {
         if (!condition)
