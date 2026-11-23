@@ -82,10 +82,6 @@ public class Registry<T> : IEnumerable<T>, IIdMap<T>, HolderLookup<T>.RegistryLo
             holder = Holder<T>.Reference.CreateStandAlone(this, key);
         }
 
-        // A standalone holder receives its registered value here; intrusive holders
-        // already own the same instance and validate that identity during binding.
-        holder.BindValue(value);
-
         int id = _byId.Count;
         _byKey[key] = holder;
         _byLocation.Add(key.Location, holder);
