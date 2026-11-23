@@ -59,7 +59,7 @@ public static class BuiltInRegistries
 
     public static Registry<MapCodec<DensityFunction>> DensityFunctionType { get; } =
         RegisterSimple<MapCodec<DensityFunction>>(
-            ResourceLocation.FromNamespaceAndPath("asteria", "density_function_type"),
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/density_function_type"),
             static () => DensityFunctionCodecBootstrap.RegisterAll(DensityFunctionType));
 
     public static Registry<ChunkStatusValue> ChunkStatus { get; } =
