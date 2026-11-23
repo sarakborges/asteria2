@@ -2072,12 +2072,9 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(!age.TryParse("5", out _), "Integer parsing must reject out-of-range values.");
         Require(!age.TryParse("-2147483648", out _), "Integer parsing must reject an out-of-range value that would underflow min-offset indexing.");
         var ageBlock = new TestBlockDefinition(BlockProperties.Of(), builder => builder.Add(age));
-        ArgumentException underflowSet = Capture<ArgumentException>(
+        _ = Capture<IndexOutOfRangeException>(
             () => ageBlock.DefaultState.SetValue(age, int.MinValue),
-            "Setting a value below the integer property's minimum must fail with the standard invalid-value exception.");
-        Require(
-            underflowSet.Message == $"Cannot set property {age} to -2147483648 on {ageBlock}, it is not an allowed value",
-            "Integer property underflow must not reach the precomputed neighbor array.");
+            "The reference min-offset index overflow must be preserved when the invalid index reaches the precomputed neighbor array.");
         Require(!age.TryParse(" 3", out _), "Integer parsing must reject surrounding whitespace.");
         Require(age.GetName(5) == "5", "Integer serialization must return the numeric name without range validation.");
 
