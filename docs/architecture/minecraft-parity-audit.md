@@ -709,3 +709,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `Range` encapsula apenas os ranges das funções de saída; `DomainAxes` combina input e todas as saídas. Rewrite visita input e depois cada função, mantendo a identidade se nenhum filho mudar.
 - Adicionada `DensityFunctions.IntervalSelect`. As validações vanilla de quantidade de thresholds, mínimo de funções e ordenação crescente pertencem ao codec e continuam adiadas com persistência local; o runtime não inventa uma validação substituta.
 - `IntervalSelectFunctionChecks` cobre thresholds estritos, NaN, sampler single/generic, branch point-only, avaliação volumétrica, range, domain axes, rewrite e liberação de buffers inclusive no caminho de exceção.
+
+
+## Incremento — SliceFunction (23/11/2026)
+
+- Portado `SliceFunction(axis, coordinate, input)` de Minecraft Java 26.3, incluindo samplers X/Y/Z e composição automática de slices aninhados X/Z em `XzSampler`.
+- Os samplers pontuais fixam somente a coordenada do eixo e encaminham as outras duas coordenadas para o input.
+- Cada sampler volumétrico preserva o atalho vanilla quando o volume já é um plano no eixo/coordenada solicitados. Caso contrário, cria um volume auxiliar de dimensão 1 nesse eixo, preserva a origem e todos os passos independentes, avalia o input no plano e replica os valores para as posições correspondentes do volume original.
+- `XzSampler` amostra uma linha Y fixa em X/Z, depois replica pelas dimensões X e Z; slices X/Z aninhados são fundidos em uma avaliação do input mais interno.
+- `Range` herda o intervalo do input. `DomainAxes` remove somente o bit do eixo fixado. Rewrite mantém identidade se o input não muda.
+- Adicionadas as factories `DensityFunctions.Slice` e `SliceY`. Codec segue adiado com persistência local.
+- `SliceFunctionChecks` cobre samplers por eixo, combinação X/Z em ambas as ordens, volumes com steps independentes, shortcuts de plano e liberação dos buffers auxiliares.

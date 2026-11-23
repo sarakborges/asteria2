@@ -152,6 +152,15 @@ public static class DensityFunctions
     public static DensityFunction Max(DensityFunction left, DensityFunction right) =>
         new BinaryFunction(BinaryFunction.Type.MAX, left, right);
 
+    public static DensityFunction Slice(
+        Direction.Axis axis,
+        int coordinate,
+        DensityFunction input) =>
+        new SliceFunction(axis, coordinate, input);
+
+    public static DensityFunction SliceY(DensityFunction input, int y) =>
+        Slice(Direction.Axis.Y, y, input);
+
     public static DensityFunction IntervalSelect(
         DensityFunction input,
         IReadOnlyList<float> thresholds,

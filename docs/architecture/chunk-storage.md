@@ -198,3 +198,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - One threshold compiles to a two-output specialized sampler. Other threshold counts use the generic sampler and compile every output.
 - Point evaluation samples only the selected output; volume evaluation samples all outputs into scoped buffers. The generic implementation releases every acquired buffer in a `finally` path if any child throws.
 - Range encloses output ranges only; domain axes include the input and every output. Runtime factory is wired; count/order validation remains in the deferred codec layer.
+
+
+## Slice density function — Minecraft Java 26.3
+
+- `SliceFunction` fixes one axis coordinate and removes that axis from the input domain mask.
+- X, Y and Z samplers create a one-cell-thick input volume along the fixed coordinate, preserve the remaining volume origins and steps, then replicate the sampled plane/line across the output volume.
+- Nested X/Z slices are combined into one `XzSampler` that evaluates the innermost input at the fixed X/Z coordinates.
+- Each sampler retains the vanilla direct-sampling shortcut when the requested volume already matches the fixed plane. Runtime factories `Slice` and `SliceY` are wired; codec remains deferred.
