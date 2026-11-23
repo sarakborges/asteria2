@@ -45,7 +45,7 @@ internal static class BuiltInNoises
         new(Noises.NOODLE_RIDGE_A, """{"base_amplitude":0.955388882960065,"base_octave":-7}"""),
         new(Noises.NOODLE_RIDGE_B, """{"base_amplitude":0.955388882960065,"base_octave":-7}"""),
         new(Noises.NOODLE_THICKNESS, """{"base_amplitude":0.955388882960065,"base_octave":-8}"""),
-        new(Noises.OFFSET, """{"amplitude_modifiers":[1,1,1,0],"base_amplitude":0.9381732587751005,"base_octave":-3,"octave_count":4}"""),
+        new(Noises.SHIFT, """{"amplitude_modifiers":[1,1,1,0],"base_amplitude":0.9381732587751005,"base_octave":-3,"octave_count":4}"""),
         new(Noises.ORE_GAP, """{"base_amplitude":0.955388882960065,"base_octave":-5}"""),
         new(Noises.ORE_VEIN_A, """{"base_amplitude":0.955388882960065,"base_octave":-7}"""),
         new(Noises.ORE_VEIN_B, """{"base_amplitude":0.955388882960065,"base_octave":-7}"""),
