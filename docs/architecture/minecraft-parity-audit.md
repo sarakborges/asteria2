@@ -593,7 +593,7 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Portado `CompileContext` com resolução de `NormalNoise` via `Holder`, streams aleatórios por identificador e fonte legacy de End Islands.
 - Portados `ConstantFunction` e `ConstantFunction.Sampler`: faixa pontual exata, domínio sem eixos, reescrita identidade, preenchimento de buffer e avaliação independente das coordenadas.
 - Portados `DensityFunctions.zero()` (singleton compartilhado) e `constant(value)` (nova instância por chamada).
-- `DfRewriteRule` usa delegate C# para representar a interface funcional Java; `DfRewriteRules.Sequence` mantém a ordem e o encadeamento dos resultados. `HolderHolder` está portado para referências diretas/de registry: delega compilação, range e domain axes; rewrite mantém a identidade quando o filho não muda e retorna o filho substituto diretamente quando muda. `SliceUniformAxes` permanece pendente.
+- `DfRewriteRule` usa delegate C# para representar a interface funcional Java. `DfRewriteRules.Sequence` mantém a ordem e o encadeamento; `InlineReference` substitui `HolderHolder` pelo valor do holder; `SliceUniformAxesRewriteRule` reproduz o rewrite recursivo 26.3, preserva constantes/gradientes, remove somente eixos ausentes e evita duplicar slices existentes.
 - Os codecs de função (`DensityFunction.CODEC`, `ConstantFunction.CODEC`, registry de tipos e bootstrap) não foram substituídos nem stubados: seguem adiados com persistência local. Os métodos default dos operadores também aguardam os nós reais `UnaryFunction`/`BinaryFunction` para não expor factories incompletas.
 - `DensityFunctionChecks` cobre máscaras de eixos, singleton zero, criação de constantes, range, amostragem escalar/volumétrica, capacidade residual do buffer, reescrita identidade, ordem de sequência e superfície do CompileContext.
 
@@ -720,3 +720,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `Range` herda o intervalo do input. `DomainAxes` remove somente o bit do eixo fixado. Rewrite mantém identidade se o input não muda.
 - Adicionadas as factories `DensityFunctions.Slice` e `SliceY`. Codec segue adiado com persistência local.
 - `SliceFunctionChecks` cobre samplers por eixo, combinação X/Z em ambas as ordens, volumes com steps independentes, shortcuts de plano e liberação dos buffers auxiliares.
+
+
+## Incremento — DfRewriteRule (23/11/2026)
+
+- Portadas as duas regras estáticas de Minecraft Java 26.3: `InlineReference` e `SliceUniformAxes`.
+- `InlineReference` substitui somente `DensityFunctions.HolderHolder` pelo valor do holder; qualquer outro nó mantém a identidade.
+- `SliceUniformAxesRewriteRule(parentDomainAxes)` preserva ConstantFunction e GradientFunction, compara o domínio atual com o domínio do pai e reescreve os filhos com a mesma regra quando os domínios coincidem.
+- Quando os domínios diferem, os filhos são reescritos com uma regra cujo domínio é o do nó atual; os eixos presentes no pai e ausentes no nó são removidos com slices de coordenada zero.
+- A remoção considera slices já existentes na cadeia externa e não os duplica. A ordem de inserção permanece X, Z, Y, deixando Y como wrapper externo quando os três eixos são removidos.
+- `DfRewriteRuleChecks` cobre inlining, nós ignorados, propagação recursiva, caminho de igualdade do domínio, deduplicação de eixos e ordem exata dos wrappers.

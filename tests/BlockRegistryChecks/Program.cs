@@ -244,6 +244,7 @@ internal static class Program
         DensityVolumeChecks.Run();
         DensitySamplingChecks.Run();
         DensityFunctionChecks.Run();
+        DfRewriteRuleChecks.Run();
         UnaryFunctionChecks.Run();
         BinaryFunctionChecks.Run();
         LerpFunctionChecks.Run();

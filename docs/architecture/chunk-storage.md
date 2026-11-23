@@ -206,3 +206,13 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - X, Y and Z samplers create a one-cell-thick input volume along the fixed coordinate, preserve the remaining volume origins and steps, then replicate the sampled plane/line across the output volume.
 - Nested X/Z slices are combined into one `XzSampler` that evaluates the innermost input at the fixed X/Z coordinates.
 - Each sampler retains the vanilla direct-sampling shortcut when the requested volume already matches the fixed plane. Runtime factories `Slice` and `SliceY` are wired; codec remains deferred.
+
+
+## Density function graph rewrites — Minecraft Java 26.3
+
+- `DfRewriteRules.InlineReference` replaces a holder-backed node with its referenced density function; all other node identities are preserved.
+- `DfRewriteRules.SliceUniformAxes` starts with all three coordinate axes and recursively removes axes not required by each subtree.
+- Constant and gradient nodes are left untouched. Other nodes propagate their domain axes to child rewrites; missing parent axes are wrapped with coordinate-zero slices in X, Z, Y insertion order.
+- Existing outer slice wrappers are inspected before adding new slices, preventing duplicate removal of an axis.
+- These rewrites are runtime graph transformations. Density-function codecs, type registry and bootstrap remain deferred with local persistence.
+- Reference: [DfRewriteRule — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/densityfunction/dfrewriterule/).
