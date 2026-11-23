@@ -158,8 +158,7 @@ internal static class DensitySamplingChecks
             "SamplerContext.sampleVolumeCached must reuse a cached volume when the DensityVolume matches.");
 
         float bufferedValue = context.SampleValueCached(3, sampler, 1, 6, 1);
-        Require(bufferedValue == sampler.SampleValue(SamplerContext.EmptyUncached, 1, 6, 1) &&
-            sampler.PointSamples == 8,
+        Require(bufferedValue == 10601.0f && sampler.PointSamples == 8,
             "SamplerContext.sampleValueCached must read point samples directly from a matching cached volume.");
 
         float pointValue = context.SampleValueCached(4, sampler, 50, 60, 70);
