@@ -1,3 +1,4 @@
+using Asteria.Content.Chunks.Status;
 using Asteria.Core;
 
 namespace Asteria.World;
@@ -35,6 +36,11 @@ public readonly record struct ChunkPos(int X, int Z)
         new(
             unchecked((regionX << RegionBits) + RegionMaxIndex),
             unchecked((regionZ << RegionBits) + RegionMaxIndex));
+
+    public bool IsValid() => IsValid(X, Z);
+
+    public static bool IsValid(int x, int z) =>
+        Math.Max(JavaAbs(x), JavaAbs(z)) <= ChunkPyramid.MaxChunkCoordinateValue;
 
     public long Pack() => Pack(X, Z);
 

@@ -21,6 +21,7 @@ internal static class ChunkChecks
         ArgumentNullException.ThrowIfNull(sourceFluidState);
 
         CheckHeightAccessor();
+        CheckChunkPositionBounds();
         CheckChunkAccessLifecycle();
         CheckChunkBlockMutationContract(nonAirState);
         CheckPostProcessingListHelper();
@@ -761,6 +762,29 @@ internal static class ChunkChecks
             biomes.Contains(Biomes.PLAINS.BuiltInRegistryHolder!) &&
             biomes.Contains(Biomes.DESERT.BuiltInRegistryHolder!),
             "Chunk biome palette collection must aggregate distinct holders across every section.");
+    }
+
+    private static void CheckChunkPositionBounds()
+    {
+        int maximum = ChunkPyramid.MaxChunkCoordinateValue;
+        var validBoundary = new ChunkPos(maximum, -maximum);
+        var invalidBoundary = new ChunkPos(maximum + 1, 0);
+
+        Require(
+            maximum == 2_097_061 &&
+            ChunkPos.IsValid(maximum, -maximum) &&
+            validBoundary.IsValid(),
+            "ChunkPos.IsValid must accept both inclusive axes at the ChunkPyramid safety boundary.");
+
+        Require(
+            !ChunkPos.IsValid(maximum + 1, 0) &&
+            !ChunkPos.IsValid(0, -(maximum + 1)) &&
+            !invalidBoundary.IsValid(),
+            "ChunkPos.IsValid must reject coordinates immediately outside the ChunkPyramid safety boundary.");
+
+        Require(
+            ChunkPos.IsValid(int.MinValue, 0),
+            "ChunkPos.IsValid must preserve Java Mth.absMax integer-overflow behavior for int.MinValue.");
     }
 
     private static void CheckHeightAccessor()
