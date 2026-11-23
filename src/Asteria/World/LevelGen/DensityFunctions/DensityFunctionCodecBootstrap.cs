@@ -33,7 +33,8 @@ internal static class DensityFunctionCodecBootstrap
         MapCodec<DensityFunction> RangeChoice,
         MapCodec<DensityFunction> IntervalSelect,
         MapCodec<DensityFunction> Slice,
-        MapCodec<DensityFunction> Gradient);
+        MapCodec<DensityFunction> Gradient,
+        MapCodec<DensityFunction> FindTopSurface);
 
     // Lazy initialization is required because these map codecs compose DIRECT_CODEC,
     // whose registry dispatch is created while DensityFunctions itself is initialized.
@@ -71,6 +72,7 @@ internal static class DensityFunctionCodecBootstrap
         Register(registry, "cache", codecs.Cache);
         Register(registry, "interpolated", codecs.Interpolated);
         Register(registry, "slice", codecs.Slice);
+        Register(registry, "find_top_surface", codecs.FindTopSurface);
     }
 
     internal static MapCodec<DensityFunction>? GetCodec(DensityFunction function)
@@ -100,6 +102,7 @@ internal static class DensityFunctionCodecBootstrap
             IntervalSelectFunction => codecs.IntervalSelect,
             SliceFunction => codecs.Slice,
             GradientFunction => codecs.Gradient,
+            FindTopSurfaceFunction => codecs.FindTopSurface,
             _ => null
         };
     }
@@ -187,7 +190,8 @@ internal static class DensityFunctionCodecBootstrap
             CreateRangeChoiceCodec(),
             CreateIntervalSelectCodec(),
             CreateSliceCodec(),
-            CreateGradientCodec());
+            CreateGradientCodec(),
+            CreateFindTopSurfaceCodec());
     }
 
     private static MapCodec<DensityFunction> CreateNoiseCodec() =>
@@ -537,6 +541,29 @@ internal static class DensityFunctionCodecBootstrap
 
     private sealed record GradientCoordinates(int FromCoordinate, int ToCoordinate);
     private sealed record GradientValues(float FromValue, float ToValue);
+
+    private static MapCodec<DensityFunction> CreateFindTopSurfaceCodec() =>
+        RecordCodecBuilder.MapCodec<FindTopSurfaceFunction>(instance =>
+            instance.Group(
+                    DensityFunction.CODEC.FieldOf("density")
+                        .ForGetter<FindTopSurfaceFunction>(static function => function.Density),
+                    DensityFunction.CODEC.FieldOf("upper_bound")
+                        .ForGetter<FindTopSurfaceFunction>(static function => function.UpperBound),
+                    Codecs.IntRange(
+                            Asteria.World.LevelGen.NoiseSettings.DimensionMinY * 2,
+                            Asteria.World.LevelGen.NoiseSettings.DimensionMaxY * 2)
+                        .FieldOf("lower_bound")
+                        .ForGetter<FindTopSurfaceFunction>(static function => function.LowerBound),
+                    Codecs.IntRange(1, int.MaxValue)
+                        .FieldOf("cell_height")
+                        .ForGetter<FindTopSurfaceFunction>(static function => function.CellHeight))
+                .Apply(
+                    instance,
+                    static (density, upperBound, lowerBound, cellHeight) =>
+                        new FindTopSurfaceFunction(density, upperBound, lowerBound, cellHeight)))
+            .XMap<DensityFunction>(
+                static function => function,
+                function => (FindTopSurfaceFunction)function);
 
     private static MapCodec<DensityFunction> CreateRoundCodec(RoundFunction.Type operation) =>
         RecordCodecBuilder.MapCodec<RoundFunction>(instance =>
