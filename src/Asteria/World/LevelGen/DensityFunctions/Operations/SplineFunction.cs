@@ -1,3 +1,4 @@
+using Asteria.Serialization;
 using Asteria.Util;
 
 namespace Asteria.World.LevelGen.DensityFunctions.Operations;
@@ -9,6 +10,18 @@ namespace Asteria.World.LevelGen.DensityFunctions.Operations;
 /// </summary>
 public sealed class SplineFunction : DensityFunction
 {
+    private static Codec<IBoundedFloatFunction<Unit>> CoordinateCodec { get; } =
+        DensityFunctions.DIRECT_CODEC.XMap<IBoundedFloatFunction<Unit>>(
+            static function => new Coordinate(function),
+            static coordinate => ((Coordinate)coordinate).Function);
+
+    public static MapCodec<SplineFunction> CODEC { get; } =
+        CubicSpline<Unit>.CreateCodec(CoordinateCodec)
+            .FieldOf("spline")
+            .XMap<SplineFunction>(
+                static spline => new SplineFunction(spline),
+                static function => function.Spline);
+
     public CubicSpline<Unit> Spline { get; }
 
     public SplineFunction(CubicSpline<Unit> spline)
