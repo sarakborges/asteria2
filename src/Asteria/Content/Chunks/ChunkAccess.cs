@@ -304,7 +304,7 @@ public abstract class ChunkAccess : BlockGetter
         GetOrCreateOffsetList(_postProcessing, sectionIndex).AddRange(packedOffsets);
     }
 
-    protected static List<short> GetOrCreateOffsetList(
+    public static List<short> GetOrCreateOffsetList(
         List<short>?[] postProcessing,
         int sectionIndex)
     {

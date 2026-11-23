@@ -842,3 +842,9 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 
 - Portado `ChunkAccess.CanBeSerialized` como método virtual com retorno padrão `true`, conforme Minecraft Java 26.3.
 - Testes verificam que a resposta permanece verdadeira em chunks recém-criados e marcados como dirty.
+
+
+## Incremento — helper público de post-processing (23/11/2026)
+
+- A visibilidade de `ChunkAccess.GetOrCreateOffsetList` foi alinhada ao contrato público estático da referência 26.3.
+- Testes cobrem criação lazy, reutilização da mesma lista, isolamento entre seções e falha nativa do array para índice fora da faixa.

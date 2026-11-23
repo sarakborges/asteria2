@@ -316,3 +316,9 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 
 - ChunkAccess exposes the virtual `CanBeSerialized` contract and defaults to `true`, matching the reference base class.
 - Tests verify the default for clean and dirty chunks; specialized chunk wrappers may override it when their lifecycle requires.
+
+
+## ChunkAccess post-processing list helper — Minecraft Java 26.3
+
+- `GetOrCreateOffsetList` is exposed as a public static helper, matching the shared chunk API.
+- It allocates a section's list lazily, returns the same list on subsequent calls, and keeps section slots independent.

@@ -23,6 +23,7 @@ internal static class ChunkChecks
         CheckHeightAccessor();
         CheckChunkAccessLifecycle();
         CheckChunkBlockMutationContract(nonAirState);
+        CheckPostProcessingListHelper();
         CheckBlockGetterContract(fluidState);
         CheckBlockGetterDefaultMethods(nonAirState);
         CheckBlockGetterTraversal();
@@ -107,6 +108,38 @@ internal static class ChunkChecks
             ReferenceEquals(chunk.GetBlockState(outside), Blocks.AIR.DefaultState) &&
             chunk.LastSetBlockFlags == 3,
             "The shared overload must preserve the concrete chunk's outside-build-height return behavior.");
+    }
+
+    private static void CheckPostProcessingListHelper()
+    {
+        List<short>?[] slots = new List<short>?[3];
+        List<short> first = ChunkAccess.GetOrCreateOffsetList(slots, 1);
+        first.Add(42);
+
+        List<short> same = ChunkAccess.GetOrCreateOffsetList(slots, 1);
+        Require(
+            ReferenceEquals(first, same) &&
+            ReferenceEquals(slots[1], first) &&
+            first.SequenceEqual(new short[] { 42 }),
+            "ChunkAccess.GetOrCreateOffsetList must lazily allocate once and return the existing section list on later calls.");
+
+        List<short> other = ChunkAccess.GetOrCreateOffsetList(slots, 0);
+        Require(
+            !ReferenceEquals(first, other) &&
+            ReferenceEquals(slots[0], other),
+            "Each section index must own an independent post-processing list.");
+
+        try
+        {
+            _ = ChunkAccess.GetOrCreateOffsetList(slots, slots.Length);
+        }
+        catch (IndexOutOfRangeException)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            "GetOrCreateOffsetList must retain the backing-array bounds failure for invalid section indices.");
     }
 
     private static void CheckBlockGetterContract(BlockState fluidState)
