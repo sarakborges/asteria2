@@ -704,13 +704,13 @@ internal static class Program
             .Air()
             .LightLevel(static _ => 9)
             .EmissiveRendering(static _ => true)
-            .MapColor(MapColor.STONE)
+            .MapColor(Asteria.Content.Materials.MapColor.STONE)
             .OffsetType(OffsetType.XZ)
             .IsRedstoneConductor(static (_, _, _) => true)
             .IsSuffocating(static (_, _, _) => true)
             .IsViewBlocking(static (_, _, _, _) => true)
             .PostProcess(static (_, _, position) => position.Above())
-            .PushReaction(PushReaction.BLOCK);
+            .PushReaction(Asteria.Content.Materials.PushReaction.IMMOVEABLE);
         var copySourceBlock = new TestBlockDefinition(copySourceProperties);
         BlockProperties fullCopy = BlockProperties.OfFullCopy(copySourceBlock);
 
