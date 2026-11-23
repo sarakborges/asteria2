@@ -30,6 +30,28 @@ public interface DensityFunction
         throw new ArgumentOutOfRangeException(nameof(axis));
     }
 
+    DensityFunction Abs() => DensityFunctions.Abs(this);
+
+    DensityFunction Square() => DensityFunctions.Square(this);
+
+    DensityFunction Cube() => DensityFunctions.Cube(this);
+
+    DensityFunction Sqrt() => DensityFunctions.Sqrt(this);
+
+    DensityFunction HalfNegative() => DensityFunctions.HalfNegative(this);
+
+    DensityFunction QuarterNegative() => DensityFunctions.QuarterNegative(this);
+
+    DensityFunction Reciprocal() => DensityFunctions.Reciprocal(this);
+
+    DensityFunction Negate() => DensityFunctions.Negate(this);
+
+    DensityFunction Squeeze() => DensityFunctions.Squeeze(this);
+
+    DensityFunction Log() => DensityFunctions.Log(this);
+
+    DensityFunction Sign() => DensityFunctions.Sign(this);
+
     DensitySampler CompileSampler(CompileContext context);
 
     DensityFunction RewriteChildren(DfRewriteRule rule);

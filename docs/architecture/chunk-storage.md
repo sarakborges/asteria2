@@ -111,3 +111,11 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - The runtime-only first node is `ConstantFunction`, including its exact interval, coordinate-independent sampler, and active-buffer fill.
 - `DensityFunctions.Zero` returns the shared vanilla zero node; `Constant` creates a new node per call.
 - Context and rewrite contracts are present. Operator nodes, SliceFunction, holder-reference inlining and density codecs remain separate follow-up ports; codecs are deferred with local persistence and no stand-ins are registered.
+
+
+## Unary density operators — Minecraft Java 26.3
+
+- The eleven unary operators are represented by `UnaryFunction`: abs, square, cube, sqrt, half_negative, quarter_negative, reciprocal, negate, squeeze, log and sign.
+- Each operation compiles to its corresponding sampler record; both leaky-ReLU variants share the parameterized vanilla sampler. Volume sampling delegates to the child, then transforms the active buffer.
+- Range calculations use the existing interval primitives, and the node inherits its child's domain-axis mask.
+- Type factories and the default `DensityFunction` operator methods are now wired. Operator codecs are deferred with local persistence and not replaced with placeholders.

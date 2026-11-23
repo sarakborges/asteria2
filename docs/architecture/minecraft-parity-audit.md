@@ -596,3 +596,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `DfRewriteRule` usa delegate C# para representar a interface funcional Java; `DfRewriteRules.Sequence` mantém a ordem e o encadeamento dos resultados. A forma específica `SliceUniformAxes` aguardará `SliceFunction`; `INLINE_REFERENCE` aguardará o wrapper `HolderHolder`.
 - Os codecs de função (`DensityFunction.CODEC`, `ConstantFunction.CODEC`, registry de tipos e bootstrap) não foram substituídos nem stubados: seguem adiados com persistência local. Os métodos default dos operadores também aguardam os nós reais `UnaryFunction`/`BinaryFunction` para não expor factories incompletas.
 - `DensityFunctionChecks` cobre máscaras de eixos, singleton zero, criação de constantes, range, amostragem escalar/volumétrica, capacidade residual do buffer, reescrita identidade, ordem de sequência e superfície do CompileContext.
+
+
+## Incremento — UnaryFunction (23/11/2026)
+
+- Portado `UnaryFunction` de Minecraft Java 26.3 com os onze tipos e ids: ABS, SQUARE, CUBE, SQRT, HALF_NEGATIVE, QUARTER_NEGATIVE, RECIPROCAL, NEGATE, SQUEEZE, LOG e SIGN.
+- Cada tipo compila para seu sampler correspondente; HALF_NEGATIVE/QUARTER_NEGATIVE compartilham o sampler parametrizado `LeakyReLUSampler`. Os samplers volumétricos primeiro delegam a amostragem ao filho e transformam somente os elementos do buffer ativo.
+- `Range` usa as operações `Interval` já portadas: abs, square, mapeamento monotônico para transformações monotônicas, recíproco, log e sign. O domínio de eixos é herdado do filho.
+- Portadas as factories de `DensityFunctions` e os métodos default correspondentes de `DensityFunction`.
+- O enum conserva a ordem 26.3; ids são mapeados para nomes de registro, sem registrar codecs nesta etapa. `MapCodec` continua adiado com persistência, não substituído por codec local.
+- `UnaryFunctionChecks` cobre as onze transformações, extremos e intervalos, aplicação escalar/volumétrica, ordem do enum, ids e reconstrução após rewrite.
