@@ -172,8 +172,9 @@ internal static class DensitySamplingChecks
         Require(arena.Acquired == 2 && arena.Released == 1 && sampler.VolumeSamples == 2,
             "SamplerContext.sampleVolumeCached must close and replace a cached buffer when the volume changes.");
 
+        int pointCountAfterVolumeRebuild = sampler.PointSamples;
         context.SampleValueCached(4, sampler, 51, 60, 70);
-        Require(sampler.PointSamples == pointCount + 1,
+        Require(sampler.PointSamples == pointCountAfterVolumeRebuild + 1,
             "Point cache entries must be invalidated by a different coordinate.");
     }
 
