@@ -16,7 +16,11 @@ internal static class DensityFunctionCodecBootstrap
         MapCodec<DensityFunction> Constant,
         IReadOnlyDictionary<UnaryFunction.Type, MapCodec<DensityFunction>> Unary,
         IReadOnlyDictionary<BinaryFunction.Type, MapCodec<DensityFunction>> Binary,
-        IReadOnlyDictionary<RoundFunction.Type, MapCodec<DensityFunction>> Round);
+        IReadOnlyDictionary<RoundFunction.Type, MapCodec<DensityFunction>> Round,
+        MapCodec<DensityFunction> Pow,
+        MapCodec<DensityFunction> Lerp,
+        MapCodec<DensityFunction> Cache,
+        MapCodec<DensityFunction> Interpolated);
 
     // Lazy initialization is required because these map codecs compose DIRECT_CODEC,
     // whose registry dispatch is created while DensityFunctions itself is initialized.
@@ -37,6 +41,11 @@ internal static class DensityFunctionCodecBootstrap
 
         foreach (BinaryFunction.Type operation in Enum.GetValues<BinaryFunction.Type>())
             Register(registry, BinaryFunction.GetId(operation), codecs.Binary[operation]);
+
+        Register(registry, "pow", codecs.Pow);
+        Register(registry, "lerp", codecs.Lerp);
+        Register(registry, "cache", codecs.Cache);
+        Register(registry, "interpolated", codecs.Interpolated);
     }
 
     internal static MapCodec<DensityFunction>? GetCodec(DensityFunction function)
@@ -50,6 +59,10 @@ internal static class DensityFunctionCodecBootstrap
             UnaryFunction unary => codecs.Unary[unary.Operation],
             BinaryFunction binary => codecs.Binary[binary.Operation],
             RoundFunction round => codecs.Round[round.Operation],
+            PowFunction => codecs.Pow,
+            LerpFunction => codecs.Lerp,
+            CacheFunction => codecs.Cache,
+            InterpolatedFunction => codecs.Interpolated,
             _ => null
         };
     }
@@ -117,7 +130,15 @@ internal static class DensityFunctionCodecBootstrap
         var round = Enum.GetValues<RoundFunction.Type>()
             .ToDictionary(operation => operation, CreateRoundCodec);
 
-        return new CodecCatalog(constant, unary, binary, round);
+        return new CodecCatalog(
+            constant,
+            unary,
+            binary,
+            round,
+            CreatePowCodec(),
+            CreateLerpCodec(),
+            CreateCacheCodec(),
+            CreateInterpolatedCodec());
     }
 
     private static MapCodec<DensityFunction> CreateUnaryCodec(UnaryFunction.Type operation) =>
@@ -139,6 +160,61 @@ internal static class DensityFunctionCodecBootstrap
             .XMap<DensityFunction>(
                 static function => function,
                 function => (BinaryFunction)function);
+
+    private static MapCodec<DensityFunction> CreatePowCodec() =>
+        RecordCodecBuilder.MapCodec<PowFunction>(instance =>
+            instance.Group(
+                    DensityFunctions.DIRECT_CODEC.FieldOf("base")
+                        .ForGetter<PowFunction>(static function => function.Base),
+                    DensityFunctions.DIRECT_CODEC.FieldOf("exponent")
+                        .ForGetter<PowFunction>(static function => function.Exponent))
+                .Apply(
+                    instance,
+                    static (baseFunction, exponent) =>
+                        new PowFunction(baseFunction, exponent)))
+            .XMap<DensityFunction>(
+                static function => function,
+                function => (PowFunction)function);
+
+    private static MapCodec<DensityFunction> CreateLerpCodec() =>
+        RecordCodecBuilder.MapCodec<LerpFunction>(instance =>
+            instance.Group(
+                    DensityFunctions.DIRECT_CODEC.FieldOf("alpha")
+                        .ForGetter<LerpFunction>(static function => function.Alpha),
+                    DensityFunctions.DIRECT_CODEC.FieldOf("first")
+                        .ForGetter<LerpFunction>(static function => function.First),
+                    DensityFunctions.DIRECT_CODEC.FieldOf("second")
+                        .ForGetter<LerpFunction>(static function => function.Second))
+                .Apply(
+                    instance,
+                    static (alpha, first, second) =>
+                        new LerpFunction(alpha, first, second)))
+            .XMap<DensityFunction>(
+                static function => function,
+                function => (LerpFunction)function);
+
+    private static MapCodec<DensityFunction> CreateCacheCodec() =>
+        DensityFunctions.DIRECT_CODEC.FieldOf("input")
+            .XMap<DensityFunction>(
+                static input => new CacheFunction(input),
+                static function => ((CacheFunction)function).Input);
+
+    private static MapCodec<DensityFunction> CreateInterpolatedCodec() =>
+        RecordCodecBuilder.MapCodec<InterpolatedFunction>(instance =>
+            instance.Group(
+                    DensityFunctions.DIRECT_CODEC.FieldOf("input")
+                        .ForGetter<InterpolatedFunction>(static function => function.Input),
+                    Codecs.IntRange(1, int.MaxValue).FieldOf("cell_size_xz")
+                        .ForGetter<InterpolatedFunction>(static function => function.CellSizeXz),
+                    Codecs.IntRange(1, int.MaxValue).FieldOf("cell_size_y")
+                        .ForGetter<InterpolatedFunction>(static function => function.CellSizeY))
+                .Apply(
+                    instance,
+                    static (input, cellSizeXz, cellSizeY) =>
+                        new InterpolatedFunction(input, cellSizeXz, cellSizeY)))
+            .XMap<DensityFunction>(
+                static function => function,
+                function => (InterpolatedFunction)function);
 
     private static MapCodec<DensityFunction> CreateRoundCodec(RoundFunction.Type operation) =>
         RecordCodecBuilder.MapCodec<RoundFunction>(instance =>
