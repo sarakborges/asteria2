@@ -235,3 +235,12 @@ The current Biome model covers the registry-backed climate payload (precipitatio
 - Multipoint sampling uses the reference binary segment search, derivative-based linear extension outside the point range, and the cubic Hermite expression used by Java 26.3.
 - Recursive spline codecs and `SplineFunction` sampler integration remain separate follow-ups with local persistence; no placeholder codecs are added.
 - Reference: [CubicSpline — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/cubicspline/) and [BoundedFloatFunction — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/boundedfloatfunction/).
+
+
+## Spline density function — Minecraft Java 26.3
+
+- SplineFunction embeds a cubic spline whose coordinate descriptors reference density functions.
+- Compilation maps every descriptor to a sampler-backed coordinate while preserving the cubic spline's pre-order coordinate traversal.
+- Point evaluation caches coordinate values for one point. Volume evaluation lazily samples each coordinate into a scoped buffer and closes all leases after the full volume, including exceptional exits.
+- Range comes from the cubic spline; domain axes are the union of coordinate density-function domains. Child rewrite traverses nested spline coordinates and retains identity when unchanged.
+- Recursive spline codecs and local save/load integration remain deferred; no placeholder codec is registered.

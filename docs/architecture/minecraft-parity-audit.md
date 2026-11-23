@@ -753,3 +753,15 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `CubicSplineChecks` cobre funções limitadas, constante, construção, monotonicidade dos pontos, amostragem cúbica, extrapolação, splines aninhadas, traversal, mapping, propagação de range e casos NaI/erro.
 
 - Adaptação C# documentada: `MapCoordinates` recria o nó Constant value-equivalente ao mudar o parâmetro genérico de contexto, já que tipos genéricos são reificados em .NET; o valor, range e comportamento de amostragem são idênticos. O método `ForEachCoordinate` continua no-op para Constant, inclusive quando o callback é nulo.
+
+
+## Incremento — SplineFunction (23/11/2026)
+
+- Portado SplineFunction de Minecraft Java 26.3 sobre a base CubicSpline já validada. A coordenada descritiva mantém a DensityFunction; durante compilação, cada ocorrência é convertida em SamplerCoordinate com sampler, índice estável de buffer e intervalo da função.
+- A transformação preserva a ordem pre-order de ForEachCoordinate e MapCoordinates, incluindo coordenadas em splines aninhadas.
+- O sampler pontual usa PointSplineInput, com cache local por índice durante a avaliação de um ponto.
+- O sampler volumétrico usa BufferSplineInput: amostra cada coordenada sob demanda em um ScopedDensityBuffer, reutiliza os valores durante toda a varredura linear do volume e fecha todos os buffers em Dispose, inclusive quando um sampler filho lança exceção.
+- Range delega ao range da spline; DomainAxes agrega os eixos das funções usadas como coordenadas. Rewrite percorre coordenadas recursivamente e preserva identidade se nenhuma função filha mudar.
+- Adaptação C# documentada: o parâmetro genérico existente em CubicSpline<TContext> representa o contexto de avaliação; por isso o spline descritivo usa CubicSpline<SplineFunction.Unit> e o compilado usa CubicSpline<SplineInput>. A API Java parametriza o nó por I extends BoundedFloatFunction<?>; a semântica de amostragem e a ordem de traversal são preservadas.
+- Os codecs recursivos permanecem adiados com persistência local; nenhuma implementação substituta foi criada.
+- SplineFunctionChecks cobre ponto, volume, range, domínio, coordenadas aninhadas, spline constante, rewrite e liberação de buffers no caminho de exceção.

@@ -216,6 +216,9 @@ public static class DensityFunctions
     public static DensityFunction Cache(DensityFunction input) =>
         new CacheFunction(input);
 
+    public static DensityFunction Spline(CubicSpline<SplineFunction.Unit> spline) =>
+        new SplineFunction(spline);
+
     /// <summary>
     /// Holder-backed density-function reference from Minecraft Java 26.3.
     /// </summary>

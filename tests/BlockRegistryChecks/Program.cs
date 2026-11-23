@@ -240,6 +240,7 @@ internal static class Program
         NormalNoiseChecks.Run();
         LegacyFbmInitializerChecks.Run();
         CubicSplineChecks.Run();
+        SplineFunctionChecks.Run();
         DensityBufferChecks.Run();
         BoundingBoxChecks.Run();
         DensityVolumeChecks.Run();
