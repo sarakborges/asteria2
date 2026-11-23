@@ -751,3 +751,5 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `Range` reproduz a propagação por intervalos da referência, incluindo NaI, extensões de extremidade e a estimativa de limites para segmentos com derivadas não nulas.
 - `MapCoordinates` transforma recursivamente o coordenador e as splines filhas; `ForEachCoordinate` mantém a ordem pre-order. Os codecs recursivos e a integração com SplineFunction ficam adiados para o incremento próprio, sem stubs.
 - `CubicSplineChecks` cobre funções limitadas, constante, construção, monotonicidade dos pontos, amostragem cúbica, extrapolação, splines aninhadas, traversal, mapping, propagação de range e casos NaI/erro.
+
+- Adaptação C# documentada: `MapCoordinates` recria o nó Constant value-equivalente ao mudar o parâmetro genérico de contexto, já que tipos genéricos são reificados em .NET; o valor, range e comportamento de amostragem são idênticos. O método `ForEachCoordinate` continua no-op para Constant, inclusive quando o callback é nulo.

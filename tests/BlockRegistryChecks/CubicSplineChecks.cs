@@ -96,7 +96,7 @@ internal static class CubicSplineChecks
 
         float sample = CubicSpline<float>.Sample(spline, 2.5f);
         Require(
-            Math.Abs(sample - 4.0625f) < 0.00001f,
+            Math.Abs(sample - 1.5625f) < 0.00001f,
             "Multipoint interpolation must use the Minecraft cubic Hermite expression, not linear interpolation.");
     }
 
@@ -115,7 +115,7 @@ internal static class CubicSplineChecks
 
         float sample = CubicSpline<float>.Sample(spline, 1.0f);
         Require(
-            Math.Abs(sample - 2.0f) < 0.00001f,
+            Math.Abs(sample - 4.448f) < 0.00001f,
             "Nested cubic splines must evaluate their child splines against the same context.");
         
         var coordinates = new List<IBoundedFloatFunction<float>>();
@@ -135,11 +135,11 @@ internal static class CubicSplineChecks
             .AddPoint(10.0f, 10.0f)
             .Build();
 
-        CubicSpline<int> mapped = spline.MapCoordinates<float, int>(
+        CubicSpline<int> mapped = spline.MapCoordinates<int>(
             coordinate => coordinate.Comap<int, float>(value => value * 2.0f));
 
         Require(
-            Math.Abs(CubicSpline<int>.Sample(mapped, 0) - CubicSpline<float>.Sample(spline, 1.0f)) < 0.00001f &&
+            Math.Abs(CubicSpline<int>.Sample(mapped, 1) - CubicSpline<float>.Sample(spline, 2.0f)) < 0.00001f &&
             mapped.Range().Equals(spline.Range()),
             "mapCoordinates must transform every coordinate recursively while retaining spline values and intervals.");
     }

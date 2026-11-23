@@ -124,7 +124,7 @@ public abstract class CubicSpline<TContext>
 
         public override void ForEachCoordinate(Action<IBoundedFloatFunction<TContext>> consumer)
         {
-            ArgumentNullException.ThrowIfNull(consumer);
+            // The constant node has no coordinates; the reference implementation is a no-op.
         }
 
         public override CubicSpline<TNextContext> MapCoordinates<TNextContext>(
