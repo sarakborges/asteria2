@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Asteria.Util.Context;
 
 /// <summary>
@@ -20,18 +22,21 @@ public sealed class ContextMap
         return _parameters.ContainsKey(key);
     }
 
-    public T? Get<T>(ContextKey<T> key)
+    [return: MaybeNull]
+    public T Get<T>(ContextKey<T> key)
     {
         ArgumentNullException.ThrowIfNull(key);
-        return _parameters.TryGetValue(key, out object? value)
-            ? (T?)value
-            : default;
+        return _parameters.TryGetValue(key, out object? value) && value is not null
+            ? (T)value
+            : default!;
     }
 
-    public T? GetOrDefault<T>(ContextKey<T> key, T? defaultValue)
+    public T GetOrDefault<T>(ContextKey<T> key, T defaultValue)
     {
-        T? value = Get(key);
-        return value is null ? defaultValue : value;
+        ArgumentNullException.ThrowIfNull(key);
+        return _parameters.TryGetValue(key, out object? value) && value is not null
+            ? (T)value
+            : defaultValue;
     }
 
     public T GetOrThrow<T>(ContextKey<T> key)
@@ -83,12 +88,13 @@ public sealed class ContextMap
             return (T)value;
         }
 
-        public T? GetOptionalParameter<T>(ContextKey<T> key)
+        [return: MaybeNull]
+        public T GetOptionalParameter<T>(ContextKey<T> key)
         {
             ArgumentNullException.ThrowIfNull(key);
-            return _parameters.TryGetValue(key, out object? value)
-                ? (T?)value
-                : default;
+            return _parameters.TryGetValue(key, out object? value) && value is not null
+                ? (T)value
+                : default!;
         }
 
         public ContextMap Build() =>
