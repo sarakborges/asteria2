@@ -13,6 +13,7 @@ using Asteria.World;
 using Asteria.World.Lighting;
 using Asteria.World.BlockScan;
 using Asteria.Util;
+using Asteria.World.Ticks;
 
 internal static class ChunkChecks
 {
@@ -1206,6 +1207,16 @@ internal static class ChunkChecks
 
     private sealed class TestChunkAccess : ChunkAccess
     {
+        private readonly ProtoChunkTicks<Block> _blockTicks = new();
+        private readonly ProtoChunkTicks<Fluid> _fluidTicks = new();
+
+        public override TickContainerAccess<Block> GetBlockTicks() => _blockTicks;
+
+        public override TickContainerAccess<Fluid> GetFluidTicks() => _fluidTicks;
+
+        public override PackedTicks GetTicksForSerialization(long currentTick) =>
+            new(_blockTicks.Pack(currentTick), _fluidTicks.Pack(currentTick));
+
         public override ChunkStatus GetPersistedStatus() => ChunkStatus.EMPTY;
 
         public int LastSetBlockFlags { get; private set; }

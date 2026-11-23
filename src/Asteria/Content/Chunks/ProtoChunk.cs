@@ -6,6 +6,7 @@ using Asteria.Content.Chunks.Status;
 using Asteria.Core;
 using Asteria.World;
 using Asteria.World.Lighting;
+using Asteria.World.Ticks;
 using BuiltInBlocks = Asteria.Content.Blocks.Blocks;
 using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 
@@ -19,15 +20,36 @@ public sealed class ProtoChunk : ChunkAccess
 {
     private volatile LightEngine? _lightEngine;
     private volatile ChunkStatus _status = ChunkStatus.EMPTY;
+    private readonly ProtoChunkTicks<Block> _blockTicks;
+    private readonly ProtoChunkTicks<Fluid> _fluidTicks;
 
     public ProtoChunk(
         ChunkPos chunkPos,
         LevelHeightAccessor levelHeightAccessor,
         PalettedContainerFactory containerFactory,
-        ChunkSection?[]? sections = null)
+        ChunkSection?[]? sections = null,
+        ProtoChunkTicks<Block>? blockTicks = null,
+        ProtoChunkTicks<Fluid>? fluidTicks = null)
         : base(chunkPos, levelHeightAccessor, containerFactory, inhabitedTime: 0, sections)
     {
+        _blockTicks = blockTicks ?? new ProtoChunkTicks<Block>();
+        _fluidTicks = fluidTicks ?? new ProtoChunkTicks<Fluid>();
     }
+
+    public override TickContainerAccess<Block> GetBlockTicks() => _blockTicks;
+
+    public override TickContainerAccess<Fluid> GetFluidTicks() => _fluidTicks;
+
+    public override PackedTicks GetTicksForSerialization(long currentTick) =>
+        new(_blockTicks.Pack(currentTick), _fluidTicks.Pack(currentTick));
+
+    private static LevelChunkTicks<T> UnpackTicks<T>(ProtoChunkTicks<T> ticks)
+        where T : class =>
+        new(ticks.ScheduledTicks().ToList());
+
+    public LevelChunkTicks<Block> UnpackBlockTicks() => UnpackTicks(_blockTicks);
+
+    public LevelChunkTicks<Fluid> UnpackFluidTicks() => UnpackTicks(_fluidTicks);
 
     public override ChunkStatus GetPersistedStatus() => _status;
 

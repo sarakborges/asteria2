@@ -14,6 +14,7 @@ using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
 using Asteria.Content.Storage;
 using Asteria.World.Clocks;
+using Asteria.World.Ticks;
 
 internal static class Program
 {
@@ -273,6 +274,7 @@ internal static class Program
         BlockPositionTransformChecks.Run();
         BlockBehaviorChecks.Run();
         ProtoChunkChecks.Run();
+        TickChecks.Run();
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState, FluidChecks.SourceFluidState);
         PalettedContainerChecks.Run();
         BiomeChecks.Run();

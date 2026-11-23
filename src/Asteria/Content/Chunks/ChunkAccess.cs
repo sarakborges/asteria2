@@ -9,6 +9,7 @@ using Asteria.World;
 using Asteria.World.Lighting;
 using Asteria.World.BlockScan;
 using Asteria.Util;
+using Asteria.World.Ticks;
 
 namespace Asteria.Content.Chunks;
 
@@ -270,6 +271,12 @@ public abstract class ChunkAccess : BlockGetter
         return heightmap.GetFirstAvailable(x & SectionPos.SectionMask, z & SectionPos.SectionMask) - 1;
     }
 
+    public abstract TickContainerAccess<Block> GetBlockTicks();
+
+    public abstract TickContainerAccess<Fluid> GetFluidTicks();
+
+    public abstract PackedTicks GetTicksForSerialization(long currentTick);
+
     public abstract ChunkStatus GetPersistedStatus();
 
     /// <summary>
@@ -380,6 +387,10 @@ public abstract class ChunkAccess : BlockGetter
 
     public bool IsOutsideBuildHeight(int blockY) =>
         _levelHeightAccessor.IsOutsideBuildHeight(blockY);
+    public sealed record PackedTicks(
+        IReadOnlyList<SavedTick<Block>> Blocks,
+        IReadOnlyList<SavedTick<Fluid>> Fluids);
+
     private sealed class HeightmapEntries : IReadOnlyCollection<KeyValuePair<Heightmap.Types, Heightmap>>
     {
         private readonly Dictionary<Heightmap.Types, Heightmap> _heightmaps;
