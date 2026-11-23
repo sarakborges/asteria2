@@ -35,6 +35,7 @@ internal static class DensityFunctionCodecChecks
         CheckNormalNoiseCodec();
         CheckNoiseFunctionCodec();
         CheckShiftNoiseCodecs();
+        CheckFindTopSurfaceCodec();
         CheckHolderCodecs();
         CheckRejectedInputs();
     }
@@ -42,8 +43,8 @@ internal static class DensityFunctionCodecChecks
     private static void CheckTypeRegistry()
     {
         Require(
-            BuiltInRegistries.DensityFunctionType.Count == 38,
-            "The density-function codec slice must register constant, noise, shift variants, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient, spline, distance_to_point and end_outer_islands.");
+            BuiltInRegistries.DensityFunctionType.Count == 39,
+            "The density-function codec slice must register constant, noise, shift variants, find_top_surface, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient, spline, distance_to_point and end_outer_islands.");
 
         Require(
             BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:constant")) &&
@@ -971,6 +972,190 @@ internal static class DensityFunctionCodecChecks
                 decoded.Equals(values[index]),
                 $"Shift-noise codec {identifiers[index]} must round-trip its holder.");
         }
+    }
+
+    private static void CheckFindTopSurfaceCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        var density = new SurfaceProbeDensityFunction(threshold: 5.0f);
+        DensityFunction expected = new FindTopSurfaceFunction(
+            density,
+            new ConstantFunction(11.0f),
+            -8,
+            4);
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:find_top_surface" &&
+            ops.Get(encoded, "density").GetOrThrow().ValueKind == JsonValueKind.Number &&
+            ops.Get(encoded, "upper_bound").GetOrThrow().GetSingle() == 11.0f &&
+            ops.Get(encoded, "lower_bound").GetOrThrow().GetInt32() == -8 &&
+            ops.Get(encoded, "cell_height").GetOrThrow().GetInt32() == 4,
+            "FindTopSurfaceFunction must serialize density, upper_bound, lower_bound and cell_height.");
+
+        FindTopSurfaceFunction decoded = DensityFunctions.DIRECT_CODEC
+            .Parse(ops, encoded)
+            .GetOrThrow() as FindTopSurfaceFunction
+            ?? throw new InvalidOperationException("FindTopSurfaceFunction codec returned another density-function node.");
+
+        Require(
+            decoded.UpperBound.Equals(expected.UpperBound) &&
+            decoded.LowerBound == expected.LowerBound &&
+            decoded.CellHeight == expected.CellHeight,
+            "FindTopSurfaceFunction must preserve its upper bound and vertical search settings.");
+        Require(
+            decoded.Density.Equals(expected.Density),
+            "FindTopSurfaceFunction must preserve its density child.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:find_top_surface","density":1.0,"upper_bound":1.0,"lower_bound":-4065,"cell_height":1}"""))
+                .IsError &&
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:find_top_surface","density":1.0,"upper_bound":1.0,"lower_bound":4063,"cell_height":1}"""))
+                .IsError,
+            "FindTopSurfaceFunction must reject lower bounds outside twice the DimensionType Y limits.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:find_top_surface","density":1.0,"upper_bound":1.0,"lower_bound":0,"cell_height":0}"""))
+                .IsError &&
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:find_top_surface","density":1.0,"upper_bound":1.0,"lower_bound":0,"cell_height":-4}"""))
+                .IsError,
+            "FindTopSurfaceFunction must reject non-positive cell heights.");
+
+        Require(
+            expected.Range().Equals(Interval.Of(-8.0f, 11.0f)) &&
+            expected.DomainAxes() == DensityFunction.NO_AXES,
+            "FindTopSurfaceFunction range and domain must use the upper-bound range and clear Y axes.");
+
+        DensityFunction unchanged = expected.RewriteChildren(static child => child);
+        Require(
+            ReferenceEquals(unchanged, expected),
+            "FindTopSurfaceFunction rewrite must preserve identity when neither child changes.");
+
+        DensityFunction rewritten = expected.RewriteChildren(
+            child => ReferenceEquals(child, expected.Density)
+                ? new SurfaceProbeDensityFunction(threshold: 9.0f)
+                : child);
+        Require(
+            rewritten is FindTopSurfaceFunction rewrittenNode &&
+            rewrittenNode.CellHeight == 4 &&
+            rewrittenNode.LowerBound == -8 &&
+            rewrittenNode.Density is SurfaceProbeDensityFunction { Threshold: 9.0f },
+            "FindTopSurfaceFunction rewrite must replace the density child and preserve search settings.");
+
+        var context = new TestCompileContext();
+        DensitySampler sampler = expected.CompileSampler(context);
+        Require(
+            sampler.SampleValue(SamplerContext.EmptyUncached, 2, 100, -3) == 8.0f,
+            "FindTopSurfaceFunction must begin at floor(upper_bound/cell_height)*cell_height and return the first positive probe.");
+
+        DensityFunction belowSurface = new FindTopSurfaceFunction(
+            density,
+            new ConstantFunction(3.0f),
+            -8,
+            4);
+        Require(
+            belowSurface.CompileSampler(context)
+                .SampleValue(SamplerContext.EmptyUncached, 0, 200, 0) == -8.0f,
+            "FindTopSurfaceFunction must return lower_bound when no probe is positive.");
+
+        var volume = new DensityVolume(2, 3, 2, -2, 30, 5);
+        DensityBuffer output = DensityBuffer.CreateUnpooled(volume.Size());
+        sampler.SampleVolume(SamplerContext.EmptyUncached, output, volume);
+        for (int z = 0; z < volume.SizeZ; z++)
+        for (int x = 0; x < volume.SizeX; x++)
+        for (int y = 0; y < volume.SizeY; y++)
+        {
+            Require(
+                output.Get(volume.IndexUnchecked(x, y, z)) == 8.0f,
+                "FindTopSurfaceFunction volume sampling must replicate the sampled Y=0 surface across the input Y axis.");
+        }
+
+        bool rejectsMultiYVolume = false;
+        try
+        {
+            new FindTopSurfaceFunction(
+                    density,
+                    new ConstantFunction(11.0f),
+                    -8,
+                    4)
+                .CompileSampler(context)
+                .SampleVolume(
+                    SamplerContext.EmptyUncached,
+                    DensityBuffer.CreateUnpooled(volume.Size()),
+                    new DensityVolume(1, 2, 1, 0, 0, 0));
+        }
+        catch (ArgumentException exception) when (exception.Message.Contains("sizeY=2", StringComparison.Ordinal))
+        {
+            rejectsMultiYVolume = true;
+        }
+
+        Require(
+            rejectsMultiYVolume,
+            "FindTopSurfaceFunction's internal sampler must reject volumes with more than one Y sample.");
+    }
+
+    private sealed record SurfaceProbeDensityFunction(float Threshold) : DensityFunction
+    {
+        public DensitySampler CompileSampler(DensityFunction.CompileContext context) =>
+            new SurfaceProbeSampler(Threshold);
+
+        public DensityFunction RewriteChildren(DfRewriteRule rule) => this;
+
+        public Interval Range() =>
+            Interval.Of(-10_000.0f, 10_000.0f);
+
+        public int DomainAxes() =>
+            DensityFunction.AXIS_Y;
+    }
+
+    private sealed record SurfaceProbeSampler(float Threshold) : DensitySampler
+    {
+        public float SampleValue(
+            SamplerContext context,
+            int blockX,
+            int blockY,
+            int blockZ) =>
+            blockY - Threshold;
+
+        public void SampleVolume(
+            SamplerContext context,
+            DensityBuffer outputBuffer,
+            DensityVolume volume)
+        {
+            int index = 0;
+            for (int z = 0; z < volume.SizeZ; z++)
+            for (int x = 0; x < volume.SizeX; x++)
+            for (int y = 0; y < volume.SizeY; y++)
+                outputBuffer.Set(
+                    index++,
+                    volume.BlockY(y) - Threshold);
+        }
+    }
+
+    private sealed class TestCompileContext : DensityFunction.CompileContext
+    {
+        public Asteria.World.LevelGen.Synth.Noise CreateNoiseSampler(
+            Holder<NormalNoise> parameters) =>
+            throw new InvalidOperationException("FindTopSurfaceFunction tests must not resolve normal noise.");
+
+        public Asteria.World.LevelGen.IRandomSource CreateRandom(ResourceLocation seed) =>
+            throw new InvalidOperationException("FindTopSurfaceFunction tests must not resolve random streams.");
+
+#pragma warning disable CS0618
+        public Asteria.World.LevelGen.IRandomSource CreateEndIslandRandom() =>
+            throw new InvalidOperationException("FindTopSurfaceFunction tests must not resolve End Island random streams.");
+#pragma warning restore CS0618
     }
 
     private static void CheckHolderCodecs()
