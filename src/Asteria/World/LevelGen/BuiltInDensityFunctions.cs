@@ -1,5 +1,5 @@
 using Asteria.Content.Registries;
-using Asteria.Util;
+using Asteria.Core;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.DensityFunctions.Operations;
 using Asteria.World.LevelGen.Synth;
