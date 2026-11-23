@@ -25,6 +25,7 @@ internal static class BuiltInDensityFunctionChecks
         CheckRegistryAndRegistrationOrder();
         CheckZeroFunction();
         CheckYGradient();
+        CheckOreVeinFunctions();
         CheckShiftFunctions();
         CheckBase3dNoiseFunctions();
     }
@@ -44,10 +45,17 @@ internal static class BuiltInDensityFunctionChecks
         Require(
             actualPaths.SequenceEqual(new[]
             {
-                "zero", "y", "shift_x", "shift_z",
+                "zero", "y",
+                "overworld/ore_vein/toggle",
+                "overworld/ore_vein/richness",
+                "overworld/ore_vein/mask",
+                "overworld/ore_vein/copper_density",
+                "overworld/ore_vein/iron_density",
+                "overworld/ore_vein/gap",
+                "shift_x", "shift_z",
                 "overworld/base_3d_noise", "nether/base_3d_noise", "end/base_3d_noise"
             }, StringComparer.Ordinal),
-            "The currently ported density-function entries must retain their local registration order.");
+            "The density-function registry must preserve the Minecraft 26.3 NoiseRouterData.bootstrap order for the ported entries.");
 
         Require(
             registry.Entries.All(holder => holder.IsBound),
@@ -134,6 +142,55 @@ internal static class BuiltInDensityFunctionChecks
             shiftZHolder.Value.DomainAxes() == (DensityFunction.AXIS_X | DensityFunction.AXIS_Z) &&
             shiftXHolder.Value.Range().Equals(shiftZHolder.Value.Range()),
             "The registered horizontal shift functions must preserve their shared X/Z domain and range contract.");
+    }
+
+    private static void CheckOreVeinFunctions()
+    {
+        Holder<DensityFunction>.Reference toggle =
+            BuiltInRegistries.DensityFunction.GetHolder(DensityFunctionKeys.ORE_VEIN_TOGGLE) ??
+            throw new InvalidOperationException("Missing ore-vein toggle density function.");
+        Holder<DensityFunction>.Reference richness =
+            BuiltInRegistries.DensityFunction.GetHolder(DensityFunctionKeys.ORE_VEIN_RICHNESS) ??
+            throw new InvalidOperationException("Missing ore-vein richness density function.");
+        Holder<DensityFunction>.Reference mask =
+            BuiltInRegistries.DensityFunction.GetHolder(DensityFunctionKeys.ORE_VEIN_MASK) ??
+            throw new InvalidOperationException("Missing ore-vein mask density function.");
+        Holder<DensityFunction>.Reference copper =
+            BuiltInRegistries.DensityFunction.GetHolder(DensityFunctionKeys.ORE_VEIN_COPPER_DENSITY) ??
+            throw new InvalidOperationException("Missing copper-vein density function.");
+        Holder<DensityFunction>.Reference iron =
+            BuiltInRegistries.DensityFunction.GetHolder(DensityFunctionKeys.ORE_VEIN_IRON_DENSITY) ??
+            throw new InvalidOperationException("Missing iron-vein density function.");
+        Holder<DensityFunction>.Reference gap =
+            BuiltInRegistries.DensityFunction.GetHolder(DensityFunctionKeys.ORE_VEIN_GAP) ??
+            throw new InvalidOperationException("Missing ore-vein gap density function.");
+
+        Require(
+            toggle.Value is CacheFunction &&
+            mask.Value is CacheFunction &&
+            richness.Value is LerpFunction &&
+            copper.Value is RangeChoiceFunction &&
+            iron.Value is RangeChoiceFunction &&
+            gap.Value is BinaryFunction { Operation: BinaryFunction.Type.SUB },
+            "Ore-vein density functions must use the vanilla cache, interpolation, range-choice and subtraction nodes.");
+
+        Require(
+            BuiltInRegistries.Noise.GetHolder(Noises.ORE_VEININESS) is not null &&
+            BuiltInRegistries.Noise.GetHolder(Noises.ORE_VEIN_A) is not null &&
+            BuiltInRegistries.Noise.GetHolder(Noises.ORE_VEIN_B) is not null &&
+            BuiltInRegistries.Noise.GetHolder(Noises.ORE_GAP) is not null,
+            "Ore-vein density functions must reference the registered vanilla ore noise parameters.");
+
+        Require(
+            toggle.Value.Range().Min() <= -1.0f &&
+            toggle.Value.Range().Max() >= 1.0f &&
+            richness.Value.Range().Min() == 0.1f &&
+            richness.Value.Range().Max() == 0.3f &&
+            copper.Value.Range().Min() <= -1.0f &&
+            copper.Value.Range().Max() >= 0.7f &&
+            iron.Value.Range().Min() <= -1.0f &&
+            iron.Value.Range().Max() >= 0.7f,
+            "Ore-vein density-function ranges must preserve the vanilla toggle, richness and vein-body bounds.");
     }
 
     private static void CheckBase3dNoiseFunctions()

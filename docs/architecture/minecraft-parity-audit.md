@@ -939,3 +939,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - As três usam o tipo vanilla `old_blended_noise`, já implementado em `BlendedNoise`; nenhuma implementação paralela ou aproximação foi criada.
 - Parâmetros preservados: Overworld `(0.25, 0.125, 80, 160, 8)`; Nether `(0.25, 0.375, 80, 60, 8)`; End `(0.25, 0.25, 80, 160, 4)`.
 - Testes verificam identidade, tipo, ordem local e os cinco parâmetros de cada entrada. A ordem integral do bootstrap continua pendente do port de `registerOreVeins`; o registro não equivale à integração desses nós em `NoiseRouter` nem habilita geração de chunks.
+
+
+## Incremento — bootstrap de density functions de veios (23/11/2026)
+
+- Portado `NoiseRouterData.registerOreVeins` antes dos shifts, corrigindo a ordem real de bootstrap do Minecraft Java 26.3.
+- Registradas as seis entradas vanilla: `toggle`, `richness`, `mask`, `copper_density`, `iron_density` e `gap`.
+- A máscara usa `ore_veininess`, `ore_vein_a`, `ore_vein_b`, limites interpolados em Y e células 4×8; cobre usa faixa Y [0, 50) e ferro [-60, -8).
+- O mapeamento clamped foi composto com os nós existentes de clamp/divisão/lerp; não foi introduzido um operador novo nem lógica de colocação de blocos.
+- Testes verificam sequência integral dos 13 registros atualmente portados, tipos de nós, disponibilidade dos quatro ruídos e intervalos das funções.
+- A aplicação de minério continua fora deste incremento: as densidades ainda precisam ser consumidas pela material rule `minecraft:ore_vein`.
