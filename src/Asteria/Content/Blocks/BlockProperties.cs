@@ -29,6 +29,7 @@ public sealed class BlockProperties
     public bool IsAir { get; private set; }
     public Func<BlockState, int> LightEmissionValue { get; private set; } = static _ => 0;
     public Func<BlockState, bool> EmissiveRenderingValue { get; private set; } = static _ => false;
+    public Func<BlockState, MapColor> MapColorValue { get; private set; } = static _ => MapColor.NONE;
 
     public Func<BlockState, BlockPos, Vec3>? OffsetFunctionValue { get; private set; }
 
@@ -131,6 +132,19 @@ public sealed class BlockProperties
     {
         EmissiveRenderingValue = emissiveRendering ??
             throw new ArgumentNullException(nameof(emissiveRendering));
+        return this;
+    }
+
+    public BlockProperties MapColor(MapColor mapColor)
+    {
+        ArgumentNullException.ThrowIfNull(mapColor);
+        MapColorValue = _ => mapColor;
+        return this;
+    }
+
+    public BlockProperties MapColor(Func<BlockState, MapColor> mapColor)
+    {
+        MapColorValue = mapColor ?? throw new ArgumentNullException(nameof(mapColor));
         return this;
     }
 
