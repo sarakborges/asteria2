@@ -283,6 +283,7 @@ internal static class Program
         BiomeChecks.Run();
         ClimateChecks.Run();
         NoiseRouterChecks.Run();
+        RandomStateChecks.Run();
         EnvironmentAttributeChecks.Run();
         KeyframeTrackChecks.Run();
         ClockChecks.Run();
