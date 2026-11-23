@@ -5,6 +5,8 @@ using Asteria.Content.Chunks.Status;
 using Asteria.Core;
 using Asteria.World;
 using Asteria.World.Lighting;
+using BuiltInBlocks = Asteria.Content.Blocks.Blocks;
+using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 
 namespace Asteria.Content.Chunks;
 
@@ -44,11 +46,11 @@ public sealed class ProtoChunk : ChunkAccess
 
         int y = position.GetY();
         if (IsOutsideBuildHeight(y))
-            return Blocks.VOID_AIR.DefaultState;
+            return BuiltInBlocks.VOID_AIR.DefaultState;
 
         ChunkSection section = GetSection(GetSectionIndex(y));
         if (section.HasOnlyAir)
-            return Blocks.AIR.DefaultState;
+            return BuiltInBlocks.AIR.DefaultState;
 
         return section.GetBlockState(
             position.GetX() & SectionPos.SectionMask,
@@ -62,11 +64,11 @@ public sealed class ProtoChunk : ChunkAccess
 
         int y = position.GetY();
         if (IsOutsideBuildHeight(y))
-            return Fluids.EMPTY.DefaultFluidState;
+            return BuiltInFluids.EMPTY.DefaultFluidState;
 
         ChunkSection section = GetSection(GetSectionIndex(y));
         if (section.HasOnlyAir)
-            return Fluids.EMPTY.DefaultFluidState;
+            return BuiltInFluids.EMPTY.DefaultFluidState;
 
         return section.GetFluidState(
             position.GetX() & SectionPos.SectionMask,
@@ -90,12 +92,12 @@ public sealed class ProtoChunk : ChunkAccess
         int y = position.GetY();
         int z = position.GetZ();
         if (IsOutsideBuildHeight(y))
-            return Blocks.VOID_AIR.DefaultState;
+            return BuiltInBlocks.VOID_AIR.DefaultState;
 
         int sectionIndex = GetSectionIndex(y);
         ChunkSection section = GetSection(sectionIndex);
         bool wasEmpty = section.HasOnlyAir;
-        if (wasEmpty && ReferenceEquals(state.Block, Blocks.AIR))
+        if (wasEmpty && ReferenceEquals(state.Block, BuiltInBlocks.AIR))
             return state;
 
         int localX = SectionPos.SectionRelative(x);

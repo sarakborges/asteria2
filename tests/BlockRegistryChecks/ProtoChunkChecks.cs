@@ -6,6 +6,7 @@ using Asteria.Content.Fluids;
 using Asteria.Core;
 using Asteria.World;
 using Asteria.World.Lighting;
+using BuiltInBlocks = Asteria.Content.Blocks.Blocks;
 
 internal static class ProtoChunkChecks
 {
@@ -45,7 +46,7 @@ internal static class ProtoChunkChecks
         var position = new BlockPos(x, 4, z);
 
         Require(
-            ReferenceEquals(chunk.GetBlockState(position), Blocks.AIR.DefaultState),
+            ReferenceEquals(chunk.GetBlockState(position), BuiltInBlocks.AIR.DefaultState),
             "A ProtoChunk empty section must return ordinary AIR.");
 
         Require(
@@ -53,10 +54,10 @@ internal static class ProtoChunkChecks
             "An empty ProtoChunk section must return the empty fluid state.");
 
         chunk.GetSection(chunk.GetSectionIndex(4))
-            .SetBlockState(3, 4, 5, Blocks.STONE.DefaultState);
+            .SetBlockState(3, 4, 5, BuiltInBlocks.STONE.DefaultState);
 
         Require(
-            ReferenceEquals(chunk.GetBlockState(position), Blocks.STONE.DefaultState),
+            ReferenceEquals(chunk.GetBlockState(position), BuiltInBlocks.STONE.DefaultState),
             "ProtoChunk lookup must read the local section palette at world coordinates.");
 
         Require(
@@ -72,10 +73,10 @@ internal static class ProtoChunkChecks
         var firstPosition = new BlockPos(x, 2, z);
         var topPosition = new BlockPos(x, 7, z);
 
-        BlockState previous = chunk.SetBlockState(firstPosition, Blocks.STONE.DefaultState);
+        BlockState previous = chunk.SetBlockState(firstPosition, BuiltInBlocks.STONE.DefaultState);
         Require(
-            ReferenceEquals(previous, Blocks.AIR.DefaultState) &&
-            ReferenceEquals(chunk.GetBlockState(firstPosition), Blocks.STONE.DefaultState),
+            ReferenceEquals(previous, BuiltInBlocks.AIR.DefaultState) &&
+            ReferenceEquals(chunk.GetBlockState(firstPosition), BuiltInBlocks.STONE.DefaultState),
             "ProtoChunk.SetBlockState must return the previous palette state and store the new state.");
 
         Require(
@@ -83,13 +84,13 @@ internal static class ProtoChunkChecks
             chunk.GetHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) == 2,
             "The EMPTY persisted status must lazily create and prime the two world-generation heightmaps.");
 
-        BlockState previousTop = chunk.SetBlockState(topPosition, Blocks.STONE.DefaultState, flags: 0);
+        BlockState previousTop = chunk.SetBlockState(topPosition, BuiltInBlocks.STONE.DefaultState, flags: 0);
         Require(
-            ReferenceEquals(previousTop, Blocks.AIR.DefaultState) &&
+            ReferenceEquals(previousTop, BuiltInBlocks.AIR.DefaultState) &&
             chunk.GetHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) == 7,
             "Adding a higher block must incrementally update an already-primed world-generation heightmap.");
 
-        chunk.SetBlockState(topPosition, Blocks.AIR.DefaultState);
+        chunk.SetBlockState(topPosition, BuiltInBlocks.AIR.DefaultState);
         Require(
             chunk.GetHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) == 2,
             "Removing the topmost block must rescan below and restore the previous highest surface.");
@@ -100,11 +101,11 @@ internal static class ProtoChunkChecks
         ProtoChunk chunk = CreateChunk();
         int x = 1;
         int z = 2;
-        chunk.SetBlockState(new BlockPos(x, 1, z), Blocks.STONE.DefaultState);
+        chunk.SetBlockState(new BlockPos(x, 1, z), BuiltInBlocks.STONE.DefaultState);
         chunk.SetPersistedStatus(ChunkStatus.TERRAIN);
         chunk.TryMarkSaved();
 
-        chunk.SetBlockState(new BlockPos(x, 9, z), Blocks.STONE.DefaultState);
+        chunk.SetBlockState(new BlockPos(x, 9, z), BuiltInBlocks.STONE.DefaultState);
 
         Require(
             chunk.GetHeightmaps().Count == 6 &&
@@ -119,8 +120,8 @@ internal static class ProtoChunkChecks
         BlockPos above = new(1, chunk.GetMaxY() + 1, 1);
 
         Require(
-            ReferenceEquals(chunk.GetBlockState(below), Blocks.VOID_AIR.DefaultState) &&
-            ReferenceEquals(chunk.GetBlockState(above), Blocks.VOID_AIR.DefaultState),
+            ReferenceEquals(chunk.GetBlockState(below), BuiltInBlocks.VOID_AIR.DefaultState) &&
+            ReferenceEquals(chunk.GetBlockState(above), BuiltInBlocks.VOID_AIR.DefaultState),
             "ProtoChunk block reads outside the build height must return VOID_AIR.");
 
         Require(
@@ -128,12 +129,12 @@ internal static class ProtoChunkChecks
             "ProtoChunk fluid reads outside the build height must return EMPTY.");
 
         Require(
-            ReferenceEquals(chunk.SetBlockState(below, Blocks.STONE.DefaultState), Blocks.VOID_AIR.DefaultState) &&
-            ReferenceEquals(chunk.GetBlockState(below), Blocks.VOID_AIR.DefaultState),
+            ReferenceEquals(chunk.SetBlockState(below, BuiltInBlocks.STONE.DefaultState), BuiltInBlocks.VOID_AIR.DefaultState) &&
+            ReferenceEquals(chunk.GetBlockState(below), BuiltInBlocks.VOID_AIR.DefaultState),
             "ProtoChunk block writes outside the build height must return VOID_AIR without storing the requested state.");
 
         ProtoChunk emptyChunk = CreateChunk();
-        BlockState air = Blocks.AIR.DefaultState;
+        BlockState air = BuiltInBlocks.AIR.DefaultState;
         int mapsBefore = emptyChunk.GetHeightmaps().Count;
         Require(
             ReferenceEquals(emptyChunk.SetBlockState(new BlockPos(0, 0, 0), air), air) &&
@@ -150,7 +151,7 @@ internal static class ProtoChunkChecks
         chunk.SetPersistedStatus(ChunkStatus.INITIALIZE_LIGHT);
 
         BlockPos position = new(2, 3, 4);
-        chunk.SetBlockState(position, Blocks.STONE.DefaultState);
+        chunk.SetBlockState(position, BuiltInBlocks.STONE.DefaultState);
 
         Require(
             engine.SectionStatusChanges.Count == 1 &&
@@ -163,7 +164,7 @@ internal static class ProtoChunkChecks
             engine.CheckedBlocks[0].Equals(position),
             "A change in light dampening must update skylight sources and enqueue a light-engine block check.");
 
-        chunk.SetBlockState(position, Blocks.AIR.DefaultState);
+        chunk.SetBlockState(position, BuiltInBlocks.AIR.DefaultState);
         Require(
             engine.SectionStatusChanges.Count == 2 &&
             engine.SectionStatusChanges[1].IsEmpty &&
