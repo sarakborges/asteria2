@@ -792,8 +792,14 @@ internal static class DensityFunctionCodecChecks
             RegistrationInfo.BuiltIn);
 
         Require(
+            !registeredHolder.IsBound,
+            "Standalone registry holders must remain unbound until the registry is frozen.");
+
+        registry.Freeze();
+
+        Require(
             registeredHolder.IsBound && ReferenceEquals(registeredHolder.Value, registeredValue),
-            "Registry.Register must bind the registered value into its reference holder.");
+            "Registry.Freeze must bind the registered value into its reference holder.");
 
         HolderLookupProvider lookupProvider =
             HolderLookupProvider.Create(new IRegistryLookup[] { registry });
