@@ -27,7 +27,6 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     private readonly Func<BlockState, bool> _emissiveRendering;
     private readonly Func<BlockState, BlockPos, Vec3>? _offsetFunction;
 
-    private readonly Func<BlockState, BlockGetter, BlockPos, bool> _isRedstoneConductor;
     private readonly Func<BlockState, BlockGetter, BlockPos, bool> _isSuffocating;
     private readonly Func<BlockState, BlockGetter, BlockPos, AABB, bool> _isViewBlocking;
     private readonly Func<BlockState, BlockGetter, BlockPos, BlockPos?> _postProcess;
@@ -108,27 +107,6 @@ public sealed class BlockState : StateHolder<Block, BlockState>
 
     public bool CanBeReplaced() => IsReplaceable;
 
-    public bool HasAnalogOutputSignal() =>
-        Block.HasAnalogOutputSignalForState(this);
-
-    public bool IsSignalSource() =>
-        Block.IsSignalSourceForState(this);
-
-    public bool ShouldRedstoneWireConnectTo(
-        BlockGetter level,
-        BlockPos position,
-        Direction? direction) =>
-        Block.ShouldRedstoneWireConnectToForState(this, level, position, direction);
-
-    public int GetSignal(BlockGetter level, BlockPos position, Direction direction) =>
-        Block.GetSignalForState(this, level, position, direction);
-
-    public int GetOwnSignal(BlockGetter level, BlockPos position) =>
-        Block.OwnSignalForState(this, level, position);
-
-    public int GetDirectSignal(BlockGetter level, BlockPos position, Direction direction) =>
-        Block.GetDirectSignalForState(this, level, position, direction);
-
     public int GetLightDampening() => LightDampening;
 
     public RenderShape GetRenderShape() => Block.GetRenderShape(this);
@@ -145,9 +123,6 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     }
 
     public bool HasOffsetFunction => _offsetFunction is not null;
-
-    public bool IsRedstoneConductor(BlockGetter level, BlockPos position) =>
-        _isRedstoneConductor(this, level, position);
 
     public bool IsSuffocating(BlockGetter level, BlockPos position) =>
         _isSuffocating(this, level, position);
@@ -208,7 +183,6 @@ public sealed class BlockState : StateHolder<Block, BlockState>
         _lightEmission = properties.LightEmissionValue(this);
         _emissiveRendering = properties.EmissiveRenderingValue;
         _offsetFunction = properties.OffsetFunctionValue;
-        _isRedstoneConductor = properties.IsRedstoneConductorValue;
         _isSuffocating = properties.IsSuffocatingValue;
         _isViewBlocking = properties.IsViewBlockingValue;
         _postProcess = properties.PostProcessValue;
