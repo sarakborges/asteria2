@@ -424,3 +424,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Implementado `StateProperty<T>.ParseValue`, equivalente ao `Property.parseValue` de Minecraft 26.3.
 - O parse válido resolve a instância pré-calculada com `SetValue`; falhas de valor ou de tipo de entrada preservam o estado original como resultado parcial em `DataResult`.
 - Testes verificam estado resultante, mensagem de erro vanilla e partial state para string inválida e entrada não textual.
+
+
+## Incremento — cópia de propriedades no BlockState (23/11/2026)
+
+- Portados `BlockStateBase.withPropertiesOf` e `BlockStateBase.copyProperty` para `BlockState.WithPropertiesOf` e `BlockState.CopyProperty`.
+- `WithPropertiesOf` aplica a cópia sobre o estado receptor atual; não reseta para o estado default do bloco-alvo.
+- `CopyProperty` usa `TrySetValue` para copiar somente a propriedade solicitada. A identidade da instância da propriedade é preservada; propriedade ausente ou homônima mas distinta não altera o destino.
+- `Block.WithPropertiesOf` permanece como wrapper de conveniência sobre o estado default, sem duplicar a lógica.
+- Testes cobrem cópia integral, cópia individual, preservação de outras propriedades e ausência/identidade distinta de propriedades no destino.

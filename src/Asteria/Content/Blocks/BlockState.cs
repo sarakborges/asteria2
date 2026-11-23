@@ -120,6 +120,24 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public long GetSeed(BlockPos position) =>
         Block.GetSeed(this, position);
 
+    public BlockState WithPropertiesOf(BlockState source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        BlockState result = this;
+        foreach (StateProperty property in source.Block.StateDefinition.Properties)
+            result = property.CopyValue(source, result);
+
+        return result;
+    }
+
+    public static BlockState CopyProperty<T>(
+        BlockState from,
+        BlockState to,
+        StateProperty<T> property)
+        where T : notnull, IComparable =>
+        to.TrySetValue(property, from.GetValue(property));
+
     public bool IsPathfindable(PathComputationType type) =>
         Block.IsPathfindable(this, type);
 

@@ -208,17 +208,9 @@ public class Block
             state.InitCache();
     }
 
-    /// <summary>Copies every property shared by the source block into this block's default state.</summary>
-    public BlockState WithPropertiesOf(BlockState source)
-    {
-        ArgumentNullException.ThrowIfNull(source);
-
-        BlockState result = DefaultState;
-        foreach (StateProperty property in source.Block.StateDefinition.Properties)
-            result = property.CopyValue(source, result);
-
-        return result;
-    }
+    /// <summary>Copies shared properties from a source state into this block's default state.</summary>
+    public BlockState WithPropertiesOf(BlockState source) =>
+        DefaultState.WithPropertiesOf(source);
 
     public override string ToString() =>
         $"Block{{{BuiltInRegistryHolder?.KeyOrNull?.Location.ToString() ?? "[unregistered]"}}}";

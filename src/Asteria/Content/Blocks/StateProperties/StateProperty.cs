@@ -190,7 +190,7 @@ public abstract class StateProperty<T> : StateProperty where T : notnull, ICompa
                 : throw new ArgumentException($"Value {value} does not belong to property {this}"));
 
     internal override BlockState CopyValue(BlockState source, BlockState target) =>
-        target.TrySetValue(this, source.GetValue(this));
+        BlockState.CopyProperty(source, target, this);
 
     public StatePropertyValue<T> Value(T value) =>
         new(this, value);

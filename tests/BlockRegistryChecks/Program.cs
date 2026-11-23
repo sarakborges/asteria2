@@ -1765,16 +1765,41 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         Require(
             !partialPropertyCopy.GetValue(TestBlocks.TEST_POWERED) &&
             partialPropertyCopy.GetProperties().Count == 1,
-            "WithPropertiesOf must copy shared properties while ignoring properties absent from the target definition.");
+            "Block.WithPropertiesOf must copy shared properties while ignoring properties absent from the target definition.");
+
+        BlockState arbitraryTargetState = sharedPropertyTarget.DefaultState
+            .SetValue(TestBlocks.TEST_POWERED, true);
+        BlockState statePropertyCopy = arbitraryTargetState.WithPropertiesOf(sourceForCopy);
+        Require(
+            !statePropertyCopy.GetValue(TestBlocks.TEST_POWERED) &&
+            statePropertyCopy.GetValue(TestBlocks.TEST_STAGE) == 2,
+            "BlockState.withPropertiesOf must copy source properties into the receiver state, not reset to the target block's default state.");
+
+        BlockState singlePropertyCopy = BlockState.CopyProperty(
+            sourceForCopy,
+            arbitraryTargetState,
+            TestBlocks.TEST_STAGE);
+        Require(
+            singlePropertyCopy.GetValue(TestBlocks.TEST_POWERED) &&
+            singlePropertyCopy.GetValue(TestBlocks.TEST_STAGE) == 2,
+            "BlockState.copyProperty must copy only the requested property and preserve all other target-state values.");
+
+        BlockState airState = Blocks.AIR.DefaultState;
+        Require(
+            ReferenceEquals(airState, BlockState.CopyProperty(sourceForCopy, airState, TestBlocks.TEST_POWERED)) &&
+            ReferenceEquals(airState, airState.WithPropertiesOf(sourceForCopy)),
+            "BlockState property-copy operations must leave the target unchanged when its definition has none of the source properties.");
 
         BooleanProperty unrelatedPowered = BooleanProperty.Create("powered");
         var unrelatedPropertyTarget = new TestBlockDefinition(
             BlockProperties.Of(),
             builder => builder.Add(unrelatedPowered));
-        BlockState unrelatedPropertyCopy = unrelatedPropertyTarget.WithPropertiesOf(sourceForCopy);
+        BlockState unrelatedTargetState = unrelatedPropertyTarget.DefaultState
+            .SetValue(unrelatedPowered, true);
+        BlockState unrelatedPropertyCopy = unrelatedTargetState.WithPropertiesOf(sourceForCopy);
         Require(
             unrelatedPropertyCopy.GetValue(unrelatedPowered),
-            "WithPropertiesOf must not copy a property merely because a different property instance has the same name.");
+            "BlockState.withPropertiesOf must not copy a property merely because a different property instance has the same name.");
         Require(defaultState.Cycle(TestBlocks.TEST_POWERED).GetValue(TestBlocks.TEST_POWERED), "Boolean cycling must toggle false to true.");
 
         InvalidOperationException repeatedInitialization = Capture<InvalidOperationException>(
