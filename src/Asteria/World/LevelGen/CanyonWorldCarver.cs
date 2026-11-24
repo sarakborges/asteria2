@@ -17,15 +17,17 @@ public sealed class CanyonWorldCarver : WorldCarver
     public Shape CarverShape { get; }
 
     public CanyonWorldCarver(
-        float probability,
-        HeightProvider y,
-        FloatProvider verticalRotation,
-        Shape carverShape)
+        float Probability,
+        HeightProvider Y,
+        FloatProvider VerticalRotation,
+        Shape CarverShape)
     {
-        Probability = probability;
-        Y = y ?? throw new ArgumentNullException(nameof(y));
-        VerticalRotation = verticalRotation ?? throw new ArgumentNullException(nameof(verticalRotation));
-        CarverShape = carverShape ?? throw new ArgumentNullException(nameof(carverShape));
+        this.Probability = Probability;
+        this.Y = Y ?? throw new ArgumentNullException(nameof(Y));
+        this.VerticalRotation = VerticalRotation ??
+            throw new ArgumentNullException(nameof(VerticalRotation));
+        this.CarverShape = CarverShape ??
+            throw new ArgumentNullException(nameof(CarverShape));
     }
 
     public static MapCodec<CanyonWorldCarver> MAP_CODEC { get; } =
