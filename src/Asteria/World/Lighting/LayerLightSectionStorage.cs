@@ -320,7 +320,7 @@ public abstract class LayerLightSectionStorage<TMap>
         SectionsAffectedByLightUpdates.Clear();
     }
 
-    public LightSectionType GetDebugLightSectionType(long sectionNode) =>
+    public LightSectionType GetDebugSectionType(long sectionNode) =>
         SectionState.GetType(SectionStates.GetValueOrDefault(sectionNode));
 
     protected byte GetSectionState(long sectionNode) =>
