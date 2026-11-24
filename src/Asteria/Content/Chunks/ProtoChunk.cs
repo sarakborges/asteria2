@@ -18,7 +18,7 @@ namespace Asteria.Content.Chunks;
 /// </summary>
 public sealed class ProtoChunk : ChunkAccess
 {
-    private volatile LightEngine? _lightEngine;
+    private volatile LevelLightEngine? _lightEngine;
     private volatile ChunkStatus _status = ChunkStatus.EMPTY;
     private readonly ProtoChunkTicks<Block> _blockTicks;
     private readonly ProtoChunkTicks<Fluid> _fluidTicks;
@@ -60,7 +60,7 @@ public sealed class ProtoChunk : ChunkAccess
         MarkUnsaved();
     }
 
-    public void SetLightEngine(LightEngine lightEngine) =>
+    public void SetLightEngine(LevelLightEngine lightEngine) =>
         _lightEngine = lightEngine ?? throw new ArgumentNullException(nameof(lightEngine));
 
     public override Holder<Biome> GetNoiseBiome(int quartX, int quartY, int quartZ)

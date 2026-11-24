@@ -11,16 +11,23 @@ using BuiltInBlocks = Asteria.Content.Blocks.Blocks;
 
 internal static class ProtoChunkChecks
 {
-    private sealed class RecordingLightEngine : LightEngine
+    private sealed class RecordingLightChunkGetter : LightChunkGetter
     {
-        public List<(SectionPos Position, bool IsEmpty)> SectionStatusChanges { get; } = new();
-        public List<BlockPos> CheckedBlocks { get; } = new();
+        public List<(LightLayer Layer, SectionPos Position)> Updates { get; } = new();
 
-        public override void CheckBlock(BlockPos position) =>
-            CheckedBlocks.Add(position.Immutable());
+        public ProtoChunk Chunk { get; }
 
-        public override void UpdateSectionStatus(SectionPos sectionPosition, bool sectionEmpty) =>
-            SectionStatusChanges.Add((sectionPosition, sectionEmpty));
+        public RecordingLightChunkGetter(ProtoChunk chunk) => Chunk = chunk;
+
+        public LightChunk? GetChunkForLighting(int chunkX, int chunkZ) =>
+            chunkX == Chunk.GetPos().X && chunkZ == Chunk.GetPos().Z
+                ? Chunk
+                : null;
+
+        public BlockGetter GetLevel() => Chunk;
+
+        public void OnLightUpdate(LightLayer layer, SectionPos position) =>
+            Updates.Add((layer, position));
     }
 
     public static void Run()
@@ -148,31 +155,53 @@ internal static class ProtoChunkChecks
     private static void CheckLightEngineNotifications()
     {
         ProtoChunk chunk = CreateChunk();
-        var engine = new RecordingLightEngine();
+        var source = new RecordingLightChunkGetter(chunk);
+        var engine = new LevelLightEngine(source, hasBlockLight: true, hasSkyLight: true);
         chunk.SetLightEngine(engine);
         chunk.InitializeLightSources();
         chunk.SetPersistedStatus(ChunkStatus.INITIALIZE_LIGHT);
 
         BlockPos position = new(2, 3, 4);
+        SectionPos section = SectionPos.Of(position);
         chunk.SetBlockState(position, BuiltInBlocks.STONE.DefaultState);
 
         Require(
-            engine.SectionStatusChanges.Count == 1 &&
-            engine.SectionStatusChanges[0].Position.Equals(SectionPos.Of(position)) &&
-            !engine.SectionStatusChanges[0].IsEmpty,
-            "When a section transitions from empty to non-empty after INITIALIZE_LIGHT, ProtoChunk must notify the corresponding section node.");
+            engine.HasLightWork(),
+            "A block mutation after INITIALIZE_LIGHT must enqueue work in both configured light channels.");
+
+        for (int iteration = 0; iteration < 16 && engine.HasLightWork(); iteration++)
+            engine.RunLightUpdates();
 
         Require(
-            engine.CheckedBlocks.Count == 1 &&
-            engine.CheckedBlocks[0].Equals(position),
-            "A change in light dampening must update skylight sources and enqueue a light-engine block check.");
+            !engine.HasLightWork(),
+            "The block and sky light engines must finish processing the block mutation.");
+        Require(
+            source.Updates.Any(update =>
+                update.Layer == LightLayer.BLOCK && update.Position.Equals(section)) &&
+            source.Updates.Any(update =>
+                update.Layer == LightLayer.SKY && update.Position.Equals(section)),
+            "Both configured light channels must notify the chunk source about the changed section.");
+        Require(
+            engine.GetDebugSectionType(LightLayer.BLOCK, section) == LightSectionType.LightAndData &&
+            engine.GetDebugSectionType(LightLayer.SKY, section) == LightSectionType.LightAndData,
+            "The nonempty section must allocate and publish block and sky light storage.");
 
+        int notificationsBeforeRemoval = source.Updates.Count;
         chunk.SetBlockState(position, BuiltInBlocks.AIR.DefaultState);
+        Require(engine.HasLightWork(),
+            "Removing the last block from a light-initialized section must enqueue section and block updates.");
+
+        for (int iteration = 0; iteration < 16 && engine.HasLightWork(); iteration++)
+            engine.RunLightUpdates();
+
         Require(
-            engine.SectionStatusChanges.Count == 2 &&
-            engine.SectionStatusChanges[1].IsEmpty &&
-            engine.CheckedBlocks.Count == 2,
-            "Removing the only block must notify the section becoming empty and schedule a second light check.");
+            !engine.HasLightWork() &&
+            source.Updates.Count > notificationsBeforeRemoval,
+            "Removing the final block must process the light section removal and publish its affected neighborhood.");
+        Require(
+            engine.GetDebugSectionType(LightLayer.BLOCK, section) == LightSectionType.Empty &&
+            engine.GetDebugSectionType(LightLayer.SKY, section) == LightSectionType.Empty,
+            "Once the section and its final light neighbors are removed, both channels must report EMPTY.");
     }
 
     private static void CheckPersistedStatusDirtyState()
