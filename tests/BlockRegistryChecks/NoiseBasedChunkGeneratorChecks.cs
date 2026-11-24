@@ -418,6 +418,11 @@ internal static class NoiseBasedChunkGeneratorChecks
 
     private static void CheckCarversUseAquiferAndRespectMaskBounds()
     {
+        Require(
+            Blocks.BEDROCK.DefaultState.Is(BlockTags.Uncarvable) &&
+            !Blocks.STONE.DefaultState.Is(BlockTags.Uncarvable),
+            "The built-in uncarvable tag must include bedrock without marking ordinary stone as uncarvable.");
+
         const int minY = -64;
         const int height = 96;
         const int protectedMaxY = minY + height - 1 - 7;
