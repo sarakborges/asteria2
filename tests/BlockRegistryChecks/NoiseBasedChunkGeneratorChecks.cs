@@ -271,6 +271,12 @@ internal static class NoiseBasedChunkGeneratorChecks
             world.LoadedChunkCount == 1,
             "Concurrent requests for one chunk must serialize generation and return the single cached instance.");
 
+        IReadOnlyList<ProtoChunk> initialSnapshot = world.GetLoadedChunks();
+        Require(
+            initialSnapshot.Count == 1 &&
+            ReferenceEquals(initialSnapshot[0], generated),
+            "GetLoadedChunks must return a read-only snapshot containing the cached chunk.");
+
         Require(
             generated.GetPersistedStatus().IsOrAfter(ChunkStatus.TERRAIN) &&
             generated.GetNoiseBiome(0, QuartPos.FromBlock(-64), 0).IsBound,
@@ -319,6 +325,14 @@ internal static class NoiseBasedChunkGeneratorChecks
             world.LoadedChunkCount == 2,
             "A block query in another chunk must generate and cache only that target chunk.");
 
+        IReadOnlyList<ProtoChunk> expandedSnapshot = world.GetLoadedChunks();
+        Require(
+            initialSnapshot.Count == 1 &&
+            expandedSnapshot.Count == 2 &&
+            expandedSnapshot[0].GetPos() == ChunkPos.Zero &&
+            expandedSnapshot[1].GetPos() == neighbor,
+            "Loaded chunk snapshots must remain stable and sort chunks by X then Z position.");
+
         BlockPos aboveWorld = new(0, 32, 0);
         Require(
             ReferenceEquals(world.GetBlockState(aboveWorld), Blocks.VOID_AIR.DefaultState) &&
@@ -330,6 +344,7 @@ internal static class NoiseBasedChunkGeneratorChecks
             world.UnloadChunk(position) &&
             !world.TryGetChunk(position, out _) &&
             world.LoadedChunkCount == 1 &&
+            world.GetLoadedChunks().Count == 1 &&
             !world.UnloadChunk(position),
             "UnloadChunk must remove exactly the requested cache entry and report absent entries.");
 

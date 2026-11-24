@@ -1254,3 +1254,9 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 
 - OverworldWorld agora expõe GetHeight(Heightmap.Types, blockX, blockZ), resolve a chunk pela coordenada X/Z e delega à heightmap já mantida por ela.
 - O teste compara a resposta do mundo com a mesma heightmap da ProtoChunk em cache e garante que não há um segundo caminho de cálculo.
+
+## Incremento — snapshot das chunks carregadas de OverworldWorld (24/11/2026)
+
+- Adicionado GetLoadedChunks, que retorna uma cópia read-only ordenada por coordenadas X/Z sob o lock do cache; consumidores percorrem o snapshot depois que o lock é liberado.
+- Snapshots anteriores permanecem estáveis após novas cargas e unloads, sem expor o dicionário privado do mundo.
+- Testes cobrem conteúdo inicial, ordenação determinística, estabilidade do snapshot e atualização de novas consultas após unload.

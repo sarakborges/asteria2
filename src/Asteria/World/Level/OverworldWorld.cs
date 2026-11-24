@@ -79,6 +79,22 @@ public sealed class OverworldWorld : BlockGetter
         }
     }
 
+    /// <summary>
+    /// Returns a stable, position-sorted snapshot. The returned collection does not
+    /// hold the world's cache lock and is unaffected by subsequent loads or unloads.
+    /// </summary>
+    public IReadOnlyList<ProtoChunk> GetLoadedChunks()
+    {
+        lock (_sync)
+        {
+            ProtoChunk[] snapshot = _chunks.Values
+                .OrderBy(chunk => chunk.GetPos().X)
+                .ThenBy(chunk => chunk.GetPos().Z)
+                .ToArray();
+            return Array.AsReadOnly(snapshot);
+        }
+    }
+
     public OverworldWorld(long seed, LevelHeightAccessor? heightAccessor = null)
     {
         RegistryBootstrap.Initialize();
