@@ -40,7 +40,7 @@ public sealed class NoiseBasedAquifer : Aquifer
     private const int WAY_BELOW_MIN_Y = NoiseSettings.DimensionMinY << 4;
 
     private static readonly double FLOWING_UPDATE_SIMILARITY =
-        Similarity(Mth.Square(10.0), Mth.Square(12.0));
+        Similarity(100, 144);
 
     private static readonly (int X, int Z)[] SURFACE_SAMPLING_OFFSETS_IN_CHUNKS =
     [

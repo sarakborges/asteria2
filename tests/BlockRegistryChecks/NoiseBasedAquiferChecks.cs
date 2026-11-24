@@ -153,11 +153,8 @@ internal static class NoiseBasedAquiferChecks
         var exclusion = new ConstantFunction(0.0f);
         var surface = new ConstantFunction(preliminarySurface);
 
-        _lastFunctions = [barrier, flooded, spread, lava, exclusion, surface];
         return new Aquifer.Config(barrier, flooded, spread, lava, exclusion, surface);
     }
-
-    private static readonly List<DensityFunction> _lastFunctions = new();
 
     private static TestDensitySamplerSet CreateSamplers(Aquifer.Config config)
     {
