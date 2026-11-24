@@ -220,6 +220,7 @@ internal static class Program
         BiomeGenerationSettingsChecks.Run();
         FeatureSorterChecks.Run();
         PlacementModifierChecks.Run();
+        WorldGenRegionChecks.Run();
         BlockStateProviderChecks.Run();
         Require(
             ReferenceEquals(
