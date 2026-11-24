@@ -111,7 +111,7 @@ public sealed record NoiseGeneratorSettings(
                             materialRule,
                             spawnTarget,
                             seaLevel,
-                            new OptionalAquiferConfig(aquifers))));
+                            aquifers)));
 
     private static MapCodec<RandomAndDebugSettings> RandomAndDebugSettingsCodec { get; } =
         RecordCodecBuilder.MapCodec<RandomAndDebugSettings>(instance =>
