@@ -64,7 +64,10 @@ public sealed record SimpleBlockFeature(
 
         _ = level.SetBlock(origin, stateToPlace, updateFlags: 2);
         if (ScheduleTick)
-            level.ScheduleBlockTick(origin, stateToPlace.Block, delay: 1);
+            level.ScheduleBlockTick(
+                origin,
+                level.GetBlockState(origin).Block,
+                delay: 1);
 
         return true;
     }
