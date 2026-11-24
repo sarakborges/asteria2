@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
+using Asteria.Content.Chunks.Status;
+using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Serialization;
@@ -140,7 +142,7 @@ internal static class SimpleBlockFeatureChecks
         var position = new BlockPos(9, 42, 11);
         var feature = new SimpleBlockFeature(
             BlockStateProvider.Of(Blocks.GRASS_BLOCK),
-            scheduleTick: true);
+            ScheduleTick: true);
 
         Require(
             feature.Place(region, generator, new LegacyRandomSource(123L), position),
