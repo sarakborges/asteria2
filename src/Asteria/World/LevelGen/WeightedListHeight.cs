@@ -4,9 +4,10 @@ using Asteria.Util.Random;
 namespace Asteria.World.LevelGen;
 
 /// <summary>Selects and samples one height provider from a weighted distribution.</summary>
-public sealed record WeightedListHeight(
-    WeightedList<HeightProvider> Distribution) : HeightProvider
+public sealed class WeightedListHeight : HeightProvider
 {
+    public WeightedList<HeightProvider> Distribution { get; }
+
     public static MapCodec<WeightedListHeight> MAP_CODEC { get; } =
         RecordCodecBuilder.MapCodec<WeightedListHeight>(instance =>
             instance.Group(
@@ -21,6 +22,9 @@ public sealed record WeightedListHeight(
         MAP_CODEC.XMap<HeightProvider>(
             static provider => provider,
             static provider => (WeightedListHeight)provider);
+
+    public WeightedListHeight(WeightedList<HeightProvider> distribution) =>
+        Distribution = distribution ?? throw new ArgumentNullException(nameof(distribution));
 
     public override int Sample(IRandomSource random, WorldGenerationContext context)
     {
