@@ -10,17 +10,17 @@ internal static class BoundingBoxChecks
     private static void CheckCodec()
     {
         DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
-        var expected = new BoundingBox(-12, -64, 23, 45, 319, -7);
+        var expected = new BoundingBox(-12, -64, -23, 45, 319, 70);
 
         JsonElement encoded = BoundingBox.CODEC.EncodeStart(ops, expected).GetOrThrow();
         IReadOnlyList<JsonElement> components = ops.GetList(encoded).GetOrThrow();
         Require(components.Count == 6 &&
                 components[0].GetInt32() == -12 &&
                 components[1].GetInt32() == -64 &&
-                components[2].GetInt32() == 23 &&
+                components[2].GetInt32() == -23 &&
                 components[3].GetInt32() == 45 &&
                 components[4].GetInt32() == 319 &&
-                components[5].GetInt32() == -7,
+                components[5].GetInt32() == 70,
             "BoundingBox.CODEC must encode exactly minX/minY/minZ/maxX/maxY/maxZ.");
 
         BoundingBox decoded = BoundingBox.CODEC.Parse(ops, encoded).GetOrThrow();
