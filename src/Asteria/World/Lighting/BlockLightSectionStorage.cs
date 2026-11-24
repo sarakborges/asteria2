@@ -29,7 +29,7 @@ public class BlockLightSectionStorage : LayerLightSectionStorage<BlockLightSecti
                 SectionPos.SectionRelative(BlockPos.GetZ(blockNode)));
     }
 
-    protected sealed class BlockDataLayerStorageMap
+    public sealed class BlockDataLayerStorageMap
         : DataLayerStorageMap<BlockDataLayerStorageMap>
     {
         public BlockDataLayerStorageMap(Dictionary<long, DataLayer> map)
