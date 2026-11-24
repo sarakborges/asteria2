@@ -344,6 +344,7 @@ public sealed class NoiseBasedChunkGenerator
             int worldZ = targetChunk.GetBlockZ(localZ);
             position.SetX(worldX);
             position.SetZ(worldZ);
+            bool hasGrass = false;
 
             for (int worldY = topY; worldY >= bottomY; worldY--)
             {
@@ -352,14 +353,19 @@ public sealed class NoiseBasedChunkGenerator
                 if (existingState.Is(BlockTags.Uncarvable))
                     continue;
 
-                bool hasGrass = existingState.Is(Blocks.GRASS_BLOCK) ||
-                    existingState.Is(Blocks.MYCELIUM);
-                BlockState? aquiferState = noiseChunk.Aquifer.ComputeSubstance(
+                if (existingState.Is(Blocks.GRASS_BLOCK) ||
+                    existingState.Is(Blocks.MYCELIUM))
+                {
+                    hasGrass = true;
+                }
+
+                BlockState? carvedState = noiseChunk.Aquifer.ComputeSubstance(
                     worldX,
                     worldY,
                     worldZ,
                     density: 0.0);
-                BlockState carvedState = aquiferState ?? Blocks.AIR.DefaultState;
+                if (carvedState is null)
+                    continue;
 
                 chunk.SetBlockState(position, carvedState, flags: 0);
                 if (noiseChunk.Aquifer.ShouldScheduleFluidUpdate() &&
@@ -368,30 +374,30 @@ public sealed class NoiseBasedChunkGenerator
                     chunk.MarkPosForPostProcessing(position);
                 }
 
-                if (!hasGrass || worldY <= generationContext.GetMinGenY())
+                if (!hasGrass)
                     continue;
 
                 position.SetY(worldY - 1);
                 BlockState belowState = chunk.GetBlockState(position);
-                if (!belowState.Is(Blocks.DIRT))
-                    continue;
+                if (belowState.Is(Blocks.DIRT))
+                {
+                    BlockState? topMaterial = materialSystem.TopMaterial(
+                        _settings.MaterialRule.Value,
+                        _randomState,
+                        generationContext,
+                        biomeGetter,
+                        chunk,
+                        noiseChunk.CachingSamplers,
+                        position,
+                        underFluid: !carvedState.GetFluidState().IsEmpty());
 
-                BlockState? topMaterial = materialSystem.TopMaterial(
-                    _settings.MaterialRule.Value,
-                    _randomState,
-                    generationContext,
-                    biomeGetter,
-                    chunk,
-                    noiseChunk.CachingSamplers,
-                    position,
-                    underFluid: !carvedState.GetFluidState().IsEmpty());
-
-                if (topMaterial is null)
-                    continue;
-
-                chunk.SetBlockState(position, topMaterial, flags: 0);
-                if (!topMaterial.GetFluidState().IsEmpty())
-                    chunk.MarkPosForPostProcessing(position);
+                    if (topMaterial is not null)
+                    {
+                        chunk.SetBlockState(position, topMaterial, flags: 0);
+                        if (!topMaterial.GetFluidState().IsEmpty())
+                            chunk.MarkPosForPostProcessing(position);
+                    }
+                }
 
                 position.SetY(worldY);
             }
