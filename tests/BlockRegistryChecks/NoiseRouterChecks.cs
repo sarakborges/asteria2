@@ -33,6 +33,7 @@ internal static class NoiseRouterChecks
         CheckClimateSamplerMapping();
         CheckOverworldFunctionSetMapping();
         CheckRegistryBackedOverworldProfiles();
+        CheckRegisteredOverworldDensitySampling();
     }
 
     private static NoiseRouter CreateRouter() =>
@@ -126,6 +127,44 @@ internal static class NoiseRouterChecks
         RegistryKey<DensityFunction> key) =>
         function is DensityFunctionFactories.HolderHolder { Function: var holder } &&
         ReferenceEquals(holder, registry.GetHolder(key));
+
+    private static void CheckRegisteredOverworldDensitySampling()
+    {
+        NoiseRouter router = NoiseRouter.CreateOverworld(
+            BuiltInRegistries.DensityFunction,
+            DensityFunctionKeys.OVERWORLD_FUNCTIONS);
+        var randomState = RandomState.Create(
+            BuiltInRegistries.Noise,
+            0x5A17_2026_7ABC_DEF0L,
+            useLegacyRandomSource: false,
+            router);
+
+        (int X, int Y, int Z)[] samplePoints =
+        [
+            (-17, -64, 29),
+            (0, 0, 0),
+            (355, 82, -230),
+            (120, 180, -310)
+        ];
+
+        foreach ((int x, int y, int z) in samplePoints)
+        {
+            float first = randomState.SampleBlockValueUncached(
+                router.FinalDensity,
+                x,
+                y,
+                z);
+            float repeated = randomState.SampleBlockValueUncached(
+                router.FinalDensity,
+                x,
+                y,
+                z);
+
+            Require(
+                float.IsFinite(first) && first == repeated,
+                $"The registry-backed Overworld final-density graph must compile and sample deterministically at block coordinates {x},{y},{z}.");
+        }
+    }
 
     private static void CheckCodecRoundTrip()
     {
