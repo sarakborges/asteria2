@@ -7,6 +7,7 @@ using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.World;
 using Asteria.World.LevelGen;
+using Asteria.World.Ticks;
 
 namespace Asteria.World.Level;
 
@@ -22,8 +23,28 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
     private readonly LevelHeightAccessor _heightAccessor;
     private readonly PalettedContainerFactory _containerFactory;
     private readonly Dictionary<ChunkPos, ProtoChunk> _chunks = new();
+    private long _gameTime;
+    private long _nextSubTickOrder;
 
     public long Seed => _generator.Seed;
+
+    public long GetGameTime() => Interlocked.Read(ref _gameTime);
+
+    public void SetGameTime(long gameTime) =>
+        Interlocked.Exchange(ref _gameTime, gameTime);
+
+    public void ScheduleBlockTick(BlockPos position, Block block, int delay)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        ArgumentNullException.ThrowIfNull(block);
+        ProtoChunk chunk = GetChunk(ChunkPos.Containing(position));
+        chunk.GetBlockTicks().Schedule(new ScheduledTick<Block>(
+            block,
+            position,
+            unchecked(GetGameTime() + delay),
+            TickPriority.NORMAL,
+            Interlocked.Increment(ref _nextSubTickOrder) - 1));
+    }
 
     public int MinY => _heightAccessor.GetMinY();
 
