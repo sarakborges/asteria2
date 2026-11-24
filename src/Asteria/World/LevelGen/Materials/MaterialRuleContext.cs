@@ -1,3 +1,4 @@
+using Asteria.Content.Blocks;
 using Asteria.Content.Identifiers;
 using Asteria.Core;
 using Asteria.Content.Biomes;
