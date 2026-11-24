@@ -15,7 +15,7 @@ namespace Asteria.World.Level;
 /// generated from it. Chunk generation is synchronous and serialized so the
 /// shared RandomState is never evaluated concurrently.
 /// </summary>
-public sealed class OverworldWorld : BlockGetter
+public sealed class OverworldWorld : BlockGetter, LightChunkGetter
 {
     private readonly object _sync = new();
     private readonly NoiseBasedChunkGenerator _generator;
@@ -133,6 +133,13 @@ public sealed class OverworldWorld : BlockGetter
     /// Gets a cached chunk or generates its BIOMES and TERRAIN stages on first access.
     /// A failed generation is not inserted into the world's chunk cache.
     /// </summary>
+    public LightChunk? GetChunkForLighting(int chunkX, int chunkZ) =>
+        TryGetChunk(new ChunkPos(chunkX, chunkZ), out ProtoChunk? chunk)
+            ? chunk
+            : null;
+
+    public BlockGetter GetLevel() => this;
+
     public ProtoChunk GetChunk(ChunkPos position)
     {
         EnsureValidPosition(position);

@@ -16,7 +16,7 @@ namespace Asteria.Content.Chunks;
 /// <summary>
 /// Shared chunk storage and heightmap state.
 /// </summary>
-public abstract class ChunkAccess : BlockGetter
+public abstract class ChunkAccess : LightChunk
 {
     public const int NoFilledSection = -1;
 

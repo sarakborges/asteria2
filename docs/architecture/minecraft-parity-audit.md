@@ -1355,3 +1355,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Preservados os detalhes de 26.3: consulta somente armazena entradas encontradas; `SetLayer` e `RemoveLayer` não invalidam cache por conta própria; `CopyDataLayer` clona o `DataLayer`, substitui o valor e limpa o cache; `DisableCache` desativa as consultas em cache sem reconstruir o mapa.
 - Testes cobrem lookup/cache de duas entradas, eviction, retorno de valores ausentes, semântica de invalidação, cópia de layer, cópia independente do mapa e cache desativado.
 - Próxima dependência: `LayerLightSectionStorage` e as especializações SKY/BLOCK.
+
+
+## Incremento — contratos de chunk para iluminação 26.3 (24/11/2026)
+
+- Adicionados `LightLayer` com a ordem `SKY`, `BLOCK`, `LightChunk` e `LightChunkGetter` seguindo os contratos de acesso da referência.
+- `ChunkAccess` implementa `LightChunk` usando seus métodos existentes de enumeração de fontes emissoras e armazenamento `ChunkSkyLightSources`; nenhum scanner paralelo foi criado.
+- `OverworldWorld` implementa `LightChunkGetter`; a consulta retorna apenas chunks já presentes no cache e nunca aciona geração como efeito colateral. `GetLevel` expõe o próprio mundo como `BlockGetter`; a notificação permanece no método default sem efeito, conforme o contrato da interface.
+- Testes cobrem enumeração vazia, identidade do armazenamento skylight, lookup/miss por coordenada, level associado e ordem dos canais.
+- Ainda não há engines SKY/BLOCK nem processamento de propagação; estes contratos são a superfície de integração necessária para as próximas classes.
