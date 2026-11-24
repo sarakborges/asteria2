@@ -32,7 +32,7 @@ public sealed class DensityBufferPool : DensityBufferArena
     private ScopedDensityBuffer? TryTakeBest(int minCapacity, int maxCapacity)
     {
         int bestIndex = -1;
-        int bestCapacity = unchecked(maxCapacity + 1);
+        int bestCapacity = maxCapacity;
 
         for (int index = _buffers.Count - 1; index >= 0; index--)
         {
