@@ -172,6 +172,37 @@ internal static class BuiltInDensityFunctions
         return DensityFunctionFactories.Mul(centered, -3.0f);
     }
 
+    /// <summary>
+    /// Converts the vanilla Overworld offset channel into depth using the
+    /// fixed -64..320 density-Y gradient from Minecraft Java 26.3.
+    /// </summary>
+    internal static DensityFunction OffsetToDepth(DensityFunction offset)
+    {
+        ArgumentNullException.ThrowIfNull(offset);
+
+        return DensityFunctionFactories.Add(
+            DensityFunctionFactories.YClampedGradient(-64, 320, 1.5f, -1.5f),
+            offset);
+    }
+
+    /// <summary>
+    /// Builds Minecraft Java 26.3's noise-gradient density expression.
+    /// </summary>
+    internal static DensityFunction NoiseGradientDensity(
+        DensityFunction factor,
+        DensityFunction depthWithJaggedness)
+    {
+        ArgumentNullException.ThrowIfNull(factor);
+        ArgumentNullException.ThrowIfNull(depthWithJaggedness);
+
+        DensityFunction gradientUnscaled =
+            DensityFunctionFactories.Mul(depthWithJaggedness, factor);
+
+        return DensityFunctionFactories.Mul(
+            DensityFunctionFactories.QuarterNegative(gradientUnscaled),
+            4.0f);
+    }
+
     private static void RegisterOreVeins(Registry<DensityFunction> registry)
     {
         Holder<NormalNoise> veininessNoise = GetNoise(Noises.ORE_VEININESS);
