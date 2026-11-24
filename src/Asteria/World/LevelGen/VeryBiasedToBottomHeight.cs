@@ -4,11 +4,12 @@ using Asteria.Serialization;
 namespace Asteria.World.LevelGen;
 
 /// <summary>Strongly lower-biased height distribution from Minecraft Java 26.3.</summary>
-public sealed record VeryBiasedToBottomHeight(
-    VerticalAnchor Minimum,
-    VerticalAnchor Maximum,
-    int Inner) : HeightProvider
+public sealed class VeryBiasedToBottomHeight : HeightProvider
 {
+    public VerticalAnchor Minimum { get; }
+    public VerticalAnchor Maximum { get; }
+    public int Inner { get; }
+
     public static MapCodec<VeryBiasedToBottomHeight> MAP_CODEC { get; } =
         RecordCodecBuilder.MapCodec<VeryBiasedToBottomHeight>(instance =>
             instance.Group(
@@ -28,6 +29,16 @@ public sealed record VeryBiasedToBottomHeight(
         MAP_CODEC.XMap<HeightProvider>(
             static provider => provider,
             static provider => (VeryBiasedToBottomHeight)provider);
+
+    public VeryBiasedToBottomHeight(
+        VerticalAnchor minimum,
+        VerticalAnchor maximum,
+        int inner)
+    {
+        Minimum = minimum ?? throw new ArgumentNullException(nameof(minimum));
+        Maximum = maximum ?? throw new ArgumentNullException(nameof(maximum));
+        Inner = inner;
+    }
 
     public static VeryBiasedToBottomHeight Of(
         VerticalAnchor minimum,
