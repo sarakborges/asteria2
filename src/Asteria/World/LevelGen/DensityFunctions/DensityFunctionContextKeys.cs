@@ -15,4 +15,7 @@ public static class DensityFunctionContextKeys
 
     public static ContextKey<DensitySampler> BEARDIFIER { get; } =
         ContextKey<DensitySampler>.Vanilla("beardifier");
+
+    public static ContextKey<IChunkBlender> BLENDER { get; } =
+        ContextKey<IChunkBlender>.Vanilla("blender");
 }
