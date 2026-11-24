@@ -71,8 +71,14 @@ public sealed class RegistryOps<T> : DynamicOps<T>
     public DataResult<T> MergeToList(T list, T value) =>
         _parent.MergeToList(list, value);
 
+    public DataResult<T> MergeToList(T list, IReadOnlyList<T> values) =>
+        _parent.MergeToList(list, values);
+
     public DataResult<T> MergeToMap(T map, T key, T value) =>
         _parent.MergeToMap(map, key, value);
+
+    public DataResult<T> MergeToMap(T map, IReadOnlyList<KeyValuePair<T, T>> values) =>
+        _parent.MergeToMap(map, values);
 
     public T Remove(T input, string key) =>
         _parent.Remove(input, key);

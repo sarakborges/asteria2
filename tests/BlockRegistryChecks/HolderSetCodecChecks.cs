@@ -88,8 +88,13 @@ internal static class HolderSetCodecChecks
         Require(codec.Parse(ops, ops.CreateString("#asteria:missing")).IsError,
             "An unknown tag key must fail instead of producing an empty holder set.");
 
-        Require(codec.Parse(ops, ops.CreateString("asteria:first")).IsError,
-            "A direct registry reference must not decode without the expected compact list value or tag marker context.");
+        Require(
+            ReferenceEquals(
+                codec.Parse(ops, ops.CreateString("asteria:first")).GetOrThrow()[0],
+                registry.GetValue(ResourceLocation.Parse("asteria:first")) is TestEntry value
+                    ? registry.GetHolder(value)
+                    : null),
+            "A compact direct holder reference must resolve to its registered holder.");
     }
 
     private static void CheckAlwaysUseList()
