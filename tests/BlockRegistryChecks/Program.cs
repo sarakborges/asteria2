@@ -304,6 +304,7 @@ internal static class Program
         ClimateChecks.Run();
         NoiseRouterChecks.Run();
         NoiseGeneratorSettingsChecks.Run();
+        NoiseChunkChecks.Run();
         RandomStateChecks.Run();
         EnvironmentAttributeChecks.Run();
         KeyframeTrackChecks.Run();

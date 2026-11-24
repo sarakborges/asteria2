@@ -1,4 +1,5 @@
 using Asteria.Content.Identifiers;
+using AquiferContract = Asteria.World.LevelGen.Aquifer;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.Util.Context;
 
@@ -16,7 +17,7 @@ public sealed class NoiseChunk : IDisposable
     private bool _closed;
 
     public DensityVolume Volume { get; }
-    public Aquifer Aquifer { get; }
+    public AquiferContract Aquifer { get; }
     public DensitySamplerSet CachingSamplers { get; }
     public bool IsClosed => _closed;
 
@@ -24,7 +25,7 @@ public sealed class NoiseChunk : IDisposable
         RandomState randomState,
         Beardifier? beardifier,
         NoiseGeneratorSettings settings,
-        Aquifer.FluidPicker globalFluidPicker,
+        AquiferContract.FluidPicker globalFluidPicker,
         IChunkBlender? blender,
         DensityVolume volume)
     {
@@ -68,14 +69,14 @@ public sealed class NoiseChunk : IDisposable
 
             _samplerContext = samplerContext;
             CachingSamplers = randomState.SamplersWithContext(samplerContext);
-            Aquifer = settings.Aquifers is Aquifer.Config aquiferConfig
+            Aquifer = settings.Aquifers is AquiferContract.Config aquiferConfig
                 ? aquiferConfig.Create(
                     CachingSamplers,
                     randomState.GetOrCreateRandomFactory(
                         ResourceLocation.WithDefaultNamespace("aquifer")),
                     volume,
                     globalFluidPicker)
-                : Aquifer.CreateDisabled(globalFluidPicker);
+                : AquiferContract.CreateDisabled(globalFluidPicker);
         }
         catch
         {

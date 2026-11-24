@@ -1051,3 +1051,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `GetRandomSource()` seleciona LEGACY ou XOROSHIRO de acordo com `use_legacy_random_source`.
 - O componente depreciado `disable_mob_generation` foi excluído da API e do codec conforme a decisão de manter sistemas de mobs fora do escopo.
 - Este incremento completa o objeto de configuração, mas ainda não cria presets de dimensões nem executa `NoiseChunk`; a integração com a geração permanece pendente.
+
+
+## Incremento — NoiseChunk e contexto de amostragem por chunk (24/11/2026)
+
+- Portado o coordenador `NoiseChunk` com `DensityVolume`, `Aquifer`, `DensitySamplerSet` e lifecycle `Close`/`Dispose`, seguindo o construtor 26.3 com `RandomState`, Beardifier opcional, settings, fluid picker e blender opcional.
+- O contexto único do chunk ativa os caches do `SamplerContext`, utiliza o `DensityBufferPool` emprestado de `RandomState`, injeta `Beardifier.EMPTY` como fallback e só registra blender/alpha/offset quando o blender não está vazio.
+- O aquifer é criado a partir de `NoiseGeneratorSettings.Aquifers`; sem configuração, é usado `Aquifer.CreateDisabled`. A factory posicional nomeada `aquifer` é obtida de `RandomState`.
+- Estendido `IChunkBlender` para fornecer o buffer de alpha/offset do volume e portado `BlenderOutputBuffer` para amostragem quart-grid; o blender vazio mantém os fallbacks 1.0/0.0 sem registrar campos no contexto.
+- `SamplerContext` agora é descartável e fecha os buffers persistentes dos cache cells, permitindo que `NoiseChunk.Close` retorne as leases ao pool antes de devolvê-lo ao `RandomState`.
+- Testes cobrem fallbacks de alpha/offset/Beardifier, injeção de parâmetros do blender, seleção de aquifer ativo/desativado, volume cacheado e rejeição de amostragem após close.
+- Delimitação: a implementação concreta de `Blender` (coleta de dados de chunks antigos e cálculo de blending) não foi portada. `NoiseChunk` consome o contrato e um `IChunkBlender` futuro; sem um blender real e sem `NoiseBasedChunkGenerator`/materialização, ainda não há mundo jogável.
