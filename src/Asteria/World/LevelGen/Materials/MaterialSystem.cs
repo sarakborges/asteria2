@@ -273,6 +273,59 @@ public sealed class MaterialSystem
         }
     }
 
+    /// <summary>
+    /// Evaluates one block's top surface material after carving, matching the
+    /// Minecraft Java 26.3 MaterialSystem.topMaterial path.
+    /// </summary>
+    public BlockState? TopMaterial(
+        MaterialRule ruleSource,
+        RandomState randomState,
+        WorldGenerationContext generationContext,
+        Func<BlockPos, Holder<Biome>> biomeGetter,
+        ChunkAccess chunk,
+        DensitySamplerSet densitySamplers,
+        BlockPos position,
+        bool underFluid)
+    {
+        ArgumentNullException.ThrowIfNull(ruleSource);
+        ArgumentNullException.ThrowIfNull(randomState);
+        ArgumentNullException.ThrowIfNull(generationContext);
+        ArgumentNullException.ThrowIfNull(biomeGetter);
+        ArgumentNullException.ThrowIfNull(chunk);
+        ArgumentNullException.ThrowIfNull(densitySamplers);
+        ArgumentNullException.ThrowIfNull(position);
+
+        int blockX = position.GetX();
+        int blockY = position.GetY();
+        int blockZ = position.GetZ();
+        var volume = new DensityVolume(1, 1, 1, blockX, blockY, blockZ);
+        var context = new MaterialRuleContext(
+            this,
+            randomState,
+            volume,
+            densitySamplers,
+            biomeGetter,
+            generationContext);
+        RuleEvaluator rule = ruleSource.Compile(context);
+        context.UpdateXZ(
+            blockX,
+            blockZ,
+            GetSurfaceGradientX(
+                chunk,
+                SectionPos.SectionRelative(blockX),
+                SectionPos.SectionRelative(blockZ)),
+            GetSurfaceGradientZ(
+                chunk,
+                SectionPos.SectionRelative(blockX),
+                SectionPos.SectionRelative(blockZ)));
+        context.UpdateY(
+            stoneDepthAbove: 1,
+            stoneDepthBelow: 1,
+            waterHeight: underFluid ? unchecked(blockY + 1) : int.MinValue,
+            blockY);
+        return rule(blockX, blockY, blockZ);
+    }
+
     private void ErodedBadlandsExtension(
         ChunkAccess chunk,
         BlockPos.MutableBlockPos columnPosition,
