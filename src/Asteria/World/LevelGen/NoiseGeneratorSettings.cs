@@ -1,7 +1,7 @@
 using Asteria.Content.Blocks;
 using Asteria.Content.Registries;
 using Asteria.Serialization;
-using Asteria.World.LevelGen.Materials.Rules;
+using MaterialRuleDefinition = Asteria.World.LevelGen.Materials.Rules.MaterialRule;
 
 namespace Asteria.World.LevelGen;
 
@@ -59,7 +59,7 @@ public sealed record NoiseGeneratorSettings(
     private static MapCodec<MaterialAndFluidSettings> MaterialAndFluidSettingsCodec { get; } =
         RecordCodecBuilder.MapCodec<MaterialAndFluidSettings>(instance =>
             instance.Group(
-                    MaterialRule.HOLDER_CODEC.FieldOf("material_rule")
+                    MaterialRuleDefinition.HOLDER_CODEC.FieldOf("material_rule")
                         .ForGetter<MaterialAndFluidSettings>(static settings => settings.MaterialRule),
                     SpawnTargetPoint.CODEC.ListOf()
                         .OptionalFieldOf("spawn_target", EMPTY_SPAWN_TARGETS)
