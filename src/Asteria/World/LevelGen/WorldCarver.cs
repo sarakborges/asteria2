@@ -87,7 +87,7 @@ public interface WorldCarver
                         for (int worldY = maxY; worldY > minY; worldY--)
                         {
                             double yd = (worldY - 0.5 - y) / verticalRadius;
-                            if (!skipChecker.ShouldSkip(xd, yd, zd, worldY))
+                            if (!skipChecker(xd, yd, zd, worldY))
                                 output.Carve(xIndex, worldY, zIndex);
                         }
                     }
