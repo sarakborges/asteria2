@@ -37,6 +37,9 @@ internal static class PlacementModifierChecks
         CheckInSquarePlacement();
         CheckRarityFilter();
         CheckCountPlacement();
+        CheckHeightRangePlacement();
+        CheckHeightmapPlacement();
+        CheckOffsetPlacement();
         CheckBiomeFilter();
         CheckFeaturePlacerOrder();
     }
@@ -44,10 +47,10 @@ internal static class PlacementModifierChecks
     private static void CheckTypeRegistry()
     {
         Require(
-            BuiltInRegistries.PlacementModifierType.Count == 4,
+            BuiltInRegistries.PlacementModifierType.Count == 7,
             "The placement modifier registry must contain the four implemented algorithms.");
 
-        foreach (string id in new[] { "in_square", "biome", "rarity_filter", "count" })
+        foreach (string id in new[] { "in_square", "biome", "rarity_filter", "count", "height_range", "heightmap", "offset" })
         {
             Require(
                 BuiltInRegistries.PlacementModifierType.ContainsKey(
@@ -182,6 +185,114 @@ internal static class PlacementModifierChecks
             CountPlacement.MAP_CODEC
                 .Parse(JsonOps.INSTANCE, ParseJson("""{"count":4097}""")).IsError,
             "CountPlacement must enforce its inclusive 0..4096 provider bounds.");
+    }
+
+    private static void CheckHeightRangePlacement()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        HeightRangePlacement decoded = HeightRangePlacement.MAP_CODEC
+            .Parse(ops, ParseJson("""{"height":{"absolute":12}}"""))
+            .GetOrThrow();
+
+        Require(
+            decoded.Height is ConstantHeight { Value: var anchor } &&
+            anchor == VerticalAnchor.Absolute(12),
+            "HeightRangePlacement must decode the HeightProvider anchor shorthand.");
+
+        var world = new OverworldWorld(
+            0x484549474854524EL,
+            LevelHeightAccessor.Create(-64, 96));
+        NoiseBasedChunkGenerator generator = NoiseBasedChunkGenerator.CreateOverworld(world.Seed);
+        var context = CreatePlacementContext(world, generator, topFeature: null);
+        var origin = new BlockPos(-5, 0, 11);
+        BlockPos? result = null;
+
+        decoded.Modify(
+            context,
+            new LegacyRandomSource(1L),
+            origin,
+            position => result = position);
+
+        Require(
+            result is not null &&
+            result.GetX() == origin.GetX() &&
+            result.GetY() == 12 &&
+            result.GetZ() == origin.GetZ(),
+            "HeightRangePlacement must sample its provider against the placement world bounds and replace only Y.");
+    }
+
+    private static void CheckHeightmapPlacement()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        HeightmapPlacement decoded = HeightmapPlacement.MAP_CODEC
+            .Parse(ops, ParseJson("""{"heightmap":"WORLD_SURFACE_WG"}"""))
+            .GetOrThrow();
+
+        Require(
+            ReferenceEquals(decoded.Heightmap, Heightmap.Types.WORLD_SURFACE_WG),
+            "HeightmapPlacement must decode the canonical Heightmap.Types entry.");
+
+        var world = new OverworldWorld(
+            0x4845494748544D50L,
+            LevelHeightAccessor.Create(-64, 96));
+        NoiseBasedChunkGenerator generator = NoiseBasedChunkGenerator.CreateOverworld(world.Seed);
+        var context = CreatePlacementContext(world, generator, topFeature: null);
+        var origin = new BlockPos(4, 0, 6);
+        int expectedHeight = context.GetHeight(decoded.Heightmap, origin.GetX(), origin.GetZ());
+        BlockPos? result = null;
+
+        decoded.Modify(
+            context,
+            new LegacyRandomSource(1L),
+            origin,
+            position => result = position);
+
+        Require(
+            expectedHeight > context.GetMinY() &&
+            result is not null &&
+            result.GetX() == origin.GetX() &&
+            result.GetY() == expectedHeight &&
+            result.GetZ() == origin.GetZ(),
+            "HeightmapPlacement must emit the heightmap's first available Y when it lies above minY.");
+    }
+
+    private static void CheckOffsetPlacement()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        OffsetPlacement decoded = OffsetPlacement.MAP_CODEC
+            .Parse(
+                ops,
+                ParseJson("""{"x":{"min_inclusive":-2,"max_inclusive":3},"y":2,"z":-4}"""))
+            .GetOrThrow();
+
+        var origin = new BlockPos(10, 70, -20);
+        var expectedRandom = new LegacyRandomSource(223344L);
+        var actualRandom = new LegacyRandomSource(223344L);
+        int expectedXOffset = UniformInt.Of(-2, 3).Sample(expectedRandom);
+        int expectedYOffset = ConstantInt.Of(2).Sample(expectedRandom);
+        int expectedZOffset = ConstantInt.Of(-4).Sample(expectedRandom);
+        BlockPos? result = null;
+
+        decoded.Modify(
+            CreatePlacementContext(topFeature: null),
+            actualRandom,
+            origin,
+            position => result = position);
+
+        Require(
+            result is not null &&
+            result.GetX() == origin.GetX() + expectedXOffset &&
+            result.GetY() == origin.GetY() + expectedYOffset &&
+            result.GetZ() == origin.GetZ() + expectedZOffset,
+            "OffsetPlacement must sample X, then Y, then Z and add each offset to its origin.");
+
+        Require(
+            OffsetPlacement.MAP_CODEC
+                .Parse(
+                    ops,
+                    ParseJson("""{"x":-17,"y":0,"z":0}"""))
+                .IsError,
+            "OffsetPlacement must reject provider ranges outside -16..16.");
     }
 
     private static void CheckBiomeFilter()
