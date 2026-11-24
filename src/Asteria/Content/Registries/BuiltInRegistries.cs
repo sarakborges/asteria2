@@ -24,6 +24,7 @@ using DensityFunctionValue = Asteria.World.LevelGen.DensityFunctions.DensityFunc
 using BuiltInDensityFunctions = Asteria.World.LevelGen.BuiltInDensityFunctions;
 using Asteria.World.LevelGen.Materials.Rules;
 using Asteria.World.LevelGen.Materials.Conditions;
+using Asteria.World.LevelGen;
 
 namespace Asteria.Content.Registries;
 
@@ -97,6 +98,11 @@ public static class BuiltInRegistries
         RegisterSimple<MapCodec<MaterialCondition>>(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/material_condition_type"),
             static () => MaterialConditionCodecBootstrap.RegisterAll(MaterialConditionType));
+
+    public static Registry<NoiseGeneratorSettings> NoiseGeneratorSettings { get; } =
+        RegisterSimple<NoiseGeneratorSettings>(
+            Registries.NOISE_SETTINGS.Location,
+            static () => { });
 
     public static Registry<ChunkStatusValue> ChunkStatus { get; } =
         RegisterSimple<ChunkStatusValue>(

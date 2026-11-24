@@ -205,7 +205,7 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 18, "The root registry must contain the built-in block, fluid, item, biome, normal-noise, density-function, density-function-type, material-rule, material-rule-type, material-condition, material-condition-type, chunk-status, particle, environment-attribute, attribute-type, position-source-type, world-clock and timeline registries.");
+        Require(BuiltInRegistries.Root.Count == 19, "The root registry must contain the built-in block, fluid, item, biome, normal-noise, density-function, density-function-type, material-rule, material-rule-type, material-condition, material-condition-type, noise-generator-settings, chunk-status, particle, environment-attribute, attribute-type, position-source-type, world-clock and timeline registries.");
         DensityFunctionCodecChecks.Run();
         MaterialRuleChecks.Run();
         MaterialConditionChecks.Run();
@@ -303,6 +303,7 @@ internal static class Program
         BiomeChecks.Run();
         ClimateChecks.Run();
         NoiseRouterChecks.Run();
+        NoiseGeneratorSettingsChecks.Run();
         RandomStateChecks.Run();
         EnvironmentAttributeChecks.Run();
         KeyframeTrackChecks.Run();
@@ -355,7 +356,7 @@ internal static class Program
             BuiltInRegistries.RootLocation == ResourceLocation.Parse("asteria:root"),
             "The root registry must use the Asteria namespace.");
         Require(
-            BuiltInRegistries.Root.Count == 18 && !BuiltInRegistries.Root.IsFrozen,
+            BuiltInRegistries.Root.Count == 19 && !BuiltInRegistries.Root.IsFrozen,
             "The root registry must register all eighteen built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =

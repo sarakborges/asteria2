@@ -3,6 +3,7 @@ using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Synth;
 using Asteria.World.LevelGen.Materials.Rules;
 using Asteria.World.LevelGen.Materials.Conditions;
+using Asteria.World.LevelGen;
 
 namespace Asteria.Content.Registries;
 
@@ -26,4 +27,8 @@ public static class Registries
     public static RegistryKey<Registry<MaterialCondition>> MATERIAL_CONDITION { get; } =
         RegistryKey<MaterialCondition>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/material_condition"));
+
+    public static RegistryKey<Registry<NoiseGeneratorSettings>> NOISE_SETTINGS { get; } =
+        RegistryKey<NoiseGeneratorSettings>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/noise_settings"));
 }

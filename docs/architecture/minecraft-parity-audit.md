@@ -1041,3 +1041,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O contexto aceita `surfaceSecondary` e `minSurfaceLevel` na atualização de coluna; seu cálculo permanece responsabilidade do MaterialSystem, ainda não portado.
 - O registry atualiza a ordem relativa vanilla dos seis tipos implementados: water, steep, not, hole, above_preliminary_surface e stone_depth. Tipos anteriores que exigem biome, noise ou vertical anchors seguem pendentes.
 - Testes cobrem codecs, limites, comparações de floor/ceiling e atualizações das caches XZ/Y.
+
+
+## Incremento — NoiseGeneratorSettings e registry de noise settings (24/11/2026)
+
+- Portado `NoiseGeneratorSettings` com os campos `noise`, `default_block`, `default_fluid`, `noise_router`, `material_rule`, `spawn_target`, `sea_level`, `aquifers`, `use_legacy_random_source` e `debug_functions`.
+- `material_rule` usa holder codec registry-aware com suporte a definição inline; `aquifers` e `debug_functions` são opcionais, e `spawn_target` omisso decodifica para lista vazia.
+- Adicionados `Registries.NOISE_SETTINGS` (`worldgen/noise_settings`) e `BuiltInRegistries.NoiseGeneratorSettings`, pronto para receber valores via bootstrap de datapack.
+- `GetRandomSource()` seleciona LEGACY ou XOROSHIRO de acordo com `use_legacy_random_source`.
+- O componente depreciado `disable_mob_generation` foi excluído da API e do codec conforme a decisão de manter sistemas de mobs fora do escopo.
+- Este incremento completa o objeto de configuração, mas ainda não cria presets de dimensões nem executa `NoiseChunk`; a integração com a geração permanece pendente.
