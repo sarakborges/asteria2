@@ -1507,3 +1507,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionados testes para existência dos três registros, resolução chave-valor e todos os parâmetros configurados de Cave, Cave Extra Underground e Canyon. Os testes estão registrados no harness, mas não foram executados porque o ambiente continua sem .NET SDK.
 - Os carvers configurados ainda não estão associados aos biomas e o `NoiseBasedChunkGenerator` ainda não os executa. Permanecem: `BiomeGenerationSettings`, holders de carvers por bioma, iteração vanilla dos 17×17 chunks de origem, máscaras por etapa de carving e aplicação das máscaras via aquifer com tags e post-processing. `TERRAIN` permanece incompleto.
 - Referência: `Carvers.java` de Minecraft Java 26.3 para os três IDs e seus parâmetros configurados.
+
+## Incremento — carvers por BiomeGenerationSettings 26.3
+
+- Adicionada a parte de carvers de `BiomeGenerationSettings`: holders ordenados, conjunto vazio e `PlainBuilder.AddCarver/Build`. A implementação não inventa `PlacedFeature`: o componente de features, o codec completo e as APIs dependentes seguem pendentes até o port dessa classe.
+- `Biome` agora armazena `GenerationSettings`. Construtores sem configuração explícita recebem `BiomeGenerationSettings.EMPTY`, enquanto os biomas embutidos recebem sua configuração Overworld.
+- A factory `CreateDefaultOverworld` resolve os holders canônicos do registry configurado e acrescenta `CAVE`, `CAVE_EXTRA_UNDERGROUND`, `CANYON` na ordem vanilla. Isso corresponde a `BiomeDefaultFeatures.addDefaultCarversAndLakes` chamado por `OverworldBiomes.globalOverworldGeneration`; `deepDark` adiciona explicitamente os mesmos três carvers.
+- Testes cobrem EMPTY, PlainBuilder, identidade/ordem dos holders e todos os biomas presentes no registry embutido. Os testes foram registrados no harness, mas ainda não executados sem .NET SDK.
+- A associação dos carvers aos biomas está pronta no modelo de dados, mas a geração ainda não consome a lista. Permanecem a iteração dos 17×17 chunks de origem por chunk-alvo, os fluxos de seed por etapa, aplicação das máscaras via aquifer, tag `UNCARVABLE`, post-processing de fluidos e reparo do bloco abaixo de grass/mycelium. `TERRAIN` continua incompleto.
+- Referência: `BiomeGenerationSettings.java`, `BiomeDefaultFeatures.addDefaultCarversAndLakes` e `OverworldBiomes.globalOverworldGeneration/deepDark` em Minecraft Java 26.3.
