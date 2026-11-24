@@ -1,6 +1,5 @@
 using Asteria.Content.Registries;
 using Asteria.Core;
-using Asteria.World.Level;
 using Asteria.World.LevelGen;
 using Asteria.Serialization;
 
@@ -15,7 +14,7 @@ public interface Feature
     MapCodec<Feature> Codec();
 
     bool Place(
-        OverworldWorld level,
+        WorldGenLevel level,
         NoiseBasedChunkGenerator generator,
         IRandomSource random,
         BlockPos origin);
