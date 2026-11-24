@@ -1,3 +1,4 @@
+using Asteria.Core;
 using Asteria.World;
 
 namespace Asteria.World.LevelGen.Structure;
