@@ -35,7 +35,7 @@ public sealed class OverworldWorld : BlockGetter
     public BlockState GetBlockState(BlockPos position)
     {
         ArgumentNullException.ThrowIfNull(position);
-        if (IsOutsideBuildHeight(position.GetY()))
+        if (_heightAccessor.IsOutsideBuildHeight(position.GetY()))
             return Blocks.VOID_AIR.DefaultState;
 
         return GetChunk(ChunkPos.Containing(position)).GetBlockState(position);
@@ -44,7 +44,7 @@ public sealed class OverworldWorld : BlockGetter
     public FluidState GetFluidState(BlockPos position)
     {
         ArgumentNullException.ThrowIfNull(position);
-        if (IsOutsideBuildHeight(position.GetY()))
+        if (_heightAccessor.IsOutsideBuildHeight(position.GetY()))
             return Fluids.EMPTY.DefaultFluidState;
 
         return GetChunk(ChunkPos.Containing(position)).GetFluidState(position);

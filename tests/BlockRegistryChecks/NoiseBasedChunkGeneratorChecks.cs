@@ -1,5 +1,6 @@
 using Asteria.World.LevelGen.Materials;
 using Asteria.Content.Blocks;
+using Asteria.Content.Fluids;
 using Asteria.Content.Biomes;
 using Asteria.Content.Chunks;
 using Asteria.Content.Chunks.Status;
