@@ -246,9 +246,8 @@ public sealed record CaveWorldCarver(
         {
             double horizontalRadius =
                 1.5 + Mth.Sin((float)Math.PI * currentStep / distance) * thickness;
-            double verticalRadius = horizontalRadius * verticalRadiusMultiplier;
-            if (currentStep == step)
-                verticalRadius *= yScale;
+            double verticalRadius =
+                horizontalRadius * (currentStep == step ? yScale : 1.0);
 
             float cosX = Mth.Cos(verticalRotation);
             x += Mth.Cos(horizontalRotation) * cosX;
