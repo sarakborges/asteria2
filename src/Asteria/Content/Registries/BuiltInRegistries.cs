@@ -199,8 +199,11 @@ public static class BuiltInRegistries
         foreach (Holder<IRegistry>.Reference registryHolder in Root.ListElements())
         {
             IRegistry registry = registryHolder.Value;
-            if (ReferenceEquals(registry, MaterialRule))
+            if (ReferenceEquals(registry, MaterialRule) ||
+                ReferenceEquals(registry, NoiseGeneratorSettings))
+            {
                 continue;
+            }
 
             if (!registry.IsFrozen)
                 registry.BindAllTagsToEmpty();
@@ -216,6 +219,13 @@ public static class BuiltInRegistries
         if (!MaterialRule.IsFrozen)
             MaterialRule.BindAllTagsToEmpty();
         MaterialRule.Freeze();
+
+        // Noise settings depend on the finalized material-rule tree and the
+        // frozen density-function, noise and block registries.
+        BuiltInNoiseGeneratorSettings.RegisterAll();
+        if (!NoiseGeneratorSettings.IsFrozen)
+            NoiseGeneratorSettings.BindAllTagsToEmpty();
+        NoiseGeneratorSettings.Freeze();
 
         foreach (Holder<IRegistry>.Reference registryHolder in Root.ListElements())
             registryHolder.Value.Validate();

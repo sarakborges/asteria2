@@ -1045,9 +1045,9 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 
 ## Incremento — NoiseGeneratorSettings e registry de noise settings (24/11/2026)
 
-- Portado `NoiseGeneratorSettings` com os campos `noise`, `default_block`, `default_fluid`, `noise_router`, `material_rule`, `spawn_target`, `sea_level`, `aquifers`, `use_legacy_random_source` e `debug_functions`.
+- Portado `NoiseGeneratorSettings` com os campos `noise`, `default_block`, `default_fluid`, `noise_router`, `material_rule`, `spawn_target` obrigatório, `sea_level`, `aquifers`, `legacy_random_source` e `debug_functions`.
 - `material_rule` usa holder codec registry-aware com suporte a definição inline; `aquifers` e `debug_functions` são opcionais, e `spawn_target` omisso decodifica para lista vazia.
-- Adicionados `Registries.NOISE_SETTINGS` (`worldgen/noise_settings`) e `BuiltInRegistries.NoiseGeneratorSettings`, pronto para receber valores via bootstrap de datapack.
+- Adicionados `Registries.NOISE_SETTINGS` (`worldgen/noise_settings`) e `BuiltInRegistries.NoiseGeneratorSettings`; o valor built-in `minecraft:overworld` foi carregado no incremento de dados subsequente.
 - `GetRandomSource()` seleciona LEGACY ou XOROSHIRO de acordo com `use_legacy_random_source`.
 - O componente depreciado `disable_mob_generation` foi excluído da API e do codec conforme a decisão de manter sistemas de mobs fora do escopo.
 - Este incremento completa o objeto de configuração, mas ainda não cria presets de dimensões nem executa `NoiseChunk`; a integração com a geração permanece pendente.
@@ -1215,5 +1215,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Os JSONs foram empacotados em três catálogos embutidos sem alterar os objetos das regras ou os seus resource keys. A inicialização reserva primeiro todos os holders; em seguida faz decode com `RegistryOps` sobre os registries built-in; por fim registra os valores, permitindo referências forward e verificando chaves ausentes no freeze.
 - A ordem de bootstrap dos codecs foi ajustada para que MaterialRuleType e MaterialConditionType estejam registradas antes de decodificar os valores do registry material_rule. A registry de blocos, biomas, noises e density functions permanece anterior ao carregamento das regras.
 - Testes verificam os 37 valores vinculados, as definições de Copper/Iron e a sequência raiz do Overworld, incluindo a ordem e identidade dos quatro holders nomeados e o ramo de superfície.
-- Delimitação: `bedrock_roof`/`overworld_caves` não fazem parte deste catálogo; a árvore de material Overworld está disponível, mas o `NoiseGeneratorSettings`/NoiseRouter de produção e o carregamento de mundo ainda precisam consumi-la. A registry `noise_generator_settings` continua sem valores built-in.
+- Delimitação: `bedrock_roof`/`overworld_caves` não fazem parte deste catálogo; a árvore de material foi conectada à configuração built-in `minecraft:overworld` no incremento seguinte. O carregamento de mundo e a execução dessa configuração pelo runtime continuam pendentes.
 - Fonte dos dados: `mj41/mc26-data`, branch `mc-26.3`, `data/minecraft/worldgen/material_rule/` e seu subdiretório `overworld/`.
+
+## Incremento — configuração built-in NoiseGeneratorSettings do Overworld 26.3 (24/11/2026)
+
+- A registry `worldgen/noise_settings` agora carrega `minecraft:overworld` do JSON oficial 26.3. O loader decodifica a configuração completa com `RegistryOps` após a registry de material rules e as dependências de density/noise terem sido congeladas.
+- A configuração preserva `noise` min_y=-64/height=384, stone/water, router de oito canais, `material_rule=minecraft:overworld`, dois spawn targets do jogador, sea level 63, aquifers e nove debug functions. O campo `disable_mob_generation` do JSON de referência é ignorado e não foi modelado/importado.
+- Corrigido o codec de paridade: `spawn_target` é obrigatório, inclusive quando vazio, e a chave booleana usa o nome `legacy_random_source` da fonte 26.3. `aquifers` e `debug_functions` continuam opcionais com defaults vanilla.
+- Testes validam a entrada built-in, os oito IDs do NoiseRouter, o holder da árvore de material, os dois spawn targets, o aquifer e os limites/nomes dos campos required/optional.
+- Limite atual: a configuração fica registrada e acessível a `NoiseBasedChunkGenerator`, mas ainda não há `Level/WorldLoader` que instancie um mundo, gere a região inicial e a exponha ao runtime Godot. `bedrock_roof`, `overworld_caves`, carvers/features, persistência e rendering continuam em etapas separadas.
+- Fonte dos dados: `mj41/mc26-data`, branch `mc-26.3`, `data/minecraft/worldgen/noise_settings/overworld.json`; campo legado conferido em `NoiseGeneratorSettings.java` de `0khs/minecraft_source_26.3`.

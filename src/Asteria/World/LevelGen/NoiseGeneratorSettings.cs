@@ -73,9 +73,6 @@ public sealed record NoiseGeneratorSettings(
         bool UseLegacyRandomSource,
         NoiseGeneratorDebugFunctions DebugFunctions);
 
-    private static readonly IReadOnlyList<SpawnTargetPoint> EMPTY_SPAWN_TARGETS =
-        Array.Empty<SpawnTargetPoint>();
-
     private static MapCodec<NoiseAndBlocks> NoiseAndBlocksCodec { get; } =
         RecordCodecBuilder.MapCodec<NoiseAndBlocks>(instance =>
             instance.Group(
@@ -98,7 +95,7 @@ public sealed record NoiseGeneratorSettings(
                     MaterialRuleDefinition.HOLDER_CODEC.FieldOf("material_rule")
                         .ForGetter<MaterialAndFluidSettings>(static settings => settings.MaterialRule),
                     SpawnTargetPoint.CODEC.ListOf()
-                        .OptionalFieldOf("spawn_target", EMPTY_SPAWN_TARGETS)
+                        .FieldOf("spawn_target")
                         .ForGetter<MaterialAndFluidSettings>(static settings => settings.SpawnTarget),
                     Codecs.INT.FieldOf("sea_level")
                         .ForGetter<MaterialAndFluidSettings>(static settings => settings.SeaLevel),
@@ -116,7 +113,7 @@ public sealed record NoiseGeneratorSettings(
     private static MapCodec<RandomAndDebugSettings> RandomAndDebugSettingsCodec { get; } =
         RecordCodecBuilder.MapCodec<RandomAndDebugSettings>(instance =>
             instance.Group(
-                    Codecs.BOOL.FieldOf("use_legacy_random_source")
+                    Codecs.BOOL.FieldOf("legacy_random_source")
                         .ForGetter<RandomAndDebugSettings>(static settings => settings.UseLegacyRandomSource),
                     NoiseGeneratorDebugFunctions.CODEC
                         .OptionalFieldOf("debug_functions", NoiseGeneratorDebugFunctions.EMPTY)

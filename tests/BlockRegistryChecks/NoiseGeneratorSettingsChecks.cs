@@ -14,6 +14,7 @@ internal static class NoiseGeneratorSettingsChecks
     {
         CheckBuiltInRegistry();
         CheckRequiredSettingsCodecRoundTrip();
+        CheckVanillaOverworldSettings();
         CheckOptionalSettingsDefaults();
         CheckRandomSourceSelection();
     }
@@ -26,8 +27,9 @@ internal static class NoiseGeneratorSettingsChecks
             "Noise generator settings must use the vanilla worldgen/noise_settings registry key.");
 
         Require(
-            BuiltInRegistries.NoiseGeneratorSettings.Count == 0,
-            "The noise settings registry remains data-driven until worldgen settings are bootstrapped.");
+            BuiltInRegistries.NoiseGeneratorSettings.Count == 1 &&
+            BuiltInRegistries.NoiseGeneratorSettings.IsFrozen,
+            "The built-in Overworld noise settings must be registered and frozen after bootstrap.");
 
         Require(
             ReferenceEquals(
@@ -37,6 +39,57 @@ internal static class NoiseGeneratorSettingsChecks
                         BuiltInRegistries.NoiseGeneratorSettings.Location)),
                 BuiltInRegistries.NoiseGeneratorSettings),
             "The root registry must resolve the noise generator settings registry.");
+    }
+
+    private static void CheckVanillaOverworldSettings()
+    {
+        ResourceLocation key = ResourceLocation.FromNamespaceAndPath("minecraft", "overworld");
+        NoiseGeneratorSettings settings = BuiltInRegistries.NoiseGeneratorSettings.GetValueOrThrow(
+            RegistryKey<NoiseGeneratorSettings>.Create(BuiltInRegistries.NoiseGeneratorSettings.Key, key));
+
+        Require(
+            settings.NoiseSettings == NoiseSettings.Create(-64, 384) &&
+            ReferenceEquals(settings.DefaultBlock, Blocks.STONE.DefaultState) &&
+            ReferenceEquals(settings.DefaultFluid, Blocks.WATER.DefaultState) &&
+            settings.SeaLevel == 63,
+            "The registered vanilla Overworld settings must preserve its build height, default blocks and sea level.");
+        Require(
+            settings.SpawnTarget.Count == 2 &&
+            settings.Aquifers is not null &&
+            !settings.UseLegacyRandomSource &&
+            settings.DebugFunctions.Functions.Count == 9,
+            "The vanilla Overworld settings must load two player spawn targets, aquifers, xoroshiro selection and nine debug functions.");
+        Require(
+            settings.MaterialRule.Kind == HolderKind.Reference &&
+            ReferenceEquals(
+                settings.MaterialRule,
+                BuiltInRegistries.MaterialRule.GetHolder(
+                    ResourceLocation.FromNamespaceAndPath("minecraft", "overworld"))),
+            "The Overworld noise settings must reference the registered Overworld material rule holder.");
+
+        static bool IsDensityReference(DensityFunction function, string path) =>
+            function is DensityFunctions.HolderHolder holder &&
+            holder.Function.KeyOrNull is RegistryKey<DensityFunction> densityKey &&
+            densityKey.Location == ResourceLocation.FromNamespaceAndPath("minecraft", path);
+
+        Require(
+            IsDensityReference(settings.NoiseRouter.Temperature, "overworld/temperature") &&
+            IsDensityReference(settings.NoiseRouter.Vegetation, "overworld/vegetation") &&
+            IsDensityReference(settings.NoiseRouter.Continents, "overworld/continents") &&
+            IsDensityReference(settings.NoiseRouter.Erosion, "overworld/erosion") &&
+            IsDensityReference(settings.NoiseRouter.Depth, "overworld/depth") &&
+            IsDensityReference(settings.NoiseRouter.Ridges, "overworld/ridges") &&
+            IsDensityReference(settings.NoiseRouter.ChunkSurfaceLevel, "overworld/chunk_surface_level") &&
+            IsDensityReference(settings.NoiseRouter.FinalDensity, "overworld/final_density"),
+            "The registered Overworld NoiseRouter must resolve all eight canonical density-function references.");
+
+        Require(
+            settings.Aquifers is not null &&
+            IsDensityReference(settings.Aquifers.SurfaceLevel, "overworld/preliminary_surface_level") &&
+            settings.SpawnTarget.All(target => target.Parameters.Keys.All(holder =>
+                holder.KeyOrNull is RegistryKey<DensityFunction> densityKey &&
+                densityKey.Location.Namespace == "minecraft")),
+            "Aquifer and player spawn-target density references must bind to registered Overworld density functions.");
     }
 
     private static void CheckRequiredSettingsCodecRoundTrip()
@@ -70,8 +123,8 @@ internal static class NoiseGeneratorSettingsChecks
 
         Require(
             ops.Get(encoded, "sea_level").GetOrThrow().GetInt32() == 63 &&
-            ops.Get(encoded, "use_legacy_random_source").GetOrThrow().GetBoolean(),
-            "NoiseGeneratorSettings must preserve sea_level and use_legacy_random_source.");
+            ops.Get(encoded, "legacy_random_source").GetOrThrow().GetBoolean(),
+            "NoiseGeneratorSettings must preserve sea_level and legacy_random_source.");
 
         Require(
             ops.Get(encoded, "aquifers").GetOrThrow().ValueKind == JsonValueKind.Object &&
@@ -115,8 +168,10 @@ internal static class NoiseGeneratorSettingsChecks
         Require(
             !ops.Get(encoded, "aquifers").TryGetResult(out _) &&
             !ops.Get(encoded, "debug_functions").TryGetResult(out _) &&
-            !ops.Get(encoded, "spawn_target").TryGetResult(out _),
-            "Empty spawn targets, absent aquifers and empty debug functions must be omitted from encoded settings.");
+            ops.Get(encoded, "spawn_target").TryGetResult(out JsonElement spawnTargets) &&
+            spawnTargets.ValueKind == JsonValueKind.Array &&
+            spawnTargets.GetArrayLength() == 0,
+            "The required spawn_target list must be emitted even when empty; only aquifers and debug functions are optional.");
 
         NoiseGeneratorSettings decoded = NoiseGeneratorSettings.CODEC.Parse(ops, encoded)
             .GetOrThrow()
@@ -126,7 +181,12 @@ internal static class NoiseGeneratorSettingsChecks
             decoded.Aquifers is null &&
             decoded.SpawnTarget.Count == 0 &&
             decoded.DebugFunctions.Functions.Count == 0,
-            "Missing optional settings must decode to null aquifers and empty target/debug lists.");
+            "Missing optional aquifers/debug functions must default while the required spawn-target list decodes explicitly.");
+
+        JsonElement missingSpawnTarget = ops.Remove(encoded, "spawn_target");
+        Require(
+            NoiseGeneratorSettings.DIRECT_CODEC.Parse(ops, missingSpawnTarget).IsError,
+            "NoiseGeneratorSettings must reject a missing required spawn_target field.");
     }
 
     private static void CheckRandomSourceSelection()

@@ -20,5 +20,8 @@
     <EmbeddedResource Include="../../data/worldgen/material-rule-catalog/*.json">
       <LogicalName>Asteria.Worldgen.MaterialRuleCatalog.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="../../data/worldgen/noise-settings/*.json">
+      <LogicalName>Asteria.Worldgen.NoiseSettings.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>
