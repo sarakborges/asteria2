@@ -1339,3 +1339,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Os testes exclusivos do mesh diagnóstico e do planejador de região foram removidos. Permanecem os testes dos subsistemas portados, incluindo formas voxel e clipping de blocos.
 - Não há atualmente renderização de terreno nem iluminação visual no runtime. Isso é preferível a apresentar a luz de cena e a malha de diagnóstico como se fossem equivalentes ao jogo.
 - Próxima cadeia de port: completar o motor de luz de bloco e céu, armazenamento por seção e integração com os dados reais das chunks; depois, portar a compilação/renderização de seções e sua ligação ao cliente.
+
+
+## Incremento — DataLayer de iluminação 26.3 (24/11/2026)
+
+- Portada `DataLayer` de `net.minecraft.world.level.chunk.DataLayer`: 16 camadas, 128 bytes lógicos por camada, 2.048 bytes, 4.096 valores de 4 bits, índice `y << 8 | z << 4 | x`, nibble baixo antes do alto, representação homogênea lazy, materialização, preenchimento, cópia e formatação de diagnóstico.
+- A construção a partir de `byte[]` mantém a referência ao array recebido, valida o comprimento exato e a cópia da representação materializada duplica os bytes, preservando a semântica da referência.
+- Testes de paridade cobrem defaults lazy, preenchimento, coordenadas e ordem dos nibbles, mascaramento do valor, alias/cópia de array, formatação e entrada inválida.
+- Isso porta apenas a camada de dados. Propagação SKY/BLOCK, armazenamento por seção, fila de atualizações e ligação às chunks continuam pendentes.
