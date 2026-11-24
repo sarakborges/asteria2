@@ -42,7 +42,7 @@ public abstract class LayerLightSectionStorage<TMap>
         VisibleSectionData.DisableCache();
     }
 
-    protected bool StoringLightForSection(long sectionNode) =>
+    protected internal bool StoringLightForSection(long sectionNode) =>
         GetDataLayer(sectionNode, updating: true) is not null;
 
     protected DataLayer? GetDataLayer(long sectionNode, bool updating) =>
@@ -51,7 +51,7 @@ public abstract class LayerLightSectionStorage<TMap>
     protected DataLayer? GetDataLayer(TMap sections, long sectionNode) =>
         sections.GetLayer(sectionNode);
 
-    protected DataLayer? GetDataLayerToWrite(long sectionNode)
+    protected internal DataLayer? GetDataLayerToWrite(long sectionNode)
     {
         DataLayer? dataLayer = UpdatingSectionData.GetLayer(sectionNode);
         if (dataLayer is null)
@@ -76,11 +76,14 @@ public abstract class LayerLightSectionStorage<TMap>
     }
 
     protected abstract int GetLightValue(long blockNode);
+    internal int GetLightValueForEngine(long blockNode) =>
+        GetLightValue(blockNode);
+
 
     protected DataLayer? GetQueuedSectionData(long sectionNode) =>
         _queuedSections.TryGetValue(sectionNode, out DataLayer? data) ? data : null;
 
-    protected int GetStoredLevel(long blockNode)
+    protected internal int GetStoredLevel(long blockNode)
     {
         long sectionNode = SectionPos.BlockToSection(blockNode);
         DataLayer dataLayer = GetDataLayer(sectionNode, updating: true)!;
@@ -90,7 +93,7 @@ public abstract class LayerLightSectionStorage<TMap>
             SectionPos.SectionRelative(BlockPos.GetZ(blockNode)));
     }
 
-    protected void SetStoredLevel(long blockNode, int level)
+    protected internal void SetStoredLevel(long blockNode, int level)
     {
         long sectionNode = SectionPos.BlockToSection(blockNode);
         DataLayer dataLayer;
@@ -135,10 +138,10 @@ public abstract class LayerLightSectionStorage<TMap>
             ? queued
             : new DataLayer();
 
-    protected bool HasInconsistencies() =>
+    protected internal bool HasInconsistencies() =>
         HasPendingInconsistencies;
 
-    protected void MarkNewInconsistencies()
+    protected internal void MarkNewInconsistencies()
     {
         if (!HasPendingInconsistencies)
             return;
@@ -199,7 +202,7 @@ public abstract class LayerLightSectionStorage<TMap>
     {
     }
 
-    protected void SetLightEnabled(long zeroNode, bool enable)
+    protected internal void SetLightEnabled(long zeroNode, bool enable)
     {
         if (enable)
             _columnsWithSources.Add(zeroNode);
@@ -207,10 +210,10 @@ public abstract class LayerLightSectionStorage<TMap>
             _columnsWithSources.Remove(zeroNode);
     }
 
-    protected bool LightOnInSection(long sectionNode) =>
+    protected internal bool LightOnInSection(long sectionNode) =>
         _columnsWithSources.Contains(SectionPos.GetZeroNode(sectionNode));
 
-    protected bool LightOnInColumn(long sectionZeroNode) =>
+    protected internal bool LightOnInColumn(long sectionZeroNode) =>
         _columnsWithSources.Contains(sectionZeroNode);
 
     public void RetainData(long zeroNode, bool retain)
@@ -221,7 +224,7 @@ public abstract class LayerLightSectionStorage<TMap>
             _columnsToRetainQueuedDataFor.Remove(zeroNode);
     }
 
-    protected void QueueSectionData(long sectionNode, DataLayer? data)
+    protected internal void QueueSectionData(long sectionNode, DataLayer? data)
     {
         if (data is not null)
         {
@@ -234,7 +237,7 @@ public abstract class LayerLightSectionStorage<TMap>
         }
     }
 
-    protected void UpdateSectionStatus(long sectionNode, bool sectionEmpty)
+    protected internal void UpdateSectionStatus(long sectionNode, bool sectionEmpty)
     {
         byte state = SectionStates.GetValueOrDefault(sectionNode);
         byte newState = SectionState.HasData(state, !sectionEmpty);
@@ -298,7 +301,7 @@ public abstract class LayerLightSectionStorage<TMap>
         HasPendingInconsistencies = true;
     }
 
-    protected void SwapSectionMap()
+    protected internal void SwapSectionMap()
     {
         if (ChangedSections.Count > 0)
         {
@@ -367,4 +370,14 @@ public abstract class LayerLightSectionStorage<TMap>
         LightOnly,
         LightAndData
     }
+ 
+    public static string Display(this SectionType sectionType) =>
+        sectionType switch
+        {
+            SectionType.Empty => "2",
+            SectionType.LightOnly => "1",
+            SectionType.LightAndData => "0",
+            _ => throw new ArgumentOutOfRangeException(nameof(sectionType))
+        };
+
 }
