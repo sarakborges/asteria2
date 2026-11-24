@@ -31,6 +31,7 @@ internal static class BuiltInDensityFunctionChecks
         CheckShiftFunctions();
         CheckBase3dNoiseFunctions();
         CheckOverworldClimateFunctions();
+        CheckOverworldTerrainDensityHelpers();
     }
 
     private static void CheckRegistryAndRegistrationOrder()
@@ -121,6 +122,86 @@ internal static class BuiltInDensityFunctionChecks
             "The y gradient must clamp samples outside the dimension-derived vertical bounds.");
     }
 
+
+    private static void CheckOverworldTerrainDensityHelpers()
+    {
+        DensityFunction offset = DensityFunctions.Constant(0.25f);
+        DensityFunction depth = BuiltInDensityFunctions.OffsetToDepth(offset);
+
+        Require(
+            depth is BinaryFunction
+            {
+                Operation: BinaryFunction.Type.ADD,
+                Left: GradientFunction
+                {
+                    Axis: var axis,
+                    Tiling: TilingMode.CLAMP_TO_EDGE,
+                    FromCoordinate: -64,
+                    ToCoordinate: 320,
+                    FromValue: 1.5f,
+                    ToValue: -1.5f
+                },
+                Right: ConstantFunction { Value: 0.25f }
+            } && ReferenceEquals(axis, Direction.Axis.Y),
+            "offset_to_depth must add the vanilla -64..320 Y gradient to the supplied offset.");
+
+        DensityFunction factor = DensityFunctions.Constant(2.0f);
+        DensityFunction depthWithJaggedness = DensityFunctions.Constant(3.0f);
+        DensityFunction gradient =
+            BuiltInDensityFunctions.NoiseGradientDensity(factor, depthWithJaggedness);
+
+        Require(
+            gradient is BinaryFunction
+            {
+                Operation: BinaryFunction.Type.MUL,
+                Right: ConstantFunction { Value: 4.0f },
+                Left: UnaryFunction
+                {
+                    Operation: UnaryFunction.Type.QUARTER_NEGATIVE,
+                    Input: BinaryFunction
+                    {
+                        Operation: BinaryFunction.Type.MUL,
+                        Left: ConstantFunction { Value: 3.0f },
+                        Right: ConstantFunction { Value: 2.0f }
+                    }
+                }
+            },
+            "noise_gradient_density must multiply depth by factor, apply quarter_negative, then multiply by four.");
+
+        bool offsetNullRejected = false;
+        try
+        {
+            BuiltInDensityFunctions.OffsetToDepth(null!);
+        }
+        catch (ArgumentNullException)
+        {
+            offsetNullRejected = true;
+        }
+
+        bool factorNullRejected = false;
+        try
+        {
+            BuiltInDensityFunctions.NoiseGradientDensity(null!, depthWithJaggedness);
+        }
+        catch (ArgumentNullException)
+        {
+            factorNullRejected = true;
+        }
+
+        bool depthNullRejected = false;
+        try
+        {
+            BuiltInDensityFunctions.NoiseGradientDensity(factor, null!);
+        }
+        catch (ArgumentNullException)
+        {
+            depthNullRejected = true;
+        }
+
+        Require(
+            offsetNullRejected && factorNullRejected && depthNullRejected,
+            "Overworld terrain density helpers must reject null density-function inputs.");
+    }
 
     private static void CheckShiftFunctions()
     {
