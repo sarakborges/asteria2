@@ -1280,3 +1280,5 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - A projeção inclui os membros suportados das tags `blocks_motion_no_leaves`, `dirt`, `grass_blocks`, `sand`, `terracotta`, `ice` e `ores`, além dos valores diretos; leaves e fall_damage_resetting permanecem vazias porque ainda não há membros correspondentes no registry local.
 - O harness confirma os membros incluídos e excluídos antes de exercer o ciclo de reload de tags. Os checks de worldgen não precisam mais depender de uma tag sintética contendo somente STONE.
 - Fonte: `mj41/mc26-data`, branch `mc-26.3`, `data/minecraft/tags/block/blocks_motion*.json`, `dirt.json`, `grass_blocks.json`, `sand.json`, `terracotta.json`, `ice.json`, `ores.json`, `copper_ores.json` e `iron_ores.json`.
+
+- Incremento adicional: os checks de NoiseBasedChunkGenerator deixaram de substituir as tags por uma lista sintética contendo somente STONE. O harness agora roda com o mesmo conjunto de tags inicializado pelo bootstrap; o teste de reload de tags restaura o conjunto built-in ao terminar.

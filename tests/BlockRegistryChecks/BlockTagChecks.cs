@@ -176,6 +176,7 @@ internal static class BlockTagChecks
             "Fall-damage-resetting clipping must use a full block shape for tagged blocks.");
 
         BuiltInRegistries.Block.PrepareTagReload(definitions).Apply();
+        BuiltInBlockTags.BindSupportedValues();
     }
 
     private static void Require(bool condition, string message)
