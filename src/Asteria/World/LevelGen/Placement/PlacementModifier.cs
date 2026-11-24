@@ -1,6 +1,7 @@
 using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Serialization;
+using Asteria.World.LevelGen;
 
 namespace Asteria.World.LevelGen.Placement;
 
