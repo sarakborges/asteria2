@@ -75,12 +75,12 @@ internal static class RandomStateChecks
     private static void CheckNoiseKeys()
     {
         Require(
-            Noises.TEMPERATURE.Location == ResourceLocation.Parse("asteria:temperature") &&
-            Noises.SHIFT.Location == ResourceLocation.Parse("asteria:offset") &&
-            Noises.TEMPERATURE_NETHER.Location == ResourceLocation.Parse("asteria:nether/temperature") &&
-            Noises.VEGETATION_NETHER.Location == ResourceLocation.Parse("asteria:nether/vegetation") &&
-            Noises.SWAMP.Location == ResourceLocation.Parse("asteria:surface_swamp"),
-            "Noises must expose the canonical 26.3 normal-noise keys in the Asteria worldgen registry.");
+            Noises.TEMPERATURE.Location == ResourceLocation.Parse("minecraft:temperature") &&
+            Noises.SHIFT.Location == ResourceLocation.Parse("minecraft:offset") &&
+            Noises.TEMPERATURE_NETHER.Location == ResourceLocation.Parse("minecraft:nether/temperature") &&
+            Noises.VEGETATION_NETHER.Location == ResourceLocation.Parse("minecraft:nether/vegetation") &&
+            Noises.SWAMP.Location == ResourceLocation.Parse("minecraft:surface_swamp"),
+            "Noises must expose the canonical Minecraft 26.3 normal-noise keys for the Asteria worldgen registry.");
 
         Require(
             Noises.TEMPERATURE.RegistryLocation == Registries.NOISE.Location &&
