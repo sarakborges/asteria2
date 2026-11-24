@@ -54,11 +54,9 @@ public sealed record CanyonWorldCarver(
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(random);
-        ArgumentNullException.ThrowIfNull(targetChunk);
-        ArgumentNullException.ThrowIfNull(sourceChunk);
         ArgumentNullException.ThrowIfNull(output);
 
-        int maxDistance = (GetRange() * 2 - 1) * 16;
+        int maxDistance = (((WorldCarver)this).GetRange() * 2 - 1) * 16;
         double x = sourceChunk.GetBlockX(random.NextInt(16));
         int y = Y.Sample(random, context);
         double z = sourceChunk.GetBlockZ(random.NextInt(16));
