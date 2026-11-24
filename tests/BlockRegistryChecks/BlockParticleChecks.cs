@@ -28,7 +28,7 @@ internal static class BlockParticleChecks
                     BuiltInRegistries.ParticleType.GetKey(type)?.ToString(),
                 "Block particle options must encode the registered particle discriminator.");
             Require(
-                ops.Get(encoded, "block_state").GetOrThrow().GetString() == "asteria:air",
+                ops.Get(encoded, "block_state").GetOrThrow().GetString() == "minecraft:air",
                 "The default block state must use its compact block identifier.");
 
             BlockParticleOption decoded =
@@ -45,7 +45,7 @@ internal static class BlockParticleChecks
         JsonElement fullState = ops.CreateMap(new[]
         {
             new KeyValuePair<JsonElement, JsonElement>(
-                ops.CreateString("id"), ops.CreateString("asteria:air"))
+                ops.CreateString("id"), ops.CreateString("minecraft:air"))
         });
         JsonElement input = CreateParticleMap(ops, "asteria:block", fullState);
 
@@ -58,7 +58,7 @@ internal static class BlockParticleChecks
 
         JsonElement reencoded = ParticleTypes.CODEC.EncodeStart(ops, decoded).GetOrThrow();
         Require(
-            ops.Get(reencoded, "block_state").GetOrThrow().GetString() == "asteria:air",
+            ops.Get(reencoded, "block_state").GetOrThrow().GetString() == "minecraft:air",
             "A full default block-state object must encode back to the compact block identifier.");
     }
 
@@ -75,7 +75,7 @@ internal static class BlockParticleChecks
             "Block particle codec must reject a missing block_state field.");
 
         JsonElement unknownState = CreateParticleMap(
-            ops, "asteria:block_marker", ops.CreateString("asteria:not_a_registered_block"));
+            ops, "asteria:block_marker", ops.CreateString("minecraft:not_a_registered_block"));
         Require(
             ParticleTypes.CODEC.Parse(ops, unknownState).IsError,
             "Block particle codec must reject an unknown block identifier.");
