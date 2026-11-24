@@ -351,6 +351,7 @@ internal static class Program
         BlockLightEngineChecks.Run();
         SkyLightEngineChecks.Run();
         LevelLightEngineChecks.Run();
+        ChunkLightingTasksChecks.Run();
         TickChecks.Run();
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState, FluidChecks.SourceFluidState);
         PalettedContainerChecks.Run();
