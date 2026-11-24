@@ -1373,3 +1373,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O mapa de fila usa `ConcurrentDictionary` como adaptação thread-safe do mapa sincronizado Java; as estruturas de estados e conjuntos de atualização permanecem confinadas ao ciclo do motor, como no fluxo de referência.
 - Testes verificam codificação/limites do byte de estado, copy-on-write, isolamento do snapshot, endereçamento packed dos blocos, conjunto de seções afetadas, transições de seção e vizinhança, processamento de inconsistências, dados enfileirados/retidos, flags por coluna e publicação de notificações.
 - As classes especializadas SKY/BLOCK e o algoritmo de propagação ainda serão portados em incrementos seguintes; a camada de armazenamento não faz cálculo de luz por conta própria.
+
+
+## Incremento — BlockLightSectionStorage 26.3 (24/11/2026)
+
+- Portada a especialização de armazenamento de luz emitida por blocos: consulta somente o snapshot publicado, retorna zero quando a seção não possui camada de dados e usa coordenadas locais X/Y/Z para ler o nibble.
+- O mapa concreto clona o dicionário na publicação/cópia, compartilhando inicialmente as referências das `DataLayer`, como no mapa de armazenamento da referência.
+- Testes cobrem seção ausente, isolamento entre dados em atualização e dados publicados, leitura após publicação, posições negativas e limites locais 0/15.
+- Fonte consultada: `BlockLightSectionStorage.java` de Minecraft Java 26.3. O cálculo/propagação de luz e a ligação com o motor continuam pendentes.
