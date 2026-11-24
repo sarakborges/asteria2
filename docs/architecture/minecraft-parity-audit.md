@@ -1428,8 +1428,8 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 ## Incremento — tarefas de lifecycle de iluminação por chunk 26.3 (24/11/2026)
 
 - Portada a sequência síncrona equivalente de `ChunkStatusTasks.initializeLight` e `ChunkStatusTasks.light` em `ChunkLightingTasks`.
-- `InitializeLight` exige status `FEATURES), atualiza `ChunkSkyLightSources`, conecta o `LevelLightEngine` ao `ProtoChunk`, registra as seções não vazias e executa o lote PRE antes de aplicar `SetLightEnabled` e `RetainData(false)) no passo POST.
-- `LightChunk` exige `INITIALIZE_LIGHT), marca inicialmente `LightCorrect=false`, propaga as fontes quando a iluminação ainda não é válida, executa o lote de atualização e só então marca `LightCorrect=true`. A promoção do status persistido para `LIGHT` continua pertencendo ao scheduler, não à tarefa.
+- `InitializeLight` exige status `FEATURES`, atualiza `ChunkSkyLightSources`, conecta o `LevelLightEngine` ao `ProtoChunk`, registra as seções não vazias e executa o lote PRE antes de aplicar `SetLightEnabled` e `RetainData(false)` no passo POST.
+- `LightChunk` exige `INITIALIZE_LIGHT`, marca inicialmente `LightCorrect=false`, propaga as fontes quando a iluminação ainda não é válida, executa o lote de atualização e só então marca `LightCorrect=true`. A promoção do status persistido para `LIGHT` continua pertencendo ao scheduler, não à tarefa.
 - O caller deve satisfazer a dependência de raio 1 definida em `ChunkPyramid.GenerationPyramid`: o anel 3×3 precisa ter chegado a `INITIALIZE_LIGHT` antes da iluminação do centro. As tarefas não geram vizinhos como efeito colateral.
 - A adaptação para o mundo local single-player mantém a ordem PRE → um lote `RunLightUpdates` → POST do `ThreadedLevelLightEngine.runUpdate`, sem introduzir executor/threading que o runtime ainda não possui.
 - Testes usam nove `ProtoChunk` reais e cobrem pré-condições de status, registro de seções, coluna inicialmente desabilitada, atualizações de blocos após `INITIALIZE_LIGHT`, propagação BLOCK/SKY e a separação entre `LightCorrect` e a promoção de status.
