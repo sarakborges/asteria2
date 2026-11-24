@@ -81,8 +81,30 @@ public sealed class NoiseBasedChunkGenerator
     }
 
     /// <summary>
-    /// Runs density filling and the configured material-rule pass with one shared NoiseChunk.
-    /// The biome lookup is supplied by the world/biome pipeline; no placeholder biome source is created.
+    /// Runs density filling, multi-noise biome selection and material rules using one shared NoiseChunk.
+    /// </summary>
+    public void BuildTerrain(
+        ProtoChunk chunk,
+        MultiNoiseBiomeSource biomeSource,
+        IReadOnlySet<Holder<Biome>>? possibleBiomes = null,
+        Beardifier? beardifier = null,
+        IChunkBlender? blender = null)
+    {
+        ArgumentNullException.ThrowIfNull(biomeSource);
+
+        BuildTerrainCore(
+            chunk,
+            densitySamplers => biomeSource.CreateResolver(
+                _settings.NoiseRouter.CreateClimateSampler(densitySamplers)),
+            possibleBiomes ?? biomeSource.PossibleBiomes,
+            beardifier,
+            blender);
+    }
+
+    /// <summary>
+    /// Runs the terrain pipeline with a caller-supplied biome lookup. This overload is useful
+    /// for fixed/custom biome sources; the callback is adapted to the same quart-resolution
+    /// resolver used by the chunk biome palette and material conditions.
     /// </summary>
     public void BuildTerrain(
         ProtoChunk chunk,
@@ -91,8 +113,29 @@ public sealed class NoiseBasedChunkGenerator
         Beardifier? beardifier = null,
         IChunkBlender? blender = null)
     {
-        ArgumentNullException.ThrowIfNull(chunk);
         ArgumentNullException.ThrowIfNull(biomeGetter);
+
+        BuildTerrainCore(
+            chunk,
+            _ => new DelegateBiomeResolver((quartX, quartY, quartZ) =>
+                biomeGetter(new BlockPos(
+                    QuartPos.ToBlock(quartX),
+                    QuartPos.ToBlock(quartY),
+                    QuartPos.ToBlock(quartZ)))),
+            possibleBiomes,
+            beardifier,
+            blender);
+    }
+
+    private void BuildTerrainCore(
+        ProtoChunk chunk,
+        Func<DensitySamplerSet, BiomeResolver> biomeResolverFactory,
+        IReadOnlySet<Holder<Biome>>? possibleBiomes,
+        Beardifier? beardifier,
+        IChunkBlender? blender)
+    {
+        ArgumentNullException.ThrowIfNull(chunk);
+        ArgumentNullException.ThrowIfNull(biomeResolverFactory);
 
         NoiseSettings noiseSettings = _settings.NoiseSettings.ClampToHeightAccessor(chunk);
         if (noiseSettings.Height <= 0)
@@ -109,6 +152,9 @@ public sealed class NoiseBasedChunkGenerator
             blender ?? IChunkBlender.Empty,
             volume);
 
+        BiomeResolver biomeResolver = biomeResolverFactory(noiseChunk.CachingSamplers);
+        chunk.FillBiomesFromNoise(biomeResolver);
+
         FillFromNoise(chunk, noiseChunk, volume);
         Heightmap.PrimeHeightmaps(chunk, ChunkStatus.TERRAIN.GetHeightmapsAfter().ToHashSet());
 
@@ -119,8 +165,18 @@ public sealed class NoiseBasedChunkGenerator
             chunk,
             noiseChunk,
             _settings.MaterialRule.Value,
-            biomeGetter,
+            position => biomeResolver.GetNoiseBiome(
+                QuartPos.FromBlock(position.GetX()),
+                QuartPos.FromBlock(position.GetY()),
+                QuartPos.FromBlock(position.GetZ())),
             possibleBiomes);
+    }
+
+    private sealed class DelegateBiomeResolver(
+        Func<int, int, int, Holder<Biome>> resolver) : BiomeResolver
+    {
+        public Holder<Biome> GetNoiseBiome(int quartX, int quartY, int quartZ) =>
+            resolver(quartX, quartY, quartZ);
     }
 
     private static DensityVolume CreateVolume(ProtoChunk chunk, NoiseSettings noiseSettings)

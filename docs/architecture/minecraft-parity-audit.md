@@ -1103,3 +1103,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - RandomState passa a possuir uma única instância de MaterialSystem vinculada às configurações de geração. NoiseBasedChunkGenerator.BuildTerrain compartilha o mesmo NoiseChunk entre o preenchimento de densidade/aquifer e a passada genérica de materiais; FillFromNoise permanece disponível sem aplicar materiais.
 - Testes adicionados para aplicação de BlockRule na superfície e para AbovePreliminarySurfaceCondition, incluindo o caminho de pré-amostragem do density sampler.
 - Delimitação: este incremento não implementa ainda as extensões específicas de Eroded Badlands e Frozen Ocean, nem geração/aplicação das clay bands; os registries atuais ainda não contêm os blocos e biomas exigidos por esses ramos vanilla. Carvers e integração desta etapa com o carregamento real de biomas também permanecem pendentes.
+
+
+## Incremento — fonte multi-noise e preenchimento das paletas de bioma (24/11/2026)
+
+- Portada a seleção genérica MultiNoiseBiomeSource sobre Climate.ParameterList: resolução usa o resultado do R-tree climático 7D e a fonte expõe o conjunto distinto de biomas possíveis.
+- A fonte cria um BiomeResolver por chunk a partir do Climate.Sampler ligado aos seis samplers do NoiseRouter, preservando amostragem em coordenadas quart.
+- NoiseBasedChunkGenerator.BuildTerrain agora preenche os containers 4×4×4 de todas as seções antes da geração de densidade e da passada de superfície. As regras dependentes de bioma consultam o mesmo resolver e o mesmo sampler climático usados para preencher as paletas.
+- O overload de biomeGetter permanece para fontes fixas/customizadas e é adaptado à interface quart-resolution; a nova sobrecarga MultiNoiseBiomeSource usa PossibleBiomes para as otimizações de condições.
+- Testes cobrem seleção entre Plains/Desert por seis eixos climáticos, conjunto de biomas possíveis e preenchimento de todas as células quart de todas as seções de um chunk.
+- Delimitação: o registry local ainda contém somente Plains e Desert; o dataset completo OverworldBiomeBuilder, demais definições de bioma e presets/codec da BiomeSource continuam pendentes. Não há seleção climática integrada a dimensões ou carregamento de mundo nesta etapa.

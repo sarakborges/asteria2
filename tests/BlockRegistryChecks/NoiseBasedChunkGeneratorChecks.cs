@@ -3,6 +3,7 @@ using Asteria.Content.Biomes;
 using Asteria.Content.Chunks;
 using Asteria.Content.Registries;
 using Asteria.Core;
+using Asteria.Serialization;
 using Asteria.World;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.DensityFunctions;
@@ -22,6 +23,7 @@ internal static class NoiseBasedChunkGeneratorChecks
             CheckNegativeDensityMaterializesLavaWaterAndAir();
             CheckChunkCoordinateAndHeightmapMaterialization();
             CheckMaterialRuleSurfacePass();
+            CheckMultiNoiseBiomeSourceFillsChunkPalettes();
             CheckPreliminarySurfaceCondition();
         }
         finally
@@ -187,15 +189,61 @@ internal static class NoiseBasedChunkGeneratorChecks
             "Blocks below the preliminary-surface threshold must retain their original material.");
     }
 
+    private static void CheckMultiNoiseBiomeSourceFillsChunkPalettes()
+    {
+        Climate.ParameterPoint plainsPoint = Climate.Parameters(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+        Climate.ParameterPoint desertPoint = Climate.Parameters(1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f);
+        var parameters = new Climate.ParameterList<Holder<Biome>>(
+        [
+            new Pair<Climate.ParameterPoint, Holder<Biome>>(plainsPoint, Biomes.PLAINS.BuiltInRegistryHolder),
+            new Pair<Climate.ParameterPoint, Holder<Biome>>(desertPoint, Biomes.DESERT.BuiltInRegistryHolder)
+        ]);
+        var biomeSource = MultiNoiseBiomeSource.CreateFromList(parameters);
+
+        Require(
+            ReferenceEquals(
+                biomeSource.GetNoiseBiome(Climate.Target(0, 0, 0, 0, 0, 0)),
+                Biomes.PLAINS.BuiltInRegistryHolder) &&
+            ReferenceEquals(
+                biomeSource.GetNoiseBiome(Climate.Target(1, 1, 1, 1, 1, 1)),
+                Biomes.DESERT.BuiltInRegistryHolder),
+            "MultiNoiseBiomeSource must resolve the nearest seven-dimensional climate parameter entry.");
+        Require(
+            biomeSource.PossibleBiomes.Count == 2,
+            "MultiNoiseBiomeSource must expose its distinct possible biome holders.");
+
+        NoiseGeneratorSettings settings = CreateSettings(
+            new ConstantFunction(0.25f),
+            seaLevel: 0,
+            climateTemperature: 1.0f);
+        var generator = new NoiseBasedChunkGenerator(settings, CreateRandomState(settings));
+        ProtoChunk chunk = CreateChunk(new ChunkPos(0, 0), -16, 48);
+
+        generator.BuildTerrain(chunk, biomeSource);
+
+        foreach (ChunkSection section in chunk.GetSections())
+        {
+            for (int x = 0; x < ChunkSection.BiomeContainerWidth; x++)
+            for (int y = 0; y < ChunkSection.BiomeContainerWidth; y++)
+            for (int z = 0; z < ChunkSection.BiomeContainerWidth; z++)
+            {
+                Require(
+                    ReferenceEquals(section.GetNoiseBiome(x, y, z), Biomes.DESERT.BuiltInRegistryHolder),
+                    "BuildTerrain must fill every quart biome cell from the chunk-bound climate sampler.");
+            }
+        }
+    }
+
     private static ProtoChunk CreateChunk(ChunkPos position, int minY, int height) =>
         new(position, LevelHeightAccessor.Create(minY, height), PalettedContainerFactory.CreateBuiltIn());
 
     private static NoiseGeneratorSettings CreateSettings(
         DensityFunction finalDensity,
         int seaLevel,
-        MaterialRule? materialRule = null)
+        MaterialRule? materialRule = null,
+        float climateTemperature = 0.0f)
     {
-        DensityFunction climate = new ConstantFunction(0.0f);
+        DensityFunction climate = new ConstantFunction(climateTemperature);
         var router = new NoiseRouter(
             climate, climate, climate, climate,
             climate, climate, climate, finalDensity);
