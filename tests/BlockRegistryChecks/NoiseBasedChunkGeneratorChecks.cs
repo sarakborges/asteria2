@@ -298,6 +298,25 @@ internal static class NoiseBasedChunkGeneratorChecks
             world.LoadedChunkCount == 1,
             "World block and fluid queries must delegate to the already cached chunk.");
 
+        BlockState previousState = world.GetBlockState(localPosition);
+        BlockState replacementState = ReferenceEquals(previousState, Blocks.DIRT.DefaultState)
+            ? Blocks.STONE.DefaultState
+            : Blocks.DIRT.DefaultState;
+        generated.TryMarkSaved();
+        BlockState returnedState = world.SetBlockState(localPosition, replacementState);
+        Require(
+            ReferenceEquals(returnedState, previousState) &&
+            ReferenceEquals(world.GetBlockState(localPosition), replacementState) &&
+            generated.IsUnsaved(),
+            "World block writes must return the previous state, update the cached ProtoChunk and mark changed data unsaved.");
+
+        Require(
+            ReferenceEquals(
+                world.SetBlockState(new BlockPos(0, 32, 0), Blocks.STONE.DefaultState),
+                Blocks.VOID_AIR.DefaultState) &&
+            world.LoadedChunkCount == 1,
+            "World block writes outside build height must return VOID_AIR without generating or mutating chunks.");
+
         Holder<Biome> worldBiome = world.GetBiome(localPosition);
         Holder<Biome> chunkBiome = generated.GetNoiseBiome(
             QuartPos.FromBlock(localPosition.GetX()),

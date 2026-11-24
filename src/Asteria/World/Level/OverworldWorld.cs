@@ -42,6 +42,24 @@ public sealed class OverworldWorld : BlockGetter
         return GetChunk(ChunkPos.Containing(position)).GetBlockState(position);
     }
 
+    public BlockState SetBlockState(
+        BlockPos position,
+        BlockState state,
+        int flags = 3)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        ArgumentNullException.ThrowIfNull(state);
+        if (_heightAccessor.IsOutsideBuildHeight(position.GetY()))
+            return Blocks.VOID_AIR.DefaultState;
+
+        ProtoChunk chunk = GetChunk(ChunkPos.Containing(position));
+        BlockState previous = chunk.SetBlockState(position, state, flags);
+        if (!ReferenceEquals(previous, state))
+            chunk.MarkUnsaved();
+
+        return previous;
+    }
+
     public FluidState GetFluidState(BlockPos position)
     {
         ArgumentNullException.ThrowIfNull(position);

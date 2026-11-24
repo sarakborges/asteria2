@@ -1260,3 +1260,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionado GetLoadedChunks, que retorna uma cópia read-only ordenada por coordenadas X/Z sob o lock do cache; consumidores percorrem o snapshot depois que o lock é liberado.
 - Snapshots anteriores permanecem estáveis após novas cargas e unloads, sem expor o dicionário privado do mundo.
 - Testes cobrem conteúdo inicial, ordenação determinística, estabilidade do snapshot e atualização de novas consultas após unload.
+
+## Incremento — escrita de blocos em OverworldWorld (24/11/2026)
+
+- OverworldWorld expõe SetBlockState(BlockPos, BlockState, flags=3), encaminhando flags e mutação à ProtoChunk da posição correspondente.
+- A chamada devolve o estado anterior; se a identidade do estado mudar, a chunk é marcada como não salva para sinalizar dados mutados.
+- Escritas fora da altura construída devolvem VOID_AIR sem sintetizar chunk. O teste confirma retorno do estado anterior, leitura do novo estado, dirty flag e short-circuit vertical.
+- Delimitação: ProtoChunk ainda não despacha atualizações de vizinhos ou eventos de bloco; esse comportamento depende de LevelChunk/Level e do scheduler de ticks.
