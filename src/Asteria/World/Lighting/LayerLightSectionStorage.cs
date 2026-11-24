@@ -77,6 +77,9 @@ public abstract class LayerLightSectionStorage<TMap>
 
     protected abstract int GetLightValue(long blockNode);
 
+    protected DataLayer? GetQueuedSectionData(long sectionNode) =>
+        _queuedSections.TryGetValue(sectionNode, out DataLayer? data) ? data : null;
+
     protected int GetStoredLevel(long blockNode)
     {
         long sectionNode = SectionPos.BlockToSection(blockNode);

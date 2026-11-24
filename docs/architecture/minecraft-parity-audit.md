@@ -1381,3 +1381,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O mapa concreto clona o dicionário na publicação/cópia, compartilhando inicialmente as referências das `DataLayer`, como no mapa de armazenamento da referência.
 - Testes cobrem seção ausente, isolamento entre dados em atualização e dados publicados, leitura após publicação, posições negativas e limites locais 0/15.
 - Fonte consultada: `BlockLightSectionStorage.java` de Minecraft Java 26.3. O cálculo/propagação de luz e a ligação com o motor continuam pendentes.
+
+
+## Incremento — SkyLightSectionStorage 26.3 (24/11/2026)
+
+- Portada a especialização SKY: rastreamento de `currentLowestY` global e seção superior por coluna, leitura de luz em snapshots visíveis/atualização, retorno 15/0 acima das camadas armazenadas conforme `lightOnInSection`, e projeção vertical a partir do primeiro `DataLayer` disponível.
+- A criação de dados preserva os dados enfileirados; abaixo da seção superior replica a primeira camada de 128 bytes em todas as 16 fatias Y, mantendo o caminho lazy para camadas homogêneas. Fora dessa região inicia com 15 quando a coluna tem fonte de céu ativa, ou 0 caso contrário.
+- `onNodeAdded`/`onNodeRemoved` atualizam a seção superior por coluna, inclusive varrendo para baixo até encontrar a próxima camada ainda armazenada.
+- Testes cobrem defaults de luz publicada/em atualização, flags por coluna, top/bottom section, projeção de luz, repetição de fatia, armazenamento homogêneo lazy, dados enfileirados e remoção da seção superior.
+- Fonte consultada: `SkyLightSectionStorage.java` de Minecraft Java 26.3. A propagação de céu propriamente dita ainda depende de `SkyLightEngine` e do motor comum de atualização.

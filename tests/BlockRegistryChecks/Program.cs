@@ -346,6 +346,7 @@ internal static class Program
         LightChunkContractChecks.Run();
         LayerLightSectionStorageChecks.Run();
         BlockLightSectionStorageChecks.Run();
+        SkyLightSectionStorageChecks.Run();
         TickChecks.Run();
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState, FluidChecks.SourceFluidState);
         PalettedContainerChecks.Run();
