@@ -148,6 +148,8 @@ public sealed class NoiseBasedChunkGenerator
             chunk,
             densitySamplers => biomeSource.CreateResolver(
                 _settings.NoiseRouter.CreateClimateSampler(densitySamplers)),
+            () => biomeSource.CreateResolver(
+                _randomState.CreateClimateSampler(SamplerContext.EmptyUncached)),
             possibleBiomes ?? biomeSource.PossibleBiomes,
             beardifier,
             blender);
@@ -174,6 +176,11 @@ public sealed class NoiseBasedChunkGenerator
                     QuartPos.ToBlock(quartX),
                     QuartPos.ToBlock(quartY),
                     QuartPos.ToBlock(quartZ)))),
+            () => new DelegateBiomeResolver((quartX, quartY, quartZ) =>
+                biomeGetter(new BlockPos(
+                    QuartPos.ToBlock(quartX),
+                    QuartPos.ToBlock(quartY),
+                    QuartPos.ToBlock(quartZ)))),
             possibleBiomes,
             beardifier,
             blender);
@@ -182,12 +189,14 @@ public sealed class NoiseBasedChunkGenerator
     private void BuildTerrainCore(
         ProtoChunk chunk,
         Func<DensitySamplerSet, BiomeResolver> biomeResolverFactory,
+        Func<BiomeResolver> carverBiomeResolverFactory,
         IReadOnlySet<Holder<Biome>>? possibleBiomes,
         Beardifier? beardifier,
         IChunkBlender? blender)
     {
         ArgumentNullException.ThrowIfNull(chunk);
         ArgumentNullException.ThrowIfNull(biomeResolverFactory);
+        ArgumentNullException.ThrowIfNull(carverBiomeResolverFactory);
 
         NoiseSettings noiseSettings = _settings.NoiseSettings.ClampToHeightAccessor(chunk);
         if (noiseSettings.Height <= 0)
@@ -228,7 +237,19 @@ public sealed class NoiseBasedChunkGenerator
             biomeGetter,
             possibleBiomes);
 
-        ApplyCarvers(chunk, noiseChunk, generationContext, biomeResolver, biomeGetter, materialSystem);
+        BiomeResolver carverBiomeResolver = carverBiomeResolverFactory();
+        Func<BlockPos, Holder<Biome>> carverBiomeGetter = position =>
+            carverBiomeResolver.GetNoiseBiome(
+                QuartPos.FromBlock(position.GetX()),
+                QuartPos.FromBlock(position.GetY()),
+                QuartPos.FromBlock(position.GetZ()));
+        ApplyCarvers(
+            chunk,
+            noiseChunk,
+            generationContext,
+            carverBiomeResolver,
+            carverBiomeGetter,
+            materialSystem);
         chunk.SetPersistedStatus(ChunkStatus.TERRAIN);
     }
 
