@@ -5,7 +5,7 @@ using Asteria.World.LevelGen;
 
 namespace Asteria.World.LevelGen.Placement;
 
-/// <summary>Moves a placement position to the first available block above a heightmap.</summary>
+/// <summary>Moves a placement position to the Y value returned by the selected heightmap.</summary>
 public sealed class HeightmapPlacement : PlacementModifier
 {
     public Heightmap.Types Heightmap { get; }
