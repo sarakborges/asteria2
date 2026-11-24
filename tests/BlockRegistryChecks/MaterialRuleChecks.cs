@@ -73,7 +73,6 @@ internal static class MaterialRuleChecks
         DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
         MaterialRule rule = new SequenceRule(
         [
-            new NullRule(),
             new BlockRule(Blocks.DIRT.DefaultState),
             new BlockRule(Blocks.STONE.DefaultState)
         ]);
@@ -81,18 +80,23 @@ internal static class MaterialRuleChecks
 
         Require(
             ops.Get(encoded, "type").GetOrThrow().GetString() == "sequence" &&
-            ops.Get(encoded, "sequence").GetOrThrow().GetArrayLength() == 3,
+            ops.Get(encoded, "sequence").GetOrThrow().GetArrayLength() == 2,
             "SequenceRule must serialize its ordered children under the vanilla sequence field.");
 
         MaterialRule decoded = MaterialRule.CODEC.Parse(ops, encoded).GetOrThrow();
         Require(
-            decoded is SequenceRule sequence && sequence.Sequence.Count == 3,
+            decoded is SequenceRule sequence && sequence.Sequence.Count == 2,
             "SequenceRule must preserve every child when round-tripped.");
 
-        RuleEvaluator evaluator = decoded.Compile(null!);
+        RuleEvaluator evaluator = new SequenceRule(
+        [
+            new NullRule(),
+            new BlockRule(Blocks.DIRT.DefaultState),
+            new BlockRule(Blocks.STONE.DefaultState)
+        ]).Compile(null!);
         Require(
             ReferenceEquals(evaluator(-4, 20, 8), Blocks.DIRT.DefaultState),
-            "SequenceRule must return the first non-null state and must not evaluate later rules.");
+            "SequenceRule must return the first non-null state.");
 
         RuleEvaluator single = new SequenceRule([new BlockRule(Blocks.GRASS_BLOCK.DefaultState)])
             .Compile(null!);

@@ -8,12 +8,11 @@ namespace Asteria.World.LevelGen.Materials.Rules;
 public sealed record SequenceRule(IReadOnlyList<MaterialRule> Sequence) : MaterialRule
 {
     public static MapCodec<SequenceRule> CODEC { get; } =
-        RecordCodecBuilder.MapCodec<SequenceRule>(instance =>
-            instance.Group(
-                    MaterialRule.CODEC.ListOf()
-                        .FieldOf("sequence")
-                        .ForGetter<SequenceRule>(static rule => rule.Sequence))
-                .Apply(instance, static sequence => new SequenceRule(sequence)));
+        MaterialRule.CODEC.ListOf()
+            .FieldOf("sequence")
+            .XMap<SequenceRule>(
+                static sequence => new SequenceRule(sequence),
+                static rule => rule.Sequence);
 
     public static MapCodec<MaterialRule> TYPE_CODEC { get; } =
         CODEC.XMap<MaterialRule>(

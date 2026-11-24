@@ -8,11 +8,10 @@ namespace Asteria.World.LevelGen.Materials.Rules;
 public sealed record BlockRule(BlockState ResultState) : MaterialRule
 {
     public static MapCodec<BlockRule> CODEC { get; } =
-        RecordCodecBuilder.MapCodec<BlockRule>(instance =>
-            instance.Group(
-                    BlockState.CODEC.FieldOf("result_state")
-                        .ForGetter<BlockRule>(static rule => rule.ResultState))
-                .Apply(instance, static state => new BlockRule(state)));
+        BlockState.CODEC.FieldOf("result_state")
+            .XMap<BlockRule>(
+                static state => new BlockRule(state),
+                static rule => rule.ResultState);
 
     public static MapCodec<MaterialRule> TYPE_CODEC { get; } =
         CODEC.XMap<MaterialRule>(
