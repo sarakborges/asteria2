@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.Json;
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
@@ -60,7 +59,7 @@ internal static class BuiltInMaterialRules
 
     private static List<Definition> ReadDefinitions(Registry<MaterialRule> registry)
     {
-        Assembly assembly = typeof(BuiltInMaterialRules).Assembly;
+        System.Reflection.Assembly assembly = typeof(BuiltInMaterialRules).Assembly;
         var definitions = new List<Definition>(37);
         var locations = new HashSet<ResourceLocation>();
 

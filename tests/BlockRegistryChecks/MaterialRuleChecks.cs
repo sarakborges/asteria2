@@ -81,15 +81,15 @@ internal static class MaterialRuleChecks
                 Sequence:
                 [
                     MaterialRule.HolderHolder bedrock,
-                    MaterialRule.HolderHolder copper,
-                    MaterialRule.HolderHolder iron,
+                    MaterialRule.HolderHolder copperReference,
+                    MaterialRule.HolderHolder ironReference,
                     ConditionRule,
                     MaterialRule.HolderHolder underground
                 ]
             } &&
             ReferenceEquals(bedrock.Rule, registry.GetHolder(Key("bedrock_floor"))) &&
-            ReferenceEquals(copper.Rule, registry.GetHolder(Key("overworld/copper_ore_vein"))) &&
-            ReferenceEquals(iron.Rule, registry.GetHolder(Key("overworld/iron_ore_vein"))) &&
+            ReferenceEquals(copperReference.Rule, registry.GetHolder(Key("overworld/copper_ore_vein"))) &&
+            ReferenceEquals(ironReference.Rule, registry.GetHolder(Key("overworld/iron_ore_vein"))) &&
             ReferenceEquals(underground.Rule, registry.GetHolder(Key("overworld/underground"))),
             "The root Overworld sequence must retain its ordered references to bedrock, both ore veins, surface and underground rules.");
     }
