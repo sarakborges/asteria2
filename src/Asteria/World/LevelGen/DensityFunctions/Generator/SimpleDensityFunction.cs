@@ -1,4 +1,5 @@
 using Asteria.Util;
+using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.DensityFunctions;
 
 namespace Asteria.World.LevelGen.DensityFunctions.Generator;
@@ -28,17 +29,17 @@ public sealed class SimpleDensityFunction : DensityFunction
         this switch
         {
             var function when ReferenceEquals(function, BLEND_ALPHA) =>
-                new ContextBoundSampler(
+                new ContextBoundSampler<DensitySampler>(
                     DensityFunctionContextKeys.BLEND_ALPHA,
                     new ConstantFunction.Sampler(1.0f)),
             var function when ReferenceEquals(function, BLEND_OFFSET) =>
-                new ContextBoundSampler(
+                new ContextBoundSampler<DensitySampler>(
                     DensityFunctionContextKeys.BLEND_OFFSET,
                     new ConstantFunction.Sampler(0.0f)),
             var function when ReferenceEquals(function, BEARDIFIER) =>
-                new ContextBoundSampler(
-                    DensityFunctionContextKeys.BEARDIFIER,
-                    new ConstantFunction.Sampler(0.0f)),
+                new ContextBoundSampler<Beardifier>(
+                    Beardifier.CONTEXT_KEY,
+                    Beardifier.EMPTY),
             _ => throw new InvalidOperationException($"Unknown simple density function: {Id}")
         };
 

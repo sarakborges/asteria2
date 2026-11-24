@@ -1,4 +1,5 @@
 using Asteria.Util.Context;
+using Asteria.World.LevelGen;
 
 namespace Asteria.World.LevelGen.DensityFunctions;
 
@@ -13,8 +14,8 @@ public static class DensityFunctionContextKeys
     public static ContextKey<DensitySampler> BLEND_OFFSET { get; } =
         ContextKey<DensitySampler>.Vanilla("blend_offset");
 
-    public static ContextKey<DensitySampler> BEARDIFIER { get; } =
-        ContextKey<DensitySampler>.Vanilla("beardifier");
+    public static ContextKey<Beardifier> BEARDIFIER { get; } =
+        Beardifier.CONTEXT_KEY;
 
     public static ContextKey<IChunkBlender> BLENDER { get; } =
         ContextKey<IChunkBlender>.Vanilla("blender");

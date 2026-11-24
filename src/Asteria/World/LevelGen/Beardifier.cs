@@ -3,6 +3,7 @@ using Asteria.Util;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Structure;
 using Asteria.World.LevelGen.Structure.Pools;
+using Asteria.Util.Context;
 
 namespace Asteria.World.LevelGen;
 
@@ -13,6 +14,9 @@ namespace Asteria.World.LevelGen;
 /// </summary>
 public sealed class Beardifier : DensitySampler
 {
+    public static ContextKey<Beardifier> CONTEXT_KEY { get; } =
+        ContextKey<Beardifier>.Vanilla("beardifier");
+
     public static Interval RANGE { get; } = Interval.INFINITE;
 
     public const int BEARD_KERNEL_RADIUS = 12;

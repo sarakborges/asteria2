@@ -968,3 +968,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Integrado o ownership de pools em `RandomState`: criação com idade máxima 20, reutilização LIFO, limite de 16 pools retidos, sincronização e garbage collection de pools vazios.
 - Adicionadas verificações de paridade para alocação/reutilização, limites best-fit, idade, clear e lifecycle de pools em RandomState.
 - Esta etapa fecha a dependência de buffers exigida pelo construtor de `NoiseChunk` em 26.3. `NoiseChunk` ainda depende do port integrado de configurações de geração, aquifer e blending; nenhum substituto simplificado foi criado.
+
+
+## Incremento — identidade tipada do contexto do Beardifier (24/11/2026)
+
+- Portada a chave singleton `Beardifier.CONTEXT_KEY` com o tipo concreto `Beardifier`, conforme Minecraft Java 26.3.
+- `DensityFunctionContextKeys.BEARDIFIER` agora referencia a mesma instância da chave, eliminando duas chaves de identidade distintas com o mesmo nome.
+- Generalizado `ContextBoundSampler<TSampler>` para preservar o tipo real do valor de contexto. Os samplers de blend continuam usando `DensitySampler`; o sampler de beardifier usa `Beardifier` e `Beardifier.EMPTY` como fallback vanilla.
+- Testes verificam identidade da chave, fallback vazio e amostragem do beardifier efetivamente injetado.
+- Esta é uma dependência direta da construção de `NoiseChunk`; não altera o algoritmo geométrico de Beardifier nem cria estrutura/manager de estruturas.

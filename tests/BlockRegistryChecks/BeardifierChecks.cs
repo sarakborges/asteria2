@@ -5,17 +5,50 @@ using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Structure;
 using Asteria.World.LevelGen.Structure.Pools;
+using Asteria.World.LevelGen.DensityFunctions.Generator;
 
 internal static class BeardifierChecks
 {
     public static void Run()
     {
         CheckTerrainAdjustmentCodec();
+        CheckContextBinding();
         CheckMathPrimitives();
         CheckPointSampling();
         CheckJunctionSampling();
         CheckKernelBounds();
         CheckVolumeSampling();
+    }
+
+    private static void CheckContextBinding()
+    {
+        Require(
+            ReferenceEquals(Beardifier.CONTEXT_KEY, DensityFunctionContextKeys.BEARDIFIER),
+            "Density-function and Beardifier context access must share the exact vanilla ContextKey instance.");
+
+        DensitySampler sampler = SimpleDensityFunction.BEARDIFIER.CompileSampler(null!);
+        float fallback = sampler.SampleValue(
+            SamplerContext.EmptyUncached,
+            0, 0, 0);
+        Require(
+            fallback == 0.0F,
+            "The beardifier density function must fall back to Beardifier.EMPTY when the context field is absent.");
+
+        var pieceBox = new BoundingBox(0, 0, 0, 0, 0, 0);
+        var beardifier = CreateSingleRigid(
+            TerrainAdjustment.BURY,
+            pieceBox,
+            pieceBox);
+        ContextMap userFields = ContextMap.CreateBuilder()
+            .WithParameter(Beardifier.CONTEXT_KEY, beardifier)
+            .Build();
+        SamplerContext context = SamplerContext.CreateBuilder()
+            .SetUserFields(userFields)
+            .Build();
+
+        Require(
+            sampler.SampleValue(context, 0, 0, 0) == 1.0F,
+            "The beardifier density function must sample the exact Beardifier instance injected into the context.");
     }
 
     private static void CheckTerrainAdjustmentCodec()
