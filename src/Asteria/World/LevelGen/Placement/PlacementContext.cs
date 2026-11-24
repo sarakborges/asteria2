@@ -26,8 +26,8 @@ public sealed class PlacementContext
         Generator = generator ?? throw new ArgumentNullException(nameof(generator));
         TopFeature = topFeature;
         GenerationContext = new WorldGenerationContext(
-            Level.GetMinY(),
-            Level.GetHeight(),
+            Math.Max(Level.GetMinY(), Generator.GetMinY()),
+            Math.Min(Level.GetHeight(), Generator.GetGenDepth()),
             Generator.GetSeaLevel());
     }
 
