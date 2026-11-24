@@ -1347,3 +1347,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - A construção a partir de `byte[]` mantém a referência ao array recebido, valida o comprimento exato e a cópia da representação materializada duplica os bytes, preservando a semântica da referência.
 - Testes de paridade cobrem defaults lazy, preenchimento, coordenadas e ordem dos nibbles, mascaramento do valor, alias/cópia de array, formatação e entrada inválida.
 - Isso porta apenas a camada de dados. Propagação SKY/BLOCK, armazenamento por seção, fila de atualizações e ligação às chunks continuam pendentes.
+
+
+## Incremento — DataLayerStorageMap de iluminação 26.3 (24/11/2026)
+
+- Portada a estrutura genérica de mapa de seções de luz com cache de duas entradas e cópia polimórfica.
+- Preservados os detalhes de 26.3: consulta somente armazena entradas encontradas; `SetLayer` e `RemoveLayer` não invalidam cache por conta própria; `CopyDataLayer` clona o `DataLayer`, substitui o valor e limpa o cache; `DisableCache` desativa as consultas em cache sem reconstruir o mapa.
+- Testes cobrem lookup/cache de duas entradas, eviction, retorno de valores ausentes, semântica de invalidação, cópia de layer, cópia independente do mapa e cache desativado.
+- Próxima dependência: `LayerLightSectionStorage` e as especializações SKY/BLOCK.

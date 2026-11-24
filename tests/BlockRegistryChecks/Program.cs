@@ -342,6 +342,7 @@ internal static class Program
         BlockBehaviorChecks.Run();
         ProtoChunkChecks.Run();
         DataLayerChecks.Run();
+        DataLayerStorageMapChecks.Run();
         TickChecks.Run();
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState, FluidChecks.SourceFluidState);
         PalettedContainerChecks.Run();
