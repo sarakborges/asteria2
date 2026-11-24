@@ -1,13 +1,36 @@
 using System.Text.Json;
 using Asteria.Core;
 using Asteria.Serialization;
+using Asteria.World.LevelGen;
 
 internal static class DirectionChecks
 {
+    private sealed class SequenceRandomSource : LegacyRandomSource
+    {
+        private readonly int[] _selections;
+        private int _index;
+        public List<int> Bounds { get; } = new();
+
+        public SequenceRandomSource(params int[] selections) : base(0L) =>
+            _selections = selections;
+
+        public override int NextInt(int bound)
+        {
+            Bounds.Add(bound);
+            if (_index >= _selections.Length)
+                throw new InvalidOperationException("No configured random selection remains.");
+            int selection = _selections[_index++];
+            if (selection < 0 || selection >= bound)
+                throw new InvalidOperationException("Selection outside bound.");
+            return selection;
+        }
+    }
+
     public static void Run()
     {
         CheckDirectionCodecs();
         CheckAxisCodecs();
+        CheckRandomSelectionAndShuffle();
         CheckMathPrimitives();
         CheckCanonicalOrderAndIds();
         CheckAxesAndPlanes();
@@ -81,6 +104,56 @@ internal static class DirectionChecks
         Require(Direction.Axis.CODEC.Parse(normalOps, normalOps.CreateString("w")).IsError &&
                 Direction.Axis.CODEC.Parse(compressedOps, compressedOps.CreateInt(-1)).IsError,
             "Direction.Axis.CODEC must reject unknown names and IDs.");
+    }
+
+
+    private static void CheckRandomSelectionAndShuffle()
+    {
+        var directionRandom = new SequenceRandomSource(5);
+        Require(ReferenceEquals(Direction.GetRandom(directionRandom), Direction.EAST) &&
+                directionRandom.Bounds.SequenceEqual(new[] { 6 }),
+            "Direction.getRandom must draw once from the six declaration-order values.");
+
+        var axisRandom = new SequenceRandomSource(2);
+        Require(ReferenceEquals(Direction.Axis.GetRandom(axisRandom), Direction.Axis.Z) &&
+                axisRandom.Bounds.SequenceEqual(new[] { 3 }),
+            "Direction.Axis.getRandom must draw once from X/Y/Z.");
+
+        var planeDirectionRandom = new SequenceRandomSource(3);
+        Require(ReferenceEquals(Direction.Plane.HORIZONTAL.GetRandomDirection(planeDirectionRandom), Direction.WEST) &&
+                planeDirectionRandom.Bounds.SequenceEqual(new[] { 4 }),
+            "Horizontal Plane.getRandomDirection must use north/east/south/west order.");
+
+        var planeAxisRandom = new SequenceRandomSource(1);
+        Require(ReferenceEquals(Direction.Plane.HORIZONTAL.GetRandomAxis(planeAxisRandom), Direction.Axis.Z) &&
+                planeAxisRandom.Bounds.SequenceEqual(new[] { 2 }),
+            "Horizontal Plane.getRandomAxis must use X/Z order.");
+
+        var allShuffleRandom = new SequenceRandomSource(0, 0, 0, 0, 0);
+        Require(Direction.AllShuffled(allShuffleRandom).SequenceEqual(new[]
+            {
+                Direction.SOUTH, Direction.NORTH, Direction.UP,
+                Direction.WEST, Direction.EAST, Direction.DOWN
+            }) &&
+            allShuffleRandom.Bounds.SequenceEqual(new[] { 6, 5, 4, 3, 2 }) &&
+            Direction.GetValues().SequenceEqual(new[]
+            {
+                Direction.DOWN, Direction.UP, Direction.NORTH,
+                Direction.SOUTH, Direction.WEST, Direction.EAST
+            }),
+            "Direction.allShuffled must use descending Fisher-Yates and preserve the canonical values.");
+
+        var planeShuffleRandom = new SequenceRandomSource(0, 0, 0);
+        Require(Direction.Plane.HORIZONTAL.ShuffledCopy(planeShuffleRandom).SequenceEqual(new[]
+            {
+                Direction.EAST, Direction.SOUTH, Direction.WEST, Direction.NORTH
+            }) &&
+            planeShuffleRandom.Bounds.SequenceEqual(new[] { 4, 3, 2 }) &&
+            Direction.Plane.HORIZONTAL.GetDirections().SequenceEqual(new[]
+            {
+                Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST
+            }),
+            "Plane.shuffledCopy must shuffle an independent copy with the vanilla draw order.");
     }
 
     private static void CheckMathPrimitives()

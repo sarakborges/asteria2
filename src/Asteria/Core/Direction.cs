@@ -1,5 +1,6 @@
 using System.Collections;
 using Asteria.Serialization;
+using Asteria.World.LevelGen;
 
 namespace Asteria.Core;
 
@@ -35,6 +36,12 @@ public sealed class Direction
         public bool IsVertical() => ReferenceEquals(this, Y);
 
         public bool IsHorizontal() => ReferenceEquals(this, X) || ReferenceEquals(this, Z);
+
+        public static Axis GetRandom(IRandomSource random)
+        {
+            ArgumentNullException.ThrowIfNull(random);
+            return VALUES[random.NextInt(VALUES.Length)];
+        }
 
         public Direction GetPositive() =>
             ReferenceEquals(this, X) ? EAST :
@@ -115,6 +122,26 @@ public sealed class Direction
         public bool Test(Direction? input) =>
             input is not null && ReferenceEquals(input.GetAxis().GetPlane(), this);
 
+        public Direction GetRandomDirection(IRandomSource random)
+        {
+            ArgumentNullException.ThrowIfNull(random);
+            return _faces[random.NextInt(_faces.Length)];
+        }
+
+        public Axis GetRandomAxis(IRandomSource random)
+        {
+            ArgumentNullException.ThrowIfNull(random);
+            return _axes[random.NextInt(_axes.Length)];
+        }
+
+        public List<Direction> ShuffledCopy(IRandomSource random)
+        {
+            ArgumentNullException.ThrowIfNull(random);
+            List<Direction> copy = new(_faces);
+            Shuffle(copy, random);
+            return copy;
+        }
+
         public IEnumerable<Direction> Stream() => _faces;
 
         public IEnumerator<Direction> GetEnumerator() => ((IEnumerable<Direction>)_faces).GetEnumerator();
@@ -192,6 +219,20 @@ public sealed class Direction
         _axis = axis;
         _normal = normal;
         _normalVec3 = Vec3.AtLowerCornerOf(normal);
+    }
+
+    public static Direction GetRandom(IRandomSource random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+        return VALUES[random.NextInt(VALUES.Length)];
+    }
+
+    public static List<Direction> AllShuffled(IRandomSource random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+        List<Direction> copy = new(VALUES);
+        Shuffle(copy, random);
+        return copy;
     }
 
     public static Direction[] GetValues() => (Direction[])VALUES.Clone();
@@ -407,6 +448,15 @@ public sealed class Direction
         return Math.Abs(movement.X) < Math.Abs(movement.Z)
             ? YZX_AXIS_ORDER
             : YXZ_AXIS_ORDER;
+    }
+
+    private static void Shuffle<T>(IList<T> values, IRandomSource random)
+    {
+        for (int size = values.Count; size > 1; size--)
+        {
+            int swapTo = random.NextInt(size);
+            (values[size - 1], values[swapTo]) = (values[swapTo], values[size - 1]);
+        }
     }
 
     private static int JavaAbs(int value) =>
