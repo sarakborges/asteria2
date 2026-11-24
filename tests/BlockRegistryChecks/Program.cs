@@ -219,6 +219,7 @@ internal static class Program
         ConfiguredCarverChecks.Run();
         BiomeGenerationSettingsChecks.Run();
         FeatureSorterChecks.Run();
+        PlacementModifierChecks.Run();
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
