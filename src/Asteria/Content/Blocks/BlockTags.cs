@@ -9,6 +9,9 @@ namespace Asteria.Content.Blocks;
 /// </summary>
 public static class BlockTags
 {
+    public static TagKey<Block> Uncarvable { get; } =
+        Create("uncarvable");
+
     public static TagKey<Block> BlocksMotionInHeightmap { get; } =
         Create("blocks_motion_in_heightmap");
 
