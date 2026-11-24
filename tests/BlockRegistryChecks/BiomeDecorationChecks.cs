@@ -1,5 +1,6 @@
 using Asteria.Content.Chunks;
 using Asteria.Content.Chunks.Status;
+using Asteria.Content.Biomes;
 using Asteria.World;
 using Asteria.World.Level;
 using Asteria.World.LevelGen;
