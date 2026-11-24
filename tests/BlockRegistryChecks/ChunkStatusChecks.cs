@@ -25,8 +25,8 @@ internal static class ChunkStatusChecks
             "The mob-free chunk lifecycle must expose exactly nine statuses.");
         Require(BuiltInRegistries.ChunkStatus.Count == expectedNames.Length,
             "All nine mob-free chunk statuses must be registered in the built-in registry.");
-        Require(BuiltInRegistries.Root.Count == 14,
-            "The built-in root registry must include the normal-noise, density-function, density-function-type and chunk-status registries.");
+        Require(BuiltInRegistries.Root.Count == 16,
+            "The built-in root registry must include normal-noise, density-function, density-function-type, material-rule, material-rule-type and chunk-status registries.");
 
         for (int index = 0; index < expectedNames.Length; index++)
         {
