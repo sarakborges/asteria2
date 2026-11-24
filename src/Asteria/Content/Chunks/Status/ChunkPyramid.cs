@@ -3,7 +3,8 @@ using Asteria.Core;
 namespace Asteria.Content.Chunks.Status;
 
 /// <summary>
-/// Immutable loading or generation dependency pyramid for the Minecraft Java 26.3 chunk stages.
+/// Immutable loading or generation dependency pyramid for Asteria's mob-free chunk stages.
+ /// The vanilla SPAWN stage is omitted because it performs mob spawning.
 /// Task delegates are intentionally not attached until the local world-generation tasks are ported.
 /// </summary>
 public sealed class ChunkPyramid
@@ -34,9 +35,6 @@ public sealed class ChunkPyramid
             .Step(
                 ChunkStatus.LIGHT,
                 static builder => builder.AddRequirement(ChunkStatus.INITIALIZE_LIGHT, 1))
-            .Step(
-                ChunkStatus.SPAWN,
-                static builder => builder.AddRequirement(ChunkStatus.BIOMES, 1))
             .Step(ChunkStatus.FULL, static builder => builder)
             .Build();
 
@@ -52,7 +50,6 @@ public sealed class ChunkPyramid
             .Step(
                 ChunkStatus.LIGHT,
                 static builder => builder.AddRequirement(ChunkStatus.INITIALIZE_LIGHT, 1))
-            .Step(ChunkStatus.SPAWN, static builder => builder)
             .Step(ChunkStatus.FULL, static builder => builder)
             .Build();
 

@@ -56,7 +56,7 @@ internal static class ChunkPyramidChecks
         ChunkStep full = pyramid.GetStepTo(ChunkStatus.FULL);
         ChunkStatus[] expectedFullDependencies =
         {
-            ChunkStatus.SPAWN,
+            ChunkStatus.LIGHT,
             ChunkStatus.INITIALIZE_LIGHT,
             ChunkStatus.TERRAIN,
             ChunkStatus.BIOMES,
@@ -83,7 +83,6 @@ internal static class ChunkPyramidChecks
             full.GetAccumulatedRadiusOf(ChunkStatus.FEATURES) == 1 &&
             full.GetAccumulatedRadiusOf(ChunkStatus.INITIALIZE_LIGHT) == 1 &&
             full.GetAccumulatedRadiusOf(ChunkStatus.LIGHT) == 0 &&
-            full.GetAccumulatedRadiusOf(ChunkStatus.SPAWN) == 0 &&
             full.GetAccumulatedRadiusOf(ChunkStatus.FULL) == 0,
             "Generation FULL accumulated radii must match the vanilla 26.3 dependency pyramid, including the center-status shortcut.");
 
@@ -98,18 +97,18 @@ internal static class ChunkPyramidChecks
         ChunkPyramid pyramid = ChunkPyramid.LoadingPyramid;
         ChunkStatus[] expectedFullDependencies =
         {
-            ChunkStatus.SPAWN,
+            ChunkStatus.LIGHT,
             ChunkStatus.INITIALIZE_LIGHT
         };
 
         Require(
             pyramid.Steps.Count == ChunkStatus.GetStatusList().Count,
-            "The loading pyramid must contain all ten chunk statuses.");
+            "The mob-free loading pyramid must contain all nine chunk statuses.");
 
         Require(
             pyramid.GetStepTo(ChunkStatus.FULL).AccumulatedDependencies.AsList()
                 .SequenceEqual(expectedFullDependencies),
-            "The loading FULL step must require SPAWN at the center and INITIALIZE_LIGHT at distance one.");
+            "The loading FULL step must require LIGHT at the center and INITIALIZE_LIGHT at distance one after omitting mob spawning.");
 
         Require(
             ReferenceEquals(

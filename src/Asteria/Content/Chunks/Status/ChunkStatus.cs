@@ -6,7 +6,7 @@ using Asteria.World;
 namespace Asteria.Content.Chunks.Status;
 
 /// <summary>
-/// A registered stage in the Minecraft Java 26.3 chunk lifecycle.
+/// A registered stage in Asteria's mob-free chunk lifecycle, based on Minecraft Java 26.3.
 /// The stage is metadata only; generation work and dependency radii belong to ChunkStep/ChunkPyramid.
 /// </summary>
 public class ChunkStatus
@@ -43,10 +43,9 @@ public class ChunkStatus
         Register("initialize_light", FEATURES, FINAL_HEIGHTMAPS, ChunkType.PROTOCHUNK);
     public static readonly ChunkStatus LIGHT =
         Register("light", INITIALIZE_LIGHT, FINAL_HEIGHTMAPS, ChunkType.PROTOCHUNK);
-    public static readonly ChunkStatus SPAWN =
-        Register("spawn", LIGHT, FINAL_HEIGHTMAPS, ChunkType.PROTOCHUNK);
+    // The vanilla SPAWN status performs mob spawning and is intentionally excluded.
     public static readonly ChunkStatus FULL =
-        Register("full", SPAWN, FINAL_HEIGHTMAPS, ChunkType.LEVELCHUNK);
+        Register("full", LIGHT, FINAL_HEIGHTMAPS, ChunkType.LEVELCHUNK);
 
     public static Codec<ChunkStatus> CODEC { get; } =
         BuiltInRegistries.ChunkStatus.ByNameCodec();

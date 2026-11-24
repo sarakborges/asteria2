@@ -831,7 +831,8 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 
 - Portados o builder de dependências diretas/acumuladas de `ChunkStep` e as pirâmides de geração e carregamento da referência Java 26.3.
 - O cálculo preserva a posição do pai na janela, o máximo de status requerido em cada raio, os raios de escrita de bloco de `TERRAIN` (0) e `FEATURES` (1), e a regra de raio zero para o próprio status.
-- A janela acumulada de `GENERATION_PYRAMID/FULL` é verificada contra os 12 anéis vanilla; `LOADING_PYRAMID/FULL` exige `SPAWN` no centro e `INITIALIZE_LIGHT` no anel adjacente.
+- A janela acumulada de `GENERATION_PYRAMID/FULL` continua com 12 anéis; a geometria de dependências e a margem de segurança são preservadas.
+- Divergência deliberada de escopo: `ChunkStatus.SPAWN` e os respectivos passos das pirâmides foram removidos porque essa fase do vanilla executa spawn de mobs. Em Asteria, `FULL` sucede diretamente `LIGHT`; as tarefas de spawn de mobs não serão portadas sem solicitação explícita.
 - Portada também a margem de segurança usada para limitar coordenadas máximas de chunk.
 - Delimitação: estes tipos contêm os metadados de agendamento. `ChunkStep.apply`, delegates de tarefas, profiling, `WorldGenContext`, `GenerationChunkHolder` e o scheduler ainda dependem de gerador/mundo local e não foram substituídos por callbacks ou no-ops artificiais.
 

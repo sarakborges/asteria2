@@ -18,14 +18,13 @@ internal static class ChunkStatusChecks
             "asteria:features",
             "asteria:initialize_light",
             "asteria:light",
-            "asteria:spawn",
             "asteria:full"
         };
 
         Require(statuses.Count == expectedNames.Length,
-            "Minecraft 26.3 must expose exactly ten chunk statuses.");
+            "The mob-free chunk lifecycle must expose exactly nine statuses.");
         Require(BuiltInRegistries.ChunkStatus.Count == expectedNames.Length,
-            "All ten chunk statuses must be registered in the built-in registry.");
+            "All nine mob-free chunk statuses must be registered in the built-in registry.");
         Require(BuiltInRegistries.Root.Count == 14,
             "The built-in root registry must include the normal-noise, density-function, density-function-type and chunk-status registries.");
 
@@ -48,8 +47,8 @@ internal static class ChunkStatusChecks
                 "Each chunk status must point to the immediately preceding status.");
         }
 
-        Require(statuses.Take(9).All(status => status.GetChunkType() == ChunkType.PROTOCHUNK),
-            "The first nine chunk statuses must produce ProtoChunks.");
+        Require(statuses.Take(8).All(status => status.GetChunkType() == ChunkType.PROTOCHUNK),
+            "The first eight mob-free chunk statuses must produce ProtoChunks.");
         Require(ChunkStatus.FULL.GetChunkType() == ChunkType.LEVELCHUNK,
             "Only the full status must produce a LevelChunk.");
 
@@ -87,7 +86,8 @@ internal static class ChunkStatusChecks
         Require(ReferenceEquals(ChunkStatus.Max(ChunkStatus.TERRAIN, ChunkStatus.LIGHT), ChunkStatus.LIGHT) &&
             ReferenceEquals(ChunkStatus.Max(ChunkStatus.LIGHT, ChunkStatus.LIGHT), ChunkStatus.LIGHT),
             "ChunkStatus.max must return the later status and prefer the second argument on ties.");
-        Require(ChunkStatus.ByName("asteria:not_registered") is null &&
+        Require(ChunkStatus.ByName("asteria:spawn") is null &&
+            ChunkStatus.ByName("asteria:not_registered") is null &&
             ChunkStatus.ByName("not a resource location") is null,
             "Unknown or malformed chunk-status names must resolve to null.");
         Require(!ReferenceEquals(statuses, ChunkStatus.GetStatusList()),
