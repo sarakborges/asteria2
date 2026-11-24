@@ -15,7 +15,7 @@ namespace Asteria.World.Level;
 /// generated from it. Chunk generation is synchronous and serialized so the
 /// shared RandomState is never evaluated concurrently.
 /// </summary>
-public sealed class OverworldWorld : BlockGetter, LightChunkGetter
+public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLevel
 {
     private readonly object _sync = new();
     private readonly NoiseBasedChunkGenerator _generator;
@@ -40,6 +40,21 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter
             return Blocks.VOID_AIR.DefaultState;
 
         return GetChunk(ChunkPos.Containing(position)).GetBlockState(position);
+    }
+
+    public bool EnsureCanWrite(BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        return !_heightAccessor.IsOutsideBuildHeight(position.GetY());
+    }
+
+    public bool SetBlock(BlockPos position, BlockState state, int updateFlags = 3)
+    {
+        if (!EnsureCanWrite(position))
+            return false;
+
+        _ = SetBlockState(position, state, updateFlags);
+        return true;
     }
 
     public BlockState SetBlockState(
