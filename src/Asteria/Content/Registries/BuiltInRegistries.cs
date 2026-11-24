@@ -27,6 +27,8 @@ using Asteria.World.LevelGen.Materials.Conditions;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.Features;
 using Asteria.World.LevelGen.Placement;
+using BlockStateProviderValue = Asteria.World.LevelGen.Features.StateProviders.BlockStateProvider;
+using Asteria.World.LevelGen.Features.StateProviders;
 
 namespace Asteria.Content.Registries;
 
@@ -84,6 +86,16 @@ public static class BuiltInRegistries
         RegisterSimple<WorldCarver>(
             Registries.CARVER.Location,
             static () => Carvers.RegisterAll());
+
+    public static Registry<MapCodec<BlockStateProviderValue>> BlockStateProviderType { get; } =
+        RegisterSimple<MapCodec<BlockStateProviderValue>>(
+            Registries.BLOCK_STATE_PROVIDER_TYPE.Location,
+            static () => BlockStateProviderCodecBootstrap.RegisterAll(BlockStateProviderType));
+
+    public static Registry<BlockStateProviderValue> BlockStateProvider { get; } =
+        RegisterSimple<BlockStateProviderValue>(
+            Registries.BLOCK_STATE_PROVIDER.Location,
+            static () => { });
 
     public static Registry<MapCodec<Feature>> FeatureType { get; } =
         RegisterSimple<MapCodec<Feature>>(
