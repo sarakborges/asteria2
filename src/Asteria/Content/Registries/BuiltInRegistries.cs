@@ -64,6 +64,11 @@ public static class BuiltInRegistries
             ResourceLocation.FromNamespaceAndPath("minecraft", "plains"),
             static () => BuiltInBiomes.RegisterAll());
 
+    public static Registry<MapCodec<FloatProvider>> FloatProviderType { get; } =
+        RegisterSimple<MapCodec<FloatProvider>>(
+            Registries.FLOAT_PROVIDER_TYPE.Location,
+            static () => FloatProviderCodecBootstrap.RegisterAll(FloatProviderType));
+
     public static Registry<NormalNoise> Noise { get; } =
         RegisterSimple<NormalNoise>(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/noise"),
