@@ -1,6 +1,7 @@
 using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.World.Level;
+using Asteria.World.LevelGen;
 using Asteria.Serialization;
 
 namespace Asteria.World.LevelGen.Features;
