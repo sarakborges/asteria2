@@ -1364,3 +1364,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `OverworldWorld` implementa `LightChunkGetter`; a consulta retorna apenas chunks já presentes no cache e nunca aciona geração como efeito colateral. `GetLevel` expõe o próprio mundo como `BlockGetter`; a notificação permanece no método default sem efeito, conforme o contrato da interface.
 - Testes cobrem enumeração vazia, identidade do armazenamento skylight, lookup/miss por coordenada, level associado e ordem dos canais.
 - Ainda não há engines SKY/BLOCK nem processamento de propagação; estes contratos são a superfície de integração necessária para as próximas classes.
+
+
+## Incremento — LayerLightSectionStorage 26.3 (24/11/2026)
+
+- Portada a máquina de estados de armazenamento por seção: mapa de dados em atualização e snapshot publicado, cópia sob escrita, vizinhança 3×3×3, contagem de até 26 seções vizinhas, dados recebidos antes da inicialização, remoção adiada e retenção de dados por coluna.
+- `SwapSectionMap` publica um mapa independente sem cache e encaminha as notificações de seções afetadas para `LightChunkGetter` usando o canal `LightLayer` correto.
+- O mapa de fila usa `ConcurrentDictionary` como adaptação thread-safe do mapa sincronizado Java; as estruturas de estados e conjuntos de atualização permanecem confinadas ao ciclo do motor, como no fluxo de referência.
+- Testes verificam codificação/limites do byte de estado, copy-on-write, isolamento do snapshot, endereçamento packed dos blocos, conjunto de seções afetadas, transições de seção e vizinhança, processamento de inconsistências, dados enfileirados/retidos, flags por coluna e publicação de notificações.
+- As classes especializadas SKY/BLOCK e o algoritmo de propagação ainda serão portados em incrementos seguintes; a camada de armazenamento não faz cálculo de luz por conta própria.
