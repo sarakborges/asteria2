@@ -280,13 +280,34 @@ internal static class NoiseBasedChunkGeneratorChecks
             ReferenceEquals(cached, generated),
             "TryGetChunk must return the cached chunk without regenerating it.");
 
-        ChunkPos neighbor = new(1, 0);
-        ProtoChunk adjacent = world.GetChunk(neighbor);
+        BlockPos localPosition = new(3, -1, 4);
         Require(
-            !ReferenceEquals(adjacent, generated) &&
+            ReferenceEquals(
+                world.GetBlockState(localPosition),
+                generated.GetBlockState(localPosition)) &&
+            ReferenceEquals(
+                world.GetFluidState(localPosition),
+                generated.GetFluidState(localPosition)) &&
+            world.LoadedChunkCount == 1,
+            "World block and fluid queries must delegate to the already cached chunk.");
+
+        ChunkPos neighbor = new(1, 0);
+        BlockPos neighborPosition = new(neighbor.GetMinBlockX() + 3, -1, 4);
+        BlockState neighborState = world.GetBlockState(neighborPosition);
+        Require(
+            world.TryGetChunk(neighbor, out ProtoChunk? adjacent) &&
+            adjacent is not null &&
             adjacent.GetPos() == neighbor &&
+            ReferenceEquals(neighborState, adjacent.GetBlockState(neighborPosition)) &&
             world.LoadedChunkCount == 2,
-            "Distinct chunk positions must occupy distinct cache entries.");
+            "A block query in another chunk must generate and cache only that target chunk.");
+
+        BlockPos aboveWorld = new(0, 32, 0);
+        Require(
+            ReferenceEquals(world.GetBlockState(aboveWorld), Blocks.VOID_AIR.DefaultState) &&
+            ReferenceEquals(world.GetFluidState(aboveWorld), Fluids.EMPTY.DefaultFluidState) &&
+            world.LoadedChunkCount == 2,
+            "Queries outside the world's vertical bounds must return void air/empty fluid without loading another chunk.");
 
         Require(
             world.UnloadChunk(position) &&

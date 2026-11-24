@@ -1,6 +1,9 @@
+using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
 using Asteria.Content.Chunks.Status;
+using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
+using Asteria.Core;
 using Asteria.World;
 using Asteria.World.LevelGen;
 
@@ -11,7 +14,7 @@ namespace Asteria.World.Level;
 /// generated from it. Chunk generation is synchronous and serialized so the
 /// shared RandomState is never evaluated concurrently.
 /// </summary>
-public sealed class OverworldWorld
+public sealed class OverworldWorld : BlockGetter
 {
     private readonly object _sync = new();
     private readonly NoiseBasedChunkGenerator _generator;
@@ -24,6 +27,28 @@ public sealed class OverworldWorld
     public int MinY => _heightAccessor.GetMinY();
 
     public int Height => _heightAccessor.GetHeight();
+
+    public int GetMinY() => _heightAccessor.GetMinY();
+
+    public int GetHeight() => _heightAccessor.GetHeight();
+
+    public BlockState GetBlockState(BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        if (IsOutsideBuildHeight(position.GetY()))
+            return Blocks.VOID_AIR.DefaultState;
+
+        return GetChunk(ChunkPos.Containing(position)).GetBlockState(position);
+    }
+
+    public FluidState GetFluidState(BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        if (IsOutsideBuildHeight(position.GetY()))
+            return Fluids.EMPTY.DefaultFluidState;
+
+        return GetChunk(ChunkPos.Containing(position)).GetFluidState(position);
+    }
 
     public int LoadedChunkCount
     {

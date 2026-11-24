@@ -1235,3 +1235,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O construtor inicializa registries e usa automaticamente os limites Overworld -64/384 quando não é fornecido um `LevelHeightAccessor`. O overload de altura é mantido para harnesses e futuros contextos de dimensão.
 - Testes cobrem cache inicialmente vazio, geração paralela idempotente por posição, status/bioma após geração, isolamento de posições distintas, unload e rejeição de coordenadas inválidas.
 - Delimitação: este serviço retém apenas `ProtoChunk` até `TERRAIN`; não há `LevelChunk`, scheduler de `ChunkPyramid`, generation features/carvers/light, save/load nem integração Godot/rendering. O generation lock é deliberadamente síncrono para proteger o `RandomState` compartilhado; paralelismo por chunk depende de separar/validar o estado de amostragem.
+
+## Incremento — consultas de bloco e fluido em OverworldWorld (24/11/2026)
+
+- OverworldWorld agora implementa BlockGetter, fornecendo GetMinY/GetHeight e consultas GetBlockState/GetFluidState por BlockPos.
+- Uma consulta dentro dos limites verticais resolve ChunkPos.Containing(position) e utiliza GetChunk, gerando sob demanda ou reutilizando a entrada do cache.
+- Fora da altura construída, GetBlockState devolve VOID_AIR e GetFluidState devolve Fluids.EMPTY sem criar chunks.
+- Testes verificam delegação para chunk em cache, geração por consulta na coordenada vizinha e short-circuit fora do build height.
+- Delimitação: o mundo ainda não cobre block entities, ticks globais, lighting updates, colisão/raycast integrado nem LevelChunk; consultas de bloco/fluido geram chunks até TERRAIN.
