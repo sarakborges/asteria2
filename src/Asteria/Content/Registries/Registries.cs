@@ -18,6 +18,10 @@ public static class Registries
         RegistryKey<Biome>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "biome"));
 
+    public static RegistryKey<Registry<WorldCarver>> CARVER { get; } =
+        RegistryKey<WorldCarver>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/carver"));
+
     public static RegistryKey<Registry<DensityFunction>> DENSITY_FUNCTION { get; } =
         RegistryKey<DensityFunction>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/density_function"));
