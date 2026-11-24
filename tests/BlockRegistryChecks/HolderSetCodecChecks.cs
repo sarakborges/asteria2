@@ -91,9 +91,7 @@ internal static class HolderSetCodecChecks
         Require(
             ReferenceEquals(
                 codec.Parse(ops, ops.CreateString("asteria:first")).GetOrThrow()[0],
-                registry.GetValue(ResourceLocation.Parse("asteria:first")) is TestEntry value
-                    ? registry.GetHolder(value)
-                    : null),
+                registry.GetHolder(ResourceLocation.Parse("asteria:first"))),
             "A compact direct holder reference must resolve to its registered holder.");
     }
 
