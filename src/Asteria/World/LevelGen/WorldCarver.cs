@@ -1,6 +1,7 @@
 using Asteria.Content.Chunks;
 using Asteria.Core;
 using Asteria.Serialization;
+using Asteria.World;
 
 namespace Asteria.World.LevelGen;
 
