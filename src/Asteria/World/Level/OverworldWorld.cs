@@ -155,6 +155,22 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
 
     public BlockGetter GetLevel() => this;
 
+    /// <summary>
+    /// Creates the stage-scoped region for an already assembled dependency window.
+    /// The scheduler owns chunk readiness; this level supplies the matching uncached
+    /// biome resolver and world seed for the generation step.
+    /// </summary>
+    public WorldGenRegion CreateWorldGenRegion(
+        ChunkStep generatingStep,
+        ChunkAccess center,
+        IEnumerable<ChunkAccess> availableChunks) =>
+        new(
+            this,
+            generatingStep,
+            center,
+            availableChunks,
+            _generator.CreateUncachedBiomeResolver());
+
     public ProtoChunk GetChunk(ChunkPos position)
     {
         EnsureValidPosition(position);
