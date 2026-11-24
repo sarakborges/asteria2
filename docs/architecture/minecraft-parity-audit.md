@@ -1542,3 +1542,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Ainda não há algoritmos concretos de feature registrados, placed features configuradas nos biomas, placement modifiers suficientes para as distribuições Overworld completas nem execução da etapa `FEATURES` dentro do pipeline de chunk. Este incremento fornece o esqueleto de dados, ordenação e execução do placement; não conclui a decoração do mundo.
 - Os testes estão registrados no harness, mas continuam sem execução local: o ambiente não disponibiliza .NET SDK/CLI. O último status combinado consultado não trouxe checks, portanto não há validação de CI confirmada.
 - Referência: `BiomeGenerationSettings`, `FeatureSorter`, `PlacedFeature`, `FeaturePlacer`, `PlacementFilter`, `RepeatingPlacement`, `InSquarePlacement`, `BiomeFilter`, `RarityFilter` e `CountPlacement` de Minecraft Java 26.3.
+
+## Incremento — modificadores de altura e offset 26.3
+
+- Adicionados `HeightRangePlacement`, `HeightmapPlacement` e `OffsetPlacement`, elevando o registry de modificadores de placement para sete tipos.
+- `HeightRangePlacement` usa o codec contextual de `HeightProvider`, aceita a forma abreviada `VerticalAnchor` e amostra contra os limites de geração calculados pelo `PlacementContext`.
+- `HeightmapPlacement` usa `Heightmap.Types.CODEC`, consulta o maior Y ocupado pelo heightmap selecionado e só emite a posição quando esse Y é estritamente maior que `minY`.
+- `OffsetPlacement` porta os campos 26.3 `x`, `y`, `z`, cada um limitado a -16…16, e consome os providers nessa ordem. Os helpers horizontal, vertical, triangular, por direção e acima preservam as distribuições e defaults vanilla.
+- Adicionados testes para dispatch dos sete IDs Asteria, shorthand de HeightProvider, codec de Heightmap.Types, limite dos offsets, resolução de altura contextual e ordem RNG X/Y/Z.
+- A etapa `FEATURES` continua sem execução no gerador: faltam algoritmos concretos de feature, dados de placed features por bioma, vários modificadores e o pass de decoração com seeds por step/índice e seleção das features por biomas no entorno. Nenhum recurso genérico foi introduzido como substituto.
+- Os testes continuam registrados, porém não executados localmente por ausência do .NET SDK/CLI; não há resultado de CI confirmado.
+- Referência: `HeightRangePlacement`, `HeightmapPlacement`, `OffsetPlacement`, `HeightProvider`, `Heightmap.Types` de Minecraft Java 26.3.
