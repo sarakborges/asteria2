@@ -123,6 +123,9 @@ public static class DensityFunctions
     public static DensityFunction Beardifier() =>
         SimpleDensityFunction.BEARDIFIER;
 
+    public static DensityFunction BlendDensity(DensityFunction input) =>
+        new BlendDensityFunction(input);
+
     public static DensityFunction ShiftedNoise2d(
         DensityFunction shiftX,
         DensityFunction shiftZ,
