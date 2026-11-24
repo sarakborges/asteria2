@@ -249,9 +249,9 @@ internal static class NoiseBasedChunkGeneratorChecks
             chunk,
             _ => Holder<Biome>.Direct(Biomes.ERODED_BADLANDS));
 
-        Noise badlandsSurface = randomState.GetOrCreateNoise(Noises.BADLANDS_SURFACE);
-        Noise badlandsPillar = randomState.GetOrCreateNoise(Noises.BADLANDS_PILLAR);
-        Noise badlandsRoof = randomState.GetOrCreateNoise(Noises.BADLANDS_PILLAR_ROOF);
+        var badlandsSurface = randomState.GetOrCreateNoise(Noises.BADLANDS_SURFACE);
+        var badlandsPillar = randomState.GetOrCreateNoise(Noises.BADLANDS_PILLAR);
+        var badlandsRoof = randomState.GetOrCreateNoise(Noises.BADLANDS_PILLAR_ROOF);
         int expectedPillars = 0;
 
         for (int x = 0; x < 16; x++)
