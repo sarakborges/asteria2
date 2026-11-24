@@ -13,23 +13,23 @@ namespace Asteria.World.LevelGen.Features.StateProviders;
 /// </summary>
 public abstract record BlockStateProvider
 {
-    Codec<BlockStateProvider> TYPED_CODEC { get; } = CreateTypedCodec();
+    public static Codec<BlockStateProvider> TYPED_CODEC { get; } = CreateTypedCodec();
 
-    Codec<BlockStateProvider> STATE_OR_PROVIDER_CODEC { get; } =
+    public static Codec<BlockStateProvider> STATE_OR_PROVIDER_CODEC { get; } =
         new StateOrProviderCodec();
 
     /// <summary>Provider object codec, accepting inline typed values.</summary>
-    Codec<BlockStateProvider> DIRECT_CODEC { get; } = TYPED_CODEC;
+    public static Codec<BlockStateProvider> DIRECT_CODEC { get; } = TYPED_CODEC;
 
     /// <summary>Registry reference or inline provider codec.</summary>
-    Codec<Holder<BlockStateProvider>> CODEC { get; } =
+    public static Codec<Holder<BlockStateProvider>> CODEC { get; } =
         RegistryCodecs.Holder(
             Registries.BLOCK_STATE_PROVIDER,
             DIRECT_CODEC);
 
     public abstract BlockState GetState(BlockGetter level, IRandomSource random, BlockPos position);
 
-    BlockState? GetOptionalState(
+    public virtual BlockState? GetOptionalState(
         BlockGetter level,
         IRandomSource random,
         BlockPos position) =>
@@ -37,19 +37,19 @@ public abstract record BlockStateProvider
 
     public abstract MapCodec<BlockStateProvider> Codec();
 
-    static SimpleStateProvider Of(BlockState state) =>
+    public static SimpleStateProvider Of(BlockState state) =>
         new(state ?? throw new ArgumentNullException(nameof(state)));
 
-    static SimpleStateProvider Of(Block block)
+    public static SimpleStateProvider Of(Block block)
     {
         ArgumentNullException.ThrowIfNull(block);
         return Of(block.DefaultState);
     }
 
-    static Holder<BlockStateProvider> HolderOf(BlockState state) =>
+    public static Holder<BlockStateProvider> HolderOf(BlockState state) =>
         Holder<BlockStateProvider>.Direct(Of(state));
 
-    static Holder<BlockStateProvider> HolderOf(Block block) =>
+    public static Holder<BlockStateProvider> HolderOf(Block block) =>
         Holder<BlockStateProvider>.Direct(Of(block));
 
     private static Codec<BlockStateProvider> CreateTypedCodec()
@@ -104,7 +104,7 @@ public abstract record BlockStateProvider
 
             return input is SimpleStateProvider simple
                 ? BlockState.FULL_CODEC.Encode(simple.State, ops, prefix)
-                : TYPED_CODEC.Encode(input, ops, prefix);
+                : BlockStateProvider.TYPED_CODEC.Encode(input, ops, prefix);
         }
 
         public override DataResult<Pair<BlockStateProvider, TData>> Decode<TData>(
@@ -122,7 +122,7 @@ public abstract record BlockStateProvider
                         statePair.Second));
             }
 
-            return TYPED_CODEC.Decode(ops, input);
+            return BlockStateProvider.TYPED_CODEC.Decode(ops, input);
         }
 
         public override string ToString() => "BlockStateProvider.STATE_OR_PROVIDER_CODEC";
