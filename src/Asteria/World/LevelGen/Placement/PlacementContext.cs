@@ -15,6 +15,7 @@ public sealed class PlacementContext
     public OverworldWorld Level { get; }
     public NoiseBasedChunkGenerator Generator { get; }
     public PlacedFeature? TopFeature { get; }
+    public WorldGenerationContext GenerationContext { get; }
 
     public PlacementContext(
         OverworldWorld level,
@@ -24,6 +25,10 @@ public sealed class PlacementContext
         Level = level ?? throw new ArgumentNullException(nameof(level));
         Generator = generator ?? throw new ArgumentNullException(nameof(generator));
         TopFeature = topFeature;
+        GenerationContext = new WorldGenerationContext(
+            Level.GetMinY(),
+            Level.GetHeight(),
+            Generator.GetSeaLevel());
     }
 
     public int GetMinY() => Level.GetMinY();
