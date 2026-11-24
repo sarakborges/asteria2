@@ -1,14 +1,86 @@
+using System.Text.Json;
 using Asteria.Core;
+using Asteria.Serialization;
 
 internal static class DirectionChecks
 {
     public static void Run()
     {
+        CheckDirectionCodecs();
+        CheckAxisCodecs();
         CheckMathPrimitives();
         CheckCanonicalOrderAndIds();
         CheckAxesAndPlanes();
         CheckRotations();
         CheckNearestDirection();
+    }
+
+    private static void CheckDirectionCodecs()
+    {
+        DynamicOps<JsonElement> normalOps = JsonOps.INSTANCE;
+        DynamicOps<JsonElement> compressedOps = JsonOps.COMPRESSED;
+        Direction[] expected = { Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST };
+
+        for (int index = 0; index < expected.Length; index++)
+        {
+            Direction direction = expected[index];
+            JsonElement encodedName = Direction.CODEC.EncodeStart(normalOps, direction).GetOrThrow();
+            Require(encodedName.ValueKind == JsonValueKind.String &&
+                    encodedName.GetString() == direction.GetSerializedName() &&
+                    ReferenceEquals(Direction.CODEC.Parse(normalOps, encodedName).GetOrThrow(), direction),
+                "Direction.CODEC must round-trip canonical names using uncompressed DynamicOps.");
+
+            JsonElement encodedId = Direction.CODEC.EncodeStart(compressedOps, direction).GetOrThrow();
+            Require(encodedId.ValueKind == JsonValueKind.Number &&
+                    encodedId.GetInt32() == index &&
+                    ReferenceEquals(Direction.CODEC.Parse(compressedOps, encodedId).GetOrThrow(), direction),
+                "Direction.CODEC must round-trip declaration ordinals using compressed DynamicOps.");
+        }
+
+        DataResult<Direction> unknownName = Direction.CODEC.Parse(normalOps, normalOps.CreateString("north_east"));
+        Require(unknownName.IsError && unknownName.ErrorMessage == "Unknown element: north_east",
+            "Direction.CODEC must reject unknown canonical names.");
+        DataResult<Direction> unknownId = Direction.CODEC.Parse(compressedOps, compressedOps.CreateInt(6));
+        Require(unknownId.IsError && unknownId.ErrorMessage == "Unknown element id: 6",
+            "Direction.CODEC must reject compressed ordinals outside the declaration range.");
+        Require(Direction.CODEC.Parse(normalOps, normalOps.CreateInt(2)).IsError &&
+                Direction.CODEC.Parse(compressedOps, compressedOps.CreateString("north")).IsError,
+            "Direction.CODEC must select the normal or compressed representation from DynamicOps.");
+
+        Require(ReferenceEquals(Direction.VERTICAL_CODEC.Parse(normalOps, normalOps.CreateString("up")).GetOrThrow(), Direction.UP) &&
+                ReferenceEquals(Direction.VERTICAL_CODEC.Parse(normalOps, normalOps.CreateString("down")).GetOrThrow(), Direction.DOWN),
+            "Direction.VERTICAL_CODEC must accept the two vertical directions.");
+        DataResult<Direction> horizontal = Direction.VERTICAL_CODEC.Parse(normalOps, normalOps.CreateString("east"));
+        Require(horizontal.IsError && horizontal.ErrorMessage == "Expected a vertical direction" &&
+                horizontal.TryGetPartial(out Direction partial) && ReferenceEquals(partial, Direction.EAST),
+            "Direction.VERTICAL_CODEC must reject horizontal directions with the parsed direction as a partial result.");
+    }
+
+    private static void CheckAxisCodecs()
+    {
+        DynamicOps<JsonElement> normalOps = JsonOps.INSTANCE;
+        DynamicOps<JsonElement> compressedOps = JsonOps.COMPRESSED;
+        Direction.Axis[] expected = { Direction.Axis.X, Direction.Axis.Y, Direction.Axis.Z };
+
+        for (int index = 0; index < expected.Length; index++)
+        {
+            Direction.Axis axis = expected[index];
+            JsonElement encodedName = Direction.Axis.CODEC.EncodeStart(normalOps, axis).GetOrThrow();
+            Require(encodedName.ValueKind == JsonValueKind.String &&
+                    encodedName.GetString() == axis.GetSerializedName() &&
+                    ReferenceEquals(Direction.Axis.CODEC.Parse(normalOps, encodedName).GetOrThrow(), axis),
+                "Direction.Axis.CODEC must round-trip canonical names.");
+
+            JsonElement encodedId = Direction.Axis.CODEC.EncodeStart(compressedOps, axis).GetOrThrow();
+            Require(encodedId.ValueKind == JsonValueKind.Number &&
+                    encodedId.GetInt32() == index &&
+                    ReferenceEquals(Direction.Axis.CODEC.Parse(compressedOps, encodedId).GetOrThrow(), axis),
+                "Direction.Axis.CODEC must round-trip declaration-order IDs when maps are compressed.");
+        }
+
+        Require(Direction.Axis.CODEC.Parse(normalOps, normalOps.CreateString("w")).IsError &&
+                Direction.Axis.CODEC.Parse(compressedOps, compressedOps.CreateInt(-1)).IsError,
+            "Direction.Axis.CODEC must reject unknown names and IDs.");
     }
 
     private static void CheckMathPrimitives()

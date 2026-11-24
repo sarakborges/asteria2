@@ -1,4 +1,5 @@
 using System.Collections;
+using Asteria.Serialization;
 
 namespace Asteria.Core;
 
@@ -14,6 +15,11 @@ public sealed class Direction
         public static readonly Axis Y = new("y");
         public static readonly Axis Z = new("z");
         private static readonly Axis[] VALUES = { X, Y, Z };
+        public static readonly Codec<Axis> CODEC = CreateStringRepresentableCodec(
+            VALUES,
+            static axis => axis.GetSerializedName(),
+            ByName,
+            static axis => Array.IndexOf(VALUES, axis));
 
         public string Name { get; }
 
@@ -139,6 +145,21 @@ public sealed class Direction
         VALUES.Where(direction => direction._axis.IsHorizontal())
             .OrderBy(direction => direction._data2d)
             .ToArray();
+
+    /// <summary>
+    /// Direction names in normal data and declaration-order IDs in compressed data,
+    /// matching StringRepresentable.EnumCodec for Minecraft Java 26.3.
+    /// </summary>
+    public static readonly Codec<Direction> CODEC = CreateStringRepresentableCodec(
+        VALUES,
+        static direction => direction.GetSerializedName(),
+        ByName,
+        static direction => direction._data3d);
+
+    public static readonly Codec<Direction> VERTICAL_CODEC = CODEC.Validate(
+        static direction => direction.IsVertical()
+            ? DataResult<Direction>.Success(direction)
+            : DataResult<Direction>.Error("Expected a vertical direction"));
 
     private static readonly IReadOnlyList<Axis> YXZ_AXIS_ORDER =
         Array.AsReadOnly(new[] { Axis.Y, Axis.X, Axis.Z });
@@ -390,6 +411,58 @@ public sealed class Direction
 
     private static int JavaAbs(int value) =>
         value < 0 ? unchecked(-value) : value;
+
+
+    private static Codec<TValue> CreateStringRepresentableCodec<TValue>(
+        IReadOnlyList<TValue> values,
+        Func<TValue, string> getSerializedName,
+        Func<string, TValue?> byName,
+        Func<TValue, int> getId)
+        where TValue : class
+    {
+        Codec<TValue> normal = Codecs.STRING.FlatXMap(
+            name => byName(name) is { } value
+                ? DataResult<TValue>.Success(value)
+                : DataResult<TValue>.Error(() => "Unknown element: " + name),
+            value => DataResult<string>.Success(getSerializedName(value)));
+
+        Codec<TValue> compressed = Codecs.INT.FlatXMap(
+            id => id >= 0 && id < values.Count
+                ? DataResult<TValue>.Success(values[id])
+                : DataResult<TValue>.Error(() => "Unknown element id: " + id),
+            value =>
+            {
+                int id = getId(value);
+                return id == -1
+                    ? DataResult<int>.Error(() => "Element with unknown id: " + value)
+                    : DataResult<int>.Success(id);
+            });
+
+        return new CompressedEnumCodec<TValue>(normal, compressed);
+    }
+
+    private sealed class CompressedEnumCodec<TValue> : Codec<TValue>
+    {
+        private readonly Codec<TValue> _normal;
+        private readonly Codec<TValue> _compressed;
+
+        public CompressedEnumCodec(Codec<TValue> normal, Codec<TValue> compressed)
+        {
+            _normal = normal;
+            _compressed = compressed;
+        }
+
+        public override DataResult<TData> Encode<TData>(
+            TValue input,
+            DynamicOps<TData> ops,
+            TData prefix) =>
+            (ops.CompressMaps ? _compressed : _normal).Encode(input, ops, prefix);
+
+        public override DataResult<Pair<TValue, TData>> Decode<TData>(
+            DynamicOps<TData> ops,
+            TData input) =>
+            (ops.CompressMaps ? _compressed : _normal).Decode(ops, input);
+    }
 
     public override string ToString() => _name;
 }
