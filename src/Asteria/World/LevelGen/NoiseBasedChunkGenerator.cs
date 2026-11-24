@@ -24,6 +24,7 @@ public sealed class NoiseBasedChunkGenerator
     private readonly RandomState _randomState;
     private readonly Aquifer.FluidPicker _globalFluidPicker;
     private readonly MultiNoiseBiomeSource? _overworldBiomeSource;
+    private readonly Lazy<IReadOnlyList<FeatureSorter.StepFeatureData>>? _featuresPerStep;
 
     public NoiseGeneratorSettings Settings => _settings;
 
@@ -53,6 +54,12 @@ public sealed class NoiseBasedChunkGenerator
     {
         _overworldBiomeSource = overworldBiomeSource ??
             throw new ArgumentNullException(nameof(overworldBiomeSource));
+        _featuresPerStep = new Lazy<IReadOnlyList<FeatureSorter.StepFeatureData>>(
+            () => FeatureSorter.BuildFeaturesPerStep(
+                _overworldBiomeSource.PossibleBiomes.ToArray(),
+                static biome => biome.Value.GenerationSettings.Features,
+                tryReducingError: true),
+            LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <summary>
@@ -78,8 +85,20 @@ public sealed class NoiseBasedChunkGenerator
             settings.UseLegacyRandomSource,
             settings.NoiseRouter);
 
-        return new NoiseBasedChunkGenerator(settings, randomState, biomeSource);
+        var generator = new NoiseBasedChunkGenerator(settings, randomState, biomeSource);
+        _ = generator.GetFeaturesPerStep();
+        return generator;
     }
+
+    /// <summary>
+    /// Returns the validated, memoized PlacedFeature order for each decoration step.
+    /// CreateOverworld evaluates this before returning the generator so feature-order
+    /// cycles fail during world setup rather than during chunk generation.
+    /// </summary>
+    public IReadOnlyList<FeatureSorter.StepFeatureData> GetFeaturesPerStep() =>
+        _featuresPerStep?.Value ??
+        throw new InvalidOperationException(
+            "Feature order validation requires the configured Overworld biome source.");
 
     /// <summary>
     /// Builds this chunk with the vanilla Overworld biome source configured by CreateOverworld.
