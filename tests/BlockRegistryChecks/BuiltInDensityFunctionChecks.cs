@@ -23,6 +23,14 @@ internal static class BuiltInDensityFunctionChecks
             throw new InvalidOperationException("The initial density-function entries must not require End-island random sources.");
     }
 
+    private sealed class TestChunkBlender(bool isEmpty) : IChunkBlender
+    {
+        public bool IsEmpty { get; } = isEmpty;
+
+        public float BlendDensity(int blockX, int blockY, int blockZ, float density) =>
+            density + blockX + blockY * 10.0f + blockZ * 100.0f;
+    }
+
     public static void Run()
     {
         CheckRegistryAndRegistrationOrder();
@@ -34,6 +42,7 @@ internal static class BuiltInDensityFunctionChecks
         CheckOverworldClimateFunctions();
         CheckOverworldTerrainDensityHelpers();
         CheckSimpleDensityFunctions();
+        CheckBlendDensityFunction();
     }
 
     private static void CheckRegistryAndRegistrationOrder()
@@ -124,6 +133,77 @@ internal static class BuiltInDensityFunctionChecks
             "The y gradient must clamp samples outside the dimension-derived vertical bounds.");
     }
 
+
+    private static void CheckBlendDensityFunction()
+    {
+        DensityFunction child = new ConstantFunction(0.5f);
+        DensityFunction function = DensityFunctions.BlendDensity(child);
+
+        Require(
+            function is BlendDensityFunction { Input: var input } &&
+            ReferenceEquals(input, child) &&
+            function.Range().Equals(child.Range()) &&
+            function.DomainAxes() == child.DomainAxes(),
+            "blend_density must preserve its child, range and coordinate-domain contract.");
+
+        var sampler = function.CompileSampler(new UnusedCompileContext());
+        Require(
+            sampler.SampleValue(SamplerContext.EmptyUncached, 1, 2, 3) == 0.5f,
+            "blend_density must pass through the child when no chunk blender is present.");
+
+        var emptyBlenderContext = SamplerContext.CreateBuilder()
+            .SetUserFields(ContextMap.CreateBuilder()
+                .WithParameter(DensityFunctionContextKeys.BLENDER, new TestChunkBlender(isEmpty: true))
+                .Build())
+            .Build();
+
+        Require(
+            sampler.SampleValue(emptyBlenderContext, 1, 2, 3) == 0.5f,
+            "blend_density must pass through the child when the chunk blender is empty.");
+
+        var activeBlender = new TestChunkBlender(isEmpty: false);
+        var activeContext = SamplerContext.CreateBuilder()
+            .SetUserFields(ContextMap.CreateBuilder()
+                .WithParameter(DensityFunctionContextKeys.BLENDER, activeBlender)
+                .Build())
+            .Build();
+
+        Require(
+            sampler.SampleValue(activeContext, 1, 2, 3) == 321.5f,
+            "blend_density must delegate the sampled value and exact block coordinates to the active chunk blender.");
+
+        var volume = new DensityVolume(
+            2, 2, 2,
+            minBlockX: 1,
+            minBlockY: 2,
+            minBlockZ: 3,
+            stepBlockX: 2,
+            stepBlockY: 4,
+            stepBlockZ: 3);
+        using ScopedDensityBuffer buffer = activeContext.AcquireBuffer(volume);
+        sampler.SampleVolume(activeContext, buffer, volume);
+
+        for (int z = 0; z < volume.SizeZ; z++)
+        for (int x = 0; x < volume.SizeX; x++)
+        for (int y = 0; y < volume.SizeY; y++)
+        {
+            int blockX = volume.BlockX(x);
+            int blockY = volume.BlockY(y);
+            int blockZ = volume.BlockZ(z);
+            float expected = 0.5f + blockX + blockY * 10.0f + blockZ * 100.0f;
+            Require(
+                buffer.Get(volume.IndexUnchecked(x, y, z)) == expected,
+                $"blend_density volume sampling must preserve stepped block coordinates at {blockX},{blockY},{blockZ}.");
+        }
+
+        DensityFunction replacement = new ConstantFunction(0.75f);
+        DensityFunction rewritten = function.RewriteChildren(
+            candidate => ReferenceEquals(candidate, child) ? replacement : candidate);
+        Require(
+            rewritten is BlendDensityFunction { Input: var rewrittenInput } &&
+            ReferenceEquals(rewrittenInput, replacement),
+            "blend_density must rewrite its input child without dropping the wrapper.");
+    }
 
     private static void CheckSimpleDensityFunctions()
     {
