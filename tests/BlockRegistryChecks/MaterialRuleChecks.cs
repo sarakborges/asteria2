@@ -113,8 +113,9 @@ internal static class MaterialRuleChecks
             ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "ore_vein")), OreVeinRule.TYPE_CODEC),
             "The registry must expose the same map-codec instances returned by each material rule.");
         Require(
-            BuiltInRegistries.MaterialRule.Count == 0,
-            "The material-rule value registry must remain empty until data-driven material rules are bootstrapped.");
+            BuiltInRegistries.MaterialRule.Count == 37 &&
+            BuiltInRegistries.MaterialRule.IsFrozen,
+            "The built-in Overworld material-rule registry must contain all 37 decoded values and be frozen after bootstrap.");
     }
 
     private static void CheckBandlandsRuleCodec()
