@@ -61,7 +61,7 @@ public static class BuiltInRegistries
     public static DefaultedRegistry<Biome> Biome { get; } =
         RegisterDefaultedWithIntrusiveHolders<Biome>(
             ResourceLocation.FromNamespaceAndPath("asteria", "biome"),
-            ResourceLocation.FromNamespaceAndPath("asteria", "plains"),
+            ResourceLocation.FromNamespaceAndPath("minecraft", "plains"),
             static () => BuiltInBiomes.RegisterAll());
 
     public static Registry<NormalNoise> Noise { get; } =

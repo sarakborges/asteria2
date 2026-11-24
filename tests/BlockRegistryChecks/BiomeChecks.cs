@@ -15,24 +15,25 @@ internal static class BiomeChecks
         CheckSpecialEffects();
         CheckTemperatureModifiers();
         CheckBiomeSectionPalette();
+        CheckVanillaOverworldBiomeSource();
     }
 
     private static void CheckBuiltInBiomeRegistry()
     {
-        Require(BuiltInRegistries.Biome.Count == 2,
-            "The initial local biome registry must contain plains and desert.");
-        Require(BuiltInRegistries.Biome.DefaultKey == Asteria.Content.Identifiers.ResourceLocation.Parse("asteria:plains"),
+        Require(BuiltInRegistries.Biome.Count == 56,
+            "The built-in biome registry must contain the 56 Overworld biomes used by Minecraft 26.3.");
+        Require(BuiltInRegistries.Biome.DefaultKey == Asteria.Content.Identifiers.ResourceLocation.Parse("minecraft:plains"),
             "The biome registry must default to plains.");
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Biome.GetValue(
-                    Asteria.Content.Identifiers.ResourceLocation.Parse("asteria:plains")),
+                    Asteria.Content.Identifiers.ResourceLocation.Parse("minecraft:plains")),
                 Biomes.PLAINS),
             "The plains registry key must resolve to the built-in plains climate definition.");
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Biome.GetValue(
-                    Asteria.Content.Identifiers.ResourceLocation.Parse("asteria:missing")),
+                    Asteria.Content.Identifiers.ResourceLocation.Parse("minecraft:missing")),
                 Biomes.PLAINS),
             "Unknown defaulted biome lookups must resolve to the plains default.");
         Require(
@@ -51,6 +52,23 @@ internal static class BiomeChecks
             Biomes.DESERT.GetBaseTemperature() == 2.0f &&
             Biomes.DESERT.GetDownfall() == 0.0f,
             "Desert climate data must preserve its dry, hot climate.");
+        Require(
+            Biomes.DEEP_FROZEN_OCEAN.Climate.TemperatureModifier == Biome.TemperatureModifier.FROZEN &&
+            Biomes.FROZEN_OCEAN.Climate.TemperatureModifier == Biome.TemperatureModifier.FROZEN &&
+            Biomes.DEEP_FROZEN_OCEAN.GetBaseTemperature() == 0.5F &&
+            Biomes.FROZEN_OCEAN.GetBaseTemperature() == 0.0F,
+            "Frozen ocean biomes must retain their distinct 26.3 base temperatures and frozen modifiers.");
+        Require(
+            Biomes.DARK_FOREST.SpecialEffects.GrassColorModifier == GrassColorModifier.DARK_FOREST &&
+            Biomes.SWAMP.SpecialEffects.GrassColorModifier == GrassColorModifier.SWAMP &&
+            Biomes.MANGROVE_SWAMP.SpecialEffects.GrassColorModifier == GrassColorModifier.SWAMP,
+            "Overworld grass-color modifiers must be registered from the vanilla biome effects.");
+        Require(
+            Biomes.DAPPLED_FOREST.SpecialEffects.GetFoliageColor(0) == 0xE68E30 &&
+            Biomes.PALE_GARDEN.SpecialEffects.GetGrassColor(0, 0, 0) == 0x778272 &&
+            Biomes.SULFUR_CAVES.SpecialEffects.GetFoliageColor(0) == 0,
+            "Biome foliage and grass overrides must preserve their registry JSON colors without adding absent overrides.");
+
         Require(
             Biome.Precipitation.RAIN.GetSerializedName() == "rain" &&
             Biome.Precipitation.SNOW.GetSerializedName() == "snow" &&
@@ -103,7 +121,7 @@ internal static class BiomeChecks
         Require(ReferenceEquals(Biomes.PLAINS.GetAttributes(), EnvironmentAttributeMap.Empty) &&
                 ReferenceEquals(Biomes.DESERT.GetAttributes(), EnvironmentAttributeMap.Empty),
             "Built-in biomes without explicit environment data must use the shared empty attribute map.");
-        Require(BuiltInRegistries.Biome.Count == 2,
+        Require(BuiltInRegistries.Biome.Count == 56,
             "The isolated biome test registry must not add fixture content to the production biome registry.");
     }
 
@@ -164,6 +182,34 @@ internal static class BiomeChecks
         Require(Biomes.PLAINS.GetPrecipitationAt(origin, 63) == Biome.Precipitation.RAIN,
             "A warm precipitation-enabled biome must return rain.");
     }
+    private static void CheckVanillaOverworldBiomeSource()
+    {
+        MultiNoiseBiomeSource source =
+            MultiNoiseBiomeSource.CreateVanillaOverworld(BuiltInRegistries.Biome);
+
+        Require(source.PossibleBiomes.Count == 56,
+            "The vanilla Overworld biome source must resolve all 56 biome holders emitted by the parameter builder.");
+
+        Require(
+            source.PossibleBiomes.Contains(Biomes.MUSHROOM_FIELDS.BuiltInRegistryHolder) &&
+            source.PossibleBiomes.Contains(Biomes.DEEP_FROZEN_OCEAN.BuiltInRegistryHolder) &&
+            source.PossibleBiomes.Contains(Biomes.SULFUR_CAVES.BuiltInRegistryHolder) &&
+            source.PossibleBiomes.Contains(Biomes.DEEP_DARK.BuiltInRegistryHolder),
+            "The complete multi-noise source must include representative ocean, surface and underground biome holders.");
+
+        Require(
+            ReferenceEquals(
+                source.GetNoiseBiome(Climate.Target(0.0F, 0.0F, -1.1F, 0.0F, 0.0F, 0.0F)),
+                Biomes.MUSHROOM_FIELDS.BuiltInRegistryHolder) &&
+            ReferenceEquals(
+                source.GetNoiseBiome(Climate.Target(-0.9F, 0.0F, -0.7F, 0.0F, 0.0F, 0.0F)),
+                Biomes.DEEP_FROZEN_OCEAN.BuiltInRegistryHolder) &&
+            ReferenceEquals(
+                source.GetNoiseBiome(Climate.Target(0.0F, 0.0F, 0.0F, -0.9F, 1.1F, 0.0F)),
+                Biomes.DEEP_DARK.BuiltInRegistryHolder),
+            "Registry-backed Overworld source must resolve the canonical Mushroom Fields, Deep Frozen Ocean and Deep Dark targets.");
+    }
+
     private static void CheckBiomeSectionPalette()
     {
         PalettedContainerFactory biomeFactory = PalettedContainerFactory.CreateBuiltIn();

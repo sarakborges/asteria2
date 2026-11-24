@@ -1134,3 +1134,15 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Harness verifica 7.594 entradas, 3.795 pares de superfície em cada profundidade, as três regiões subterrâneas e a entrada bottom-only, zero offset e resultados da R-tree em Mushroom Fields, Deep Frozen Ocean e Deep Dark.
 - Limites: o registry atual do Asteria2 ainda não contém a maioria das chaves vanilla emitidas, portanto o callback de resolução completa requer o port das definições e registros dos biomas. O builder de tabela não ativa a seleção completa no mundo ainda. O modo de debug special-case, spawnTarget/deepDarkRegion e conteúdos de geração dos biomas continuam etapas separadas.
 - Referência de código: `0khs/minecraft_source_26.3/net/minecraft/world/level/biome/OverworldBiomeBuilder.java` (Minecraft Java 26.3).
+
+
+## Incremento — registry dos 56 biomas Overworld 26.3 (24/11/2026)
+
+- Registradas as 56 chaves vanilla usadas pelo OverworldBiomeBuilder, agora resolvíveis como holders reais no namespace `minecraft`; Plains e Desert preservam os IDs iniciais 0 e 1.
+- Portados dos dados JSON 26.3 exclusivamente os campos de clima e efeitos visuais do domínio Biome: precipitação, temperatura base, modificador frozen, downfall, cores de água/folhagem/folhagem seca/grama e modificadores de cor da grama.
+- Nenhum campo de natural mob spawns, entidade, carver, placed feature ou configuração de geração de bioma foi importado; o escopo de conteúdo segue sem mobs.
+- O default key do registry mudou de `asteria:plains` para `minecraft:plains`, alinhando o defaulted registry às chaves emitidas pela tabela oficial.
+- MultiNoiseBiomeSource.CreateVanillaOverworld agora resolve todas as chaves contra o registry e rejeita holders ausentes ou não ligados, produzindo o R-tree climático completo de holders vanilla.
+- Testes verificam as 56 definições, a correspondência integral entre a tabela e as chaves registradas, seleção real por R-tree para Mushroom Fields/Deep Frozen Ocean/Deep Dark, modificadores térmicos/visuais e largura global dinâmica da palette com 56 holders.
+- Delimitação: os registros ainda contêm apenas dados climáticos e efeitos visuais; BiomeGenerationSettings, carvers, placed features, atributos ambientais/sons e demais domínios específicos continuam separados. A seleção está disponível via CreateVanillaOverworld, mas o carregamento de mundo ainda precisa construir/usar essa fonte por dimensão.
+- Dados baseados em `mj41/mc26-data`, branch `mc-26.3`, arquivos `data/minecraft/worldgen/biome/*.json`; foram lidos exclusivamente os campos descritos acima.

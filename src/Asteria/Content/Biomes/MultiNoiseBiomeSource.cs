@@ -1,4 +1,5 @@
 using Asteria.Content.Registries;
+using Asteria.Content.Identifiers;
 using Asteria.World.LevelGen;
 
 namespace Asteria.Content.Biomes;
@@ -31,6 +32,32 @@ public sealed class MultiNoiseBiomeSource
     public static MultiNoiseBiomeSource CreateFromList(
         Climate.ParameterList<Holder<Biome>> parameters) =>
         new(parameters);
+
+    /// <summary>
+    /// Creates the complete Minecraft 26.3 Overworld source by resolving every emitted
+    /// biome key against the supplied frozen built-in biome registry.
+    /// </summary>
+    public static MultiNoiseBiomeSource CreateVanillaOverworld(Registry<Biome> biomeRegistry)
+    {
+        ArgumentNullException.ThrowIfNull(biomeRegistry);
+
+        var builder = new OverworldBiomeBuilder();
+        Climate.ParameterList<Holder<Biome>> parameters =
+            builder.BuildParameterList<Holder<Biome>>(key =>
+            {
+                RegistryKey<Biome> biomeKey = RegistryKey<Biome>.Create(biomeRegistry.Key, key);
+                Holder<Biome>.Reference holder = biomeRegistry.GetHolder(biomeKey) ??
+                    throw new InvalidOperationException(
+                        $"Missing Minecraft 26.3 Overworld biome holder: {key}");
+                if (!holder.IsBound)
+                    throw new InvalidOperationException(
+                        $"Minecraft 26.3 Overworld biome holder is not bound: {key}");
+
+                return holder;
+            });
+
+        return new MultiNoiseBiomeSource(parameters);
+    }
 
     /// <summary>Returns the closest climate parameter entry using the vanilla seven-axis R-tree.</summary>
     public Holder<Biome> GetNoiseBiome(Climate.TargetPoint target) =>

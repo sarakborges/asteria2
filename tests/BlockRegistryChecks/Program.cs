@@ -233,7 +233,7 @@ internal static class Program
             "Stone, dirt, grass block, water and lava must be present in the production block registry.");
         Require(BuiltInRegistries.Item.Count == 1, "The built-in item registry must contain only the air sentinel.");
         Require(BuiltInRegistries.Fluid.Count == 3, "The empty, water and lava fluid types should be registered.");
-        Require(BuiltInRegistries.Biome.Count == 2, "The built-in biome registry must contain plains and desert.");
+        Require(BuiltInRegistries.Biome.Count == 56, "The built-in biome registry must contain all 56 vanilla Overworld biomes.");
         Require(BuiltInRegistries.PositionSourceType.Count == 1, "The local position-source registry must contain only the block variant.");
         Require(BuiltInRegistries.Timeline.Count == 0, "No built-in timelines should be registered until their complete attribute content is in scope.");
         ChunkStatusChecks.Run();
@@ -2982,8 +2982,8 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             "Biome sizing must retain local widths from one through three bits.");
         Require(
             biomeStrategy.GetConfigurationForBitCount(4) ==
-                new PaletteConfiguration(PaletteMode.Global, 1, 4, true),
-            "Biome global sizing must retain the global map width separately from its requested storage width.");
+                new PaletteConfiguration(PaletteMode.Global, biomeStrategy.GlobalPaletteBitsInMemory, 4, true),
+            "Biome global sizing must retain the full biome holder registry width separately from the requested storage width.");
 
         Require(
             blockStrategy.GetConfigurationForPaletteSize(17) ==
@@ -2995,7 +2995,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
             biomeStrategy.GetConfigurationForPaletteSize(8) ==
                 new PaletteConfiguration(PaletteMode.Local, 3, 3, false) &&
             biomeStrategy.GetConfigurationForPaletteSize(9) ==
-                new PaletteConfiguration(PaletteMode.Global, 1, 4, true),
+                new PaletteConfiguration(PaletteMode.Global, biomeStrategy.GlobalPaletteBitsInMemory, 4, true),
             "Biome palette-size configuration must transition after eight values using the biome holder registry width.");
 
         var emptyIds = new BlockStateIdMap();
