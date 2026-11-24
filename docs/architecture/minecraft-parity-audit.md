@@ -1062,3 +1062,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `SamplerContext` agora é descartável e fecha os buffers persistentes dos cache cells, permitindo que `NoiseChunk.Close` retorne as leases ao pool antes de devolvê-lo ao `RandomState`.
 - Testes cobrem fallbacks de alpha/offset/Beardifier, injeção de parâmetros do blender, seleção de aquifer ativo/desativado, volume cacheado e rejeição de amostragem após close.
 - Delimitação: a implementação concreta de `Blender` (coleta de dados de chunks antigos e cálculo de blending) não foi portada. `NoiseChunk` consome o contrato e um `IChunkBlender` futuro; sem um blender real e sem `NoiseBasedChunkGenerator`/materialização, ainda não há mundo jogável.
+
+
+## Incremento — preenchimento base de ProtoChunk por NoiseBasedChunkGenerator (24/11/2026)
+
+- Portado `NoiseBasedChunkGenerator.CreateFluidPicker`: seleciona lava abaixo de `min(-54, sea_level)` e o fluido padrão abaixo do nível do mar, respeitando o limite exclusivo de `FluidStatus`.
+- Portado `FillFromNoise`: intersecta `NoiseSettings` com a altura do chunk, cria um `DensityVolume` 16×altura×16, amostra `NoiseRouter.final_density` por volume e consulta o aquifer para cada bloco.
+- O retorno nulo do aquifer seleciona `default_block`; retornos explícitos selecionam água/lava/ar. Estados de ar não são gravados. Posições com atualização de fluido pendente são marcadas para pós-processamento no `ProtoChunk`.
+- Os dois heightmaps de worldgen são preparados antes da escrita; ao final são primados os quatro heightmaps finais. O preenchimento mantém a ordem Z/X/Y descendente do fluxo vanilla.
+- Testes cobrem default block em densidade positiva, fronteiras do picker lava/água/ar, coordenadas de chunks deslocados e os seis heightmaps.
+- Delimitação: esta etapa materializa `final_density`/aquifer. `MaterialSystem`/surface rules e carvers ainda precisam executar depois na pipeline TERRAIN; não é ainda um mundo completo jogável e não adiciona sistemas de mobs.
