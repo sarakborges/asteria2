@@ -1542,8 +1542,14 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"minecraft:add","left":1.0,"right":2.0}""")).IsError,
-            "The density-function codec must reject foreign Minecraft namespace identifiers.");
+                ParseJson("""{"type":"minecraft:add","left":1.0,"right":2.0}""")).IsSuccess,
+            "The density-function codec must accept vanilla Minecraft namespace identifiers.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(
+                ops,
+                ParseJson("""{"type":"asteria:add","left":1.0,"right":2.0}""")).IsError,
+            "The density-function codec must reject non-vanilla namespace aliases for built-in types.");
     }
 
     private static JsonElement ParseJson(string json) =>
