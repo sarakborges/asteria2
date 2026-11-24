@@ -260,6 +260,7 @@ internal static class Program
         PiecesContainerChecks.Run();
         StructurePiecesBuilderChecks.Run();
         HolderSetCodecChecks.Run();
+        StructureSettingsChecks.Run();
         StructureEnumChecks.Run();
         JigsawJunctionChecks.Run();
         BeardifierChecks.Run();
