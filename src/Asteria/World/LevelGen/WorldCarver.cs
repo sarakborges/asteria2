@@ -114,10 +114,10 @@ public interface WorldCarver
         double zMid = chunkPosition.GetMiddleBlockZ();
         double xd = x - xMid;
         double zd = z - zMid;
-        int remaining = unchecked(totalSteps - currentStep);
+        double remaining = (double)totalSteps - currentStep;
         double radius = thickness + 2.0f + 16.0f;
 
-        return xd * xd + zd * zd - unchecked(remaining * remaining) <= radius * radius;
+        return xd * xd + zd * zd - remaining * remaining <= radius * radius;
     }
 
     public delegate bool CarveSkipChecker(double xd, double yd, double zd, int y);
