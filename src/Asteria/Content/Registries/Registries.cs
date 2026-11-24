@@ -2,6 +2,7 @@ using Asteria.Content.Identifiers;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Synth;
 using Asteria.World.LevelGen.Materials.Rules;
+using Asteria.World.LevelGen.Materials.Conditions;
 
 namespace Asteria.Content.Registries;
 
@@ -21,4 +22,8 @@ public static class Registries
     public static RegistryKey<Registry<MaterialRule>> MATERIAL_RULE { get; } =
         RegistryKey<MaterialRule>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/material_rule"));
+
+    public static RegistryKey<Registry<MaterialCondition>> MATERIAL_CONDITION { get; } =
+        RegistryKey<MaterialCondition>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/material_condition"));
 }

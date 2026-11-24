@@ -23,6 +23,7 @@ using BuiltInNoises = Asteria.World.LevelGen.BuiltInNoises;
 using DensityFunctionValue = Asteria.World.LevelGen.DensityFunctions.DensityFunction;
 using BuiltInDensityFunctions = Asteria.World.LevelGen.BuiltInDensityFunctions;
 using Asteria.World.LevelGen.Materials.Rules;
+using Asteria.World.LevelGen.Materials.Conditions;
 
 namespace Asteria.Content.Registries;
 
@@ -86,6 +87,16 @@ public static class BuiltInRegistries
         RegisterSimple<MapCodec<MaterialRule>>(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/material_rule_type"),
             static () => MaterialRuleCodecBootstrap.RegisterAll(MaterialRuleType));
+
+    public static Registry<MaterialCondition> MaterialCondition { get; } =
+        RegisterSimple<MaterialCondition>(
+            Registries.MATERIAL_CONDITION.Location,
+            static () => { });
+
+    public static Registry<MapCodec<MaterialCondition>> MaterialConditionType { get; } =
+        RegisterSimple<MapCodec<MaterialCondition>>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/material_condition_type"),
+            static () => MaterialConditionCodecBootstrap.RegisterAll(MaterialConditionType));
 
     public static Registry<ChunkStatusValue> ChunkStatus { get; } =
         RegisterSimple<ChunkStatusValue>(

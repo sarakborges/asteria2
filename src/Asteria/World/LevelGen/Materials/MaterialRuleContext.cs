@@ -20,12 +20,14 @@ public sealed class MaterialRuleContext
     public int WaterHeight { get; private set; }
     public int StoneDepthBelow { get; private set; }
     public int StoneDepthAbove { get; private set; }
+    public int SurfaceDepth { get; private set; }
 
     public void UpdateXZ(
         int blockX,
         int blockZ,
         int surfaceGradientX,
-        int surfaceGradientZ)
+        int surfaceGradientZ,
+        int surfaceDepth = 0)
     {
         _lastUpdateXZ = unchecked(_lastUpdateXZ + 1);
         _lastUpdateY = unchecked(_lastUpdateY + 1);
@@ -33,6 +35,39 @@ public sealed class MaterialRuleContext
         BlockZ = blockZ;
         SurfaceGradientX = surfaceGradientX;
         SurfaceGradientZ = surfaceGradientZ;
+        SurfaceDepth = surfaceDepth;
+    }
+
+    /// <summary>Creates an XZ-scoped evaluator invalidated only by column updates.</summary>
+    public Conditions.ConditionEvaluator LazyXZCondition(Func<bool> compute)
+    {
+        ArgumentNullException.ThrowIfNull(compute);
+        long lastUpdate = unchecked(_lastUpdateXZ - 1L);
+        bool? result = null;
+        return () =>
+        {
+            if (lastUpdate == _lastUpdateXZ)
+                return result ?? throw new InvalidOperationException("Update triggered but the result is null");
+            lastUpdate = _lastUpdateXZ;
+            result = compute();
+            return result.Value;
+        };
+    }
+
+    /// <summary>Creates a Y-scoped evaluator invalidated only by block-height updates.</summary>
+    public Conditions.ConditionEvaluator LazyYCondition(Func<bool> compute)
+    {
+        ArgumentNullException.ThrowIfNull(compute);
+        long lastUpdate = unchecked(_lastUpdateY - 1L);
+        bool? result = null;
+        return () =>
+        {
+            if (lastUpdate == _lastUpdateY)
+                return result ?? throw new InvalidOperationException("Update triggered but the result is null");
+            lastUpdate = _lastUpdateY;
+            result = compute();
+            return result.Value;
+        };
     }
 
     public void UpdateY(
