@@ -1243,3 +1243,9 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Fora da altura construída, GetBlockState devolve VOID_AIR e GetFluidState devolve Fluids.EMPTY sem criar chunks.
 - Testes verificam delegação para chunk em cache, geração por consulta na coordenada vizinha e short-circuit fora do build height.
 - Delimitação: o mundo ainda não cobre block entities, ticks globais, lighting updates, colisão/raycast integrado nem LevelChunk; consultas de bloco/fluido geram chunks até TERRAIN.
+
+## Incremento — consultas de bioma em OverworldWorld (24/11/2026)
+
+- OverworldWorld agora expõe GetBiome(BlockPos), resolvendo a chunk sob demanda e consultando sua palette quart com as coordenadas convertidas por QuartPos.FromBlock.
+- O retorno mantém a identidade do Holder<Biome> registrado na palette; o acesso não cria uma segunda fonte ou recalcula clima fora da etapa de geração.
+- Teste compara a consulta do mundo com a consulta direta da mesma chunk e confirma que a entrada existente do cache é reutilizada.

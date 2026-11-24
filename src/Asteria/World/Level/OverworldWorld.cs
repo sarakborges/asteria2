@@ -1,3 +1,4 @@
+using Asteria.Content.Biomes;
 using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
 using Asteria.Content.Chunks.Status;
@@ -48,6 +49,16 @@ public sealed class OverworldWorld : BlockGetter
             return Fluids.EMPTY.DefaultFluidState;
 
         return GetChunk(ChunkPos.Containing(position)).GetFluidState(position);
+    }
+
+    public Holder<Biome> GetBiome(BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        ProtoChunk chunk = GetChunk(ChunkPos.Containing(position));
+        return chunk.GetNoiseBiome(
+            QuartPos.FromBlock(position.GetX()),
+            QuartPos.FromBlock(position.GetY()),
+            QuartPos.FromBlock(position.GetZ()));
     }
 
     public int LoadedChunkCount

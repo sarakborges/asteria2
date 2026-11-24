@@ -292,6 +292,17 @@ internal static class NoiseBasedChunkGeneratorChecks
             world.LoadedChunkCount == 1,
             "World block and fluid queries must delegate to the already cached chunk.");
 
+        Holder<Biome> worldBiome = world.GetBiome(localPosition);
+        Holder<Biome> chunkBiome = generated.GetNoiseBiome(
+            QuartPos.FromBlock(localPosition.GetX()),
+            QuartPos.FromBlock(localPosition.GetY()),
+            QuartPos.FromBlock(localPosition.GetZ()));
+        Require(
+            worldBiome.IsBound &&
+            ReferenceEquals(worldBiome, chunkBiome) &&
+            world.LoadedChunkCount == 1,
+            "World biome queries must return the registered holder from the cached chunk's quart-resolution palette.");
+
         ChunkPos neighbor = new(1, 0);
         BlockPos neighborPosition = new(neighbor.GetMinBlockX() + 3, -1, 4);
         BlockState neighborState = world.GetBlockState(neighborPosition);
