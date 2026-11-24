@@ -212,18 +212,174 @@ public sealed class NoiseBasedChunkGenerator
         Heightmap.PrimeHeightmaps(chunk, ChunkStatus.TERRAIN.GetHeightmapsAfter().ToHashSet());
 
         MaterialSystem materialSystem = _randomState.GetOrCreateMaterialSystem(_settings);
+        var generationContext = new WorldGenerationContext(this, chunk);
+        Func<BlockPos, Holder<Biome>> biomeGetter = position =>
+            biomeResolver.GetNoiseBiome(
+                QuartPos.FromBlock(position.GetX()),
+                QuartPos.FromBlock(position.GetY()),
+                QuartPos.FromBlock(position.GetZ()));
+
         materialSystem.BuildSurface(
             _randomState,
-            new WorldGenerationContext(this, chunk),
+            generationContext,
             chunk,
             noiseChunk,
             _settings.MaterialRule.Value,
-            position => biomeResolver.GetNoiseBiome(
-                QuartPos.FromBlock(position.GetX()),
-                QuartPos.FromBlock(position.GetY()),
-                QuartPos.FromBlock(position.GetZ())),
+            biomeGetter,
             possibleBiomes);
+
+        ApplyCarvers(chunk, noiseChunk, generationContext, biomeResolver, biomeGetter, materialSystem);
         chunk.SetPersistedStatus(ChunkStatus.TERRAIN);
+    }
+
+    /// <summary>
+    /// Runs the Minecraft 26.3 carver pass over the 17×17 source-chunk region,
+    /// then applies the shared mask through the chunk's aquifer.
+    /// </summary>
+    private void ApplyCarvers(
+        ProtoChunk chunk,
+        NoiseChunk noiseChunk,
+        WorldGenerationContext generationContext,
+        BiomeResolver biomeResolver,
+        Func<BlockPos, Holder<Biome>> biomeGetter,
+        MaterialSystem materialSystem)
+    {
+        int maskMinY = unchecked(generationContext.GetMinGenY() + 1);
+        int maskMaxY = unchecked(
+            generationContext.GetMinGenY() +
+            generationContext.GetGenDepth() - 1 - 7);
+        if (maskMaxY < maskMinY)
+            return;
+
+        var carvingMask = new CarvingMask(maskMinY, maskMaxY);
+        ChunkPos targetChunk = chunk.GetPos();
+        var random = new WorldgenRandom(
+            _randomState.UseLegacyRandomSource
+                ? new LegacyRandomSource(0L)
+                : new XoroshiroRandomSource(0L));
+
+        for (int offsetX = -8; offsetX <= 8; offsetX++)
+        {
+            for (int offsetZ = -8; offsetZ <= 8; offsetZ++)
+            {
+                var sourceChunk = new ChunkPos(
+                    unchecked(targetChunk.X + offsetX),
+                    unchecked(targetChunk.Z + offsetZ));
+
+                Holder<Biome> sourceBiome = biomeResolver.GetNoiseBiome(
+                    QuartPos.FromBlock(sourceChunk.GetMinBlockX()),
+                    quartY: 0,
+                    QuartPos.FromBlock(sourceChunk.GetMinBlockZ()));
+
+                int carverIndex = 0;
+                foreach (Holder<WorldCarver> carverHolder in sourceBiome.Value.GenerationSettings.GetCarvers())
+                {
+                    WorldCarver carver = carverHolder.Value;
+                    random.SetLargeFeatureSeed(
+                        unchecked(_randomState.Seed + carverIndex),
+                        sourceChunk.X,
+                        sourceChunk.Z);
+
+                    if (carver.IsStartChunk(random))
+                    {
+                        carver.Carve(
+                            generationContext,
+                            random,
+                            targetChunk,
+                            sourceChunk,
+                            carvingMask);
+                    }
+
+                    carverIndex++;
+                }
+            }
+        }
+
+        if (!carvingMask.IsEmpty())
+        {
+            ApplyCarvingMask(
+                chunk,
+                noiseChunk,
+                generationContext,
+                biomeGetter,
+                materialSystem,
+                carvingMask);
+        }
+    }
+
+    private void ApplyCarvingMask(
+        ProtoChunk chunk,
+        NoiseChunk noiseChunk,
+        WorldGenerationContext generationContext,
+        Func<BlockPos, Holder<Biome>> biomeGetter,
+        MaterialSystem materialSystem,
+        CarvingMask carvingMask)
+    {
+        ChunkPos targetChunk = chunk.GetPos();
+        int minBlockX = targetChunk.GetMinBlockX();
+        int minBlockZ = targetChunk.GetMinBlockZ();
+        var position = new BlockPos.MutableBlockPos();
+
+        carvingMask.Visit((localX, localZ, bottomY, topY) =>
+        {
+            int worldX = targetChunk.GetBlockX(localX);
+            int worldZ = targetChunk.GetBlockZ(localZ);
+            position.SetX(worldX);
+            position.SetZ(worldZ);
+
+            for (int worldY = topY; worldY >= bottomY; worldY--)
+            {
+                position.SetY(worldY);
+                BlockState existingState = chunk.GetBlockState(position);
+                if (existingState.Is(BlockTags.Uncarvable))
+                    continue;
+
+                bool hasGrass = existingState.Is(Blocks.GRASS_BLOCK) ||
+                    existingState.Is(Blocks.MYCELIUM);
+                BlockState? carvedState = noiseChunk.Aquifer.ComputeSubstance(
+                    worldX,
+                    worldY,
+                    worldZ,
+                    density: 0.0);
+
+                if (carvedState is null)
+                    continue;
+
+                chunk.SetBlockState(position, carvedState, flags: 0);
+                if (noiseChunk.Aquifer.ShouldScheduleFluidUpdate() &&
+                    !carvedState.GetFluidState().IsEmpty())
+                {
+                    chunk.MarkPosForPostProcessing(position);
+                }
+
+                if (!hasGrass || worldY <= generationContext.GetMinGenY())
+                    continue;
+
+                position.SetY(worldY - 1);
+                BlockState belowState = chunk.GetBlockState(position);
+                if (!belowState.Is(Blocks.DIRT))
+                    continue;
+
+                BlockState? topMaterial = materialSystem.TopMaterial(
+                    _settings.MaterialRule.Value,
+                    _randomState,
+                    generationContext,
+                    biomeGetter,
+                    chunk,
+                    noiseChunk.CachingSamplers,
+                    position,
+                    underFluid: !carvedState.GetFluidState().IsEmpty());
+
+                if (topMaterial is null)
+                    continue;
+
+                chunk.SetBlockState(position, topMaterial, flags: 0);
+                if (!topMaterial.GetFluidState().IsEmpty())
+                    chunk.MarkPosForPostProcessing(position);
+
+                position.SetY(worldY);
+            }
+        });
     }
 
     private sealed class DelegateBiomeResolver(
