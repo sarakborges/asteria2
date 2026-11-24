@@ -25,9 +25,7 @@ public sealed record ConstantHeight : HeightProvider
         Value = value ?? throw new ArgumentNullException(nameof(value));
 
     public static ConstantHeight Of(VerticalAnchor value) =>
-        value.Equals(VerticalAnchor.Absolute(0))
-            ? ZERO
-            : new ConstantHeight(value);
+        new(value);
 
     public int Sample(IRandomSource random, WorldGenerationContext context)
     {
