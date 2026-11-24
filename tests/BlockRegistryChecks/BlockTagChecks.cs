@@ -29,6 +29,60 @@ internal static class BlockTagChecks
             causesSuffocation.Location == ResourceLocation.Parse("asteria:causes_suffocation"),
             "Block-tag locations must preserve the canonical tag paths in Asteria's namespace.");
 
+        Block[] expectedMotionBlocks =
+        [
+            Blocks.BEDROCK,
+            Blocks.CALCITE,
+            Blocks.CINNABAR,
+            Blocks.COPPER_ORE,
+            Blocks.COARSE_DIRT,
+            Blocks.DEEPSLATE,
+            Blocks.DEEPSLATE_IRON_ORE,
+            Blocks.DIRT,
+            Blocks.GRANITE,
+            Blocks.GRASS_BLOCK,
+            Blocks.GRAVEL,
+            Blocks.ICE,
+            Blocks.MUD,
+            Blocks.MYCELIUM,
+            Blocks.ORANGE_TERRACOTTA,
+            Blocks.PACKED_ICE,
+            Blocks.PODZOL,
+            Blocks.RAW_COPPER_BLOCK,
+            Blocks.RAW_IRON_BLOCK,
+            Blocks.RED_SAND,
+            Blocks.RED_SANDSTONE,
+            Blocks.RED_TERRACOTTA,
+            Blocks.SAND,
+            Blocks.SANDSTONE,
+            Blocks.SNOW_BLOCK,
+            Blocks.STONE,
+            Blocks.SULFUR,
+            Blocks.TERRACOTTA,
+            Blocks.TUFF,
+            Blocks.WHITE_TERRACOTTA,
+            Blocks.YELLOW_TERRACOTTA,
+            Blocks.BROWN_TERRACOTTA,
+            Blocks.LIGHT_GRAY_TERRACOTTA
+        ];
+        Require(
+            expectedMotionBlocks.All(block =>
+                block.DefaultState.Is(BlockTags.BlocksMotionInHeightmap) &&
+                block.DefaultState.Is(BlockTags.BlocksMotionInHeightmapNoLeaves) &&
+                block.DefaultState.Is(causesSuffocation)),
+            "Built-in heightmap and suffocation tags must contain every supported block in the vanilla 26.3 block-motion tag closure.");
+        Require(
+            new[] { Blocks.AIR, Blocks.VOID_AIR, Blocks.WATER, Blocks.LAVA, Blocks.POWDER_SNOW }
+                .All(block =>
+                    !block.DefaultState.Is(BlockTags.BlocksMotionInHeightmap) &&
+                    !block.DefaultState.Is(BlockTags.BlocksMotionInHeightmapNoLeaves) &&
+                    !block.DefaultState.Is(causesSuffocation)),
+            "Air, fluids and powder snow must remain outside the built-in block-motion tags.");
+        Require(
+            !Blocks.AIR.DefaultState.Is(BlockTags.Leaves) &&
+            !Blocks.STONE.DefaultState.Is(BlockTags.FallDamageResetting),
+            "The leaves and fall-damage-resetting tags must stay empty while their vanilla block types are not implemented.");
+
         TagKey<Block> markerTag = TagKey<Block>.Create(
             BuiltInRegistries.Block.Key,
             ResourceLocation.Parse("asteria:test_tag_membership"));

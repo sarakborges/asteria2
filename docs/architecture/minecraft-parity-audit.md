@@ -1273,3 +1273,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionado um teste de integração usando o construtor padrão de OverworldWorld, sem LevelHeightAccessor reduzido.
 - A verificação gera uma ProtoChunk com as 24 seções do intervalo vanilla -64..319 e consulta blocos e biomas nos dois extremos verticais.
 - O teste confirma o status TERRAIN e a retenção da chunk no cache. Isso valida a altura completa de geração, mas ainda não mede o custo em runtime nem implementa o pipeline acima de TERRAIN.
+
+## Incremento — tags vanilla de bloco para o registry suportado (24/11/2026)
+
+- O bootstrap agora vincula as tags `blocks_motion_in_heightmap`, `blocks_motion_in_heightmap_no_leaves` e `causes_suffocation` de acordo com a composição vanilla 26.3, projetada sobre os blocos já registrados em Asteria.
+- A projeção inclui os membros suportados das tags `blocks_motion_no_leaves`, `dirt`, `grass_blocks`, `sand`, `terracotta`, `ice` e `ores`, além dos valores diretos; leaves e fall_damage_resetting permanecem vazias porque ainda não há membros correspondentes no registry local.
+- O harness confirma os membros incluídos e excluídos antes de exercer o ciclo de reload de tags. Os checks de worldgen não precisam mais depender de uma tag sintética contendo somente STONE.
+- Fonte: `mj41/mc26-data`, branch `mc-26.3`, `data/minecraft/tags/block/blocks_motion*.json`, `dirt.json`, `grass_blocks.json`, `sand.json`, `terracotta.json`, `ice.json`, `ores.json`, `copper_ores.json` e `iron_ores.json`.

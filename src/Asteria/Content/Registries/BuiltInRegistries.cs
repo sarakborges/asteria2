@@ -182,6 +182,7 @@ public static class BuiltInRegistries
 
         SolidDebugger.RunAndDump(InitializeBlockStateCaches);
         Freeze();
+        BuiltInBlockTags.BindSupportedValues();
     }
 
     private static void InitializeBlockStateCaches()
