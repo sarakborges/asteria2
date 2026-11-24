@@ -1,6 +1,7 @@
 using Asteria.Content.Identifiers;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Synth;
+using Asteria.World.LevelGen.Materials.Rules;
 
 namespace Asteria.Content.Registries;
 
@@ -16,4 +17,8 @@ public static class Registries
     public static RegistryKey<Registry<NormalNoise>> NOISE { get; } =
         RegistryKey<NormalNoise>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/noise"));
+
+    public static RegistryKey<Registry<MaterialRule>> MATERIAL_RULE { get; } =
+        RegistryKey<MaterialRule>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/material_rule"));
 }

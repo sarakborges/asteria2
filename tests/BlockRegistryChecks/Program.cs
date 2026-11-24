@@ -205,8 +205,9 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 14, "The root registry must contain the built-in block, fluid, item, biome, normal-noise, density-function, density-function-type, chunk-status, particle, environment-attribute, attribute-type, position-source-type, world-clock and timeline registries.");
+        Require(BuiltInRegistries.Root.Count == 16, "The root registry must contain the built-in block, fluid, item, biome, normal-noise, density-function, density-function-type, material-rule, material-rule-type, chunk-status, particle, environment-attribute, attribute-type, position-source-type, world-clock and timeline registries.");
         DensityFunctionCodecChecks.Run();
+        MaterialRuleChecks.Run();
         BuiltInNoiseChecks.Run();
         BuiltInDensityFunctionChecks.Run();
         Require(
@@ -353,7 +354,7 @@ internal static class Program
             BuiltInRegistries.RootLocation == ResourceLocation.Parse("asteria:root"),
             "The root registry must use the Asteria namespace.");
         Require(
-            BuiltInRegistries.Root.Count == 14 && !BuiltInRegistries.Root.IsFrozen,
+            BuiltInRegistries.Root.Count == 16 && !BuiltInRegistries.Root.IsFrozen,
             "The root registry must register all fourteen built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =

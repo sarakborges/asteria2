@@ -1011,3 +1011,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Testes cobrem limites de `FluidStatus`, aquifer desativado, densidade positiva, fluido global de lava, fast path acima do limite de superfície, sampling normal determinístico e os helpers numéricos.
 - O caminho de geração de fluido de depuração do `SharedConstants.DEBUG_DISABLE_FLUID_GENERATION` foi omitido: Asteria ainda não possui a flag global de depuração equivalente e o caminho normal 26.3 é preservado.
 - Esta classe agora pode produzir estados de material/fluido para uma etapa de geração, mas ainda não há `NoiseChunk` nem a execução da pipeline `NoiseBasedChunkGenerator`; portanto ainda não há mundo jogável nem integração visual.
+
+
+## Incremento — núcleo serializável de MaterialRule (24/11/2026)
+
+- Portados os contratos `MaterialRule` e `RuleEvaluator`, incluindo codecs distintos para regra inline, holder fixo e wrapper `HolderHolder` da referência Java 26.3.
+- Adicionados os registries `worldgen/material_rule` e `worldgen/material_rule_type`; o segundo registra os codecs de regra por nome, sem misturar valores e tipos.
+- Portadas `BlockRule` (`result_state`) e `SequenceRule` (`sequence`), incluindo compilação para avaliadores, caminho de uma única regra e retorno da primeira regra que produz estado não nulo.
+- Adicionada a estrutura mutável inicial do `MaterialRuleContext`, preservando coordenadas e contadores de atualização XZ/Y usados pelas condições lazy. O contexto ainda será completado com serviços de biome, ruído, superfície e densidades.
+- Testes cobrem type registry, codec dispatch, serialização inline e round-trip de BlockRule/SequenceRule, tipo desconhecido e execução first-match.
+- Delimitação: as condições, `OreVeinRule`, serviços completos do `MaterialRuleContext`, `MaterialSystem` e o dataset de regras vanilla ainda não foram portados. Este incremento estabelece o núcleo de regra serializável/compilável; não materializa a superfície do chunk por si só.
