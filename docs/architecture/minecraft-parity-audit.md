@@ -1021,3 +1021,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionada a estrutura mutável inicial do `MaterialRuleContext`, preservando coordenadas e contadores de atualização XZ/Y usados pelas condições lazy. O contexto ainda será completado com serviços de biome, ruído, superfície e densidades.
 - Testes cobrem type registry, codec dispatch, serialização inline e round-trip de BlockRule/SequenceRule, tipo desconhecido e execução first-match.
 - Delimitação: as condições, `OreVeinRule`, serviços completos do `MaterialRuleContext`, `MaterialSystem` e o dataset de regras vanilla ainda não foram portados. Este incremento estabelece o núcleo de regra serializável/compilável; não materializa a superfície do chunk por si só.
+
+
+## Incremento — MaterialCondition e ConditionRule (24/11/2026)
+
+- Adicionados os registries `worldgen/material_condition` e `worldgen/material_condition_type`, com dispatch por codecs e holders inline/referenciados.
+- Portadas `NotCondition` (`invert`), `SteepCondition` (limiar X/Z -4/+4) e `HoleCondition` (`surfaceDepth <= 0`), com IDs e ordem do bootstrap 26.3.
+- Portada `ConditionRule` (`if_true`, `then_run`), incluindo compilação do predicado uma vez e avaliação do ramo apenas quando a condição é verdadeira.
+- `MaterialRuleContext` ganhou `surfaceDepth` e caches lazy de condições XZ/Y, invalidados pelos contadores vanilla de atualização.
+- Testes cobrem codecs namespaced, holders, singleton codecs, inversão, cache e invalidação XZ, HoleCondition e integração serializada/compilada de ConditionRule.
+- Permanecem pendentes condições dependentes de biome, noise e serviços completos de superfície, além de MaterialSystem e do dataset vanilla.

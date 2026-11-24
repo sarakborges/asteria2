@@ -32,14 +32,16 @@ internal static class MaterialRuleChecks
     private static void CheckTypeRegistry()
     {
         Registry<MapCodec<MaterialRule>> registry = BuiltInRegistries.MaterialRuleType;
-        Require(registry.Count == 2, "The material-rule type registry must contain block and sequence.");
+        Require(registry.Count == 3, "The material-rule type registry must contain block, sequence and condition.");
         Require(
             registry.ContainsKey(ResourceLocation.WithDefaultNamespace("block")) &&
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("sequence")),
+            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("sequence")) &&
+            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("condition")),
             "Material-rule codec types must use the vanilla block and sequence identifiers.");
         Require(
             ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("block")), BlockRule.TYPE_CODEC) &&
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("sequence")), SequenceRule.TYPE_CODEC),
+            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("sequence")), SequenceRule.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("condition")), ConditionRule.TYPE_CODEC),
             "The registry must expose the same map-codec instances returned by each material rule.");
         Require(
             BuiltInRegistries.MaterialRule.Count == 0,
