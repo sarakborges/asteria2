@@ -174,8 +174,8 @@ internal static class MaterialConditionChecks
             "StoneDepthCondition must select stoneDepthAbove for floor and stoneDepthBelow for ceiling.");
 
         context.UpdateXZ(0, 0, 0, 0, surfaceDepth: 0, surfaceSecondary: -1.0);
-        context.UpdateY(3, 8, int.MinValue, 4);
-        Require(floor() && !ceiling(),
+        context.UpdateY(3, 1, int.MinValue, 4);
+        Require(!floor() && ceiling(),
             "StoneDepthCondition must recompute from updated XZ/Y context generations.");
 
         JsonElement floorJson = JsonDocument.Parse("\"floor\"").RootElement.Clone();
