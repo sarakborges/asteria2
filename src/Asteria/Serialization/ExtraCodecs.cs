@@ -59,6 +59,12 @@ public static class ExtraCodecs
             _decodeCodec.Decode(ops, input);
     }
 
+    /// <summary>Non-negative integer codec from the shared vanilla codec set.</summary>
+    public static readonly Codec<int> NON_NEGATIVE_INT =
+        Codecs.INT.Validate(static value => value >= 0
+            ? DataResult<int>.Success(value)
+            : DataResult<int>.Error(() => $"Value must be non-negative: {value}"));
+
     public static readonly Codec<Vector3> VECTOR3F = CreateVector3Codec();
     public static readonly Codec<Vector4> VECTOR4F = CreateVector4Codec();
 
