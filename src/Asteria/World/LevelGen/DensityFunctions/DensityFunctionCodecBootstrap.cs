@@ -30,6 +30,7 @@ internal static class DensityFunctionCodecBootstrap
         MapCodec<DensityFunction> Spline,
         MapCodec<DensityFunction> Lerp,
         MapCodec<DensityFunction> Cache,
+        MapCodec<DensityFunction> BlendDensity,
         MapCodec<DensityFunction> Interpolated,
         MapCodec<DensityFunction> Clamp,
         MapCodec<DensityFunction> RangeChoice,
@@ -76,6 +77,7 @@ internal static class DensityFunctionCodecBootstrap
         Register(registry, "range_choice", codecs.RangeChoice);
         Register(registry, "interval_select", codecs.IntervalSelect);
         Register(registry, "cache", codecs.Cache);
+        Register(registry, "blend_density", codecs.BlendDensity);
         Register(registry, "interpolated", codecs.Interpolated);
         Register(registry, "slice", codecs.Slice);
         Register(registry, "find_top_surface", codecs.FindTopSurface);
@@ -104,6 +106,7 @@ internal static class DensityFunctionCodecBootstrap
             SplineFunction => codecs.Spline,
             LerpFunction => codecs.Lerp,
             CacheFunction => codecs.Cache,
+            BlendDensityFunction => codecs.BlendDensity,
             InterpolatedFunction => codecs.Interpolated,
             ClampFunction => codecs.Clamp,
             RangeChoiceFunction => codecs.RangeChoice,
@@ -203,6 +206,7 @@ internal static class DensityFunctionCodecBootstrap
             CreateSplineCodec(),
             CreateLerpCodec(),
             CreateCacheCodec(),
+            CreateBlendDensityCodec(),
             CreateInterpolatedCodec(),
             CreateClampCodec(),
             CreateRangeChoiceCodec(),
@@ -305,6 +309,11 @@ internal static class DensityFunctionCodecBootstrap
             .XMap<DensityFunction>(
                 static input => new CacheFunction(input),
                 static function => ((CacheFunction)function).Input);
+
+    private static MapCodec<DensityFunction> CreateBlendDensityCodec() =>
+        BlendDensityFunction.CODEC.XMap<DensityFunction>(
+            static function => function,
+            static function => (BlendDensityFunction)function);
 
     private static MapCodec<DensityFunction> CreateInterpolatedCodec() =>
         RecordCodecBuilder.MapCodec<InterpolatedFunction>(instance =>
