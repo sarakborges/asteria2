@@ -427,13 +427,48 @@ internal static class NoiseBasedChunkGeneratorChecks
         const int height = 96;
         const int protectedMaxY = minY + height - 1 - 7;
 
+        var aquiferConfig = new Aquifer.Config(
+            BarrierNoise: new ConstantFunction(100.0f),
+            FluidLevelFloodednessNoise: new ConstantFunction(0.5f),
+            FluidLevelSpreadNoise: new ConstantFunction(0.0f),
+            LavaNoise: new ConstantFunction(0.0f),
+            Exclusion: new ConstantFunction(0.0f),
+            SurfaceLevel: new ConstantFunction(128.0f));
         NoiseGeneratorSettings settings = CreateSettings(
             new ConstantFunction(0.25f),
             seaLevel: -100,
             materialRule: new BlockRule(Blocks.STONE.DefaultState),
-            noiseHeight: height);
+            noiseHeight: height,
+            aquifers: aquiferConfig);
         var randomState = CreateRandomState(settings);
         var generator = new NoiseBasedChunkGenerator(settings, randomState);
+        var volume = new DensityVolume(16, height, 16, 0, minY, 0);
+        bool aquiferReturnedNull = false;
+        bool aquiferProducedFluid = false;
+        using (var aquiferProbe = new NoiseChunk(
+            randomState,
+            beardifier: null,
+            settings,
+            NoiseBasedChunkGenerator.CreateFluidPicker(settings),
+            IChunkBlender.Empty,
+            volume))
+        {
+            for (int y = minY; y < minY + height && !(aquiferReturnedNull && aquiferProducedFluid); y++)
+            for (int x = 0; x < 16 && !(aquiferReturnedNull && aquiferProducedFluid); x++)
+            for (int z = 0; z < 16; z++)
+            {
+                BlockState? state = aquiferProbe.Aquifer.ComputeSubstance(x, y, z, density: 0.0);
+                aquiferReturnedNull |= state is null;
+                aquiferProducedFluid |= state is not null && !state.GetFluidState().IsEmpty();
+                if (aquiferReturnedNull && aquiferProducedFluid)
+                    break;
+            }
+        }
+
+        Require(
+            aquiferReturnedNull && aquiferProducedFluid,
+            "The active aquifer fixture must expose both pressure-null carving positions and fluid-bearing carving positions.");
+
         ProtoChunk chunk = CreateChunk(ChunkPos.Zero, minY, height);
 
         generator.BuildTerrain(
@@ -871,7 +906,8 @@ internal static class NoiseBasedChunkGeneratorChecks
         int seaLevel,
         MaterialRule? materialRule = null,
         float climateTemperature = 0.0f,
-        int noiseHeight = 96)
+        int noiseHeight = 96,
+        Aquifer.Config? aquifers = null)
     {
         DensityFunction climate = new ConstantFunction(climateTemperature);
         var router = new NoiseRouter(
@@ -886,7 +922,7 @@ internal static class NoiseBasedChunkGeneratorChecks
             Holder<MaterialRule>.Direct(materialRule ?? new BlockRule(Blocks.STONE.DefaultState)),
             Array.Empty<SpawnTargetPoint>(),
             seaLevel,
-            Aquifers: null,
+            Aquifers: aquifers,
             UseLegacyRandomSource: false,
             DebugFunctions: NoiseGeneratorDebugFunctions.EMPTY);
     }
