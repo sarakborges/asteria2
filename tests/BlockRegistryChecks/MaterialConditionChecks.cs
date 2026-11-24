@@ -29,9 +29,12 @@ internal static class MaterialConditionChecks
     private static void CheckConditionTypeRegistry()
     {
         Registry<MapCodec<MaterialCondition>> registry = BuiltInRegistries.MaterialConditionType;
-        Require(registry.Count == 8,
-            "The material-condition type registry must contain vertical_gradient, y_above, water, steep, not, hole, above_preliminary_surface and stone_depth.");
+        Require(registry.Count == 11,
+            "The material-condition type registry must contain biome, noise_threshold, vertical_gradient, y_above, water, temperature, steep, not, hole, above_preliminary_surface and stone_depth.");
         Require(
+            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("biome")) &&
+            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("noise_threshold")) &&
+            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("temperature")) &&
             registry.ContainsKey(ResourceLocation.WithDefaultNamespace("steep")) &&
             registry.ContainsKey(ResourceLocation.WithDefaultNamespace("not")) &&
             registry.ContainsKey(ResourceLocation.WithDefaultNamespace("hole")) &&
@@ -42,6 +45,9 @@ internal static class MaterialConditionChecks
             registry.ContainsKey(ResourceLocation.WithDefaultNamespace("stone_depth")),
             "Material-condition types must use the vanilla identifiers.");
         Require(
+            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("biome")), BiomeCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("noise_threshold")), NoiseThresholdCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("temperature")), TemperatureCondition.TYPE_CODEC) &&
             ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("steep")), SteepCondition.TYPE_CODEC) &&
             ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("not")), NotCondition.TYPE_CODEC) &&
             ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("hole")), HoleCondition.TYPE_CODEC) &&
