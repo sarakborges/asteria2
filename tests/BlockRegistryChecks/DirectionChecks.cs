@@ -132,7 +132,7 @@ internal static class DirectionChecks
         var allShuffleRandom = new SequenceRandomSource(0, 0, 0, 0, 0);
         Require(Direction.AllShuffled(allShuffleRandom).SequenceEqual(new[]
             {
-                Direction.SOUTH, Direction.NORTH, Direction.UP,
+                Direction.UP, Direction.NORTH, Direction.SOUTH,
                 Direction.WEST, Direction.EAST, Direction.DOWN
             }) &&
             allShuffleRandom.Bounds.SequenceEqual(new[] { 6, 5, 4, 3, 2 }) &&
