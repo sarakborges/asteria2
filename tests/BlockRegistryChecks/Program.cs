@@ -223,6 +223,7 @@ internal static class Program
         WorldGenRegionChecks.Run();
         BiomeDecorationChecks.Run();
         BlockStateProviderChecks.Run();
+        SimpleBlockFeatureChecks.Run();
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
