@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Asteria.Content.Biomes;
+using Asteria.Content.Registries;
+using Asteria.World.LevelGen;
 using Asteria.Serialization;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.DensityFunctions;
@@ -29,6 +31,7 @@ internal static class NoiseRouterChecks
         CheckCodecRoundTrip();
         CheckClimateSamplerMapping();
         CheckOverworldFunctionSetMapping();
+        CheckRegistryBackedOverworldProfiles();
     }
 
     private static NoiseRouter CreateRouter() =>
@@ -78,6 +81,50 @@ internal static class NoiseRouterChecks
             router.FinalDensity is ConstantFunction { Value: 12.0f },
             "NoiseRouter.createOverworld must take ridges from the shared ridge function and retain chunk_surface_level/final_density from the function set.");
     }
+
+    private static void CheckRegistryBackedOverworldProfiles()
+    {
+        Registry<DensityFunction> registry = BuiltInRegistries.DensityFunction;
+
+        CheckProfile(
+            registry,
+            DensityFunctionKeys.OVERWORLD_FUNCTIONS);
+        CheckProfile(
+            registry,
+            DensityFunctionKeys.LARGE_OVERWORLD_FUNCTIONS);
+        CheckProfile(
+            registry,
+            DensityFunctionKeys.AMPLIFIED_OVERWORLD_FUNCTIONS);
+    }
+
+    private static void CheckProfile(
+        Registry<DensityFunction> registry,
+        OverworldFunctionSet<RegistryKey<DensityFunction>> names)
+    {
+        NoiseRouter router = NoiseRouter.CreateOverworld(registry, names);
+
+        Require(
+            IsRegisteredFunction(router.Temperature, registry, names.Temperature) &&
+            IsRegisteredFunction(router.Vegetation, registry, names.Vegetation) &&
+            IsRegisteredFunction(router.Continents, registry, names.Continents) &&
+            IsRegisteredFunction(router.Erosion, registry, names.Erosion) &&
+            IsRegisteredFunction(router.Depth, registry, names.Depth) &&
+            IsRegisteredFunction(router.ChunkSurfaceLevel, registry, names.ChunkSurfaceLevel) &&
+            IsRegisteredFunction(router.FinalDensity, registry, names.FinalDensity),
+            "Registry-backed Overworld routing must select the matching climate, depth, chunk-surface and final-density holders from the supplied profile.");
+
+        Require(
+            IsRegisteredFunction(router.Ridges, registry, DensityFunctionKeys.RIDGES) &&
+            !IsRegisteredFunction(router.Ridges, registry, DensityFunctionKeys.RIDGES_FOLDED),
+            "The vanilla NoiseRouter.ridges channel must resolve overworld/ridges, not overworld/ridges_folded.");
+    }
+
+    private static bool IsRegisteredFunction(
+        DensityFunction function,
+        Registry<DensityFunction> registry,
+        RegistryKey<DensityFunction> key) =>
+        function is DensityFunctions.HolderHolder { Function: var holder } &&
+        ReferenceEquals(holder, registry.GetHolder(key));
 
     private static void CheckCodecRoundTrip()
     {
