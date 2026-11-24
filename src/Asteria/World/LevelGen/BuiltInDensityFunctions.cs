@@ -1006,7 +1006,8 @@ internal static class BuiltInDensityFunctions
         Registry<DensityFunction> registry,
         RegistryKey<DensityFunction> key)
     {
-        Holder<DensityFunction>.Reference holder = registry.GetHolder(key) ??
+        Holder<DensityFunction>.Reference holder =
+            registry.CreateRegistrationLookup().Get(key) ??
             throw new InvalidOperationException($"Missing built-in density function: {key.Location}");
         return new DensityFunctionFactories.HolderHolder(holder);
     }
