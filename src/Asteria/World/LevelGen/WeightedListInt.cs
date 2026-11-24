@@ -7,12 +7,11 @@ namespace Asteria.World.LevelGen;
 public sealed class WeightedListInt : IntProvider
 {
     public static MapCodec<WeightedListInt> MAP_CODEC { get; } =
-        RecordCodecBuilder.MapCodec<WeightedListInt>(instance =>
-            instance.Group(
-                    WeightedList<IntProvider>.CreateNonEmptyCodec(IntProviders.CODEC)
-                        .FieldOf("distribution")
-                        .ForGetter<WeightedListInt>(static provider => provider.Distribution))
-                .Apply(instance, static distribution => new WeightedListInt(distribution)));
+        WeightedList<IntProvider>.CreateNonEmptyCodec(IntProviders.CODEC)
+            .FieldOf("distribution")
+            .XMap<WeightedListInt>(
+                static distribution => new WeightedListInt(distribution),
+                static provider => provider.Distribution);
 
     public static MapCodec<IntProvider> TYPE_CODEC { get; } =
         MAP_CODEC.XMap<IntProvider>(
