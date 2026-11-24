@@ -101,6 +101,19 @@ public sealed class NoiseBasedChunkGenerator
             "Feature order validation requires the configured Overworld biome source.");
 
     /// <summary>
+    /// Creates the uncached biome resolver used by WorldGenRegion. Unlike chunk biome
+    /// lookup, this samples the configured climate source at any quart coordinate.
+    /// </summary>
+    public BiomeResolver CreateUncachedBiomeResolver()
+    {
+        MultiNoiseBiomeSource biomeSource = _overworldBiomeSource ??
+            throw new InvalidOperationException(
+                "An uncached biome resolver requires the configured Overworld biome source.");
+        return biomeSource.CreateResolver(
+            _randomState.CreateClimateSampler(SamplerContext.EmptyUncached));
+    }
+
+    /// <summary>
     /// Builds this chunk with the vanilla Overworld biome source configured by CreateOverworld.
     /// Custom generators must continue to supply their own biome source explicitly.
     /// </summary>
