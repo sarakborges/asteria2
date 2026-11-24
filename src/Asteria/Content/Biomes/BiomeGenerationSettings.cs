@@ -21,7 +21,7 @@ public sealed class BiomeGenerationSettings
     public static MapCodec<BiomeGenerationSettings> CODEC { get; } =
         RecordCodecBuilder.MapCodec<BiomeGenerationSettings>(instance =>
             instance.Group(
-                    RegistryCodecs.HolderSet<WorldCarver>(Registries.CARVER)
+                    RegistryCodecs.HolderSet<WorldCarver>(Asteria.Content.Registries.Registries.CARVER)
                         .FieldOf("carvers")
                         .ForGetter<BiomeGenerationSettings>(static settings => settings.Carvers),
                     PlacedFeature.LIST_OF_LISTS_CODEC
@@ -65,9 +65,9 @@ public sealed class BiomeGenerationSettings
     public static BiomeGenerationSettings CreateDefaultOverworld()
     {
         var builder = new PlainBuilder();
-        builder.AddCarver(GetCarverHolder(Carvers.CAVE));
-        builder.AddCarver(GetCarverHolder(Carvers.CAVE_EXTRA_UNDERGROUND));
-        builder.AddCarver(GetCarverHolder(Carvers.CANYON));
+        builder.AddCarver(GetCarverHolder(Asteria.World.LevelGen.Carvers.CAVE));
+        builder.AddCarver(GetCarverHolder(Asteria.World.LevelGen.Carvers.CAVE_EXTRA_UNDERGROUND));
+        builder.AddCarver(GetCarverHolder(Asteria.World.LevelGen.Carvers.CANYON));
         return builder.Build();
     }
 
