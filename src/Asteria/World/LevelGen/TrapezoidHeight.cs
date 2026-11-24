@@ -4,11 +4,12 @@ using Asteria.Serialization;
 namespace Asteria.World.LevelGen;
 
 /// <summary>Trapezoidal height distribution between two vertical anchors.</summary>
-public sealed record TrapezoidHeight(
-    VerticalAnchor Minimum,
-    VerticalAnchor Maximum,
-    int Plateau) : HeightProvider
+public sealed class TrapezoidHeight : HeightProvider
 {
+    public VerticalAnchor Minimum { get; }
+    public VerticalAnchor Maximum { get; }
+    public int Plateau { get; }
+
     public static MapCodec<TrapezoidHeight> MAP_CODEC { get; } =
         RecordCodecBuilder.MapCodec<TrapezoidHeight>(instance =>
             instance.Group(
@@ -27,6 +28,13 @@ public sealed record TrapezoidHeight(
         MAP_CODEC.XMap<HeightProvider>(
             static provider => provider,
             static provider => (TrapezoidHeight)provider);
+
+    public TrapezoidHeight(VerticalAnchor minimum, VerticalAnchor maximum, int plateau)
+    {
+        Minimum = minimum ?? throw new ArgumentNullException(nameof(minimum));
+        Maximum = maximum ?? throw new ArgumentNullException(nameof(maximum));
+        Plateau = plateau;
+    }
 
     public static TrapezoidHeight Of(
         VerticalAnchor minimum,
