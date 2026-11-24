@@ -6,7 +6,7 @@ internal static class ChunkDependenciesChecks
     {
         var dependencies = new ChunkDependencies(new[]
         {
-            ChunkStatus.SPAWN,
+            ChunkStatus.LIGHT,
             ChunkStatus.INITIALIZE_LIGHT,
             ChunkStatus.TERRAIN,
             ChunkStatus.BIOMES,
@@ -22,7 +22,7 @@ internal static class ChunkDependenciesChecks
 
         Require(dependencies.Size() == 12 && dependencies.GetRadius() == 11,
             "The full generation dependency window must contain twelve rings, from distance zero through eleven.");
-        Require(ReferenceEquals(dependencies.Get(0), ChunkStatus.SPAWN) &&
+        Require(ReferenceEquals(dependencies.Get(0), ChunkStatus.LIGHT) &&
             ReferenceEquals(dependencies.Get(1), ChunkStatus.INITIALIZE_LIGHT) &&
             ReferenceEquals(dependencies.Get(2), ChunkStatus.TERRAIN) &&
             ReferenceEquals(dependencies.Get(3), ChunkStatus.BIOMES) &&
@@ -37,14 +37,13 @@ internal static class ChunkDependenciesChecks
             dependencies.GetRadiusOf(ChunkStatus.FEATURES) == 1 &&
             dependencies.GetRadiusOf(ChunkStatus.INITIALIZE_LIGHT) == 1 &&
             dependencies.GetRadiusOf(ChunkStatus.LIGHT) == 0 &&
-            dependencies.GetRadiusOf(ChunkStatus.SPAWN) == 0 &&
             dependencies.GetRadiusOf(ChunkStatus.FULL) == -1,
             "getRadiusOf must return the farthest ring guaranteed to have reached a status, matching the vanilla FULL pyramid.");
 
         IReadOnlyList<ChunkStatus> list = dependencies.AsList();
         Require(ReferenceEquals(list, dependencies.AsList()) && list.Count == dependencies.Size(),
             "asList must expose the same immutable dependency list instance.");
-        Require(dependencies.ToString() == "[asteria:spawn, asteria:initialize_light, asteria:terrain, asteria:biomes, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts]",
+        Require(dependencies.ToString() == "[asteria:light, asteria:initialize_light, asteria:terrain, asteria:biomes, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts, asteria:structure_starts]",
             "ChunkDependencies.toString must display its status sequence in distance order.");
 
         var empty = new ChunkDependencies(Array.Empty<ChunkStatus>());
