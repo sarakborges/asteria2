@@ -48,7 +48,7 @@ internal static class PlacementModifierChecks
     {
         Require(
             BuiltInRegistries.PlacementModifierType.Count == 7,
-            "The placement modifier registry must contain the four implemented algorithms.");
+            "The placement modifier registry must contain all seven implemented algorithms.");
 
         foreach (string id in new[] { "in_square", "biome", "rarity_filter", "count", "height_range", "heightmap", "offset" })
         {
@@ -98,6 +98,33 @@ internal static class PlacementModifierChecks
             ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:count" &&
             ops.Get(encoded, "count").GetOrThrow().GetInt32() == 4,
             "The count dispatch codec must encode the Asteria placement type and numeric constant shorthand.");
+
+        PlacementModifier heightRange = PlacementModifierCodecs.CODEC
+            .Parse(ops, ParseJson("""{"type":"asteria:height_range","height":{"absolute":24}}"""))
+            .GetOrThrow();
+        Require(
+            heightRange is HeightRangePlacement { Height: ConstantHeight },
+            "The height_range dispatch codec must decode its contextual HeightProvider.");
+
+        PlacementModifier heightmap = PlacementModifierCodecs.CODEC
+            .Parse(ops, ParseJson("""{"type":"asteria:heightmap","heightmap":"WORLD_SURFACE_WG"}"""))
+            .GetOrThrow();
+        Require(
+            heightmap is HeightmapPlacement { Heightmap: var heightmapType } &&
+            ReferenceEquals(heightmapType, Heightmap.Types.WORLD_SURFACE_WG),
+            "The heightmap dispatch codec must decode its canonical heightmap type.");
+
+        PlacementModifier offset = PlacementModifierCodecs.CODEC
+            .Parse(ops, ParseJson("""{"type":"asteria:offset","x":1,"y":-2,"z":3}"""))
+            .GetOrThrow();
+        Require(
+            offset is OffsetPlacement
+            {
+                X: ConstantInt { Value: 1 },
+                Y: ConstantInt { Value: -2 },
+                Z: ConstantInt { Value: 3 }
+            },
+            "The offset dispatch codec must decode all three integer providers.");
 
         Require(
             PlacementModifierCodecs.CODEC
