@@ -40,7 +40,6 @@ public interface WorldCarver
         CarverOutput output,
         CarveSkipChecker skipChecker)
     {
-        ArgumentNullException.ThrowIfNull(chunkPosition);
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(skipChecker);
 
