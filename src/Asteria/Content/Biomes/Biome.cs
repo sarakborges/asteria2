@@ -36,6 +36,7 @@ public sealed class Biome
     public ClimateSettings Climate { get; }
     public EnvironmentAttributeMap Attributes { get; }
     public BiomeSpecialEffects SpecialEffects { get; }
+    public BiomeGenerationSettings GenerationSettings { get; }
     public bool HasPrecipitation => Climate.HasPrecipitation;
     public float GetBaseTemperature() => Climate.Temperature;
     public float GetDownfall() => Climate.Downfall;
@@ -87,7 +88,11 @@ public sealed class Biome
         GetTemperature(position, seaLevel) > 0.1F;
 
     public Biome(ClimateSettings climate, BiomeSpecialEffects specialEffects)
-        : this(climate, EnvironmentAttributeMap.Empty, specialEffects)
+        : this(
+            climate,
+            EnvironmentAttributeMap.Empty,
+            specialEffects,
+            BiomeGenerationSettings.EMPTY)
     {
     }
 
@@ -95,7 +100,20 @@ public sealed class Biome
         ClimateSettings climate,
         EnvironmentAttributeMap attributes,
         BiomeSpecialEffects specialEffects)
-        : this(climate, attributes, specialEffects, BuiltInRegistries.Biome)
+        : this(
+            climate,
+            attributes,
+            specialEffects,
+            BiomeGenerationSettings.EMPTY)
+    {
+    }
+
+    public Biome(
+        ClimateSettings climate,
+        EnvironmentAttributeMap attributes,
+        BiomeSpecialEffects specialEffects,
+        BiomeGenerationSettings generationSettings)
+        : this(climate, attributes, specialEffects, generationSettings, BuiltInRegistries.Biome)
     {
     }
 
@@ -104,14 +122,31 @@ public sealed class Biome
         EnvironmentAttributeMap attributes,
         BiomeSpecialEffects specialEffects,
         Registry<Biome> registry)
+        : this(
+            climate,
+            attributes,
+            specialEffects,
+            BiomeGenerationSettings.EMPTY,
+            registry)
+    {
+    }
+
+    internal Biome(
+        ClimateSettings climate,
+        EnvironmentAttributeMap attributes,
+        BiomeSpecialEffects specialEffects,
+        BiomeGenerationSettings generationSettings,
+        Registry<Biome> registry)
     {
         ArgumentNullException.ThrowIfNull(attributes);
         ArgumentNullException.ThrowIfNull(specialEffects);
+        ArgumentNullException.ThrowIfNull(generationSettings);
         ArgumentNullException.ThrowIfNull(registry);
 
         Climate = climate;
         Attributes = attributes;
         SpecialEffects = specialEffects;
+        GenerationSettings = generationSettings;
         BuiltInRegistryHolder = registry.CreateIntrusiveHolder(this);
     }
 
