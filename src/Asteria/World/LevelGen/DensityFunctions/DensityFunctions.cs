@@ -89,6 +89,38 @@ public static class DensityFunctions
     public static DensityFunction Noise(Holder<NormalNoise> noiseData, double yScale) =>
         Noise(noiseData, 1.0, yScale);
 
+    public static DensityFunction MappedNoise(
+        Holder<NormalNoise> noiseData,
+        double xzScale,
+        double yScale,
+        float minTarget,
+        float maxTarget)
+    {
+        ArgumentNullException.ThrowIfNull(noiseData);
+
+        DensityFunction noise = Noise(noiseData, xzScale, yScale);
+        float factor = (maxTarget - minTarget) / 2.0f;
+        float offset = minTarget + factor;
+        DensityFunction scaled = Mul(noise, factor);
+
+        return offset == 0.0f
+            ? scaled
+            : Add(scaled, offset);
+    }
+
+    public static DensityFunction MappedNoise(
+        Holder<NormalNoise> noiseData,
+        double yScale,
+        float minTarget,
+        float maxTarget) =>
+        MappedNoise(noiseData, 1.0, yScale, minTarget, maxTarget);
+
+    public static DensityFunction MappedNoise(
+        Holder<NormalNoise> noiseData,
+        float minTarget,
+        float maxTarget) =>
+        MappedNoise(noiseData, 1.0, 1.0, minTarget, maxTarget);
+
     public static DensityFunction YClampedGradient(
         int fromY,
         int toY,
