@@ -55,7 +55,7 @@ internal static class TickChecks
         JsonElement encoded = blockCodec.EncodeStart(ops, tick).GetOrThrow();
 
         Require(
-            ops.Get(encoded, "i").GetOrThrow().GetString() == "asteria:stone" &&
+            ops.Get(encoded, "i").GetOrThrow().GetString() == "minecraft:stone" &&
             ops.Get(encoded, "x").GetOrThrow().GetInt32() == -17 &&
             ops.Get(encoded, "y").GetOrThrow().GetInt32() == 64 &&
             ops.Get(encoded, "z").GetOrThrow().GetInt32() == 31 &&
