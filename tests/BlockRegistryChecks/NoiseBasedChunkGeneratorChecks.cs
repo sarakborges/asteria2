@@ -1,4 +1,5 @@
 using Asteria.Content.Blocks;
+using Asteria.Content.Biomes;
 using Asteria.Content.Chunks;
 using Asteria.Content.Registries;
 using Asteria.Core;
@@ -7,6 +8,7 @@ using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
 using Asteria.World.LevelGen.Materials.Rules;
+using Asteria.World.LevelGen.Materials.Conditions;
 
 internal static class NoiseBasedChunkGeneratorChecks
 {
@@ -19,6 +21,8 @@ internal static class NoiseBasedChunkGeneratorChecks
             CheckPositiveDensityUsesDefaultBlock();
             CheckNegativeDensityMaterializesLavaWaterAndAir();
             CheckChunkCoordinateAndHeightmapMaterialization();
+            CheckMaterialRuleSurfacePass();
+            CheckPreliminarySurfaceCondition();
         }
         finally
         {
@@ -140,10 +144,56 @@ internal static class NoiseBasedChunkGeneratorChecks
             "Chunk heightmap lookup must accept world-space X/Z for non-origin chunks.");
     }
 
+    private static void CheckMaterialRuleSurfacePass()
+    {
+        NoiseGeneratorSettings settings = CreateSettings(
+            new ConstantFunction(0.25f),
+            0,
+            new BlockRule(Blocks.DIRT.DefaultState));
+        var randomState = CreateRandomState(settings);
+        var generator = new NoiseBasedChunkGenerator(settings, randomState);
+        ProtoChunk chunk = CreateChunk(new ChunkPos(0, 0), -16, 48);
+
+        generator.BuildTerrain(
+            chunk,
+            _ => Holder<Biome>.Direct(Biomes.PLAINS));
+
+        Require(
+            ReferenceEquals(chunk.GetBlockState(new BlockPos(7, 0, 9)), Blocks.DIRT.DefaultState),
+            "BuildTerrain must apply the configured material rule after density/aquifer filling.");
+        Require(
+            ReferenceEquals(randomState.GetOrCreateMaterialSystem(settings), randomState.GetOrCreateMaterialSystem(settings)),
+            "A RandomState must retain one MaterialSystem instance for its world-generation settings.");
+    }
+
+    private static void CheckPreliminarySurfaceCondition()
+    {
+        MaterialRule rule = new ConditionRule(
+            AbovePreliminarySurfaceCondition.INSTANCE,
+            new BlockRule(Blocks.DIRT.DefaultState));
+        NoiseGeneratorSettings settings = CreateSettings(new ConstantFunction(0.25f), 0, rule);
+        var generator = new NoiseBasedChunkGenerator(settings, CreateRandomState(settings));
+        ProtoChunk chunk = CreateChunk(new ChunkPos(0, 0), -16, 48);
+
+        generator.BuildTerrain(
+            chunk,
+            _ => Holder<Biome>.Direct(Biomes.PLAINS));
+
+        Require(
+            ReferenceEquals(chunk.GetBlockState(new BlockPos(5, 0, 6)), Blocks.DIRT.DefaultState),
+            "The material context must evaluate preliminary-surface conditions using the chunk-sampled density volume.");
+        Require(
+            ReferenceEquals(chunk.GetBlockState(new BlockPos(5, -16, 6)), Blocks.STONE.DefaultState),
+            "Blocks below the preliminary-surface threshold must retain their original material.");
+    }
+
     private static ProtoChunk CreateChunk(ChunkPos position, int minY, int height) =>
         new(position, LevelHeightAccessor.Create(minY, height), PalettedContainerFactory.CreateBuiltIn());
 
-    private static NoiseGeneratorSettings CreateSettings(DensityFunction finalDensity, int seaLevel)
+    private static NoiseGeneratorSettings CreateSettings(
+        DensityFunction finalDensity,
+        int seaLevel,
+        MaterialRule? materialRule = null)
     {
         DensityFunction climate = new ConstantFunction(0.0f);
         var router = new NoiseRouter(
@@ -155,7 +205,7 @@ internal static class NoiseBasedChunkGeneratorChecks
             Blocks.STONE.DefaultState,
             Blocks.WATER.DefaultState,
             router,
-            Holder<MaterialRule>.Direct(new BlockRule(Blocks.STONE.DefaultState)),
+            Holder<MaterialRule>.Direct(materialRule ?? new BlockRule(Blocks.STONE.DefaultState)),
             Array.Empty<SpawnTargetPoint>(),
             seaLevel,
             Aquifers: null,

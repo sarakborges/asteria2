@@ -1,15 +1,19 @@
+using Asteria.Content.Biomes;
 using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
 using Asteria.Content.Chunks.Status;
+using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.World;
 using Asteria.World.LevelGen.DensityFunctions;
+using Asteria.World.LevelGen.Materials;
+using Asteria.World.LevelGen.Materials.Rules;
 
 namespace Asteria.World.LevelGen;
 
 /// <summary>
-/// Minecraft Java 26.3 density and aquifer fill for a ProtoChunk. Surface rules and
-/// carvers remain later TERRAIN sub-steps.
+/// Minecraft Java 26.3 density, aquifer and generic surface-rule stages for a ProtoChunk.
+/// Carvers and biome-specific surface extensions remain later pipeline work.
 /// </summary>
 public sealed class NoiseBasedChunkGenerator
 {
@@ -48,8 +52,8 @@ public sealed class NoiseBasedChunkGenerator
     }
 
     /// <summary>
-    /// Fills final_density and aquifer results into the proto chunk. Callers still execute
-    /// the surface-material and carver stages before publishing the TERRAIN status.
+    /// Fills final_density and aquifer results into the proto chunk. This method intentionally
+    /// stops before surface materials, preserving the lower-level density-fill entry point.
     /// </summary>
     public void FillFromNoise(
         ProtoChunk chunk,
@@ -62,15 +66,7 @@ public sealed class NoiseBasedChunkGenerator
         if (noiseSettings.Height <= 0)
             return;
 
-        ChunkPos chunkPosition = chunk.GetPos();
-        var volume = new DensityVolume(
-            ChunkSection.Width,
-            noiseSettings.Height,
-            ChunkSection.Depth,
-            chunkPosition.GetMinBlockX(),
-            noiseSettings.MinY,
-            chunkPosition.GetMinBlockZ());
-
+        DensityVolume volume = CreateVolume(chunk, noiseSettings);
         Heightmap.PrimeHeightmaps(chunk, ChunkStatus.BIOMES.GetHeightmapsAfter().ToHashSet());
 
         using var noiseChunk = new NoiseChunk(
@@ -80,6 +76,67 @@ public sealed class NoiseBasedChunkGenerator
             _globalFluidPicker,
             blender ?? IChunkBlender.Empty,
             volume);
+        FillFromNoise(chunk, noiseChunk, volume);
+        Heightmap.PrimeHeightmaps(chunk, ChunkStatus.TERRAIN.GetHeightmapsAfter().ToHashSet());
+    }
+
+    /// <summary>
+    /// Runs density filling and the configured material-rule pass with one shared NoiseChunk.
+    /// The biome lookup is supplied by the world/biome pipeline; no placeholder biome source is created.
+    /// </summary>
+    public void BuildTerrain(
+        ProtoChunk chunk,
+        Func<BlockPos, Holder<Biome>> biomeGetter,
+        IReadOnlySet<Holder<Biome>>? possibleBiomes = null,
+        Beardifier? beardifier = null,
+        IChunkBlender? blender = null)
+    {
+        ArgumentNullException.ThrowIfNull(chunk);
+        ArgumentNullException.ThrowIfNull(biomeGetter);
+
+        NoiseSettings noiseSettings = _settings.NoiseSettings.ClampToHeightAccessor(chunk);
+        if (noiseSettings.Height <= 0)
+            return;
+
+        DensityVolume volume = CreateVolume(chunk, noiseSettings);
+        Heightmap.PrimeHeightmaps(chunk, ChunkStatus.BIOMES.GetHeightmapsAfter().ToHashSet());
+
+        using var noiseChunk = new NoiseChunk(
+            _randomState,
+            beardifier,
+            _settings,
+            _globalFluidPicker,
+            blender ?? IChunkBlender.Empty,
+            volume);
+
+        FillFromNoise(chunk, noiseChunk, volume);
+        Heightmap.PrimeHeightmaps(chunk, ChunkStatus.TERRAIN.GetHeightmapsAfter().ToHashSet());
+
+        MaterialSystem materialSystem = _randomState.GetOrCreateMaterialSystem(_settings);
+        materialSystem.BuildSurface(
+            _randomState,
+            new WorldGenerationContext(this, chunk),
+            chunk,
+            noiseChunk,
+            _settings.MaterialRule.Value,
+            biomeGetter,
+            possibleBiomes);
+    }
+
+    private static DensityVolume CreateVolume(ProtoChunk chunk, NoiseSettings noiseSettings)
+    {
+        ChunkPos chunkPosition = chunk.GetPos();
+        return new DensityVolume(
+            ChunkSection.Width,
+            noiseSettings.Height,
+            ChunkSection.Depth,
+            chunkPosition.GetMinBlockX(),
+            noiseSettings.MinY,
+            chunkPosition.GetMinBlockZ());
+    }
+
+    private void FillFromNoise(ProtoChunk chunk, NoiseChunk noiseChunk, DensityVolume volume)
+    {
         using ScopedDensityBuffer densities =
             noiseChunk.GetSampler(_settings.NoiseRouter.FinalDensity).SampleVolume(volume);
 
@@ -106,7 +163,5 @@ public sealed class NoiseBasedChunkGenerator
                 }
             }
         }
-
-        Heightmap.PrimeHeightmaps(chunk, ChunkStatus.TERRAIN.GetHeightmapsAfter().ToHashSet());
     }
 }

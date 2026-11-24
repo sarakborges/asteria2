@@ -1093,3 +1093,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Atualizada a ordem dos codecs no bootstrap de 26.3: biome, noise_threshold, vertical_gradient, y_above, water, temperature, steep, not, hole, above_preliminary_surface, stone_depth.
 - Testes cobrem holder-set serializado em RegistryOps, cache e invalidação de biome, pré-computação por biomas possíveis, codecs 2D/3D, limites de ruído e temperatura em baixa/alta altitude.
 - O cálculo de `surfaceDepth`, `surfaceSecondary`, `minSurfaceLevel`, `possibleBiomes` e o preenchimento do contexto durante a passada de superfície ainda dependem do `MaterialSystem`, que permanece o próximo port.
+
+
+## Incremento — passada genérica de MaterialSystem (24/11/2026)
+
+- Adicionado MaterialSystem com os ruídos surface e surface_secondary, cálculo posicional de surfaceDepth, derivação do limiar de superfície preliminar e passada genérica por coluna baseada no heightmap.
+- MaterialRuleContext agora recebe o volume esperado e os samplers do mesmo NoiseChunk; o sampler de chunk_surface_level é pré-amostrado em um volume 16×1×16 sob demanda, com fallback pontual fora do volume.
+- A passada percorre as colunas de cima para baixo, mantendo stoneDepthAbove, stoneDepthBelow e waterHeight, e aplica o avaliador de regras compilado uma vez por chunk. Estados fluidos aplicados pela regra são marcados para pós-processamento.
+- RandomState passa a possuir uma única instância de MaterialSystem vinculada às configurações de geração. NoiseBasedChunkGenerator.BuildTerrain compartilha o mesmo NoiseChunk entre o preenchimento de densidade/aquifer e a passada genérica de materiais; FillFromNoise permanece disponível sem aplicar materiais.
+- Testes adicionados para aplicação de BlockRule na superfície e para AbovePreliminarySurfaceCondition, incluindo o caminho de pré-amostragem do density sampler.
+- Delimitação: este incremento não implementa ainda as extensões específicas de Eroded Badlands e Frozen Ocean, nem geração/aplicação das clay bands; os registries atuais ainda não contêm os blocos e biomas exigidos por esses ramos vanilla. Carvers e integração desta etapa com o carregamento real de biomas também permanecem pendentes.

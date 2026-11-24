@@ -4,6 +4,7 @@ using Asteria.Content.Registries;
 using Asteria.Content.Biomes;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Synth;
+using Asteria.World.LevelGen.Materials;
 
 namespace Asteria.World.LevelGen;
 
@@ -24,6 +25,9 @@ public sealed class RandomState : DensityFunction.CompileContext
     private readonly ConcurrentDictionary<ResourceLocation, Lazy<PositionalRandomFactory>> _positionalRandoms = new();
 
     private readonly object _densityBufferPoolLock = new();
+    private readonly object _materialSystemLock = new();
+    private MaterialSystem? _materialSystem;
+    private NoiseGeneratorSettings? _materialSystemSettings;
     private readonly List<DensityBufferPool> _densityBufferPools = new(16);
 
     private const int MaxDensityBufferPools = 16;
@@ -32,6 +36,36 @@ public sealed class RandomState : DensityFunction.CompileContext
     public long Seed => _seed;
     public bool UseLegacyRandomSource => _useLegacyRandomSource;
     public NoiseRouter Router => _router;
+
+    /// <summary>
+    /// Returns the material system owned by this seeded world-generation state.
+    /// A RandomState cannot be rebound to a different material configuration.
+    /// </summary>
+    public MaterialSystem GetOrCreateMaterialSystem(NoiseGeneratorSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        lock (_materialSystemLock)
+        {
+            if (_materialSystem is null)
+            {
+                _materialSystem = new MaterialSystem(
+                    this,
+                    settings.DefaultBlock,
+                    settings.SeaLevel,
+                    settings.NoiseRouter.ChunkSurfaceLevel,
+                    _random);
+                _materialSystemSettings = settings;
+            }
+            else if (!_materialSystemSettings!.Equals(settings))
+            {
+                throw new InvalidOperationException(
+                    "A RandomState cannot be reused with different NoiseGeneratorSettings material inputs.");
+            }
+
+            return _materialSystem;
+        }
+    }
 
     public RandomState(
         HolderGetter<NormalNoise> noises,
