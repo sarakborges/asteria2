@@ -84,14 +84,19 @@ internal static class DataLayerChecks
             "DataLayer debug output must include line and layer separators.");
         Require(layer.LayerToString(0).Length == 256 + 16,
             "Layer debug output must contain 256 hexadecimal values and 16 line separators.");
+
         string firstLayer = layer.LayerToString(0);
         string secondLayer = layer.LayerToString(1);
         Require(firstLayer[0] == '1', "The first layer must start at cell index zero.");
         Require(secondLayer[0] == '2' && secondLayer[1] == '1',
             "LayerToString must start at the selected layer's cell range.");
-        Require(secondLayer[16] == '\\n' && secondLayer.Length == 256 + 16,
+        Require(secondLayer[16] == '\n' && secondLayer.Length == 256 + 16,
             "LayerToString must retain its 16-row line break format.");
-        Require(layer.IsDefinitelyFilledWith(1),
+
+        var homogeneous = new DataLayer(1);
+        _ = homogeneous.ToString();
+        _ = homogeneous.LayerToString(1);
+        Require(homogeneous.IsDefinitelyFilledWith(1),
             "Debug formatting must not force materialization of a homogeneous DataLayer.");
 
         _ = layer.GetData();
