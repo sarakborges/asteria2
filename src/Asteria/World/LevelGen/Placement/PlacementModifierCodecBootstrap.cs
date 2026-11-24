@@ -14,6 +14,9 @@ internal static class PlacementModifierCodecBootstrap
         Register(registry, "biome", BiomeFilter.TYPE_CODEC);
         Register(registry, "rarity_filter", RarityFilter.TYPE_CODEC);
         Register(registry, "count", CountPlacement.TYPE_CODEC);
+        Register(registry, "height_range", HeightRangePlacement.TYPE_CODEC);
+        Register(registry, "heightmap", HeightmapPlacement.TYPE_CODEC);
+        Register(registry, "offset", OffsetPlacement.TYPE_CODEC);
     }
 
     private static void Register(
