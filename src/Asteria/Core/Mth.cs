@@ -106,6 +106,34 @@ public static class Mth
     public static double Clamp(double value, double minimum, double maximum) =>
         value < minimum ? minimum : value > maximum ? maximum : value;
 
+    public static double ClampedLerp(double alpha, double minimum, double maximum) =>
+        alpha < 0.0 ? minimum : alpha > 1.0 ? maximum : Lerp(alpha, minimum, maximum);
+
+    public static double Map(
+        double value,
+        double fromMinimum,
+        double fromMaximum,
+        double toMinimum,
+        double toMaximum) =>
+        Lerp(
+            (value - fromMinimum) / (fromMaximum - fromMinimum),
+            toMinimum,
+            toMaximum);
+
+    public static double ClampedMap(
+        double value,
+        double fromMinimum,
+        double fromMaximum,
+        double toMinimum,
+        double toMaximum) =>
+        ClampedLerp(
+            (value - fromMinimum) / (fromMaximum - fromMinimum),
+            toMinimum,
+            toMaximum);
+
+    public static int Quantize(double value, int resolution) =>
+        unchecked(Floor(value / resolution) * resolution);
+
     public static float Clamp(float value, float minimum, float maximum)
     {
         if (value < minimum)

@@ -1,14 +1,33 @@
+using Asteria.Content.Blocks;
+using Asteria.Core;
 using Asteria.Serialization;
+using Asteria.World;
 using Asteria.World.LevelGen.DensityFunctions;
 
 namespace Asteria.World.LevelGen;
 
 /// <summary>
-/// Aquifer generation contract from Minecraft Java 26.3.
-/// The implementation is supplied by the chunk-generation pipeline.
+/// Fluid selection and pressure-aware terrain materialization contract from Minecraft Java 26.3.
 /// </summary>
 public interface Aquifer
 {
+    BlockState? ComputeSubstance(int blockX, int blockY, int blockZ, double density);
+
+    bool ShouldScheduleFluidUpdate();
+
+    static Aquifer CreateDisabled(FluidPicker fluidRule)
+    {
+        ArgumentNullException.ThrowIfNull(fluidRule);
+        return new DisabledAquifer(fluidRule);
+    }
+
+    public delegate FluidStatus FluidPicker(int blockX, int blockY, int blockZ);
+
+    public readonly record struct FluidStatus(int FluidLevel, BlockState FluidType)
+    {
+        public BlockState At(int blockY) =>
+            blockY < FluidLevel ? FluidType : Blocks.AIR.DefaultState;
+    }
     /// <summary>
     /// Density inputs used to construct the aquifer sampler.
     /// </summary>
@@ -65,6 +84,25 @@ public interface Aquifer
         /// <summary>
         /// Decodes the six independent 26.3 aquifer density-function inputs.
         /// </summary>
+        public Aquifer Create(
+            DensitySamplerSet cachingSamplers,
+            PositionalRandomFactory positionalRandomFactory,
+            DensityVolume volume,
+            FluidPicker fluidRule)
+        {
+            ArgumentNullException.ThrowIfNull(cachingSamplers);
+            ArgumentNullException.ThrowIfNull(positionalRandomFactory);
+            ArgumentNullException.ThrowIfNull(volume);
+            ArgumentNullException.ThrowIfNull(fluidRule);
+
+            return new NoiseBasedAquifer(
+                cachingSamplers,
+                this,
+                positionalRandomFactory,
+                volume,
+                fluidRule);
+        }
+
         public static Codec<Config> CODEC { get; } =
             RecordCodecBuilder.Create<Config>(instance =>
                 instance.Group(

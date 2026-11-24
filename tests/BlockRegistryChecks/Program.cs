@@ -248,6 +248,7 @@ internal static class Program
         NormalNoiseChecks.Run();
         NoiseSettingsChecks.Run();
         AquiferConfigChecks.Run();
+        NoiseBasedAquiferChecks.Run();
         SpawnTargetPointChecks.Run();
         NoiseGeneratorDebugFunctionsChecks.Run();
         LegacyFbmInitializerChecks.Run();

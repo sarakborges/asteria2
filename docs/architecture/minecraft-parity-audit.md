@@ -1000,3 +1000,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Registrados os blocos líquidos WATER e LAVA, com estado de fluido correspondente, propriedades liquid/replaceable/no-collision e shape de bloco vazio.
 - Testes cobrem holders e IDs dos tipos/estados, source/amount/height/shape e a associação BlockState para FluidState.
 - Escopo explícito: apenas variantes fonte estão portadas. Estados fluidos, espalhamento, ticks e conversão de fonte ainda não foram portados; estes registros fecham as dependências de estado necessárias ao próximo port do NoiseBasedAquifer, não implementam a simulação completa de fluidos.
+
+
+## Incremento — NoiseBasedAquifer do Minecraft Java 26.3 (24/11/2026)
+
+- Portado o contrato `Aquifer`: `FluidPicker`, `FluidStatus.at`, `createDisabled`, `Config.create`, `computeSubstance` e `shouldScheduleFluidUpdate`.
+- Implementado `NoiseBasedAquifer` com grade 16×12×16, posições pseudoaleatórias por célula, seleção dos quatro centros mais próximos, caches de localização/status e cache de superfície em coordenadas quart.
+- Portadas as regras de fluido global, exceção de lava, inundação total/parcial, superfície aleatorizada, seleção de lava subterrânea, barreira água/lava e pressão interpolada com ruído de barreira lazy.
+- Portados para `Mth` os helpers usados pelo algoritmo (`Map`, `ClampedMap`, `ClampedLerp` e `Quantize`), preservando o quantize por floor inclusive para valores negativos.
+- Testes cobrem limites de `FluidStatus`, aquifer desativado, densidade positiva, fluido global de lava, fast path acima do limite de superfície, sampling normal determinístico e os helpers numéricos.
+- O caminho de geração de fluido de depuração do `SharedConstants.DEBUG_DISABLE_FLUID_GENERATION` foi omitido: Asteria ainda não possui a flag global de depuração equivalente e o caminho normal 26.3 é preservado.
+- Esta classe agora pode produzir estados de material/fluido para uma etapa de geração, mas ainda não há `NoiseChunk` nem a execução da pipeline `NoiseBasedChunkGenerator`; portanto ainda não há mundo jogável nem integração visual.
