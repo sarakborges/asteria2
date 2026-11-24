@@ -25,6 +25,7 @@ internal static class NoiseBasedChunkGeneratorChecks
         CheckNegativeDensityMaterializesLavaWaterAndAir();
         CheckChunkCoordinateAndHeightmapMaterialization();
         CheckMaterialRuleSurfacePass();
+        CheckCarversUseAquiferAndRespectMaskBounds();
         CheckBandlandsMaterialRuleUsesSeededClayBands();
         CheckOreVeinMaterialRuleEvaluation();
         CheckErodedBadlandsExtension();
@@ -413,6 +414,55 @@ internal static class NoiseBasedChunkGeneratorChecks
         Require(
             ReferenceEquals(chunk.GetBlockState(new BlockPos(5, -16, 6)), Blocks.STONE.DefaultState),
             "Blocks below the preliminary-surface threshold must retain their original material.");
+    }
+
+    private static void CheckCarversUseAquiferAndRespectMaskBounds()
+    {
+        const int minY = -64;
+        const int height = 96;
+        const int protectedMaxY = minY + height - 1 - 7;
+
+        NoiseGeneratorSettings settings = CreateSettings(
+            new ConstantFunction(0.25f),
+            seaLevel: -100,
+            materialRule: new BlockRule(Blocks.STONE.DefaultState),
+            noiseHeight: height);
+        var randomState = CreateRandomState(settings);
+        var generator = new NoiseBasedChunkGenerator(settings, randomState);
+        ProtoChunk chunk = CreateChunk(ChunkPos.Zero, minY, height);
+
+        generator.BuildTerrain(
+            chunk,
+            _ => Holder<Biome>.Direct(Biomes.PLAINS));
+
+        int carvedAirCount = 0;
+        for (int y = minY; y <= chunk.GetMaxY(); y++)
+        for (int x = 0; x < 16; x++)
+        for (int z = 0; z < 16; z++)
+        {
+            BlockState state = chunk.GetBlockState(new BlockPos(x, y, z));
+            if (state.IsAir)
+            {
+                Require(
+                    y >= minY + 2 && y <= protectedMaxY,
+                    "Carving must remain inside the vanilla vertical mask bounds and ellipsoid lower-exclusive edge.");
+                carvedAirCount++;
+            }
+
+            if (y <= minY + 1 || y > protectedMaxY)
+            {
+                Require(
+                    ReferenceEquals(state, Blocks.STONE.DefaultState),
+                    "Carving must preserve the lower mask boundary and the seven protected top blocks.");
+            }
+        }
+
+        Require(
+            carvedAirCount > 0,
+            "BuildTerrain must run biome carvers and fill the carved positions with the aquifer's air result.");
+        Require(
+            ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.TERRAIN),
+            "The chunk may reach TERRAIN only after the carving pass and mask application complete.");
     }
 
     private static void CheckBandlandsMaterialRuleUsesSeededClayBands()
