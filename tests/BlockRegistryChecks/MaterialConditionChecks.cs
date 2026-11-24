@@ -1,4 +1,7 @@
 using System.Text.Json;
+using Asteria.World.LevelGen.DensityFunctions.Generator;
+using Asteria.World.LevelGen;
+using Asteria.World;
 using Asteria.Content.Blocks;
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
