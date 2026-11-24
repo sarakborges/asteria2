@@ -80,7 +80,7 @@ public sealed class LevelLightEngine : LightEventListener
     public LayerLightEventListener GetLayerListener(LightLayer layer)
     {
         ArgumentNullException.ThrowIfNull(layer);
-        if (ReferenceEquals(layer, LightLayer.BLOCK))
+        if (layer == LightLayer.BLOCK)
             return _blockEngine?.GetLayerListener() ?? LayerLightEventListener.Dummy.Instance;
 
         return _skyEngine?.GetLayerListener() ?? LayerLightEventListener.Dummy.Instance;

@@ -20,7 +20,7 @@ public abstract class LightEngine
 
     public abstract void SetLightEnabled(ChunkPos position, bool enabled);
 
-    public abstract override void PropagateLightSources(ChunkPos position);
+    public abstract void PropagateLightSources(ChunkPos position);
 
     public abstract LayerLightEventListener GetLayerListener();
 
@@ -284,7 +284,7 @@ public abstract class LightEngine<TMap, TStorage> : LightEngine, LayerLightEvent
         Array.Clear(_lastChunks);
     }
 
-    public abstract void PropagateLightSources(ChunkPos position);
+    public abstract override void PropagateLightSources(ChunkPos position);
 
     protected abstract void CheckNode(long blockNode);
 

@@ -145,7 +145,7 @@ internal static class LevelLightEngineChecks
     private static ProtoChunk CreateChunk(int chunkX = 0, int chunkZ = 0) =>
         new(
             new ChunkPos(chunkX, chunkZ),
-            LevelHeightAccessor.Create(-16, 32),
+            LevelHeightAccessor.Create(-16, 48),
             PalettedContainerFactory.CreateBuiltIn());
 
     private static void Require(bool condition, string message)

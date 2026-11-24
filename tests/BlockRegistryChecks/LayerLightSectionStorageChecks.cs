@@ -122,7 +122,7 @@ internal static class LayerLightSectionStorageChecks
         public static int StateGetNeighborCount(byte state) =>
             SectionState.GetNeighborCount(state);
 
-        public static SectionType StateType(byte state) =>
+        public static LightSectionType StateType(byte state) =>
             SectionState.GetType(state);
     }
 
@@ -145,15 +145,15 @@ internal static class LayerLightSectionStorageChecks
         state = TestStorage.StateNeighborCount(state, 26);
         Require(TestStorage.StateContainsData(state), "Neighbor updates must preserve the data bit.");
         Require(TestStorage.StateGetNeighborCount(state) == 26, "The neighbor counter must support all 26 adjacent sections.");
-        Require(TestStorage.StateType(state) == LayerLightSectionStorage<TestMap>.SectionType.LightAndData,
+        Require(TestStorage.StateType(state) == LightSectionType.LightAndData,
             "A nonempty section with light storage must report LIGHT_AND_DATA.");
 
         byte neighborsOnly = TestStorage.StateNeighborCount(0, 1);
-        Require(TestStorage.StateType(neighborsOnly) == LayerLightSectionStorage<TestMap>.SectionType.LightOnly,
+        Require(TestStorage.StateType(neighborsOnly) == LightSectionType.LightOnly,
             "A section with neighbors but no blocks must report LIGHT_ONLY.");
         Require(TestStorage.StateHasData(neighborsOnly, false) == neighborsOnly,
             "Clearing the data bit must preserve the neighbor count.");
-        Require(TestStorage.StateType(0) == LayerLightSectionStorage<TestMap>.SectionType.Empty,
+        Require(TestStorage.StateType(0) == LightSectionType.Empty,
             "A zero state must report EMPTY.");
 
         foreach (int invalid in new[] { -1, 27 })
@@ -251,7 +251,7 @@ internal static class LayerLightSectionStorageChecks
         storage.ProcessInconsistencies();
         Require(storage.StoredCount == 0 && storage.RemovedNodes.Count == 27,
             "Making the center section empty must remove storage after its 26 neighbors lose their final reference.");
-        Require(storage.GetDebugSectionType(sectionNode) == LayerLightSectionStorage<TestMap>.SectionType.Empty,
+        Require(storage.GetDebugSectionType(sectionNode) == LightSectionType.Empty,
             "A fully removed section must report EMPTY.");
     }
 
