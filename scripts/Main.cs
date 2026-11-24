@@ -11,7 +11,7 @@ public partial class Main : Node3D
     {
         RegistryBootstrap.Initialize();
 
-        ResourceLocation airId = ResourceLocation.FromNamespaceAndPath("asteria", "air");
+        ResourceLocation airId = ResourceLocation.FromNamespaceAndPath("minecraft", "air");
         if (!ReferenceEquals(BuiltInRegistries.Block.GetValue(airId), Blocks.AIR))
             throw new InvalidOperationException("The built-in air block must be registered.");
 

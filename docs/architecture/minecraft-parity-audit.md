@@ -1146,3 +1146,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Testes verificam as 56 definições, a correspondência integral entre a tabela e as chaves registradas, seleção real por R-tree para Mushroom Fields/Deep Frozen Ocean/Deep Dark, modificadores térmicos/visuais e largura global dinâmica da palette com 56 holders.
 - Delimitação: os registros ainda contêm apenas dados climáticos e efeitos visuais; BiomeGenerationSettings, carvers, placed features, atributos ambientais/sons e demais domínios específicos continuam separados. A seleção está disponível via CreateVanillaOverworld, mas o carregamento de mundo ainda precisa construir/usar essa fonte por dimensão.
 - Dados baseados em `mj41/mc26-data`, branch `mc-26.3`, arquivos `data/minecraft/worldgen/biome/*.json`; foram lidos exclusivamente os campos descritos acima.
+
+
+## Incremento — blocos de material requeridos pelo Overworld 26.3 (24/11/2026)
+
+- Adicionados 27 blocos citados nas material rules oficiais de `minecraft:overworld`: bedrock, copper ore, granite, raw copper, gravel, deepslate iron ore, raw iron, tuff, powder snow, sand/sandstone, cinnabar, sulfur, coarse dirt, terracottas, red sand/sandstone, deepslate, ice/packed ice, snow block, mud, mycelium, podzol e calcite.
+- Os 34 blocos atuais (incluindo air/void_air, stone, dirt, grass block, water e lava) agora usam chaves de entrada `minecraft:*`; o registry continua identificado como `asteria:block`, mas seu default element é `minecraft:air`.
+- Preservada a ordem inicial de IDs dos sete blocos existentes; os 27 materiais novos são anexados depois. O harness valida as 34 entradas e as chaves representativas usadas pelas regras vanilla. BlockStateRegistry passa a conter 34 estados de produção e seis estados auxiliares dos testes.
+- Propriedades portadas nesta fatia incluem MapColor, hardness/resistance, RequiresCorrectToolForDrops, friction, random ticks, dynamic shape e no-occlusion sempre que representáveis no BlockProperties atual.
+- Delimitação: este commit registra estados de bloco usados por worldgen. Comportamentos especializados como areia/cascalho caindo, gelo derretendo, mycelium espalhando, snow/powder-snow e drops/XP continuam dependentes dos ports de FallingBlock/IceBlock/PowderSnowBlock/DropExperienceBlock e do sistema de ticks/entidades. Nenhuma funcionalidade de mobs foi adicionada.
+- Dependências conferidas nos arquivos `data/minecraft/worldgen/material_rule/**/*.json` do dataset `mj41/mc26-data`, branch `mc-26.3`; foram coletadas apenas as chaves de estado usadas nos resultados de material rules.

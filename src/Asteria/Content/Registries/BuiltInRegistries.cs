@@ -43,7 +43,7 @@ public static class BuiltInRegistries
     public static DefaultedRegistry<Block> Block { get; } =
         RegisterDefaultedWithIntrusiveHolders<Block>(
             ResourceLocation.FromNamespaceAndPath("asteria", "block"),
-            ResourceLocation.FromNamespaceAndPath("asteria", "air"),
+            ResourceLocation.FromNamespaceAndPath("minecraft", "air"),
             static () => BuiltInBlocks.RegisterAll());
 
     public static DefaultedRegistry<Fluid> Fluid { get; } =

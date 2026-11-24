@@ -193,7 +193,7 @@ internal static class Program
 
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&
-            Block.BlockStateRegistry.Count == 13 &&
+            Block.BlockStateRegistry.Count == 40 &&
             !BuiltInRegistries.AreFrozen,
             "Block states must receive IDs during block construction, before registry bootstrap.");
         CheckBuiltInRegistryRoot();
@@ -223,13 +223,50 @@ internal static class Program
                     RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Item.Location)),
                 BuiltInRegistries.Item),
             "The root registry must resolve the item registry by its registry key.");
-        Require(BuiltInRegistries.Block.Count == 7, "The seven initial production blocks should be registered.");
+        Require(BuiltInRegistries.Block.Count == 34, "The 34 current vanilla Overworld-generation blocks should be registered.");
+
+        (string Key, Block Value)[] overworldMaterialBlocks =
+        [
+            ("air", Blocks.AIR), ("void_air", Blocks.VOID_AIR), ("stone", Blocks.STONE),
+            ("dirt", Blocks.DIRT), ("grass_block", Blocks.GRASS_BLOCK),
+            ("water", Blocks.WATER), ("lava", Blocks.LAVA),
+            ("bedrock", Blocks.BEDROCK), ("copper_ore", Blocks.COPPER_ORE),
+            ("granite", Blocks.GRANITE), ("raw_copper_block", Blocks.RAW_COPPER_BLOCK),
+            ("gravel", Blocks.GRAVEL), ("deepslate_iron_ore", Blocks.DEEPSLATE_IRON_ORE),
+            ("raw_iron_block", Blocks.RAW_IRON_BLOCK), ("tuff", Blocks.TUFF),
+            ("powder_snow", Blocks.POWDER_SNOW), ("sand", Blocks.SAND),
+            ("sandstone", Blocks.SANDSTONE), ("cinnabar", Blocks.CINNABAR),
+            ("sulfur", Blocks.SULFUR), ("coarse_dirt", Blocks.COARSE_DIRT),
+            ("orange_terracotta", Blocks.ORANGE_TERRACOTTA), ("red_sand", Blocks.RED_SAND),
+            ("red_sandstone", Blocks.RED_SANDSTONE), ("terracotta", Blocks.TERRACOTTA),
+            ("white_terracotta", Blocks.WHITE_TERRACOTTA), ("deepslate", Blocks.DEEPSLATE),
+            ("ice", Blocks.ICE), ("packed_ice", Blocks.PACKED_ICE),
+            ("snow_block", Blocks.SNOW_BLOCK), ("mud", Blocks.MUD),
+            ("mycelium", Blocks.MYCELIUM), ("podzol", Blocks.PODZOL), ("calcite", Blocks.CALCITE)
+        ];
+        foreach ((string key, Block block) in overworldMaterialBlocks)
+        {
+            Require(
+                ReferenceEquals(
+                    BuiltInRegistries.Block.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", key)),
+                    block),
+                $"minecraft:{key} must resolve to its registered Overworld material block.");
+        }
         Require(
-            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("asteria:stone")), Blocks.STONE) &&
-            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("asteria:dirt")), Blocks.DIRT) &&
-            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("asteria:grass_block")), Blocks.GRASS_BLOCK) &&
-            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("asteria:water")), Blocks.WATER) &&
-            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("asteria:lava")), Blocks.LAVA),
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:bedrock")), Blocks.BEDROCK) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:copper_ore")), Blocks.COPPER_ORE) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:powder_snow")), Blocks.POWDER_SNOW) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:orange_terracotta")), Blocks.ORANGE_TERRACOTTA) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:sulfur")), Blocks.SULFUR) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:deepslate")), Blocks.DEEPSLATE) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:calcite")), Blocks.CALCITE),
+            "The Overworld material-rule dependency blocks must be registered under their vanilla Minecraft keys.");
+        Require(
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:stone")), Blocks.STONE) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:dirt")), Blocks.DIRT) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:grass_block")), Blocks.GRASS_BLOCK) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:water")), Blocks.WATER) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:lava")), Blocks.LAVA),
             "Stone, dirt, grass block, water and lava must be present in the production block registry.");
         Require(BuiltInRegistries.Item.Count == 1, "The built-in item registry must contain only the air sentinel.");
         Require(BuiltInRegistries.Fluid.Count == 3, "The empty, water and lava fluid types should be registered.");
@@ -292,7 +329,7 @@ internal static class Program
         Require(BuiltInRegistries.AttributeType.Count == 9, "The attribute-type registry must contain the seven existing value types plus particle and ambient-particle types.");
         Require(Fluid.FluidStateRegistry.Count == 3, "The fluid-state ID map must contain every registered fluid state.");
         Require(ReferenceEquals(Blocks.AIR.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState), "Air must contain the empty fluid state.");
-        Require(Block.BlockStateRegistry.Count == 13, "Expected seven built-in block states and six test states.");
+        Require(Block.BlockStateRegistry.Count == 40, "Expected 34 built-in block states and six test states.");
         FluidChecks.Run();
         BlockTagChecks.Run();
         BlockPositionTransformChecks.Run();
@@ -554,8 +591,8 @@ internal static class Program
 
     private static void CheckDefaultedBlockRegistry()
     {
-        ResourceLocation airId = ResourceLocation.Parse("asteria:air");
-        ResourceLocation missingId = ResourceLocation.Parse("asteria:not_registered");
+        ResourceLocation airId = ResourceLocation.Parse("minecraft:air");
+        ResourceLocation missingId = ResourceLocation.Parse("minecraft:not_registered");
 
         Require(
             BuiltInRegistries.Block.Location == ResourceLocation.Parse("asteria:block") &&
@@ -565,7 +602,7 @@ internal static class Program
         Require(ReferenceEquals(BuiltInRegistries.Block.GetValue(airId), Blocks.AIR), "The air block must be registered.");
         Require(
             ReferenceEquals(
-                BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("asteria:void_air")),
+                BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:void_air")),
                 Blocks.VOID_AIR) &&
             Blocks.VOID_AIR.DefaultState.IsAir &&
             !ReferenceEquals(Blocks.VOID_AIR, Blocks.AIR),
@@ -595,10 +632,10 @@ internal static class Program
             BuiltInRegistries.Block.GetHolder(missingKey) is null,
             "Defaulted registries must keep resource-key, optional, and holder lookups exact rather than falling back.");
         Require(
-            BuiltInRegistries.Block.Count == 7 &&
+            BuiltInRegistries.Block.Count == 34 &&
             ReferenceEquals(BuiltInRegistries.Block.GetValue(airKey), Blocks.AIR) &&
             ReferenceEquals(BuiltInRegistries.Block.GetOptional(airKey), Blocks.AIR),
-            "The production block registry must contain the seven built-in blocks, including WATER and LAVA; test fixtures must stay outside it.");
+            "The production block registry must contain the 34 built-in Overworld-generation blocks; test fixtures must stay outside it.");
         Require(ReferenceEquals(BuiltInRegistries.Block.GetAny(), Blocks.AIR.BuiltInRegistryHolder), "DefaultedMappedRegistry.getAny must return its default holder.");
         Holder<Block>.Reference? randomDefaultedHolder = BuiltInRegistries.Block.GetRandom(new Random(0));
         Require(
