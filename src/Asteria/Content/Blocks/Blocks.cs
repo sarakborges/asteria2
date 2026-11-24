@@ -1,7 +1,7 @@
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.Content.Materials;
-using Asteria.Content.Fluids;
+using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Core;
 using Asteria.Core.Shapes;
 using Asteria.World;
@@ -30,11 +30,11 @@ public static class Blocks
 
     public static Block WATER { get; } = new LiquidBlock(
         CreateLiquidProperties(MapColor.WATER),
-        Fluids.WATER);
+        BuiltInFluids.WATER);
 
     public static Block LAVA { get; } = new LiquidBlock(
         CreateLiquidProperties(MapColor.FIRE),
-        Fluids.LAVA);
+        BuiltInFluids.LAVA);
 
     private static BlockProperties CreateLiquidProperties(MapColor mapColor)
     {
