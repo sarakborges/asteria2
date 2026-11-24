@@ -259,6 +259,7 @@ internal static class Program
         StructurePieceChecks.Run();
         PiecesContainerChecks.Run();
         StructurePiecesBuilderChecks.Run();
+        StructureEnumChecks.Run();
         JigsawJunctionChecks.Run();
         BeardifierChecks.Run();
         DensityVolumeChecks.Run();
