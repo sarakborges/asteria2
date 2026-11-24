@@ -1,4 +1,5 @@
 using Asteria.Core;
+using Asteria.Serialization;
 using Asteria.World.LevelGen;
 
 namespace Asteria.World.LevelGen.Placement;
@@ -7,6 +8,8 @@ namespace Asteria.World.LevelGen.Placement;
 public abstract class PlacementFilter : PlacementModifier
 {
     public abstract bool ShouldPlace(PlacementContext context, IRandomSource random, BlockPos origin);
+
+    public abstract MapCodec<PlacementModifier> Codec();
 
     public void Modify(
         PlacementContext context,
