@@ -353,6 +353,7 @@ internal static class Program
         LevelLightEngineChecks.Run();
         ChunkLightingTasksChecks.Run();
         CarvingMaskChecks.Run();
+        WorldCarverChecks.Run();
         TickChecks.Run();
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState, FluidChecks.SourceFluidState);
         PalettedContainerChecks.Run();
