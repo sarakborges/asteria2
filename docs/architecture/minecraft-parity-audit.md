@@ -977,3 +977,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Generalizado `ContextBoundSampler<TSampler>` para preservar o tipo real do valor de contexto. Os samplers de blend continuam usando `DensitySampler`; o sampler de beardifier usa `Beardifier` e `Beardifier.EMPTY` como fallback vanilla.
 - Testes verificam identidade da chave, fallback vazio e amostragem do beardifier efetivamente injetado.
 - Esta é uma dependência direta da construção de `NoiseChunk`; não altera o algoritmo geométrico de Beardifier nem cria estrutura/manager de estruturas.
+
+
+### Ajuste de compatibilidade — chave única de Beardifier
+
+- A chave de contexto é uma única instância `ContextKey<DensitySampler>`, compartilhada por `Beardifier.CONTEXT_KEY` e `DensityFunctionContextKeys.BEARDIFIER`.
+- A especialização genérica foi adaptada para a interface `DensitySampler`: `ContextKey<T>` é invariante em C#, enquanto os samplers injetáveis precisam manter compatibilidade com o pipeline e fixtures já existentes. O valor concreto continua sendo `Beardifier` em runtime.
+- `ContextBoundSampler` mantém sua API não genérica, preservando os consumidores existentes. O teste novo confirma identidade da chave e que a instância concreta de Beardifier injetada é amostrada.
