@@ -9,14 +9,11 @@ public sealed class WeightedListHeight : HeightProvider
     public WeightedList<HeightProvider> Distribution { get; }
 
     public static MapCodec<WeightedListHeight> MAP_CODEC { get; } =
-        RecordCodecBuilder.MapCodec<WeightedListHeight>(instance =>
-            instance.Group(
-                    WeightedList<HeightProvider>.CreateNonEmptyCodec(HeightProvider.CODEC)
-                        .FieldOf("distribution")
-                        .ForGetter<WeightedListHeight>(static provider => provider.Distribution))
-                .Apply(
-                    instance,
-                    static distribution => new WeightedListHeight(distribution)));
+        WeightedList<HeightProvider>.CreateNonEmptyCodec(HeightProvider.CODEC)
+            .FieldOf("distribution")
+            .XMap<WeightedListHeight>(
+                static distribution => new WeightedListHeight(distribution),
+                static provider => provider.Distribution);
 
     public static MapCodec<HeightProvider> TYPE_CODEC { get; } =
         MAP_CODEC.XMap<HeightProvider>(
