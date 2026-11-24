@@ -23,7 +23,7 @@ public sealed class BiomeFilter : PlacementFilter
 
     public static BiomeFilter Biome() => INSTANCE;
 
-    public bool ShouldPlace(
+    public override bool ShouldPlace(
         PlacementContext context,
         IRandomSource random,
         BlockPos origin)
@@ -39,5 +39,5 @@ public sealed class BiomeFilter : PlacementFilter
         return context.Level.GetBiome(origin).Value.GenerationSettings.HasFeature(topFeature);
     }
 
-    public MapCodec<PlacementModifier> Codec() => TYPE_CODEC;
+    public override MapCodec<PlacementModifier> Codec() => TYPE_CODEC;
 }
