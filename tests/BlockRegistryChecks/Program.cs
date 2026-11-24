@@ -245,6 +245,7 @@ internal static class Program
         XoroshiroRandomSourceChecks.Run();
         NormalNoiseChecks.Run();
         NoiseSettingsChecks.Run();
+        AquiferConfigChecks.Run();
         LegacyFbmInitializerChecks.Run();
         CubicSplineChecks.Run();
         TerrainProviderChecks.Run();
