@@ -17,6 +17,10 @@ public interface WorldGenLevel : BlockGetter
 {
     long Seed { get; }
 
+    long GetGameTime();
+
+    void ScheduleBlockTick(BlockPos position, Block block, int delay);
+
     ChunkAccess GetChunk(int chunkX, int chunkZ);
 
     void SetCurrentlyGenerating(string? description) { }
