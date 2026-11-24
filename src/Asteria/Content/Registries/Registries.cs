@@ -8,6 +8,7 @@ using Asteria.World.LevelGen;
 using Asteria.Content.Biomes;
 using Asteria.World.LevelGen.Features;
 using Asteria.World.LevelGen.Placement;
+using Asteria.World.LevelGen.Features.StateProviders;
 
 namespace Asteria.Content.Registries;
 
@@ -16,6 +17,14 @@ namespace Asteria.Content.Registries;
 /// </summary>
 public static class Registries
 {
+    public static RegistryKey<Registry<BlockStateProvider>> BLOCK_STATE_PROVIDER { get; } =
+        RegistryKey<BlockStateProvider>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/block_state_provider"));
+
+    public static RegistryKey<Registry<MapCodec<BlockStateProvider>>> BLOCK_STATE_PROVIDER_TYPE { get; } =
+        RegistryKey<MapCodec<BlockStateProvider>>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/block_state_provider_type"));
+
     public static RegistryKey<Registry<Feature>> FEATURE { get; } =
         RegistryKey<Feature>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/feature"));
