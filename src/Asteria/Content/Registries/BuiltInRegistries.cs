@@ -98,7 +98,7 @@ public static class BuiltInRegistries
     public static Registry<MapCodec<PlacementModifier>> PlacementModifierType { get; } =
         RegisterSimple<MapCodec<PlacementModifier>>(
             Registries.PLACEMENT_MODIFIER_TYPE.Location,
-            static () => { });
+            static () => PlacementModifierCodecBootstrap.RegisterAll(PlacementModifierType));
 
     public static Registry<PlacedFeature> PlacedFeature { get; } =
         RegisterSimple<PlacedFeature>(
