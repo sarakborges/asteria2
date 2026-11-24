@@ -11,7 +11,7 @@ public sealed class HeightmapPlacement : PlacementModifier
     public Heightmap.Types Heightmap { get; }
 
     public static MapCodec<HeightmapPlacement> MAP_CODEC { get; } =
-        Heightmap.Types.CODEC
+        Asteria.World.Heightmap.Types.CODEC
             .FieldOf("heightmap")
             .XMap<HeightmapPlacement>(
                 static heightmap => new HeightmapPlacement(heightmap),
