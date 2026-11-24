@@ -1487,3 +1487,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionados testes de registry, shorthand, round-trip dos codecs, valores default, distribuição ponderada, sequências determinísticas de RNG e ranges inválidos. Os testes estão no harness, mas ainda precisam ser executados em ambiente com .NET SDK.
 - Com `FloatProvider`, `IntProvider` e `HeightProvider`, as três famílias de providers numéricos/verticais necessárias aos carvers estão disponíveis. Ainda faltam `CaveWorldCarver`, `CanyonWorldCarver`, settings e associação de carvers por bioma e aplicação de `CarvingMask` via aquifer. Portanto `TERRAIN` ainda não está concluído.
 - Referência: classes `HeightProvider`, `HeightProviderType` e as seis implementações em Minecraft Java 26.3.
+
+## Incremento — CaveWorldCarver e CanyonWorldCarver 26.3
+
+- Portados `CaveWorldCarver` e `CanyonWorldCarver` com codecs de configuração e implementação geométrica, usando os `FloatProvider`, `IntProvider` e `HeightProvider` adicionados nas fatias anteriores.
+- `CaveWorldCarver` porta contagem de túneis, criação ocasional de salas, bifurcação no ponto médio, túneis íngremes, weird-thickness bias opcional, fatores de raio vertical/horizontal e corte por floor level. A ordem de amostragem do RNG e das sementes de túneis segue o fluxo 26.3.
+- `CanyonWorldCarver` porta a forma configurável, perfil de largura por Y, suavização vertical, modulação de raio horizontal, atualização de raio vertical e poda por alcance. Os sete campos do `Shape` mantêm os nomes e tipos 26.3.
+- Adicionado `worldgen/carver_type` com os codecs vanilla `minecraft:cave` e `minecraft:canyon`, mais `WorldCarvers.DIRECT_CODEC` para dispatch por `type`.
+- Os codecs foram compostos internamente em grupos de até quatro campos devido ao limite atual do `RecordCodecBuilder`; a composição mantém um único objeto JSON com a mesma lista e ordem de campos da configuração 26.3.
+- Adicionados testes de registry, defaults opcionais da caverna, round-trip dos dois carvers, validação de probability/count/thickness/width_smoothness e determinismo das posições escavadas para sementes e chunks iguais. Os testes foram registrados no harness, mas não foram executados sem o .NET SDK.
+- Os carvers ainda não estão ligados ao `NoiseBasedChunkGenerator`: faltam `BiomeGenerationSettings` e a lista de carvers associada aos biomas, iteração vanilla da região 17×17 de chunks de origem, `CarvingMask` por etapa e aplicação da máscara pelo aquifer, incluindo `UNCARVABLE`, post-processing de fluidos e reparo de material sob grass/mycelium. Portanto `TERRAIN` continua incompleto e o status não foi promovido por este incremento.
+- Referência: `CaveWorldCarver`, `CanyonWorldCarver`, `CanyonWorldCarver.Shape`, `WorldCarverTypes` e `WorldCarver` de Minecraft Java 26.3.
