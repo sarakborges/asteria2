@@ -344,5 +344,12 @@ public sealed class BlockState : StateHolder<Block, BlockState>
     public bool Is(TagKey<Block> tag, Predicate<BlockState> predicate) =>
         Is(tag) && predicate(this);
 
+    public bool CanSurvive(BlockGetter level, BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(level);
+        ArgumentNullException.ThrowIfNull(position);
+        return Block.CanSurvive(this, level, position);
+    }
+
     public FluidState GetFluidState() => _fluidState;
 }
