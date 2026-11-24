@@ -9,6 +9,7 @@ using Asteria.Core;
 using Asteria.Serialization;
 using Asteria.World;
 using Asteria.World.LevelGen;
+using Asteria.World.Level;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
 using Asteria.World.LevelGen.Materials.Rules;
@@ -32,6 +33,7 @@ internal static class NoiseBasedChunkGeneratorChecks
             CheckFrozenOceanExtension();
             CheckMultiNoiseBiomeSourceFillsChunkPalettes();
             CheckBuiltInOverworldGeneratorFactory();
+            CheckOverworldWorldChunkCache();
             CheckPreliminarySurfaceCondition();
         }
         finally
@@ -237,6 +239,76 @@ internal static class NoiseBasedChunkGeneratorChecks
         Require(
             biomeCells == chunk.GetSections().Count() * 64,
             "The built-in Overworld generator must populate the complete quart-resolution biome palette for every generated section.");
+    }
+
+    private static void CheckOverworldWorldChunkCache()
+    {
+        const long seed = 0x4F5652574F524C44L;
+        var world = new OverworldWorld(
+            seed,
+            LevelHeightAccessor.Create(-64, 96));
+
+        Require(
+            world.Seed == seed &&
+            world.MinY == -64 &&
+            world.Height == 96 &&
+            world.LoadedChunkCount == 0,
+            "OverworldWorld must retain its seed and configured build height and start with an empty chunk cache.");
+
+        ChunkPos position = ChunkPos.Zero;
+        Require(
+            !world.TryGetChunk(position, out _),
+            "TryGetChunk must not synthesize a chunk before it has been requested.");
+
+        var results = new ProtoChunk[8];
+        Parallel.For(0, results.Length, index =>
+            results[index] = world.GetChunk(position));
+
+        ProtoChunk generated = results[0];
+        Require(
+            results.All(chunk => ReferenceEquals(chunk, generated)) &&
+            world.LoadedChunkCount == 1,
+            "Concurrent requests for one chunk must serialize generation and return the single cached instance.");
+
+        Require(
+            generated.GetPersistedStatus().IsOrAfter(ChunkStatus.TERRAIN) &&
+            generated.GetNoiseBiome(0, QuartPos.FromBlock(-64), 0).IsBound,
+            "Chunks created by OverworldWorld must have terrain and registered biome data available.");
+
+        Require(
+            world.TryGetChunk(position, out ProtoChunk? cached) &&
+            ReferenceEquals(cached, generated),
+            "TryGetChunk must return the cached chunk without regenerating it.");
+
+        ChunkPos neighbor = new(1, 0);
+        ProtoChunk adjacent = world.GetChunk(neighbor);
+        Require(
+            !ReferenceEquals(adjacent, generated) &&
+            adjacent.GetPos() == neighbor &&
+            world.LoadedChunkCount == 2,
+            "Distinct chunk positions must occupy distinct cache entries.");
+
+        Require(
+            world.UnloadChunk(position) &&
+            !world.TryGetChunk(position, out _) &&
+            world.LoadedChunkCount == 1 &&
+            !world.UnloadChunk(position),
+            "UnloadChunk must remove exactly the requested cache entry and report absent entries.");
+
+        bool rejectedInvalidPosition = false;
+        try
+        {
+            world.GetChunk(new ChunkPos(ChunkPyramid.MaxChunkCoordinateValue + 1, 0));
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            rejectedInvalidPosition = true;
+        }
+
+        Require(
+            rejectedInvalidPosition &&
+            world.LoadedChunkCount == 1,
+            "OverworldWorld must reject chunk coordinates outside the supported generation bounds without changing its cache.");
     }
 
     private static void CheckPreliminarySurfaceCondition()

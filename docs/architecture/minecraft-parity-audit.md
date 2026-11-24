@@ -1226,3 +1226,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Testes validam a entrada built-in, os oito IDs do NoiseRouter, o holder da árvore de material, os dois spawn targets, o aquifer e os limites/nomes dos campos required/optional.
 - Limite atual: a configuração fica registrada e acessível a `NoiseBasedChunkGenerator`, mas ainda não há `Level/WorldLoader` que instancie um mundo, gere a região inicial e a exponha ao runtime Godot. `bedrock_roof`, `overworld_caves`, carvers/features, persistência e rendering continuam em etapas separadas.
 - Fonte dos dados: `mj41/mc26-data`, branch `mc-26.3`, `data/minecraft/worldgen/noise_settings/overworld.json`; campo legado conferido em `NoiseGeneratorSettings.java` de `0khs/minecraft_source_26.3`.
+
+## Incremento — OverworldWorld e cache síncrono de chunks (24/11/2026)
+
+- Adicionado `OverworldWorld`, proprietário de um `NoiseBasedChunkGenerator` seeded e de um cache em memória indexado por `ChunkPos`.
+- `GetChunk` gera sob demanda uma `ProtoChunk` e só a publica no cache depois que a etapa `TERRAIN` termina; solicitações concorrentes da mesma posição são serializadas por lock e retornam a mesma instância. O mesmo lock protege lookup e unload.
+- `TryGetChunk`, `LoadedChunkCount` e `UnloadChunk` oferecem a primeira superfície de gestão do cache. Coordenadas horizontais fora dos limites de worldgen são rejeitadas.
+- O construtor inicializa registries e usa automaticamente os limites Overworld -64/384 quando não é fornecido um `LevelHeightAccessor`. O overload de altura é mantido para harnesses e futuros contextos de dimensão.
+- Testes cobrem cache inicialmente vazio, geração paralela idempotente por posição, status/bioma após geração, isolamento de posições distintas, unload e rejeição de coordenadas inválidas.
+- Delimitação: este serviço retém apenas `ProtoChunk` até `TERRAIN`; não há `LevelChunk`, scheduler de `ChunkPyramid`, generation features/carvers/light, save/load nem integração Godot/rendering. O generation lock é deliberadamente síncrono para proteger o `RandomState` compartilhado; paralelismo por chunk depende de separar/validar o estado de amostragem.
