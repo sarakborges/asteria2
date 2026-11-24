@@ -280,7 +280,7 @@ internal static class PlacementModifierChecks
             result.GetX() == origin.GetX() &&
             result.GetY() == expectedHeight &&
             result.GetZ() == origin.GetZ(),
-            "HeightmapPlacement must emit the heightmap's first available Y when it lies above minY.");
+            "HeightmapPlacement must emit the heightmap's highest occupied Y when it lies above minY.");
     }
 
     private static void CheckOffsetPlacement()
