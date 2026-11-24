@@ -1,6 +1,7 @@
 using Asteria.Content.Blocks;
 using Asteria.Core;
 using Asteria.World;
+using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.Structure;
 
 internal static class StructurePieceChecks
@@ -128,7 +129,7 @@ internal static class StructurePieceChecks
 
     private static void CheckRandomHorizontalDirection()
     {
-        int[] seeds = { 0, 1, -1, 123456L is long value ? unchecked((int)value) : 0, int.MinValue };
+        int[] seeds = { 0, 1, -1, 123456, int.MinValue };
         Direction[] expectedOrder =
         {
             Direction.NORTH,
