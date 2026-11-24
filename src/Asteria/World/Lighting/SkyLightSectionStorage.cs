@@ -126,10 +126,10 @@ public class SkyLightSectionStorage : LayerLightSectionStorage<SkyLightSectionSt
         return new DataLayer(output);
     }
 
-    protected bool HasLightDataAtOrBelow(int sectionY) =>
+    protected internal bool HasLightDataAtOrBelow(int sectionY) =>
         sectionY >= UpdatingSectionData.CurrentLowestY;
 
-    protected bool IsAboveData(long sectionNode)
+    protected internal bool IsAboveData(long sectionNode)
     {
         long zeroNode = SectionPos.GetZeroNode(sectionNode);
         int topSection = UpdatingSectionData.GetTopSectionY(zeroNode);
@@ -137,10 +137,10 @@ public class SkyLightSectionStorage : LayerLightSectionStorage<SkyLightSectionSt
             SectionPos.GetY(sectionNode) >= topSection;
     }
 
-    protected int GetTopSectionY(long zeroNode) =>
+    protected internal int GetTopSectionY(long zeroNode) =>
         UpdatingSectionData.GetTopSectionY(zeroNode);
 
-    protected int GetBottomSectionY() =>
+    protected internal int GetBottomSectionY() =>
         UpdatingSectionData.CurrentLowestY;
 
     public sealed class SkyDataLayerStorageMap

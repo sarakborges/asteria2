@@ -1407,3 +1407,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `PropagateLightSources` habilita o canal por coluna e enumera fontes diretamente da `LightChunk` existente; consulta de vizinhança permanece não geradora e usa bedrock para chunks ausentes, conforme o motor comum.
 - Teste de integração cria um emissor de estado com nível 14, verifica valores 14/13/12 e remove a fonte para confirmar propagação da redução até zero; há verificações de borda ausente e coluna com BLOCK desabilitado.
 - Fonte: `BlockLightEngine.java` de Minecraft Java 26.3. A especialização SKY e o agregador `LevelLightEngine` permanecem pendentes.
+
+
+## Incremento — SkyLightEngine 26.3 (24/11/2026)
+
+- Portado o motor SKY com atualização de fontes por coluna, remoção de fontes verticais obsoletas, adição de fontes até a seção superior, consulta às quatro colunas vizinhas, propagação com oclusão, redução/aumento, transmissão através de seções vazias no limite horizontal e prefill de seções vazias ao habilitar skylight.
+- A rotina de fontes usa `ChunkSkyLightSources` de cada `LightChunk`; vizinhos ausentes usam a estrutura vazia do motor, sem forçar chunk generation. O motor compartilha as filas e o cache comum já portados.
+- Testes de integração inicializam as fontes de céu em chunks abertas e verificam luz 15 no corpo, nas seções inferiores e acima do topo; também cobrem coordenadas negativas e vizinhos ausentes.
+- Fonte: `SkyLightEngine.java` de Minecraft Java 26.3. A agregação SKY/BLOCK e o lifecycle que alimenta os engines ainda precisam ser concluídos.
