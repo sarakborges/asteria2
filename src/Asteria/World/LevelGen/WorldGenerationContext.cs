@@ -29,22 +29,13 @@ public sealed class WorldGenerationContext
     public WorldGenerationContext(
         NoiseBasedChunkGenerator generator,
         LevelHeightAccessor heightAccessor)
+        : this(
+            Math.Max(
+                (heightAccessor ?? throw new ArgumentNullException(nameof(heightAccessor))).GetMinY(),
+                (generator ?? throw new ArgumentNullException(nameof(generator))).GetMinY()),
+            Math.Min(heightAccessor.GetHeight(), generator.GetGenDepth()),
+            generator.GetSeaLevel())
     {
-        ArgumentNullException.ThrowIfNull(generator);
-        ArgumentNullException.ThrowIfNull(heightAccessor);
-
-        int minGenY = Math.Max(heightAccessor.GetMinY(), generator.GetMinY());
-        long worldMaxExclusive = (long)heightAccessor.GetMinY() + heightAccessor.GetHeight();
-        long generatorMaxExclusive = (long)generator.GetMinY() + generator.GetGenDepth();
-        long maxGenYExclusive = Math.Min(worldMaxExclusive, generatorMaxExclusive);
-        long genDepth = Math.Max(0L, maxGenYExclusive - minGenY);
-
-        if (genDepth > int.MaxValue)
-            throw new ArgumentOutOfRangeException(nameof(heightAccessor), "The intersected generation height exceeds the supported range.");
-
-        MinGenY = minGenY;
-        GenDepth = (int)genDepth;
-        SeaLevelValue = generator.GetSeaLevel();
     }
 
     public int GetMinGenY() => MinGenY;
