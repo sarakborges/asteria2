@@ -156,12 +156,11 @@ internal static class SimpleBlockFeatureChecks
             tick.Delay == 1,
             "SimpleBlockFeature must schedule the block tick one tick after current world time.");
 
-        ScheduledTick<Block> scheduled = ticks.ScheduledTicks().Single();
+        SavedTick<Block> storedTick = ticks.ScheduledTicks().Single();
         Require(
-            scheduled.TriggerTick == 501 &&
-            scheduled.SubTickOrder == 0 &&
-            ReferenceEquals(scheduled.Priority, TickPriority.NORMAL),
-            "WorldGenRegion must create the scheduled tick with world time, normal priority and its monotonic local sub-tick order.");
+            storedTick.Delay == 1 &&
+            ReferenceEquals(storedTick.Priority, TickPriority.NORMAL),
+            "WorldGenRegion must preserve the delay and normal priority in the proto-chunk tick container.");
     }
 
     private static (WorldGenRegion Region, ProtoChunk Center) CreateRegion(
