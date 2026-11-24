@@ -57,7 +57,7 @@ public sealed record ClampedNormalFloat(
         float maximum)
     {
         ArgumentNullException.ThrowIfNull(random);
-        float normal = (float)random.NextGaussian() * deviation + mean;
+        float normal = mean + (float)random.NextGaussian() * deviation;
         return Mth.Clamp(normal, minimum, maximum);
     }
 
