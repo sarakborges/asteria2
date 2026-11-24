@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Asteria.Content.Chunks;
 using Asteria.Core;
+using Asteria.World;
 
 namespace Asteria.World.Lighting;
 
@@ -317,8 +318,6 @@ public abstract class LayerLightSectionStorage<TMap>
     protected byte GetSectionState(long sectionNode) =>
         SectionStates.GetValueOrDefault(sectionNode);
 
-    protected int GetStoredSectionCount() =>
-        UpdatingSectionData.Map.Count;
 
     protected int GetQueuedSectionCount() =>
         _queuedSections.Count;

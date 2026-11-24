@@ -94,7 +94,7 @@ internal static class LayerLightSectionStorageChecks
         public void Queue(long sectionNode, DataLayer? layer) =>
             QueueSectionData(sectionNode, layer);
 
-        public int StoredCount => GetStoredSectionCount();
+        public int StoredCount => UpdatingSectionData.Count;
 
         public int QueuedCount => GetQueuedSectionCount();
 
@@ -163,7 +163,7 @@ internal static class LayerLightSectionStorageChecks
                 _ = TestStorage.StateNeighborCount(0, invalid);
                 throw new InvalidOperationException("Neighbor counts outside [0, 26] must fail.");
             }
-            catch (ArgumentException exception) when (exception.ParamName == "count")
+            catch (ArgumentException exception) when (exception.ParamName == "neighborCount")
             {
             }
         }
@@ -240,10 +240,10 @@ internal static class LayerLightSectionStorageChecks
         Require(!storage.PendingInconsistencies,
             "Processing pending section changes must clear the inconsistency flag.");
 
+        int expectedNotifications = storage.AffectedCount;
         storage.Swap();
-        Require(getter.Updates.Count == storage.AffectedCount ||
-                getter.Updates.Count > 0,
-            "Publishing section state must notify the chunk source about affected sections.");
+        Require(expectedNotifications > 0 && getter.Updates.Count == expectedNotifications,
+            "Publishing section state must notify the chunk source about every affected section.");
 
         storage.UpdateStatus(sectionNode, empty: true);
         Require(storage.StoredCount == 27,

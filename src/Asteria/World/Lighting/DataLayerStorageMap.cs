@@ -25,6 +25,8 @@ public abstract class DataLayerStorageMap<TMap>
         _cacheEnabled = true;
     }
 
+    public int Count => Map.Count;
+
     public abstract TMap Copy();
 
     public DataLayer CopyDataLayer(long sectionNode)
