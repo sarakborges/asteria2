@@ -20,9 +20,7 @@ public sealed record SimpleStateProvider(BlockState State) : BlockStateProvider
             static provider => provider,
             static provider => (SimpleStateProvider)provider);
 
-    public SimpleStateProvider GetStateProvider() => this;
-
-    public BlockState GetState(BlockGetter level, IRandomSource random, BlockPos position)
+    public override BlockState GetState(BlockGetter level, IRandomSource random, BlockPos position)
     {
         ArgumentNullException.ThrowIfNull(level);
         ArgumentNullException.ThrowIfNull(random);
@@ -30,5 +28,5 @@ public sealed record SimpleStateProvider(BlockState State) : BlockStateProvider
         return State;
     }
 
-    public MapCodec<BlockStateProvider> Codec() => TYPE_CODEC;
+    public override MapCodec<BlockStateProvider> Codec() => TYPE_CODEC;
 }
