@@ -256,6 +256,7 @@ internal static class Program
         InterpolatedFunctionChecks.Run();
         DensityBufferChecks.Run();
         BoundingBoxChecks.Run();
+        JigsawJunctionChecks.Run();
         BeardifierChecks.Run();
         DensityVolumeChecks.Run();
         DensitySamplingChecks.Run();

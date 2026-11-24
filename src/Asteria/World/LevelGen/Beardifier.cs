@@ -2,6 +2,7 @@ using Asteria.Core;
 using Asteria.Util;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Structure;
+using Asteria.World.LevelGen.Structure.Pools;
 
 namespace Asteria.World.LevelGen;
 
@@ -22,10 +23,10 @@ public sealed class Beardifier : DensitySampler
     private static readonly float[] BEARD_KERNEL = CreateBeardKernel();
 
     public static Beardifier EMPTY { get; } =
-        new(Array.Empty<Rigid>(), Array.Empty<JunctionPoint>(), null);
+        new(Array.Empty<Rigid>(), Array.Empty<JigsawJunction>(), null);
 
     private readonly IReadOnlyList<Rigid> _pieces;
-    private readonly IReadOnlyList<JunctionPoint> _junctions;
+    private readonly IReadOnlyList<JigsawJunction> _junctions;
     private readonly BoundingBox? _affectedBox;
 
     /// <summary>
@@ -36,19 +37,9 @@ public sealed class Beardifier : DensitySampler
         TerrainAdjustment TerrainAdjustment,
         int GroundLevelDelta);
 
-    /// <summary>
-    /// The source-coordinate triple consumed by Beardifier's junction kernel.
-    /// The full persisted JigsawJunction record also carries deltaY and destination projection;
-    /// those fields are owned by the structure-pool model and are not used by this sampler.
-    /// </summary>
-    public readonly record struct JunctionPoint(
-        int SourceX,
-        int SourceGroundY,
-        int SourceZ);
-
     public Beardifier(
         IReadOnlyList<Rigid> pieces,
-        IReadOnlyList<JunctionPoint> junctions,
+        IReadOnlyList<JigsawJunction> junctions,
         BoundingBox? affectedBox)
     {
         _pieces = pieces;
@@ -191,11 +182,11 @@ public sealed class Beardifier : DensitySampler
             }
         }
 
-        foreach (JunctionPoint junction in _junctions)
+        foreach (JigsawJunction junction in _junctions)
         {
-            int dx = unchecked(blockX - junction.SourceX);
-            int dy = unchecked(blockY - junction.SourceGroundY);
-            int dz = unchecked(blockZ - junction.SourceZ);
+            int dx = unchecked(blockX - junction.GetSourceX());
+            int dy = unchecked(blockY - junction.GetSourceGroundY());
+            int dz = unchecked(blockZ - junction.GetSourceZ());
             noiseValue += GetBeardContribution(dx, dy, dz, dy) * 0.4F;
         }
 

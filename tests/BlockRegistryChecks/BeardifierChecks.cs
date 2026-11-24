@@ -4,6 +4,7 @@ using Asteria.Serialization;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Structure;
+using Asteria.World.LevelGen.Structure.Pools;
 
 internal static class BeardifierChecks
 {
@@ -99,7 +100,7 @@ internal static class BeardifierChecks
                 new Beardifier.Rigid(pieceBox, TerrainAdjustment.BURY, 0),
                 new Beardifier.Rigid(pieceBox, TerrainAdjustment.BURY, 0)
             ],
-            Array.Empty<Beardifier.JunctionPoint>(),
+            Array.Empty<JigsawJunction>(),
             affectedBox);
         Require(twoPieces.SampleValue(SamplerContext.EmptyUncached, 0, 0, 0) == 2.0F,
             "Rigid-piece contributions must accumulate in source list order.");
@@ -108,7 +109,7 @@ internal static class BeardifierChecks
     private static void CheckJunctionSampling()
     {
         BoundingBox affectedBox = new(-24, -24, -24, 24, 24, 24);
-        var junction = new Beardifier.JunctionPoint(0, 0, 0);
+        var junction = new JigsawJunction(0, 0, 0, 0, StructureTemplatePool.Projection.RIGID);
         var beardifier = new Beardifier(
             Array.Empty<Beardifier.Rigid>(),
             [junction],
@@ -122,7 +123,7 @@ internal static class BeardifierChecks
     private static void CheckKernelBounds()
     {
         BoundingBox affectedBox = new(-24, -24, -24, 24, 24, 24);
-        var junction = new Beardifier.JunctionPoint(-12, 0, 0);
+        var junction = new JigsawJunction(-12, 0, 0, 0, StructureTemplatePool.Projection.RIGID);
         var beardifier = new Beardifier(
             Array.Empty<Beardifier.Rigid>(),
             [junction],
@@ -173,7 +174,7 @@ internal static class BeardifierChecks
         BoundingBox affectedBox) =>
         new(
             [new Beardifier.Rigid(pieceBox, adjustment, 0)],
-            Array.Empty<Beardifier.JunctionPoint>(),
+            Array.Empty<JigsawJunction>(),
             affectedBox);
 
     private static void Require(bool condition, string message)
