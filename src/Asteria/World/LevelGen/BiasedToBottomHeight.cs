@@ -4,11 +4,12 @@ using Asteria.Serialization;
 namespace Asteria.World.LevelGen;
 
 /// <summary>Height distribution biased toward the lower anchor.</summary>
-public sealed record BiasedToBottomHeight(
-    VerticalAnchor Minimum,
-    VerticalAnchor Maximum,
-    int Inner) : HeightProvider
+public sealed class BiasedToBottomHeight : HeightProvider
 {
+    public VerticalAnchor Minimum { get; }
+    public VerticalAnchor Maximum { get; }
+    public int Inner { get; }
+
     public static MapCodec<BiasedToBottomHeight> MAP_CODEC { get; } =
         RecordCodecBuilder.MapCodec<BiasedToBottomHeight>(instance =>
             instance.Group(
@@ -28,6 +29,16 @@ public sealed record BiasedToBottomHeight(
         MAP_CODEC.XMap<HeightProvider>(
             static provider => provider,
             static provider => (BiasedToBottomHeight)provider);
+
+    public BiasedToBottomHeight(
+        VerticalAnchor minimum,
+        VerticalAnchor maximum,
+        int inner)
+    {
+        Minimum = minimum ?? throw new ArgumentNullException(nameof(minimum));
+        Maximum = maximum ?? throw new ArgumentNullException(nameof(maximum));
+        Inner = inner;
+    }
 
     public static BiasedToBottomHeight Of(
         VerticalAnchor minimum,
