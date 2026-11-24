@@ -4,8 +4,10 @@ using Asteria.Serialization;
 namespace Asteria.World.LevelGen.Placement;
 
 /// <summary>Repeats its input according to a context-free integer provider.</summary>
-public sealed record CountPlacement(IntProvider CountProvider) : RepeatingPlacement
+public sealed class CountPlacement : RepeatingPlacement
 {
+    public IntProvider CountProvider { get; }
+
     public static MapCodec<CountPlacement> MAP_CODEC { get; } =
         IntProviders.Codec(0, 4096)
             .FieldOf("count")
@@ -18,8 +20,11 @@ public sealed record CountPlacement(IntProvider CountProvider) : RepeatingPlacem
             static modifier => modifier,
             static modifier => (CountPlacement)modifier);
 
+    public CountPlacement(IntProvider countProvider) =>
+        CountProvider = countProvider ?? throw new ArgumentNullException(nameof(countProvider));
+
     public static CountPlacement Of(IntProvider count) =>
-        new(count ?? throw new ArgumentNullException(nameof(count)));
+        new(count);
 
     public static CountPlacement Of(int count) =>
         Of(ConstantInt.Of(count));
@@ -32,4 +37,6 @@ public sealed record CountPlacement(IntProvider CountProvider) : RepeatingPlacem
     }
 
     public override MapCodec<PlacementModifier> Codec() => TYPE_CODEC;
+
+    public override string ToString() => $"CountPlacement[{CountProvider}]";
 }
