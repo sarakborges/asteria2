@@ -310,11 +310,9 @@ internal static class BuiltInDensityFunctions
 
         registry.Register(
             names.FinalDensity,
-            DensityFunctionFactories.Add(
-                DensityFunctionFactories.Min(
-                    postProcessed,
-                    GetFunction(registry, DensityFunctionKeys.NOODLE)),
-                DensityFunctionFactories.Beardifier()),
+            DensityFunctionFactories.Min(
+                postProcessed,
+                GetFunction(registry, DensityFunctionKeys.NOODLE)),
             RegistrationInfo.BuiltIn);
     }
 

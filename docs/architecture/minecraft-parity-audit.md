@@ -984,3 +984,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - A chave de contexto é uma única instância `ContextKey<DensitySampler>`, compartilhada por `Beardifier.CONTEXT_KEY` e `DensityFunctionContextKeys.BEARDIFIER`.
 - A especialização genérica foi adaptada para a interface `DensitySampler`: `ContextKey<T>` é invariante em C#, enquanto os samplers injetáveis precisam manter compatibilidade com o pipeline e fixtures já existentes. O valor concreto continua sendo `Beardifier` em runtime.
 - `ContextBoundSampler` mantém sua API não genérica, preservando os consumidores existentes. O teste novo confirma identidade da chave e que a instância concreta de Beardifier injetada é amostrada.
+
+
+## Correção de paridade — final_density no Minecraft Java 26.3 (24/11/2026)
+
+- Corrigido o bootstrap dos três perfis de terreno do Overworld: `final_density` agora registra apenas o `min(post_processed, noodle)` definido pelo grafo vanilla.
+- Removida a soma implícita de `SimpleDensityFunction.BEARDIFIER`. Em 26.3, o beardifier deixou de ser acrescentado implicitamente ao `final_density`; a função continua disponível para inclusão explícita quando o grafo de dados exigir.
+- Atualizados os testes dos perfis normal, large-biomes e amplified para verificar a estrutura sem a soma implícita.
