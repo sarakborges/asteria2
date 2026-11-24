@@ -10,6 +10,7 @@ internal static class StructurePieceChecks
         CheckChunkProximity();
         CheckMetadata();
         CheckOrientedCoordinates();
+        CheckWorldPosition();
     }
 
     private static void CheckChunkProximity()
@@ -124,6 +125,24 @@ internal static class StructurePieceChecks
             "StructurePiece.move must translate the backing bounding box in place.");
     }
 
+    private static void CheckWorldPosition()
+    {
+        TestPiece piece = CreatePiece(new BoundingBox(100, 20, 200, 111, 29, 211));
+        piece.SetOrientation(Direction.WEST);
+
+        BlockPos.MutableBlockPos position = piece.WorldPos(2, 4, 3);
+        Require(position.Equals(new BlockPos(108, 24, 202)),
+            "StructurePiece.getWorldPos must compose the exact local X/Y/Z transforms.");
+
+        position.Set(1, 2, 3);
+        Require(position.Equals(new BlockPos(1, 2, 3)),
+            "StructurePiece.getWorldPos must return a mutable block-position instance.");
+
+        piece.SetOrientation(null);
+        Require(piece.WorldPos(-2, 5, 7).Equals(new BlockPos(-2, 5, 7)),
+            "StructurePiece.getWorldPos must bypass transforms when orientation is null.");
+    }
+
     private static void CheckCoordinates(
         TestPiece piece,
         int localX,
@@ -145,6 +164,7 @@ internal static class StructurePieceChecks
     private sealed class TestPiece(int genDepth, BoundingBox bounds)
         : StructurePiece(genDepth, bounds)
     {
+        public BlockPos.MutableBlockPos WorldPos(int x, int y, int z) => GetWorldPos(x, y, z);
         public int WorldX(int x, int z) => GetWorldX(x, z);
         public int WorldY(int y) => GetWorldY(y);
         public int WorldZ(int x, int z) => GetWorldZ(x, z);

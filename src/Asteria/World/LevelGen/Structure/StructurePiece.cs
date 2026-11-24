@@ -119,6 +119,9 @@ public abstract class StructurePiece
     public Mirror? GetMirror() =>
         _mirror;
 
+    protected BlockPos.MutableBlockPos GetWorldPos(int x, int y, int z) =>
+        new(GetWorldX(x, z), GetWorldY(y), GetWorldZ(x, z));
+
     protected int GetWorldX(int x, int z)
     {
         if (_orientation is null)
