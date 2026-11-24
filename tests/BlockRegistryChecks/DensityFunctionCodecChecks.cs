@@ -16,6 +16,7 @@ internal static class DensityFunctionCodecChecks
     {
         CheckTypeRegistry();
         CheckScalarConstantCodec();
+        CheckSimpleDensityFunctionCodecs();
         CheckTypedConstantCodec();
         CheckUnaryCodecs();
         CheckBinaryCodecs();
@@ -44,7 +45,7 @@ internal static class DensityFunctionCodecChecks
     private static void CheckTypeRegistry()
     {
         Require(
-            BuiltInRegistries.DensityFunctionType.Count == 40,
+            BuiltInRegistries.DensityFunctionType.Count == 43,
             "The density-function codec slice must register constant, noise, shift variants, find_top_surface, old_blended_noise, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient, spline, distance_to_point and end_outer_islands.");
 
         Require(
@@ -57,6 +58,32 @@ internal static class DensityFunctionCodecChecks
         Require(
             !BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("minecraft:constant")),
             "Minecraft namespace identifiers must not enter the Asteria runtime registry.");
+    }
+
+    private static void CheckSimpleDensityFunctionCodecs()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+
+        foreach (SimpleDensityFunction expected in SimpleDensityFunction.Values)
+        {
+            JsonElement encoded = DensityFunctions.DIRECT_CODEC
+                .EncodeStart(ops, expected)
+                .GetOrThrow();
+
+            Require(
+                encoded.ValueKind == JsonValueKind.Object &&
+                ops.Get(encoded, "type").GetOrThrow().GetString() == $"asteria:{expected.Id}" &&
+                ops.GetMapValues(encoded).GetOrThrow().Count == 1,
+                $"The {expected.Id} simple density function must encode as a type-only density-function object.");
+
+            DensityFunction decoded = DensityFunctions.DIRECT_CODEC
+                .Parse(ops, encoded)
+                .GetOrThrow();
+
+            Require(
+                ReferenceEquals(decoded, expected),
+                $"The {expected.Id} simple density function codec must decode to its canonical singleton.");
+        }
     }
 
     private static void CheckScalarConstantCodec()
