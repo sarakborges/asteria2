@@ -1,5 +1,7 @@
 using Asteria.Content.Blocks;
+using Asteria.Core;
 using Asteria.World;
+using Asteria.World.Lighting;
 
 namespace Asteria.Content.Chunks;
 
