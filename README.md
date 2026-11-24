@@ -13,26 +13,36 @@ Asteria é exclusivamente single-player/offline/local. Redstone e multiplayer/ne
 
 ## Estado atual
 
-O runtime inicializa os registries, gera a chunk de origem até `TERRAIN` e posiciona um jogador temporário em primeira pessoa. Um controlador mantém uma região de renderização 3×3 ao redor do jogador, adicionando até uma chunk por frame. A visualização usa uma malha de diagnóstico: apenas blocos `MODEL` com forma de cubo completo, coloridos por `MapColor`, com colisão estática derivada da mesma geometria. Não é o renderer definitivo e não cobre modelos, texturas, fluidos ou transparência.
+O projeto está concentrado no port dos sistemas de Minecraft Java 26.3. A base contém conteúdo e registries, estados de bloco, armazenamento paletizado, geometria voxel, estruturas de chunks, biomas e partes da geração do Overworld. O mundo de geração e seus dados ainda não estão conectados a um cliente jogável completo.
 
-A base inclui modelos de conteúdo, block states, registries, armazenamento paletizado, geometria voxel, chunks, biomas, ruído e partes do lifecycle/tick. O mundo local já mantém chunks geradas sob demanda e oferece consultas e escrita de blocos. O streaming atual remove apenas os nós de renderização fora do raio: as `ProtoChunk` permanecem no cache do mundo para preservar alterações ainda não salvas. Por isso, a memória cresce com a exploração até existir persistência local e uma política segura de descarregamento. A geração ainda é síncrona; uma chunk por frame limita a quantidade de trabalho, mas não elimina travamentos durante a geração. Ainda faltam scheduler/lifecycle completo, etapas posteriores a `TERRAIN`, iluminação, renderer definitivo, interação com blocos, simulação e save/load.
+O protótipo visual anterior foi removido: não há mais malha cúbica diagnóstica, cores de MapColor usadas como materiais, luz direcional substituta, controlador de movimento/interação ou streaming de renderização próprio. Esses componentes não eram ports dos sistemas equivalentes da referência e não serão usados como base do jogo.
 
-A referência de paridade é Minecraft Java 26.3. Os sistemas fora do escopo do produto estão documentados em [docs/architecture/project-scope.md](docs/architecture/project-scope.md).
+A iluminação e o rendering ainda estão incompletos. O runtime do Godot, por enquanto, inicializa os registries; não apresenta terreno ou jogador até que os sistemas equivalentes sejam portados e integrados. A ausência de uma cena jogável é intencional e evita apresentar um substituto incorreto como implementação do jogo.
+
+A referência de paridade é Minecraft Java 26.3. Os sistemas fora do escopo do produto estão documentados em [docs/architecture/project-scope.md](docs/architecture/project-scope.md). O status detalhado de cada port está em [docs/architecture/minecraft-parity-audit.md](docs/architecture/minecraft-parity-audit.md).
 
 ## Executar o bootstrap
 
-1. Abra `project.godot` no Godot 4.7.2 .NET.
+1. Abra project.godot no Godot 4.7.2 .NET.
 2. Aguarde a importação inicial dos arquivos.
-3. Execute com `F6` ou `F5`.
+3. Execute com F6 ou F5.
 
-A execução gera a chunk de origem e inicia o streaming em uma região 3×3 ao redor do jogador. Use W/A/S/D ou as setas para caminhar, mouse para olhar e Espaço para saltar. Clique esquerdo remove instantaneamente o bloco atingido; clique direito coloca terra na face adjacente, desde que não intercepte o jogador. Esc libera o mouse; clique para capturá-lo novamente. Essas ações são ferramentas temporárias de teste, sem inventário, ferramentas, drops ou tempo de mineração.
+A cena inicializa os registries de conteúdo. Ela ainda não é uma cena jogável.
+
+## Verificações automatizadas
+
+Execute o harness de paridade:
+
+```bash
+dotnet run --project tests/BlockRegistryChecks/BlockRegistryChecks.csproj
+```
 
 ## Estrutura
 
-- `assets/`: arquivos de arte e recursos externos.
-- `resources/`: recursos nativos do Godot.
-- `scenes/`: cenas do projeto.
-- `scripts/`: bootstrap e integração com o Godot.
-- `src/Asteria/`: modelos e sistemas centrais de jogo.
-- `tests/`: verificações automatizadas de paridade.
-- `docs/architecture/`: decisões arquiteturais e auditoria de paridade.
+- assets/: arquivos de arte e recursos externos.
+- resources/: recursos nativos do Godot.
+- scenes/: cenas do projeto.
+- scripts/: bootstrap e integração mínima com o Godot.
+- src/Asteria/: modelos e sistemas centrais de jogo.
+- tests/: verificações automatizadas de paridade.
+- docs/architecture/: decisões arquiteturais e auditoria de paridade.

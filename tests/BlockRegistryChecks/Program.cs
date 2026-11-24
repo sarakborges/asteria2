@@ -343,7 +343,6 @@ internal static class Program
         ProtoChunkChecks.Run();
         TickChecks.Run();
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState, FluidChecks.SourceFluidState);
-        ChunkDebugMeshChecks.Run();
         PalettedContainerChecks.Run();
         BiomeChecks.Run();
         ClimateChecks.Run();
@@ -351,7 +350,6 @@ internal static class Program
         NoiseGeneratorSettingsChecks.Run();
         NoiseChunkChecks.Run();
         NoiseBasedChunkGeneratorChecks.Run();
-        ChunkRenderRegionChecks.Run();
         RandomStateChecks.Run();
         EnvironmentAttributeChecks.Run();
         KeyframeTrackChecks.Run();

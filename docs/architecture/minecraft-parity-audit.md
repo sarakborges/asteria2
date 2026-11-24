@@ -1,5 +1,7 @@
 # Auditoria de paridade — Asteria 2 / Minecraft Java 26.3
 
+> **Estado vigente (24/11/2026):** os incrementos históricos de visualização diagnóstica, controlador em primeira pessoa, streaming de renderização e interação temporária descritos mais abaixo foram retirados. Eles não fazem parte da implementação atual. O renderer de cubos por `MapColor`, a luz direcional da Godot e os controladores próprios não eram ports de Minecraft 26.3 e foram removidos. O runtime Godot permanece apenas como bootstrap de registries até o port do cliente e dos sistemas equivalentes de iluminação/renderização. `LightEngine` e `ChunkSkyLightSources` são partes já existentes do port de iluminação, não constituem por si só o motor completo.
+
 ## Escopo e baseline
 
 - Repositório: `sarakborges/asteria2`
@@ -1328,3 +1330,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Após cada mutação, `ChunkStreamingController.RefreshAfterBlockChange` reconstrói a malha da chunk alterada e somente as vizinhas cardinais quando a alteração toca uma borda horizontal.
 - O raycast reutiliza o DDA/clip de formas já portado e testado em `ChunkChecks`; não há um raycast de voxel paralelo dentro do controlador.
 - Limitações: mineração instantânea, colocação fixa de terra, sem inventário/seleção de item, ferramentas, drops, partículas, animação, alcance configurável, cooldown ou atualizações de bloco completas. Continua sendo uma ferramenta de teste, não o sistema final de interação.
+
+
+## Correção arquitetural — retirada do runtime diagnóstico (24/11/2026)
+
+- Removidos `ChunkDebugMeshBuilder`, `ChunkDebugRenderer`, `ChunkRenderRegion`, `ChunkStreamingController` e `PlayerController`. A geometria cúbica com faces omitidas, o material PBR colorido por `MapColor`, o sol direcional, a movimentação, a interação simplificada e o gerenciamento próprio de região não eram ports dos sistemas equivalentes.
+- A cena inicial agora contém somente o nó raiz; `Main` limita-se a inicializar os registries de conteúdo como bootstrap do Godot.
+- Os testes exclusivos do mesh diagnóstico e do planejador de região foram removidos. Permanecem os testes dos subsistemas portados, incluindo formas voxel e clipping de blocos.
+- Não há atualmente renderização de terreno nem iluminação visual no runtime. Isso é preferível a apresentar a luz de cena e a malha de diagnóstico como se fossem equivalentes ao jogo.
+- Próxima cadeia de port: completar o motor de luz de bloco e céu, armazenamento por seção e integração com os dados reais das chunks; depois, portar a compilação/renderização de seções e sua ligação ao cliente.
