@@ -24,6 +24,7 @@ internal static class DensityFunctionCodecChecks
         CheckPowCodec();
         CheckLerpCodec();
         CheckCacheCodec();
+        CheckBlendDensityCodec();
         CheckInterpolatedCodec();
         CheckClampCodec();
         CheckRangeChoiceCodec();
@@ -45,14 +46,15 @@ internal static class DensityFunctionCodecChecks
     private static void CheckTypeRegistry()
     {
         Require(
-            BuiltInRegistries.DensityFunctionType.Count == 43,
+            BuiltInRegistries.DensityFunctionType.Count == 44,
             "The density-function codec slice must register constant, noise, shift variants, find_top_surface, old_blended_noise, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient, spline, distance_to_point and end_outer_islands.");
 
         Require(
             BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:constant")) &&
             BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:abs")) &&
             BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:add")) &&
-            BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:floor")),
+            BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:floor")) &&
+            BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:blend_density")),
             "Density-function type registration must expose the Asteria-namespaced 26.3 type identifiers.");
 
         Require(
@@ -320,6 +322,28 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(ops, encoded).GetOrThrow().Equals(expected),
             "CacheFunction must round-trip without evaluating its compiler-only cache node.");
+    }
+
+    private static void CheckBlendDensityCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        DensityFunction expected = new BlendDensityFunction(
+            new UnaryFunction(
+                UnaryFunction.Type.ABS,
+                new ConstantFunction(-0.75f)));
+
+        JsonElement encoded = DensityFunctions.DIRECT_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:blend_density" &&
+            ops.Get(encoded, "input").GetOrThrow().ValueKind == JsonValueKind.Object,
+            "BlendDensityFunction must serialize its child under the 26.3 input field.");
+
+        Require(
+            DensityFunctions.DIRECT_CODEC.Parse(ops, encoded).GetOrThrow().Equals(expected),
+            "BlendDensityFunction must round-trip its wrapped density function.");
     }
 
     private static void CheckInterpolatedCodec()
