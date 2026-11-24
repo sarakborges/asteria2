@@ -1,4 +1,5 @@
 using Asteria.Content.Biomes;
+using Asteria.Content.Registries;
 using Asteria.Serialization;
 using Asteria.World.LevelGen.DensityFunctions;
 
@@ -37,6 +38,39 @@ public sealed record NoiseRouter(
             ridges,
             functions.ChunkSurfaceLevel,
             functions.FinalDensity);
+    }
+
+    /// <summary>
+    /// Resolves all twelve density-function entries from the registry before
+    /// selecting the eight channels consumed by Minecraft Java 26.3 NoiseRouter.
+    /// </summary>
+    public static NoiseRouter CreateOverworld(
+        Registry<DensityFunction> registry,
+        OverworldFunctionSet<RegistryKey<DensityFunction>> functionNames)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        ArgumentNullException.ThrowIfNull(functionNames);
+
+        OverworldFunctionSet<DensityFunction> functions =
+            functionNames.Map(key => GetFunction(registry, key));
+
+        return CreateOverworld(
+            functions,
+            GetFunction(registry, DensityFunctionKeys.RIDGES));
+    }
+
+    private static DensityFunction GetFunction(
+        Registry<DensityFunction> registry,
+        RegistryKey<DensityFunction> key)
+    {
+        Holder<DensityFunction>.Reference holder = registry.GetHolder(key) ??
+            throw new InvalidOperationException(
+                $"Missing density function in {registry.Key}: {key}");
+        if (!holder.IsBound)
+            throw new InvalidOperationException(
+                $"Unbound density function in {registry.Key}: {key}");
+
+        return new DensityFunctions.HolderHolder(holder);
     }
 
     private sealed record ClimateFunctions(
