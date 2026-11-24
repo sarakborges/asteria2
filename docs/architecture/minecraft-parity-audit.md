@@ -959,3 +959,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Portada `ridges_folded` com a árvore exata de `peaksAndValleys`, incluindo as constantes float originais.
 - Testes verificam ordem dos oito registros, identidade dos holders, escalas, dependências de shift, presença dos caches e árvore de expressão de ridges_folded.
 - Permanecem pendentes as splines de terreno, offset/factor/jaggedness/depth, superfícies preliminares e finais, além da montagem dos NoiseRouters dimensionais.
+
+
+## Incremento — pool de buffers de densidade e ownership em RandomState (24/11/2026)
+
+- Portado `DensityBufferPool` de Minecraft Java 26.3 com arredondamento de capacidade em múltiplos de 16, busca de reutilização com limite superior exclusivo de 2×, preferência por capacidade exata, seleção best-fit, restauração do buffer, envelhecimento e descarte.
+- Portados `Mth.positiveCeilDiv` e `Mth.roundToward`, usados pelo algoritmo de alocação e testados para entradas positivas, negativas e alinhadas.
+- Integrado o ownership de pools em `RandomState`: criação com idade máxima 20, reutilização LIFO, limite de 16 pools retidos, sincronização e garbage collection de pools vazios.
+- Adicionadas verificações de paridade para alocação/reutilização, limites best-fit, idade, clear e lifecycle de pools em RandomState.
+- Esta etapa fecha a dependência de buffers exigida pelo construtor de `NoiseChunk` em 26.3. `NoiseChunk` ainda depende do port integrado de configurações de geração, aquifer e blending; nenhum substituto simplificado foi criado.

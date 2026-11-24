@@ -132,6 +132,16 @@ public static class Mth
     public static int FloorMod(int numerator, int denominator) =>
         unchecked(numerator - FloorDiv(numerator, denominator) * denominator);
 
+    /// <summary>Positive ceiling division, matching Minecraft Java 26.3 Mth.positiveCeilDiv.</summary>
+    public static int PositiveCeilDiv(int input, int divisor) =>
+        unchecked(-FloorDiv(unchecked(-input), divisor));
+
+    /// <summary>
+    /// Rounds an integer upward to the next multiple, matching Minecraft Java 26.3 Mth.roundToward.
+    /// </summary>
+    public static int RoundToward(int input, int multiple) =>
+        unchecked(PositiveCeilDiv(input, multiple) * multiple);
+
 
     public static float LengthSquared(float x, float y, float z) =>
         x * x + y * y + z * z;

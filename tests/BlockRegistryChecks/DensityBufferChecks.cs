@@ -47,6 +47,8 @@ internal static class DensityBufferChecks
         empty.Fill(1.0f);
         Require(empty.Capacity() == 0 && empty.Size() == 0,
             "DensityBuffer must support zero-length storage.");
+
+        DensityBufferPoolChecks.Run();
     }
 
     private static TException Capture<TException>(Action action, string message)

@@ -52,6 +52,7 @@ internal static class RandomStateChecks
     {
         CheckNoiseKeys();
         CheckNoiseInstanceCache();
+        CheckDensityBufferPoolLifecycle();
         CheckRandomFactoriesAndSeeds();
         CheckDensityCompilationAndClimateSamplers();
         CheckSpecialNetherNoisePaths();
@@ -123,6 +124,75 @@ internal static class RandomStateChecks
         Require(
             ReferenceEquals(state.GetSampler(function), state.GetSampler(function)),
             "RandomState must return the same compiled sampler for equal density-function graph keys.");
+    }
+
+    private static void CheckDensityBufferPoolLifecycle()
+    {
+        var fixture = new NoiseFixture();
+        NoiseRouter router = CreateRouter(fixture.Temperature, fixture.NormalNoise);
+        var state = new RandomState(fixture.Registry, 0x6A09_E667_F3BC_C909L, false, router);
+
+        DensityBufferPool pool = state.AcquireDensityBufferPool();
+        ScopedDensityBuffer buffer = pool.Acquire(1);
+        Require(
+            buffer.Capacity() == 16 && buffer.Size() == 1,
+            "RandomState must provide a pool using the vanilla density-buffer capacity policy.");
+
+        buffer.Close();
+        state.ReleaseDensityBufferPool(pool);
+        Require(
+            ReferenceEquals(state.AcquireDensityBufferPool(), pool),
+            "RandomState must reuse the most recently released density-buffer pool.");
+
+        ScopedDensityBuffer reused = pool.Acquire(7);
+        Require(
+            ReferenceEquals(reused, buffer) && reused.Size() == 7,
+            "A pool reacquired from RandomState must retain its reusable density buffers.");
+        reused.Close();
+        state.ReleaseDensityBufferPool(pool);
+
+        for (int age = 1; age <= 20; age++)
+        {
+            state.GarbageCollect();
+            Require(
+                !pool.IsEmpty() && reused.Age == age,
+                "RandomState garbage collection must retain pooled buffers through the twentieth idle age.");
+        }
+
+        state.GarbageCollect();
+        Require(
+            pool.IsEmpty() && reused.Age == 21,
+            "RandomState garbage collection must discard buffers after their age exceeds twenty.");
+        DensityBufferPool replacement = state.AcquireDensityBufferPool();
+        Require(
+            !ReferenceEquals(replacement, pool),
+            "RandomState must stop reusing a pool after garbage collection empties and removes it.");
+
+        var acquired = new List<DensityBufferPool>();
+        for (int index = 0; index < 17; index++)
+        {
+            DensityBufferPool candidate = state.AcquireDensityBufferPool();
+            ScopedDensityBuffer candidateBuffer = candidate.Acquire(1);
+            candidateBuffer.Close();
+            acquired.Add(candidate);
+        }
+
+        foreach (DensityBufferPool candidate in acquired)
+            state.ReleaseDensityBufferPool(candidate);
+
+        var retained = acquired.Take(16).ToHashSet();
+        for (int index = 0; index < 16; index++)
+        {
+            DensityBufferPool candidate = state.AcquireDensityBufferPool();
+            Require(
+                retained.Contains(candidate),
+                "RandomState must retain no more than sixteen pools and reuse every retained pool.");
+        }
+
+        DensityBufferPool overflow = state.AcquireDensityBufferPool();
+        Require(
+            !retained.Contains(overflow) && !ReferenceEquals(overflow, acquired[16]),
+            "RandomState must discard a released pool when its sixteen-pool retention limit is reached.");
     }
 
     private static void CheckRandomFactoriesAndSeeds()

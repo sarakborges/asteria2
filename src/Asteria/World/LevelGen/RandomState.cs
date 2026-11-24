@@ -8,8 +8,8 @@ using Asteria.World.LevelGen.Synth;
 namespace Asteria.World.LevelGen;
 
 /// <summary>
-/// Seeded world-generation random state and density sampler ownership from Minecraft Java 26.3.
-/// Material-system and density-buffer-pool ownership are added with their dependent worldgen stages.
+/// Seeded world-generation random state, density samplers and pooled density-buffer ownership
+/// from Minecraft Java 26.3. Material-system ownership follows with the material-generation stage.
 /// </summary>
 public sealed class RandomState : DensityFunction.CompileContext
 {
@@ -22,6 +22,12 @@ public sealed class RandomState : DensityFunction.CompileContext
 
     private readonly ConcurrentDictionary<RegistryKey<NormalNoise>, Lazy<Noise>> _noiseInstances = new();
     private readonly ConcurrentDictionary<ResourceLocation, Lazy<PositionalRandomFactory>> _positionalRandoms = new();
+
+    private readonly object _densityBufferPoolLock = new();
+    private readonly List<DensityBufferPool> _densityBufferPools = new(16);
+
+    private const int MaxDensityBufferPools = 16;
+    private const int MaxDensityBufferAgeTicks = 20;
 
     public long Seed => _seed;
     public bool UseLegacyRandomSource => _useLegacyRandomSource;
@@ -150,6 +156,52 @@ public sealed class RandomState : DensityFunction.CompileContext
 
     public IRandomSource CreateEndIslandRandom() =>
         new LegacyRandomSource(_seed);
+
+    /// <summary>
+    /// Acquires a reusable density-buffer pool, matching RandomState.acquireDensityBufferPool in 26.3.
+    /// </summary>
+    public DensityBufferPool AcquireDensityBufferPool()
+    {
+        lock (_densityBufferPoolLock)
+        {
+            if (_densityBufferPools.Count == 0)
+                return new DensityBufferPool(MaxDensityBufferAgeTicks);
+
+            int lastIndex = _densityBufferPools.Count - 1;
+            DensityBufferPool pool = _densityBufferPools[lastIndex];
+            _densityBufferPools.RemoveAt(lastIndex);
+            return pool;
+        }
+    }
+
+    /// <summary>
+    /// Returns a density-buffer pool to this random state, retaining at most sixteen pools.
+    /// </summary>
+    public void ReleaseDensityBufferPool(DensityBufferPool pool)
+    {
+        lock (_densityBufferPoolLock)
+        {
+            if (_densityBufferPools.Count < MaxDensityBufferPools)
+                _densityBufferPools.Add(pool);
+        }
+    }
+
+    /// <summary>
+    /// Ages idle buffers and removes pools that no longer contain reusable buffers.
+    /// </summary>
+    public void GarbageCollect()
+    {
+        lock (_densityBufferPoolLock)
+        {
+            for (int index = _densityBufferPools.Count - 1; index >= 0; index--)
+            {
+                DensityBufferPool pool = _densityBufferPools[index];
+                pool.GarbageCollect();
+                if (pool.IsEmpty())
+                    _densityBufferPools.RemoveAt(index);
+            }
+        }
+    }
 
     private sealed class BoundDensitySamplerSet(
         RandomState owner,
