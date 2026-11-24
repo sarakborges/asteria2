@@ -1,5 +1,6 @@
 using Asteria.Core;
 using Asteria.World.Level;
+using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.Features;
 
 namespace Asteria.World.LevelGen.Placement;
