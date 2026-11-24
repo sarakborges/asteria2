@@ -45,6 +45,7 @@ internal static class BuiltInDensityFunctionChecks
         CheckBlendDensityFunction();
         CheckOverworldTerrainRegistration();
         CheckMappedNoiseFactories();
+        CheckOverworldCaveRegistration();
     }
 
     private static void CheckRegistryAndRegistrationOrder()
@@ -77,14 +78,21 @@ internal static class BuiltInDensityFunctionChecks
             "overworld_large_biomes/continents", "overworld_large_biomes/erosion",
             "overworld/offset", "overworld/factor", "overworld/depth", "overworld/jaggedness",
             "overworld/sloped_cheese", "overworld/preliminary_surface_level", "overworld/chunk_surface_level",
+            "overworld/final_density",
             "overworld_large_biomes/offset", "overworld_large_biomes/factor",
             "overworld_large_biomes/depth", "overworld_large_biomes/jaggedness",
             "overworld_large_biomes/sloped_cheese", "overworld_large_biomes/preliminary_surface_level",
-            "overworld_large_biomes/chunk_surface_level",
+            "overworld_large_biomes/chunk_surface_level", "overworld_large_biomes/final_density",
             "overworld_amplified/offset", "overworld_amplified/factor",
             "overworld_amplified/depth", "overworld_amplified/jaggedness",
             "overworld_amplified/sloped_cheese", "overworld_amplified/preliminary_surface_level",
-            "overworld_amplified/chunk_surface_level"
+            "overworld_amplified/chunk_surface_level", "overworld_amplified/final_density",
+            "overworld/caves/spaghetti_roughness_function",
+            "overworld/caves/spaghetti_2d_thickness_modulator",
+            "overworld/caves/spaghetti_2d",
+            "overworld/caves/entrances",
+            "overworld/caves/noodle",
+            "overworld/caves/pillars"
         ];
 
         Require(
@@ -269,6 +277,8 @@ internal static class BuiltInDensityFunctionChecks
             registry.GetValueOrThrow(names.PreliminarySurfaceLevel);
         DensityFunction chunkSurfaceLevel =
             registry.GetValueOrThrow(names.ChunkSurfaceLevel);
+        DensityFunction finalDensity =
+            registry.GetValueOrThrow(names.FinalDensity);
 
         Require(
             offset is CacheFunction
@@ -366,6 +376,36 @@ internal static class BuiltInDensityFunctionChecks
             ReferenceEquals(surfaceLevel, registry.GetHolder(names.PreliminarySurfaceLevel)),
             $"{keyPrefix} chunk_surface_level must interpolate the registered preliminary surface level at 16x1 cells.");
 
+        Require(
+            finalDensity is BinaryFunction
+            {
+                Operation: BinaryFunction.Type.ADD,
+                Left: BinaryFunction
+                {
+                    Operation: BinaryFunction.Type.MIN,
+                    Left: UnaryFunction
+                    {
+                        Operation: UnaryFunction.Type.SQUEEZE,
+                        Input: InterpolatedFunction
+                        {
+                            CellSizeXz: 4,
+                            CellSizeY: 8,
+                            Input: BinaryFunction
+                            {
+                                Operation: BinaryFunction.Type.MUL,
+                                Left: BlendDensityFunction,
+                                Right: ConstantFunction { Value: 0.64f }
+                            }
+                        }
+                    },
+                    Right: DensityFunctions.HolderHolder { Function: var noodleHolder }
+                },
+                Right: var beardifier
+            } &&
+            ReferenceEquals(noodleHolder, registry.GetHolder(DensityFunctionKeys.NOODLE)) &&
+            ReferenceEquals(beardifier, SimpleDensityFunction.BEARDIFIER),
+            $"{keyPrefix} final_density must blend, scale, interpolate, squeeze, cap against noodles and add the beardifier.");
+
         if (amplified)
         {
             Require(
@@ -374,6 +414,112 @@ internal static class BuiltInDensityFunctionChecks
                 !names.Jaggedness.Equals(DensityFunctionKeys.OVERWORLD_FUNCTIONS.Jaggedness),
                 "Amplified terrain must register distinct offset, factor and jaggedness entries.");
         }
+    }
+
+    private static void CheckOverworldCaveRegistration()
+    {
+        Registry<DensityFunction> registry = BuiltInRegistries.DensityFunction;
+
+        DensityFunction roughness =
+            registry.GetValueOrThrow(DensityFunctionKeys.SPAGHETTI_ROUGHNESS_FUNCTION);
+        DensityFunction thickness =
+            registry.GetValueOrThrow(DensityFunctionKeys.SPAGHETTI_2D_THICKNESS_MODULATOR);
+        DensityFunction spaghetti2D =
+            registry.GetValueOrThrow(DensityFunctionKeys.SPAGHETTI_2D);
+        DensityFunction entrances =
+            registry.GetValueOrThrow(DensityFunctionKeys.ENTRANCES);
+        DensityFunction noodle =
+            registry.GetValueOrThrow(DensityFunctionKeys.NOODLE);
+        DensityFunction pillars =
+            registry.GetValueOrThrow(DensityFunctionKeys.PILLARS);
+
+        Require(
+            roughness is CacheFunction
+            {
+                Input: BinaryFunction
+                {
+                    Operation: BinaryFunction.Type.MUL,
+                    Left: BinaryFunction { Operation: BinaryFunction.Type.ADD },
+                    Right: BinaryFunction
+                    {
+                        Operation: BinaryFunction.Type.ADD,
+                        Left: UnaryFunction { Operation: UnaryFunction.Type.ABS },
+                        Right: ConstantFunction { Value: -0.4f }
+                    }
+                }
+            },
+            "spaghetti_roughness_function must cache mapped roughness modulation times abs(roughness noise) minus 0.4.");
+
+        Require(
+            thickness is CacheFunction
+            {
+                Input: BinaryFunction
+                {
+                    Operation: BinaryFunction.Type.ADD,
+                    Left: BinaryFunction { Operation: BinaryFunction.Type.MUL },
+                    Right: ConstantFunction
+                }
+            },
+            "spaghetti_2d_thickness_modulator must cache its mapped noise function.");
+
+        Require(
+            spaghetti2D is ClampFunction
+            {
+                Min: -1.0f,
+                Max: 1.0f,
+                Input: BinaryFunction { Operation: BinaryFunction.Type.MAX }
+            },
+            "spaghetti_2d must clamp the maximum of its spaghetti cave and ridged layer fields to [-1, 1].");
+
+        Require(
+            entrances is CacheFunction
+            {
+                Input: BinaryFunction
+                {
+                    Operation: BinaryFunction.Type.MIN,
+                    Right: BinaryFunction
+                    {
+                        Operation: BinaryFunction.Type.ADD,
+                        Left: DensityFunctions.HolderHolder { Function: var roughnessHolder }
+                    }
+                }
+            } &&
+            ReferenceEquals(roughnessHolder, registry.GetHolder(DensityFunctionKeys.SPAGHETTI_ROUGHNESS_FUNCTION)),
+            "entrances must cache the minimum of the big-entrance field and the registered 3D spaghetti/roughness sum.");
+
+        Require(
+            noodle is RangeChoiceFunction
+            {
+                MinInclusive: -1_000_000.0f,
+                MaxExclusive: 0.0f,
+                WhenInRange: ConstantFunction { Value: 64.0f },
+                WhenOutOfRange: BinaryFunction { Operation: BinaryFunction.Type.ADD }
+            },
+            "noodle must select the fixed 64 density inside its y-limited toggle band and thickness-plus-ridge density outside.");
+
+        Require(
+            pillars is CacheFunction
+            {
+                Input: BinaryFunction
+                {
+                    Operation: BinaryFunction.Type.MUL,
+                    Left: BinaryFunction { Operation: BinaryFunction.Type.ADD },
+                    Right: UnaryFunction { Operation: UnaryFunction.Type.CUBE }
+                }
+            },
+            "pillars must cache (pillar noise times two plus rarity modulation) times cubed thickness modulation.");
+
+        Require(
+            new[]
+            {
+                DensityFunctionKeys.SPAGHETTI_ROUGHNESS_FUNCTION,
+                DensityFunctionKeys.SPAGHETTI_2D_THICKNESS_MODULATOR,
+                DensityFunctionKeys.SPAGHETTI_2D,
+                DensityFunctionKeys.ENTRANCES,
+                DensityFunctionKeys.NOODLE,
+                DensityFunctionKeys.PILLARS
+            }.All(key => registry.GetHolder(key)?.IsBound == true),
+            "Every registered Overworld cave density function must resolve to a bound holder.");
     }
 
     private static void CheckBlendDensityFunction()
