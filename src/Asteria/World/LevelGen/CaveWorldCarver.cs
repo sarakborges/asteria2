@@ -20,66 +20,87 @@ public sealed record CaveWorldCarver(
     FloatProvider StartVerticalRadiusMultiplier,
     FloatProvider FloorLevel) : WorldCarver
 {
+    private static readonly MapCodec<(
+        float Probability,
+        HeightProvider Y,
+        IntProvider Count,
+        FloatProvider Thickness)> FirstFields =
+        RecordCodecBuilder.MapCodec<(
+            float Probability,
+            HeightProvider Y,
+            IntProvider Count,
+            FloatProvider Thickness)>(instance =>
+            instance.Group(
+                    Codecs.FloatRange(0.0f, 1.0f).FieldOf("probability")
+                        .ForGetter<(float, HeightProvider, IntProvider, FloatProvider)>(static carver => carver.Item1),
+                    HeightProvider.CODEC.FieldOf("y")
+                        .ForGetter<(float, HeightProvider, IntProvider, FloatProvider)>(static carver => carver.Item2),
+                    IntProviders.NON_NEGATIVE_CODEC.FieldOf("count")
+                        .ForGetter<(float, HeightProvider, IntProvider, FloatProvider)>(static carver => carver.Item3),
+                    FloatProviders.Codec(0.0f).FieldOf("thickness")
+                        .ForGetter<(float, HeightProvider, IntProvider, FloatProvider)>(static carver => carver.Item4))
+                .Apply(instance, static (probability, y, count, thickness) =>
+                    (probability, y, count, thickness)));
+
+    private static readonly MapCodec<(
+        bool WeirdThicknessBias,
+        FloatProvider RoomVerticalRadiusMultiplier,
+        FloatProvider HorizontalRadiusMultiplier,
+        FloatProvider VerticalRadiusMultiplier)> MiddleFields =
+        RecordCodecBuilder.MapCodec<(
+            bool WeirdThicknessBias,
+            FloatProvider RoomVerticalRadiusMultiplier,
+            FloatProvider HorizontalRadiusMultiplier,
+            FloatProvider VerticalRadiusMultiplier)>(instance =>
+            instance.Group(
+                    Codecs.BOOL.OptionalFieldOf("weird_thickness_bias", false)
+                        .ForGetter<(bool, FloatProvider, FloatProvider, FloatProvider)>(static carver => carver.Item1),
+                    FloatProviders.CODEC.FieldOf("room_vertical_radius_multiplier")
+                        .ForGetter<(bool, FloatProvider, FloatProvider, FloatProvider)>(static carver => carver.Item2),
+                    FloatProviders.CODEC.FieldOf("horizontal_radius_multiplier")
+                        .ForGetter<(bool, FloatProvider, FloatProvider, FloatProvider)>(static carver => carver.Item3),
+                    FloatProviders.CODEC.FieldOf("vertical_radius_multiplier")
+                        .ForGetter<(bool, FloatProvider, FloatProvider, FloatProvider)>(static carver => carver.Item4))
+                .Apply(instance, static (weirdThicknessBias, roomVerticalRadiusMultiplier, horizontalRadiusMultiplier, verticalRadiusMultiplier) =>
+                    (weirdThicknessBias, roomVerticalRadiusMultiplier, horizontalRadiusMultiplier, verticalRadiusMultiplier)));
+
+    private static readonly MapCodec<(
+        FloatProvider StartVerticalRadiusMultiplier,
+        FloatProvider FloorLevel)> LastFields =
+        RecordCodecBuilder.MapCodec<(
+            FloatProvider StartVerticalRadiusMultiplier,
+            FloatProvider FloorLevel)>(instance =>
+            instance.Group(
+                    FloatProviders.CODEC.OptionalFieldOf(
+                            "start_vertical_radius_multiplier",
+                            ConstantFloat.Of(1.0f))
+                        .ForGetter<(FloatProvider, FloatProvider)>(static carver => carver.Item1),
+                    FloatProviders.Codec(-1.0f, 1.0f).FieldOf("floor_level")
+                        .ForGetter<(FloatProvider, FloatProvider)>(static carver => carver.Item2))
+                .Apply(instance, static (startVerticalRadiusMultiplier, floorLevel) =>
+                    (startVerticalRadiusMultiplier, floorLevel)));
+
     public static MapCodec<CaveWorldCarver> MAP_CODEC { get; } =
         RecordCodecBuilder.MapCodec<CaveWorldCarver>(instance =>
             instance.Group(
-                    Codecs.FloatRange(0.0f, 1.0f)
-                        .FieldOf("probability")
-                        .ForGetter<CaveWorldCarver>(static carver => carver.Probability),
-                    HeightProvider.CODEC
-                        .FieldOf("y")
-                        .ForGetter<CaveWorldCarver>(static carver => carver.Y),
-                    IntProviders.NON_NEGATIVE_CODEC
-                        .FieldOf("count")
-                        .ForGetter<CaveWorldCarver>(static carver => carver.Count),
-                    FloatProviders.Codec(0.0f)
-                        .FieldOf("thickness")
-                        .ForGetter<CaveWorldCarver>(static carver => carver.Thickness),
-                    Codecs.BOOL
-                        .OptionalFieldOf("weird_thickness_bias", false)
-                        .ForGetter<CaveWorldCarver>(static carver => carver.WeirdThicknessBias),
-                    FloatProviders.CODEC
-                        .FieldOf("room_vertical_radius_multiplier")
-                        .ForGetter<CaveWorldCarver>(static carver => carver.RoomVerticalRadiusMultiplier),
-                    FloatProviders.CODEC
-                        .FieldOf("horizontal_radius_multiplier")
-                        .ForGetter<CaveWorldCarver>(static carver => carver.HorizontalRadiusMultiplier),
-                    FloatProviders.CODEC
-                        .FieldOf("vertical_radius_multiplier")
-                        .ForGetter<CaveWorldCarver>(static carver => carver.VerticalRadiusMultiplier),
-                    FloatProviders.CODEC
-                        .OptionalFieldOf(
-                            "start_vertical_radius_multiplier",
-                            ConstantFloat.Of(1.0f))
-                        .ForGetter<CaveWorldCarver>(static carver => carver.StartVerticalRadiusMultiplier),
-                    FloatProviders.Codec(-1.0f, 1.0f)
-                        .FieldOf("floor_level")
-                        .ForGetter<CaveWorldCarver>(static carver => carver.FloorLevel))
-                .Apply(
-                    instance,
-                    static (
-                        probability,
-                        y,
-                        count,
-                        thickness,
-                        weirdThicknessBias,
-                        roomVerticalRadiusMultiplier,
-                        horizontalRadiusMultiplier,
-                        verticalRadiusMultiplier,
-                        startVerticalRadiusMultiplier,
-                        floorLevel) =>
-                        new CaveWorldCarver(
-                            probability,
-                            y,
-                            count,
-                            thickness,
-                            weirdThicknessBias,
-                            roomVerticalRadiusMultiplier,
-                            horizontalRadiusMultiplier,
-                            verticalRadiusMultiplier,
-                            startVerticalRadiusMultiplier,
-                            floorLevel)));
-
+                    FirstFields.ForGetter<CaveWorldCarver>(static carver =>
+                        (carver.Probability, carver.Y, carver.Count, carver.Thickness)),
+                    MiddleFields.ForGetter<CaveWorldCarver>(static carver =>
+                        (carver.WeirdThicknessBias, carver.RoomVerticalRadiusMultiplier, carver.HorizontalRadiusMultiplier, carver.VerticalRadiusMultiplier)),
+                    LastFields.ForGetter<CaveWorldCarver>(static carver =>
+                        (carver.StartVerticalRadiusMultiplier, carver.FloorLevel)))
+                .Apply(instance, static (first, middle, last) =>
+                    new CaveWorldCarver(
+                        first.Probability,
+                        first.Y,
+                        first.Count,
+                        first.Thickness,
+                        middle.WeirdThicknessBias,
+                        middle.RoomVerticalRadiusMultiplier,
+                        middle.HorizontalRadiusMultiplier,
+                        middle.VerticalRadiusMultiplier,
+                        last.StartVerticalRadiusMultiplier,
+                        last.FloorLevel)));
     public static MapCodec<WorldCarver> TYPE_CODEC { get; } =
         MAP_CODEC.XMap<WorldCarver>(
             static carver => carver,
