@@ -10,8 +10,8 @@ public abstract record VerticalAnchor
     private const int MIN_VALUE = NoiseSettings.DimensionMinY;
     private const int MAX_VALUE = NoiseSettings.DimensionMaxY;
 
-    public static VerticalAnchor BOTTOM { get; } = new AboveBottom(0);
-    public static VerticalAnchor TOP { get; } = new BelowTop(0);
+    public static VerticalAnchor BOTTOM { get; } = new AboveBottomAnchor(0);
+    public static VerticalAnchor TOP { get; } = new BelowTopAnchor(0);
 
     public static Codec<VerticalAnchor> CODEC { get; } = new AnchorCodec();
 

@@ -42,5 +42,11 @@ public sealed class WorldGenerationContext
     public int GetGenDepth() => GenDepth;
     public int SeaLevel() => SeaLevelValue;
 
+    public int ResolveAnchorY(VerticalAnchor anchor)
+    {
+        ArgumentNullException.ThrowIfNull(anchor);
+        return anchor.ResolveY(this);
+    }
+
     public int GetMaxGenY() => unchecked(MinGenY + GenDepth - 1);
 }
