@@ -1156,3 +1156,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Propriedades portadas nesta fatia incluem MapColor, hardness/resistance, RequiresCorrectToolForDrops, friction, random ticks, dynamic shape e no-occlusion sempre que representáveis no BlockProperties atual.
 - Delimitação: este commit registra estados de bloco usados por worldgen. Comportamentos especializados como areia/cascalho caindo, gelo derretendo, mycelium espalhando, snow/powder-snow e drops/XP continuam dependentes dos ports de FallingBlock/IceBlock/PowderSnowBlock/DropExperienceBlock e do sistema de ticks/entidades. Nenhuma funcionalidade de mobs foi adicionada.
 - Dependências conferidas nos arquivos `data/minecraft/worldgen/material_rule/**/*.json` do dataset `mj41/mc26-data`, branch `mc-26.3`; foram coletadas apenas as chaves de estado usadas nos resultados de material rules.
+
+
+## Correção de namespace dos registries de worldgen (24/11/2026)
+
+- Os IDs de entrada para material-rule types, material-condition types e density-function types agora usam o namespace vanilla `minecraft`, sem renomear os registries locais (`asteria:worldgen/...`).
+- Os holders de NormalNoise e DensityFunction usados pelo Overworld também passaram a usar resource keys `minecraft:*`, permitindo que as referências do NoiseRouter e das regras materiais 26.3 apontem diretamente para as entradas registradas.
+- Testes de codecs foram atualizados para exigir os discriminadores e referências vanilla; namespaces genéricos de identificadores e streams posicionais customizados permanecem independentes.
+- Esta correção alinha os IDs públicos dos dados de worldgen. A registry de material_rule ainda precisa receber os arquivos vanilla e seus holders; a árvore Overworld completa ainda não está em execução no carregamento de mundo.

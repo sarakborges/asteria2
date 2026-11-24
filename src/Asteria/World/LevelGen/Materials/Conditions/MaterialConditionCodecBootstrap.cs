@@ -29,7 +29,7 @@ internal static class MaterialConditionCodecBootstrap
         MapCodec<MaterialCondition> codec) =>
         registry.Register(
             RegistryKey<MapCodec<MaterialCondition>>.Create(
-                registry.Key, ResourceLocation.WithDefaultNamespace(id)),
+                registry.Key, ResourceLocation.FromNamespaceAndPath("minecraft", id)),
             codec,
             RegistrationInfo.BuiltIn);
 }

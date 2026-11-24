@@ -32,30 +32,30 @@ internal static class MaterialConditionChecks
         Require(registry.Count == 11,
             "The material-condition type registry must contain biome, noise_threshold, vertical_gradient, y_above, water, temperature, steep, not, hole, above_preliminary_surface and stone_depth.");
         Require(
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("biome")) &&
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("noise_threshold")) &&
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("temperature")) &&
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("steep")) &&
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("not")) &&
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("hole")) &&
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("vertical_gradient")) &&
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("y_above")) &&
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("water")) &&
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("above_preliminary_surface")) &&
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("stone_depth")),
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "biome")) &&
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "noise_threshold")) &&
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "temperature")) &&
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "steep")) &&
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "not")) &&
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "hole")) &&
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "vertical_gradient")) &&
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "y_above")) &&
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "water")) &&
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "above_preliminary_surface")) &&
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "stone_depth")),
             "Material-condition types must use the vanilla identifiers.");
         Require(
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("biome")), BiomeCondition.TYPE_CODEC) &&
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("noise_threshold")), NoiseThresholdCondition.TYPE_CODEC) &&
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("temperature")), TemperatureCondition.TYPE_CODEC) &&
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("steep")), SteepCondition.TYPE_CODEC) &&
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("not")), NotCondition.TYPE_CODEC) &&
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("hole")), HoleCondition.TYPE_CODEC) &&
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("vertical_gradient")), VerticalGradientCondition.TYPE_CODEC) &&
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("y_above")), YCondition.TYPE_CODEC) &&
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("water")), WaterCondition.TYPE_CODEC) &&
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("above_preliminary_surface")), AbovePreliminarySurfaceCondition.TYPE_CODEC) &&
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("stone_depth")), StoneDepthCondition.TYPE_CODEC),
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "biome")), BiomeCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "noise_threshold")), NoiseThresholdCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "temperature")), TemperatureCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "steep")), SteepCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "not")), NotCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "hole")), HoleCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "vertical_gradient")), VerticalGradientCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "y_above")), YCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "water")), WaterCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "above_preliminary_surface")), AbovePreliminarySurfaceCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "stone_depth")), StoneDepthCondition.TYPE_CODEC),
             "The material-condition registry must expose the singleton or record codec instances.");
         Require(BuiltInRegistries.MaterialCondition.Count == 0,
             "The material-condition value registry stays empty until data bootstrap registers values.");
@@ -68,8 +68,8 @@ internal static class MaterialConditionChecks
         JsonElement encoded = MaterialCondition.CODEC.EncodeStart(ops, condition).GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:not" &&
-            ops.Get(ops.Get(encoded, "invert").GetOrThrow(), "type").GetOrThrow().GetString() == "asteria:steep",
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:not" &&
+            ops.Get(ops.Get(encoded, "invert").GetOrThrow(), "type").GetOrThrow().GetString() == "minecraft:steep",
             "NotCondition must serialize its nested predicate through the vanilla invert field.");
 
         MaterialCondition decoded = MaterialCondition.CODEC.Parse(ops, encoded).GetOrThrow();
@@ -107,7 +107,7 @@ internal static class MaterialConditionChecks
         MaterialCondition condition = new WaterCondition(-2, 1, true);
         JsonElement encoded = MaterialCondition.CODEC.EncodeStart(ops, condition).GetOrThrow();
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:water" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:water" &&
             ops.Get(encoded, "offset").GetOrThrow().GetInt32() == -2 &&
             ops.Get(encoded, "surface_depth_multiplier").GetOrThrow().GetInt32() == 1 &&
             ops.Get(encoded, "add_stone_depth").GetOrThrow().GetBoolean(),
@@ -133,7 +133,7 @@ internal static class MaterialConditionChecks
             "WaterCondition must always pass when there is no water above the column.");
 
         JsonElement outOfRange = JsonDocument.Parse("""
-            { "type": "asteria:water", "offset": 0, "surface_depth_multiplier": 21, "add_stone_depth": false }
+            { "type": "minecraft:water", "offset": 0, "surface_depth_multiplier": 21, "add_stone_depth": false }
             """).RootElement.Clone();
         Require(MaterialCondition.CODEC.Parse(ops, outOfRange).IsError,
             "WaterCondition must reject surface_depth_multiplier values outside [-20, 20].");
@@ -145,7 +145,7 @@ internal static class MaterialConditionChecks
         MaterialCondition condition = AbovePreliminarySurfaceCondition.INSTANCE;
         JsonElement encoded = MaterialCondition.CODEC.EncodeStart(ops, condition).GetOrThrow();
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:above_preliminary_surface",
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:above_preliminary_surface",
             "AbovePreliminarySurfaceCondition must use the vanilla discriminator.");
 
         MaterialCondition decoded = MaterialCondition.CODEC.Parse(ops, encoded).GetOrThrow();
@@ -168,7 +168,7 @@ internal static class MaterialConditionChecks
             0, true, 4, Asteria.World.LevelGen.Placement.CaveSurface.FLOOR);
         JsonElement encoded = MaterialCondition.CODEC.EncodeStart(ops, condition).GetOrThrow();
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:stone_depth" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:stone_depth" &&
             ops.Get(encoded, "offset").GetOrThrow().GetInt32() == 0 &&
             ops.Get(encoded, "add_surface_depth").GetOrThrow().GetBoolean() &&
             ops.Get(encoded, "secondary_depth_range").GetOrThrow().GetInt32() == 4 &&
@@ -263,7 +263,7 @@ internal static class MaterialConditionChecks
         JsonElement encoded = MaterialCondition.CODEC.EncodeStart(ops, condition).GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:y_above" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:y_above" &&
             ops.Get(encoded, "anchor").GetOrThrow().ValueKind == JsonValueKind.Object &&
             ops.Get(encoded, "surface_depth_multiplier").GetOrThrow().GetInt32() == 2 &&
             !ops.Get(encoded, "add_stone_depth").GetOrThrow().GetBoolean(),
@@ -307,7 +307,7 @@ internal static class MaterialConditionChecks
         JsonElement encoded = MaterialCondition.CODEC.EncodeStart(ops, condition).GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:vertical_gradient" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:vertical_gradient" &&
             ops.Get(encoded, "random_name").GetOrThrow().GetString() == "asteria:test_gradient" &&
             ops.Get(encoded, "true_at_and_below").GetOrThrow().ValueKind == JsonValueKind.Object &&
             ops.Get(encoded, "false_at_and_above").GetOrThrow().ValueKind == JsonValueKind.Object,
@@ -379,7 +379,7 @@ internal static class MaterialConditionChecks
         JsonElement encoded = MaterialRule.CODEC.EncodeStart(ops, rule).GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:condition" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:condition" &&
             ops.Get(encoded, "if_true").GetOrThrow().ValueKind == JsonValueKind.Object &&
             ops.Get(encoded, "then_run").GetOrThrow().ValueKind == JsonValueKind.Object,
             "ConditionRule must serialize its vanilla if_true and then_run fields.");

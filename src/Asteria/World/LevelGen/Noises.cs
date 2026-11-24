@@ -77,5 +77,5 @@ public static class Noises
     private static RegistryKey<NormalNoise> CreateKey(string name) =>
         RegistryKey<NormalNoise>.Create(
             Registries.NOISE,
-            ResourceLocation.WithDefaultNamespace(name));
+            ResourceLocation.FromNamespaceAndPath("minecraft", name));
 }

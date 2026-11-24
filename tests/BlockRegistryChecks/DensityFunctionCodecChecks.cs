@@ -50,15 +50,15 @@ internal static class DensityFunctionCodecChecks
             "The density-function codec slice must register constant, noise, shift variants, find_top_surface, old_blended_noise, unary/binary/rounding types, pow, lerp, clamp, range choice, interval select, cache, interpolated, slice, gradient, spline, distance_to_point and end_outer_islands.");
 
         Require(
-            BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:constant")) &&
-            BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:abs")) &&
-            BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:add")) &&
-            BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:floor")) &&
-            BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:blend_density")),
+            BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("minecraft:constant")) &&
+            BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("minecraft:abs")) &&
+            BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("minecraft:add")) &&
+            BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("minecraft:floor")) &&
+            BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("minecraft:blend_density")),
             "Density-function type registration must expose the Asteria-namespaced 26.3 type identifiers.");
 
         Require(
-            !BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("minecraft:constant")),
+            !BuiltInRegistries.DensityFunctionType.ContainsKey(ResourceLocation.Parse("asteria:constant")),
             "Minecraft namespace identifiers must not enter the Asteria runtime registry.");
     }
 
@@ -74,7 +74,7 @@ internal static class DensityFunctionCodecChecks
 
             Require(
                 encoded.ValueKind == JsonValueKind.Object &&
-                ops.Get(encoded, "type").GetOrThrow().GetString() == $"asteria:{expected.Id}" &&
+                ops.Get(encoded, "type").GetOrThrow().GetString() == $"minecraft:{expected.Id}" &&
                 ops.GetMapValues(encoded).GetOrThrow().Count == 1,
                 $"The {expected.Id} simple density function must encode as a type-only density-function object.");
 
@@ -126,7 +126,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:constant" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:constant" &&
             ops.Get(encoded, "value").GetOrThrow().GetSingle() == -12.5f,
             "The registered constant map codec must use the 26.3 value field.");
 
@@ -154,7 +154,7 @@ internal static class DensityFunctionCodecChecks
 
             Require(
                 ops.Get(encoded, "type").GetOrThrow().GetString() ==
-                    $"asteria:{UnaryFunction.GetId(operation)}",
+                    $"minecraft:{UnaryFunction.GetId(operation)}",
                 $"The unary {operation} codec must dispatch through its registered type ID.");
 
             Require(
@@ -188,7 +188,7 @@ internal static class DensityFunctionCodecChecks
 
             Require(
                 ops.Get(encoded, "type").GetOrThrow().GetString() ==
-                    $"asteria:{BinaryFunction.GetId(operation)}",
+                    $"minecraft:{BinaryFunction.GetId(operation)}",
                 $"The binary {operation} codec must dispatch through its registered type ID.");
 
             Require(
@@ -223,7 +223,7 @@ internal static class DensityFunctionCodecChecks
 
             Require(
                 ops.Get(encoded, "type").GetOrThrow().GetString() ==
-                    $"asteria:{RoundFunction.GetId(operation)}",
+                    $"minecraft:{RoundFunction.GetId(operation)}",
                 $"The rounding {operation} codec must dispatch through its registered type ID.");
 
             Require(
@@ -268,7 +268,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:pow" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:pow" &&
             ops.Get(encoded, "base").GetOrThrow().GetSingle() == 2.5f &&
             ops.Get(encoded, "exponent").GetOrThrow().GetSingle() == 3.0f,
             "PowFunction must serialize its base and exponent fields.");
@@ -291,7 +291,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:lerp" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:lerp" &&
             ops.Get(encoded, "alpha").GetOrThrow().GetSingle() == 0.25f &&
             ops.Get(encoded, "first").GetOrThrow().GetSingle() == -2.0f &&
             ops.Get(encoded, "second").GetOrThrow().GetSingle() == 6.0f,
@@ -315,7 +315,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:cache" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:cache" &&
             ops.Get(encoded, "input").GetOrThrow().ValueKind == JsonValueKind.Object,
             "CacheFunction must serialize its child under the 26.3 input field.");
 
@@ -337,7 +337,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:blend_density" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:blend_density" &&
             ops.Get(encoded, "input").GetOrThrow().ValueKind == JsonValueKind.Object,
             "BlendDensityFunction must serialize its child under the 26.3 input field.");
 
@@ -361,7 +361,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:interpolated" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:interpolated" &&
             ops.Get(encoded, "input").GetOrThrow().ValueKind == JsonValueKind.Object &&
             ops.Get(encoded, "cell_size_xz").GetOrThrow().GetInt32() == 4 &&
             ops.Get(encoded, "cell_size_y").GetOrThrow().GetInt32() == 8,
@@ -374,14 +374,14 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:interpolated","input":1.0,"cell_size_xz":0,"cell_size_y":4}"""))
+                ParseJson("""{"type":"minecraft:interpolated","input":1.0,"cell_size_xz":0,"cell_size_y":4}"""))
                 .IsError,
             "InterpolatedFunction must reject a non-positive XZ cell size.");
 
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:interpolated","input":1.0,"cell_size_xz":4,"cell_size_y":-1}"""))
+                ParseJson("""{"type":"minecraft:interpolated","input":1.0,"cell_size_xz":4,"cell_size_y":-1}"""))
                 .IsError,
             "InterpolatedFunction must reject a non-positive Y cell size.");
     }
@@ -399,7 +399,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:clamp" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:clamp" &&
             ops.Get(encoded, "input").GetOrThrow().GetSingle() == -4.0f &&
             ops.Get(encoded, "min").GetOrThrow().GetSingle() == -1.5f &&
             ops.Get(encoded, "max").GetOrThrow().GetSingle() == 2.25f,
@@ -412,7 +412,7 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:clamp","input":1.0,"min":2.0,"max":1.0}"""))
+                ParseJson("""{"type":"minecraft:clamp","input":1.0,"min":2.0,"max":1.0}"""))
                 .IsError,
             "ClampFunction codec must reject a maximum lower than its minimum.");
 
@@ -439,7 +439,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:range_choice" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:range_choice" &&
             ops.Get(encoded, "input").GetOrThrow().GetSingle() == 0.5f &&
             ops.Get(encoded, "min_inclusive").GetOrThrow().GetSingle() == -0.25f &&
             ops.Get(encoded, "max_exclusive").GetOrThrow().GetSingle() == 0.75f &&
@@ -454,7 +454,7 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:range_choice","input":0.0,"min_inclusive":3.0,"max_exclusive":-3.0,"when_in_range":1.0,"when_out_of_range":2.0}"""))
+                ParseJson("""{"type":"minecraft:range_choice","input":0.0,"min_inclusive":3.0,"max_exclusive":-3.0,"when_in_range":1.0,"when_out_of_range":2.0}"""))
                 .IsSuccess,
             "RangeChoiceFunction must not add validation absent from the 26.3 codec.");
     }
@@ -477,7 +477,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:interval_select" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:interval_select" &&
             ops.Get(encoded, "input").GetOrThrow().GetSingle() == 0.25f &&
             ops.Get(encoded, "thresholds").GetOrThrow().GetArrayLength() == 2 &&
             ops.Get(encoded, "functions").GetOrThrow().GetArrayLength() == 3,
@@ -497,28 +497,28 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:interval_select","input":0.0,"thresholds":[0.0],"functions":[1.0,2.0,3.0]}"""))
+                ParseJson("""{"type":"minecraft:interval_select","input":0.0,"thresholds":[0.0],"functions":[1.0,2.0,3.0]}"""))
                 .IsError,
             "IntervalSelectFunction must require exactly one fewer thresholds than functions.");
 
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:interval_select","input":0.0,"thresholds":[1.0,0.0],"functions":[1.0,2.0,3.0]}"""))
+                ParseJson("""{"type":"minecraft:interval_select","input":0.0,"thresholds":[1.0,0.0],"functions":[1.0,2.0,3.0]}"""))
                 .IsError,
             "IntervalSelectFunction must reject thresholds not ordered by Java Float.compare.");
 
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:interval_select","input":0.0,"thresholds":[0.0,0.0],"functions":[1.0,2.0,3.0]}"""))
+                ParseJson("""{"type":"minecraft:interval_select","input":0.0,"thresholds":[0.0,0.0],"functions":[1.0,2.0,3.0]}"""))
                 .IsSuccess,
             "IntervalSelectFunction must allow equal, nondecreasing threshold values.");
 
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:interval_select","input":0.0,"thresholds":[],"functions":[1.0]}"""))
+                ParseJson("""{"type":"minecraft:interval_select","input":0.0,"thresholds":[],"functions":[1.0]}"""))
                 .IsError,
             "IntervalSelectFunction must require at least two branches.");
     }
@@ -538,7 +538,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:slice" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:slice" &&
             ops.Get(encoded, "axis").GetOrThrow().GetString() == "z" &&
             ops.Get(encoded, "coordinate").GetOrThrow().GetInt32() == -128 &&
             ops.Get(encoded, "input").GetOrThrow().ValueKind == JsonValueKind.Object,
@@ -551,7 +551,7 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:slice","axis":"w","coordinate":0,"input":1.0}"""))
+                ParseJson("""{"type":"minecraft:slice","axis":"w","coordinate":0,"input":1.0}"""))
                 .IsError,
             "SliceFunction must reject axes outside x/y/z.");
     }
@@ -572,7 +572,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:gradient" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:gradient" &&
             ops.Get(encoded, "axis").GetOrThrow().GetString() == "y" &&
             ops.Get(encoded, "tiling").GetOrThrow().GetString() == "mirrored_repeat" &&
             ops.Get(encoded, "from_coordinate").GetOrThrow().GetInt32() == -64 &&
@@ -588,7 +588,7 @@ internal static class DensityFunctionCodecChecks
         DensityFunction defaultTiling = DensityFunctions.DIRECT_CODEC
             .Parse(
                 ops,
-                ParseJson("""{"type":"asteria:gradient","axis":"x","from_coordinate":1,"to_coordinate":4,"from_value":0.0,"to_value":1.0}"""))
+                ParseJson("""{"type":"minecraft:gradient","axis":"x","from_coordinate":1,"to_coordinate":4,"from_value":0.0,"to_value":1.0}"""))
             .GetOrThrow();
 
         Require(
@@ -598,14 +598,14 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:gradient","axis":"x","from_coordinate":2,"to_coordinate":2,"from_value":0.0,"to_value":1.0}"""))
+                ParseJson("""{"type":"minecraft:gradient","axis":"x","from_coordinate":2,"to_coordinate":2,"from_value":0.0,"to_value":1.0}"""))
                 .IsError,
             "GradientFunction must reject equal from/to coordinates.");
 
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:gradient","axis":"x","tiling":"wrap","from_coordinate":0,"to_coordinate":1,"from_value":0.0,"to_value":1.0}"""))
+                ParseJson("""{"type":"minecraft:gradient","axis":"x","tiling":"wrap","from_coordinate":0,"to_coordinate":1,"from_value":0.0,"to_value":1.0}"""))
                 .IsError,
             "GradientFunction must reject unknown tiling modes.");
     }
@@ -642,7 +642,7 @@ internal static class DensityFunctionCodecChecks
         JsonElement points = ops.Get(splineData, "points").GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:spline" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:spline" &&
             ops.Get(splineData, "coordinate").GetOrThrow().ValueKind == JsonValueKind.Object &&
             points.GetArrayLength() == 3,
             "SplineFunction must serialize its coordinate and non-empty point list using the 26.3 shape.");
@@ -685,7 +685,7 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:spline","spline":{"coordinate":0.0,"points":[]}}"""))
+                ParseJson("""{"type":"minecraft:spline","spline":{"coordinate":0.0,"points":[]}}"""))
                 .IsError,
             "Multipoint spline codecs must reject empty point lists.");
     }
@@ -703,7 +703,7 @@ internal static class DensityFunctionCodecChecks
 
         JsonElement point = ops.Get(encoded, "point").GetOrThrow();
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:distance_to_point" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:distance_to_point" &&
             point.GetArrayLength() == 3 &&
             point[0].GetInt32() == 10 &&
             point[1].GetInt32() == -20 &&
@@ -724,21 +724,21 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:distance_to_point","point":[1,2],"metric":"euclidean"}"""))
+                ParseJson("""{"type":"minecraft:distance_to_point","point":[1,2],"metric":"euclidean"}"""))
                 .IsError,
             "Vec3i codec must reject input lists that do not contain exactly three integers.");
 
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:distance_to_point","point":[1,2,3],"metric":"taxicab"}"""))
+                ParseJson("""{"type":"minecraft:distance_to_point","point":[1,2,3],"metric":"taxicab"}"""))
                 .IsError,
             "DistanceMetric codec must reject unknown serialized names.");
 
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:distance_to_point","point":[1,2,3],"metric":"euclidean_squared"}"""))
+                ParseJson("""{"type":"minecraft:distance_to_point","point":[1,2,3],"metric":"euclidean_squared"}"""))
                 .IsSuccess,
             "DistanceMetric codec must accept the full canonical enum name.");
 
@@ -772,7 +772,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:end_outer_islands" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:end_outer_islands" &&
             encoded.EnumerateObject().Count() == 1,
             "EndIslandFunction must use the vanilla unit map codec without extra fields.");
 
@@ -956,7 +956,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:noise" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:noise" &&
             ops.Get(encoded, "noise").GetOrThrow().ValueKind == JsonValueKind.Object &&
             ops.Get(encoded, "xz_scale").GetOrThrow().GetDouble() == 2.0 &&
             ops.Get(encoded, "y_scale").GetOrThrow().GetDouble() == 0.5,
@@ -980,7 +980,7 @@ internal static class DensityFunctionCodecChecks
         NoiseFunction defaults = DensityFunctions.DIRECT_CODEC
             .Parse(
                 ops,
-                ParseJson("""{"type":"asteria:noise","noise":{"base_octave":0},"xz_scale":1.25,"y_scale":0.75}"""))
+                ParseJson("""{"type":"minecraft:noise","noise":{"base_octave":0},"xz_scale":1.25,"y_scale":0.75}"""))
             .GetOrThrow() as NoiseFunction
             ?? throw new InvalidOperationException("NoiseFunction defaults decoded into another node type.");
 
@@ -1003,7 +1003,7 @@ internal static class DensityFunctionCodecChecks
             new ShiftNoiseFunction.ShiftB(noise),
             new ShiftNoiseFunction.Shift(noise)
         };
-        string[] identifiers = { "asteria:shift_a", "asteria:shift_b", "asteria:shift" };
+        string[] identifiers = { "minecraft:shift_a", "minecraft:shift_b", "minecraft:shift" };
 
         for (int index = 0; index < values.Length; index++)
         {
@@ -1040,7 +1040,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:find_top_surface" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:find_top_surface" &&
             ops.Get(encoded, "density").GetOrThrow().ValueKind == JsonValueKind.Number &&
             ops.Get(encoded, "upper_bound").GetOrThrow().GetSingle() == 11.0f &&
             ops.Get(encoded, "lower_bound").GetOrThrow().GetInt32() == -8 &&
@@ -1064,22 +1064,22 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:find_top_surface","density":1.0,"upper_bound":1.0,"lower_bound":-4065,"cell_height":1}"""))
+                ParseJson("""{"type":"minecraft:find_top_surface","density":1.0,"upper_bound":1.0,"lower_bound":-4065,"cell_height":1}"""))
                 .IsError &&
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:find_top_surface","density":1.0,"upper_bound":1.0,"lower_bound":4063,"cell_height":1}"""))
+                ParseJson("""{"type":"minecraft:find_top_surface","density":1.0,"upper_bound":1.0,"lower_bound":4063,"cell_height":1}"""))
                 .IsError,
             "FindTopSurfaceFunction must reject lower bounds outside twice the DimensionType Y limits.");
 
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:find_top_surface","density":1.0,"upper_bound":1.0,"lower_bound":0,"cell_height":0}"""))
+                ParseJson("""{"type":"minecraft:find_top_surface","density":1.0,"upper_bound":1.0,"lower_bound":0,"cell_height":0}"""))
                 .IsError &&
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:find_top_surface","density":1.0,"upper_bound":1.0,"lower_bound":0,"cell_height":-4}"""))
+                ParseJson("""{"type":"minecraft:find_top_surface","density":1.0,"upper_bound":1.0,"lower_bound":0,"cell_height":-4}"""))
                 .IsError,
             "FindTopSurfaceFunction must reject non-positive cell heights.");
 
@@ -1208,7 +1208,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:old_blended_noise" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:old_blended_noise" &&
             ops.Get(encoded, "xz_scale").GetOrThrow().GetDouble() == 0.75 &&
             ops.Get(encoded, "y_scale").GetOrThrow().GetDouble() == 1.25 &&
             ops.Get(encoded, "xz_factor").GetOrThrow().GetDouble() == 8.0 &&
@@ -1228,22 +1228,22 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:old_blended_noise","xz_scale":0.0009,"y_scale":1.0,"xz_factor":1.0,"y_factor":1.0,"smear_scale_multiplier":1.0}"""))
+                ParseJson("""{"type":"minecraft:old_blended_noise","xz_scale":0.0009,"y_scale":1.0,"xz_factor":1.0,"y_factor":1.0,"smear_scale_multiplier":1.0}"""))
                 .IsError &&
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:old_blended_noise","xz_scale":1000.1,"y_scale":1.0,"xz_factor":1.0,"y_factor":1.0,"smear_scale_multiplier":1.0}"""))
+                ParseJson("""{"type":"minecraft:old_blended_noise","xz_scale":1000.1,"y_scale":1.0,"xz_factor":1.0,"y_factor":1.0,"smear_scale_multiplier":1.0}"""))
                 .IsError,
             "BlendedNoise must enforce the inclusive [0.001,1000] scale and factor ranges.");
 
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:old_blended_noise","xz_scale":1.0,"y_scale":1.0,"xz_factor":1.0,"y_factor":1.0,"smear_scale_multiplier":0.99}"""))
+                ParseJson("""{"type":"minecraft:old_blended_noise","xz_scale":1.0,"y_scale":1.0,"xz_factor":1.0,"y_factor":1.0,"smear_scale_multiplier":0.99}"""))
                 .IsError &&
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:old_blended_noise","xz_scale":1.0,"y_scale":1.0,"xz_factor":1.0,"y_factor":1.0,"smear_scale_multiplier":8.01}"""))
+                ParseJson("""{"type":"minecraft:old_blended_noise","xz_scale":1.0,"y_scale":1.0,"xz_factor":1.0,"y_factor":1.0,"smear_scale_multiplier":8.01}"""))
                 .IsError,
             "BlendedNoise must enforce the inclusive [1,8] smear scale multiplier range.");
 
@@ -1348,7 +1348,7 @@ internal static class DensityFunctionCodecChecks
         var registry = new Registry<DensityFunction>(Registries.DENSITY_FUNCTION.Location);
         RegistryKey<DensityFunction> entryKey = RegistryKey<DensityFunction>.Create(
             Registries.DENSITY_FUNCTION,
-            ResourceLocation.Parse("asteria:shared_density"));
+            ResourceLocation.Parse("minecraft:shared_density"));
         DensityFunction registeredValue = new BinaryFunction(
             BinaryFunction.Type.ADD,
             new ConstantFunction(1.25f),
@@ -1380,7 +1380,7 @@ internal static class DensityFunctionCodecChecks
 
         Require(
             referenceEncoded.ValueKind == JsonValueKind.String &&
-            referenceEncoded.GetString() == "asteria:shared_density",
+            referenceEncoded.GetString() == "minecraft:shared_density",
             "REFERENCE_CODEC must encode a registry reference as its identifier.");
 
         Holder<DensityFunction> referenceDecoded = DensityFunction.REFERENCE_CODEC
@@ -1399,13 +1399,13 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunction.REFERENCE_CODEC.Parse(
                 jsonOps,
-                ParseJson("\"" + "asteria:shared_density" + "\"")).IsError,
+                ParseJson("\"" + "minecraft:shared_density" + "\"")).IsError,
             "REFERENCE_CODEC must reject identifiers when no registry context is available.");
 
         Require(
             DensityFunction.REFERENCE_CODEC.Parse(
                 registryOps,
-                ParseJson("\"" + "asteria:missing_density" + "\"")).IsError,
+                ParseJson("\"" + "minecraft:missing_density" + "\"")).IsError,
             "REFERENCE_CODEC must reject identifiers missing from the selected registry.");
 
         JsonElement inlineEncoded = DensityFunction.CODEC
@@ -1431,7 +1431,7 @@ internal static class DensityFunctionCodecChecks
 
         Require(
             holderEncoded.ValueKind == JsonValueKind.String &&
-            holderEncoded.GetString() == "asteria:shared_density",
+            holderEncoded.GetString() == "minecraft:shared_density",
             "DensityFunction.CODEC must serialize HolderHolder as its registered identifier.");
 
         DensityFunctions.HolderHolder holderDecoded = DensityFunction.CODEC
@@ -1453,7 +1453,7 @@ internal static class DensityFunctionCodecChecks
             .GetOrThrow();
 
         Require(
-            registryOps.Get(graphEncoded, "left").GetOrThrow().GetString() == "asteria:shared_density" &&
+            registryOps.Get(graphEncoded, "left").GetOrThrow().GetString() == "minecraft:shared_density" &&
             registryOps.Get(graphEncoded, "right").GetOrThrow().GetSingle() == -4.0f,
             "Density graph child codecs must encode references by key and direct children inline.");
 
@@ -1471,7 +1471,7 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunction.CODEC.Parse(
                 jsonOps,
-                ParseJson("""{"type":"asteria:add","left":1.0,"right":2.0}"""))
+                ParseJson("""{"type":"minecraft:add","left":1.0,"right":2.0}"""))
                 .IsSuccess,
             "DensityFunction.CODEC must allow inline definitions when no RegistryOps context exists.");
 
@@ -1483,14 +1483,14 @@ internal static class DensityFunctionCodecChecks
         Require(
             inlineDisabled.Parse(
                 registryOps,
-                ParseJson("""{"type":"asteria:constant","value":1.0}"""))
+                ParseJson("""{"type":"minecraft:constant","value":1.0}"""))
                 .IsError,
             "Registry file codecs must reject inline definitions when allowInline is false in registry context.");
 
         Require(
             inlineDisabled.Parse(
                 jsonOps,
-                ParseJson("""{"type":"asteria:constant","value":1.0}"""))
+                ParseJson("""{"type":"minecraft:constant","value":1.0}"""))
                 .IsSuccess,
             "Registry file codecs without RegistryOps must follow vanilla inline fallback behavior.");
 
@@ -1501,7 +1501,7 @@ internal static class DensityFunctionCodecChecks
         RegistryKey<DensityFunction> foreignEntryKey =
             RegistryKey<DensityFunction>.Create(
                 foreignRegistryKey,
-                ResourceLocation.Parse("asteria:foreign"));
+                ResourceLocation.Parse("minecraft:foreign"));
         Holder<DensityFunction>.Reference foreignHolder = foreignRegistry.Register(
             foreignEntryKey,
             new ConstantFunction(9.0f),
@@ -1530,13 +1530,13 @@ internal static class DensityFunctionCodecChecks
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:abs","argument":1.0}""")).IsError,
+                ParseJson("""{"type":"minecraft:abs","argument":1.0}""")).IsError,
             "The old unary argument field must not be accepted in the 26.3 codec.");
 
         Require(
             DensityFunctions.DIRECT_CODEC.Parse(
                 ops,
-                ParseJson("""{"type":"asteria:unknown","input":1.0}""")).IsError,
+                ParseJson("""{"type":"minecraft:unknown","input":1.0}""")).IsError,
             "Unknown density-function type IDs must fail dispatch.");
 
         Require(

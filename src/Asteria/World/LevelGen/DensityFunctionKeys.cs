@@ -121,5 +121,5 @@ public static class DensityFunctionKeys
     private static RegistryKey<DensityFunction> CreateKey(string name) =>
         RegistryKey<DensityFunction>.Create(
             Registries.DENSITY_FUNCTION,
-            ResourceLocation.WithDefaultNamespace(name));
+            ResourceLocation.FromNamespaceAndPath("minecraft", name));
 }

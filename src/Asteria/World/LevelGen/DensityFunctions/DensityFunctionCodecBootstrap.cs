@@ -619,7 +619,7 @@ internal static class DensityFunctionCodecBootstrap
         string path,
         MapCodec<DensityFunction> codec)
     {
-        ResourceLocation location = ResourceLocation.WithDefaultNamespace(path);
+        ResourceLocation location = ResourceLocation.FromNamespaceAndPath("minecraft", path);
         RegistryKey<MapCodec<DensityFunction>> key =
             RegistryKey<MapCodec<DensityFunction>>.Create(
                 RegistryKey<MapCodec<DensityFunction>>.CreateRegistryKey(registry.Location),

@@ -22,7 +22,7 @@ internal static class MaterialRuleCodecBootstrap
         registry.Register(
             RegistryKey<MapCodec<MaterialRule>>.Create(
                 registry.Key,
-                ResourceLocation.WithDefaultNamespace(id)),
+                ResourceLocation.FromNamespaceAndPath("minecraft", id)),
             codec,
             RegistrationInfo.BuiltIn);
 }

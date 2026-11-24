@@ -58,14 +58,14 @@ internal static class NoiseGeneratorSettingsChecks
 
         Require(
             ops.Get(encoded, "noise").GetOrThrow().ValueKind == JsonValueKind.Object &&
-            ops.Get(encoded, "default_block").GetOrThrow().GetString() == "asteria:stone" &&
-            ops.Get(encoded, "default_fluid").GetOrThrow().GetString() == "asteria:water" &&
+            ops.Get(encoded, "default_block").GetOrThrow().GetString() == "minecraft:stone" &&
+            ops.Get(encoded, "default_fluid").GetOrThrow().GetString() == "minecraft:water" &&
             ops.Get(encoded, "noise_router").GetOrThrow().ValueKind == JsonValueKind.Object,
             "NoiseGeneratorSettings must serialize its vertical, block/fluid and eight-channel router settings.");
 
         Require(
             ops.Get(encoded, "material_rule").GetOrThrow().ValueKind == JsonValueKind.Object &&
-            ops.Get(ops.Get(encoded, "material_rule").GetOrThrow(), "type").GetOrThrow().GetString() == "asteria:block",
+            ops.Get(ops.Get(encoded, "material_rule").GetOrThrow(), "type").GetOrThrow().GetString() == "minecraft:block",
             "NoiseGeneratorSettings.material_rule must support inline registered material rules.");
 
         Require(

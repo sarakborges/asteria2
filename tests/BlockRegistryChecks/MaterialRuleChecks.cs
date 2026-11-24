@@ -34,14 +34,14 @@ internal static class MaterialRuleChecks
         Registry<MapCodec<MaterialRule>> registry = BuiltInRegistries.MaterialRuleType;
         Require(registry.Count == 3, "The material-rule type registry must contain block, sequence and condition.");
         Require(
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("block")) &&
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("sequence")) &&
-            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("condition")),
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "block")) &&
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "sequence")) &&
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "condition")),
             "Material-rule codec types must use the vanilla block and sequence identifiers.");
         Require(
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("block")), BlockRule.TYPE_CODEC) &&
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("sequence")), SequenceRule.TYPE_CODEC) &&
-            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("condition")), ConditionRule.TYPE_CODEC),
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "block")), BlockRule.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "sequence")), SequenceRule.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "condition")), ConditionRule.TYPE_CODEC),
             "The registry must expose the same map-codec instances returned by each material rule.");
         Require(
             BuiltInRegistries.MaterialRule.Count == 0,
@@ -55,8 +55,8 @@ internal static class MaterialRuleChecks
         JsonElement encoded = MaterialRule.CODEC.EncodeStart(ops, rule).GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:block" &&
-            ops.Get(encoded, "result_state").GetOrThrow().GetString() == "asteria:stone",
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:block" &&
+            ops.Get(encoded, "result_state").GetOrThrow().GetString() == "minecraft:stone",
             "BlockRule must serialize with the vanilla block discriminator and result_state field.");
 
         MaterialRule decoded = MaterialRule.CODEC.Parse(ops, encoded).GetOrThrow();
@@ -81,7 +81,7 @@ internal static class MaterialRuleChecks
         JsonElement encoded = MaterialRule.CODEC.EncodeStart(ops, rule).GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:sequence" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:sequence" &&
             ops.Get(encoded, "sequence").GetOrThrow().GetArrayLength() == 2,
             "SequenceRule must serialize its ordered children under the vanilla sequence field.");
 
@@ -114,7 +114,7 @@ internal static class MaterialRuleChecks
     private static void CheckUnknownMaterialRuleType()
     {
         JsonElement invalid = JsonDocument.Parse("""
-            { "type": "not_registered", "result_state": "asteria:stone" }
+            { "type": "not_registered", "result_state": "minecraft:stone" }
             """).RootElement.Clone();
 
         Require(
