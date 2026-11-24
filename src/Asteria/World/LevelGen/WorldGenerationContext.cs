@@ -9,13 +9,13 @@ public sealed class WorldGenerationContext
 {
     public int MinGenY { get; }
     public int GenDepth { get; }
-    public int SeaLevel { get; }
+    public int SeaLevelValue { get; }
 
     public WorldGenerationContext(int minGenY, int genDepth, int seaLevel)
     {
         MinGenY = minGenY;
         GenDepth = genDepth;
-        SeaLevel = seaLevel;
+        SeaLevelValue = seaLevel;
     }
 
     public WorldGenerationContext(LevelHeightAccessor heightAccessor, int seaLevel)
@@ -40,7 +40,7 @@ public sealed class WorldGenerationContext
 
     public int GetMinGenY() => MinGenY;
     public int GetGenDepth() => GenDepth;
-    public int SeaLevel() => SeaLevel;
+    public int SeaLevel() => SeaLevelValue;
 
     public int GetMaxGenY() => unchecked(MinGenY + GenDepth - 1);
 }
