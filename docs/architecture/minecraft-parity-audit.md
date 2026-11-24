@@ -1308,3 +1308,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - A posição inicial procura uma superfície sólida seca próxima ao centro da chunk de origem, com espaço para a cápsula; se não existir, usa a altura sólida do centro.
 - Essa região fixa não implementa streaming ou carregamento por distância. A colisão deriva apenas dos cubos completos representados na malha de diagnóstico; blocos não cúbicos, líquidos, modelos e interação ainda não têm representação física/visual.
 - Não há inventário, quebra/colocação, respawn, persistência ou lifecycle completo do jogador. O controlador é somente uma etapa de validação do terreno e da física básica, não declara o mundo jogável completo.
+
+
+## Incremento — streaming da região de renderização ao redor do jogador (24/11/2026)
+
+- `ChunkStreamingController` calcula a chunk atual pela posição X/Z do jogador e atualiza a região quando cruza um limite de chunk. O raio inicial continua 1 (3×3); `ChunkRenderRegion` fornece ordem determinística do centro para fora e omite coordenadas inválidas de worldgen.
+- As posições pendentes são processadas com orçamento de uma chunk por frame. A geração continua síncrona e usa o gerador/caches existentes; isto evita disparar nove gerações na mesma chamada de inicialização, mas ainda pode causar hitch no frame de uma geração cara.
+- Chunks que saem do raio perdem somente seus nós `ChunkDebugRenderer` e colisões. Nenhuma chamada a `OverworldWorld.UnloadChunk` é feita: `ProtoChunk` e edições permanecem no cache em memória até existir save/load local e uma política de descarregamento segura.
+- Novas chunks visíveis são registradas antes da construção da malha. Os renderers cardinais adjacentes são reconstruídos quando uma vizinha entra ou sai da região, fazendo o culling de faces acompanhar a vizinhança efetivamente renderizada, sem carregar chunks através do callback.
+- O harness verifica que uma chunk modificada continua no cache e conserva o estado alterado depois que a nova região deixa de incluí-la. O teste de `ChunkRenderRegion` cobre região 1×1, 3×3, ordem centro-primeiro, coordenadas negativas, borda de worldgen e raio inválido.
+- Limitações: o cache de dados cresce com a exploração; não há geração assíncrona/scheduler real, evicção, persistência, chunks completas/lighting ou renderer definitivo. O orçamento é por contagem, não por milissegundos.

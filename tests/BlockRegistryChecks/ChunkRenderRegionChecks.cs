@@ -1,6 +1,9 @@
+using Asteria.Content.Blocks;
+using Asteria.Content.Chunks;
 using Asteria.Content.Chunks.Status;
 using Asteria.World;
 using Asteria.World.Rendering;
+using Asteria.World.Level;
 
 internal static class ChunkRenderRegionChecks
 {
@@ -63,6 +66,39 @@ internal static class ChunkRenderRegionChecks
         Require(
             rejectedNegativeRadius,
             "A negative render radius must be rejected.");
+
+        CheckEditedChunkRetentionOutsideRenderRegion();
+    }
+
+    private static void CheckEditedChunkRetentionOutsideRenderRegion()
+    {
+        var world = new OverworldWorld(
+            seed: 0x53545245414DUL,
+            heightAccessor: LevelHeightAccessor.Create(-64, 96));
+        ProtoChunk originalChunk = world.GetChunk(ChunkPos.Zero);
+        BlockPos editedPosition = new(4, -1, 5);
+        BlockState originalState = originalChunk.GetBlockState(editedPosition);
+        BlockState editedState = ReferenceEquals(originalState, Blocks.TUFF.DefaultState)
+            ? Blocks.STONE.DefaultState
+            : Blocks.TUFF.DefaultState;
+
+        world.SetBlockState(editedPosition, editedState, flags: 0);
+        IReadOnlyList<ChunkPos> movedRegion =
+            ChunkRenderRegion.GetChunkPositions(new ChunkPos(2, 0), 1);
+
+        Require(
+            !movedRegion.Contains(ChunkPos.Zero),
+            "Moving the active radius-two chunks away must place the original chunk outside the new render region.");
+
+        world.GetChunk(movedRegion[0]);
+
+        Require(
+            world.TryGetChunk(ChunkPos.Zero, out ProtoChunk? retainedChunk) &&
+            ReferenceEquals(retainedChunk, originalChunk) &&
+            ReferenceEquals(world.GetBlockState(editedPosition), editedState) &&
+            originalChunk.IsUnsaved() &&
+            world.LoadedChunkCount == 2,
+            "Generating a non-overlapping render region must not evict cached chunks or lose unsaved block edits.");
     }
 
     private static void Require(bool condition, string message)

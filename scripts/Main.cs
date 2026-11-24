@@ -12,7 +12,8 @@ namespace Asteria;
 public partial class Main : Node3D
 {
     private const long DevelopmentWorldSeed = 132456789L;
-    private const int DevelopmentChunkRadius = 1;
+    private const int DevelopmentRenderRadius = 1;
+    private const int DevelopmentChunkLoadsPerFrame = 1;
 
     public OverworldWorld? World { get; private set; }
 
@@ -32,55 +33,29 @@ public partial class Main : Node3D
             $"{Block.BlockStateRegistry.Count} block states.");
 
         World = new OverworldWorld(DevelopmentWorldSeed);
-        var chunks = new List<ProtoChunk>
-        {
-            World.GetChunk(ChunkPos.Zero)
-        };
-
-        foreach (ChunkPos position in ChunkPos.RangeClosed(ChunkPos.Zero, DevelopmentChunkRadius))
-        {
-            if (position == ChunkPos.Zero)
-                continue;
-
-            chunks.Add(World.GetChunk(position));
-        }
-
-        ProtoChunk originChunk = chunks[0];
+        ProtoChunk originChunk = World.GetChunk(ChunkPos.Zero);
         int nonEmptySections = originChunk.GetSections().Count(section => !section.HasOnlyAir);
-        int debugFaces = 0;
-
-        foreach (ProtoChunk chunk in chunks)
-        {
-            var chunkRenderer = new ChunkDebugRenderer
-            {
-                Name = $"ChunkDebugRenderer_{chunk.GetPos().X}_{chunk.GetPos().Z}"
-            };
-            AddChild(chunkRenderer);
-            chunkRenderer.Display(chunk, GetLoadedNeighborState);
-            debugFaces += chunkRenderer.FaceCount;
-        }
 
         CreateDebugSun();
         Vector3 playerSpawn = FindPlayerSpawnPosition(originChunk);
-        CreatePlayer(playerSpawn);
+        PlayerController player = CreatePlayer(playerSpawn);
+
+        var streaming = new ChunkStreamingController
+        {
+            Name = "ChunkStreaming"
+        };
+        streaming.Configure(
+            World,
+            player,
+            DevelopmentRenderRadius,
+            DevelopmentChunkLoadsPerFrame);
+        AddChild(streaming);
 
         GD.Print(
-            $"Overworld ready: seed={World.Seed}, chunks={World.LoadedChunkCount}, " +
+            $"Overworld ready: seed={World.Seed}, cachedChunks={World.LoadedChunkCount}, " +
             $"origin={originChunk.GetPos()}, sections={originChunk.GetSections().Length}, " +
             $"nonEmptySections={nonEmptySections}, status={originChunk.GetPersistedStatus().GetIndex()}, " +
-            $"debugFaces={debugFaces}, playerSpawn={playerSpawn}");
-    }
-
-    private BlockState? GetLoadedNeighborState(BlockPos position)
-    {
-        if (World is null ||
-            !World.TryGetChunk(ChunkPos.Containing(position), out ProtoChunk? chunk) ||
-            chunk is null)
-        {
-            return null;
-        }
-
-        return chunk.GetBlockState(position);
+            $"playerSpawn={playerSpawn}, renderRadius={DevelopmentRenderRadius}");
     }
 
     private void CreateDebugSun()
@@ -148,7 +123,7 @@ public partial class Main : Node3D
         return new Vector3(bestX + 0.5f, bestY + 1.95f, bestZ + 0.5f);
     }
 
-    private void CreatePlayer(Vector3 spawnPosition)
+    private PlayerController CreatePlayer(Vector3 spawnPosition)
     {
         RegisterMovementActions();
 
@@ -177,6 +152,7 @@ public partial class Main : Node3D
         });
 
         AddChild(player);
+        return player;
     }
 
     private static void RegisterMovementActions()

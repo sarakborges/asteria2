@@ -12,11 +12,20 @@ namespace Asteria;
 /// </summary>
 public partial class ChunkDebugRenderer : Node3D
 {
+    private MeshInstance3D? _meshInstance;
+
     public int FaceCount { get; private set; }
 
     public void Display(ProtoChunk chunk, Func<BlockPos, BlockState?>? getLoadedNeighborState = null)
     {
         ArgumentNullException.ThrowIfNull(chunk);
+
+        if (_meshInstance is not null)
+        {
+            RemoveChild(_meshInstance);
+            _meshInstance.QueueFree();
+            _meshInstance = null;
+        }
 
         ChunkDebugMeshData data = ChunkDebugMeshBuilder.Build(chunk, getLoadedNeighborState);
         FaceCount = data.FaceCount;
@@ -58,6 +67,7 @@ public partial class ChunkDebugRenderer : Node3D
                 chunk.GetPos().GetMinBlockZ())
         };
         AddChild(meshInstance);
+        _meshInstance = meshInstance;
         meshInstance.CreateTrimeshCollision();
     }
 }

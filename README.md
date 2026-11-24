@@ -13,9 +13,9 @@ Asteria é exclusivamente single-player/offline/local. Redstone e multiplayer/ne
 
 ## Estado atual
 
-O runtime inicializa os registries, cria um `OverworldWorld` single-player com seed de desenvolvimento fixa e gera uma região de 3×3 chunks até `TERRAIN`. A cena exibe essa região por uma malha 3D de diagnóstico: somente blocos `MODEL` com forma de cubo completo, coloridos por `MapColor`, com colisão estática derivada da mesma geometria. Há um controlador temporário em primeira pessoa com gravidade, colisão, caminhada e salto. Essa visualização não é o renderer do jogo e não cobre modelos, texturas, fluidos ou camadas de transparência.
+O runtime inicializa os registries, gera a chunk de origem até `TERRAIN` e posiciona um jogador temporário em primeira pessoa. Um controlador mantém uma região de renderização 3×3 ao redor do jogador, adicionando até uma chunk por frame. A visualização usa uma malha de diagnóstico: apenas blocos `MODEL` com forma de cubo completo, coloridos por `MapColor`, com colisão estática derivada da mesma geometria. Não é o renderer definitivo e não cobre modelos, texturas, fluidos ou transparência.
 
-A base inclui modelos de conteúdo, block states, registries, armazenamento paletizado, geometria voxel, chunks, biomas, ruído e partes do lifecycle/tick. O mundo local já mantém chunks geradas sob demanda e oferece consultas e escrita de blocos. O controlador e a região visível ainda são um teste limitado: faltam streaming de chunks ativas, etapas de geração posteriores a `TERRAIN`, iluminação completa, renderer definitivo, interação com blocos, simulação e persistência.
+A base inclui modelos de conteúdo, block states, registries, armazenamento paletizado, geometria voxel, chunks, biomas, ruído e partes do lifecycle/tick. O mundo local já mantém chunks geradas sob demanda e oferece consultas e escrita de blocos. O streaming atual remove apenas os nós de renderização fora do raio: as `ProtoChunk` permanecem no cache do mundo para preservar alterações ainda não salvas. Por isso, a memória cresce com a exploração até existir persistência local e uma política segura de descarregamento. A geração ainda é síncrona; uma chunk por frame limita a quantidade de trabalho, mas não elimina travamentos durante a geração. Ainda faltam scheduler/lifecycle completo, etapas posteriores a `TERRAIN`, iluminação, renderer definitivo, interação com blocos, simulação e save/load.
 
 A referência de paridade é Minecraft Java 26.3. Os sistemas fora do escopo do produto estão documentados em [docs/architecture/project-scope.md](docs/architecture/project-scope.md).
 
@@ -25,7 +25,7 @@ A referência de paridade é Minecraft Java 26.3. Os sistemas fora do escopo do 
 2. Aguarde a importação inicial dos arquivos.
 3. Execute com `F6` ou `F5`.
 
-A execução gera uma região 3×3 em torno da origem e inicia o controlador temporário em primeira pessoa. Use W/A/S/D ou as setas para caminhar, mouse para olhar e Espaço para saltar. Esc libera o mouse; clique para capturá-lo novamente. A câmera, a geometria e as colisões são componentes de diagnóstico, não a implementação definitiva.
+A execução gera a chunk de origem e inicia o streaming em uma região 3×3 ao redor do jogador. Use W/A/S/D ou as setas para caminhar, mouse para olhar e Espaço para saltar. Esc libera o mouse; clique para capturá-lo novamente. A câmera, a geometria e as colisões são componentes temporários de diagnóstico.
 
 ## Estrutura
 
