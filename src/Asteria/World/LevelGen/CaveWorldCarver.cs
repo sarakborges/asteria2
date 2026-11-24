@@ -123,7 +123,7 @@ public sealed record CaveWorldCarver(
         ArgumentNullException.ThrowIfNull(random);
         ArgumentNullException.ThrowIfNull(output);
 
-        int maxDistance = (GetRange() * 2 - 1) * 16;
+        int maxDistance = (((WorldCarver)this).GetRange() * 2 - 1) * 16;
         int caveCount = Count.Sample(random);
 
         for (int cave = 0; cave < caveCount; cave++)
