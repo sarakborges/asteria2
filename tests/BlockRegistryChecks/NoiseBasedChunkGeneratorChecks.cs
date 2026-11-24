@@ -224,7 +224,7 @@ internal static class NoiseBasedChunkGeneratorChecks
         }
 
         Require(
-            biomeCells == chunk.GetSections().Count * 64,
+            biomeCells == chunk.GetSections().Count() * 64,
             "The built-in Overworld generator must populate the complete quart-resolution biome palette for every generated section.");
     }
 
