@@ -206,6 +206,7 @@ public sealed class NoiseBasedChunkGenerator
 
         BiomeResolver biomeResolver = biomeResolverFactory(noiseChunk.CachingSamplers);
         chunk.FillBiomesFromNoise(biomeResolver);
+        chunk.SetPersistedStatus(ChunkStatus.BIOMES);
 
         FillFromNoise(chunk, noiseChunk, volume);
         Heightmap.PrimeHeightmaps(chunk, ChunkStatus.TERRAIN.GetHeightmapsAfter().ToHashSet());
@@ -222,6 +223,7 @@ public sealed class NoiseBasedChunkGenerator
                 QuartPos.FromBlock(position.GetY()),
                 QuartPos.FromBlock(position.GetZ())),
             possibleBiomes);
+        chunk.SetPersistedStatus(ChunkStatus.TERRAIN);
     }
 
     private sealed class DelegateBiomeResolver(

@@ -2,6 +2,7 @@ using Asteria.World.LevelGen.Materials;
 using Asteria.Content.Blocks;
 using Asteria.Content.Biomes;
 using Asteria.Content.Chunks;
+using Asteria.Content.Chunks.Status;
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.Core;
@@ -195,6 +196,16 @@ internal static class NoiseBasedChunkGeneratorChecks
 
         ProtoChunk chunk = CreateChunk(new ChunkPos(0, 0), -64, 96);
         generator.BuildTerrain(chunk);
+
+        Require(
+            ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.TERRAIN) &&
+            chunk.GetHighestGeneratedStatus().IsOrAfter(ChunkStatus.BIOMES),
+            "BuildTerrain must advance the proto chunk through BIOMES and TERRAIN after completing those stages.");
+
+        Holder<Biome> generatedBiome = chunk.GetNoiseBiome(0, QuartPos.FromBlock(-64), 0);
+        Require(
+            generatedBiome.IsBound,
+            "ProtoChunk.GetNoiseBiome must become available after BuildTerrain completes the BIOMES stage.");
 
         int solidSamples = 0;
         for (int y = -64; y < 32; y += 4)
