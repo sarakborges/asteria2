@@ -8,11 +8,10 @@ public sealed record ConstantInt(int Value) : IntProvider
     public static ConstantInt ZERO { get; } = new(0);
 
     public static MapCodec<ConstantInt> MAP_CODEC { get; } =
-        RecordCodecBuilder.MapCodec<ConstantInt>(instance =>
-            instance.Group(
-                    Codecs.INT.FieldOf("value")
-                        .ForGetter<ConstantInt>(static provider => provider.Value))
-                .Apply(instance, static value => Of(value)));
+        Codecs.INT.FieldOf("value")
+            .XMap<ConstantInt>(
+                static value => Of(value),
+                static provider => provider.Value);
 
     public static MapCodec<IntProvider> TYPE_CODEC { get; } =
         MAP_CODEC.XMap<IntProvider>(
