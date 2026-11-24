@@ -15,7 +15,7 @@ namespace Asteria.World.LevelGen;
 public sealed class Beardifier : DensitySampler
 {
     public static ContextKey<DensitySampler> CONTEXT_KEY { get; } =
-        ContextKey<Beardifier>.Vanilla("beardifier");
+        ContextKey<DensitySampler>.Vanilla("beardifier");
 
     public static Interval RANGE { get; } = Interval.INFINITE;
 
