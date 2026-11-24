@@ -14,7 +14,7 @@ public sealed record NoiseGeneratorSettings(
     BlockState DefaultBlock,
     BlockState DefaultFluid,
     NoiseRouter NoiseRouter,
-    Holder<MaterialRule> MaterialRule,
+    Holder<MaterialRuleDefinition> MaterialRule,
     IReadOnlyList<SpawnTargetPoint> SpawnTarget,
     int SeaLevel,
     Aquifer.Config? Aquifers,
@@ -28,7 +28,7 @@ public sealed record NoiseGeneratorSettings(
         NoiseRouter NoiseRouter);
 
     private sealed record MaterialAndFluidSettings(
-        Holder<MaterialRule> MaterialRule,
+        Holder<MaterialRuleDefinition> MaterialRule,
         IReadOnlyList<SpawnTargetPoint> SpawnTarget,
         int SeaLevel,
         Aquifer.Config? Aquifers);
