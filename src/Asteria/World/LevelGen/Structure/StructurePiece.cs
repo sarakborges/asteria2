@@ -1,4 +1,5 @@
 using Asteria.Content.Blocks;
+using Asteria.World.LevelGen;
 using Asteria.Core;
 using Asteria.World;
 
@@ -52,6 +53,14 @@ public abstract class StructurePiece
 
     public BlockPos GetLocatorPosition() =>
         _boundingBox.GetCenter();
+
+    protected static Direction GetRandomHorizontalDirection(IRandomSource random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+
+        Direction[] horizontalDirections = Direction.Plane.HORIZONTAL.GetDirections();
+        return horizontalDirections[random.NextInt(horizontalDirections.Length)];
+    }
 
     protected static BoundingBox MakeBoundingBox(
         int x,

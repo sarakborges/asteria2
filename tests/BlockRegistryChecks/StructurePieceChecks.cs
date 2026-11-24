@@ -11,6 +11,7 @@ internal static class StructurePieceChecks
         CheckMetadata();
         CheckOrientedCoordinates();
         CheckWorldPosition();
+        CheckRandomHorizontalDirection();
     }
 
     private static void CheckChunkProximity()
@@ -125,6 +126,29 @@ internal static class StructurePieceChecks
             "StructurePiece.move must translate the backing bounding box in place.");
     }
 
+    private static void CheckRandomHorizontalDirection()
+    {
+        int[] seeds = { 0, 1, -1, 123456L is long value ? unchecked((int)value) : 0, int.MinValue };
+        Direction[] expectedOrder =
+        {
+            Direction.NORTH,
+            Direction.EAST,
+            Direction.SOUTH,
+            Direction.WEST
+        };
+
+        foreach (int seed in seeds)
+        {
+            var expectedRandom = new LegacyRandomSource(seed);
+            var actualRandom = new LegacyRandomSource(seed);
+            Direction expected = expectedOrder[expectedRandom.NextInt(expectedOrder.Length)];
+            Direction actual = TestPiece.RandomHorizontalDirection(actualRandom);
+
+            Require(ReferenceEquals(actual, expected),
+                "StructurePiece.getRandomHorizontalDirection must select from the horizontal plane in source order.");
+        }
+    }
+
     private static void CheckWorldPosition()
     {
         TestPiece piece = CreatePiece(new BoundingBox(100, 20, 200, 111, 29, 211));
@@ -168,6 +192,9 @@ internal static class StructurePieceChecks
         public int WorldX(int x, int z) => GetWorldX(x, z);
         public int WorldY(int y) => GetWorldY(y);
         public int WorldZ(int x, int z) => GetWorldZ(x, z);
+        public static Direction RandomHorizontalDirection(IRandomSource random) =>
+            GetRandomHorizontalDirection(random);
+
         public static BoundingBox CreateBox(
             int x, int y, int z, Direction direction, int width, int height, int depth) =>
             MakeBoundingBox(x, y, z, direction, width, height, depth);
