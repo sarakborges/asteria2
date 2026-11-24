@@ -52,8 +52,8 @@ internal static class DirectionChecks
             "Direction.VERTICAL_CODEC must accept the two vertical directions.");
         DataResult<Direction> horizontal = Direction.VERTICAL_CODEC.Parse(normalOps, normalOps.CreateString("east"));
         Require(horizontal.IsError && horizontal.ErrorMessage == "Expected a vertical direction" &&
-                horizontal.TryGetPartial(out Direction partial) && ReferenceEquals(partial, Direction.EAST),
-            "Direction.VERTICAL_CODEC must reject horizontal directions with the parsed direction as a partial result.");
+                !horizontal.HasResultOrPartial,
+            "Direction.VERTICAL_CODEC must reject horizontal directions without a partial result.");
     }
 
     private static void CheckAxisCodecs()
