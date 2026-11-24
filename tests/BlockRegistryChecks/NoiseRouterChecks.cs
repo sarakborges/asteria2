@@ -6,6 +6,7 @@ using Asteria.Serialization;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
+using DensityFunctionFactories = Asteria.World.LevelGen.DensityFunctions.DensityFunctions;
 
 internal static class NoiseRouterChecks
 {
@@ -123,7 +124,7 @@ internal static class NoiseRouterChecks
         DensityFunction function,
         Registry<DensityFunction> registry,
         RegistryKey<DensityFunction> key) =>
-        function is DensityFunctions.HolderHolder { Function: var holder } &&
+        function is DensityFunctionFactories.HolderHolder { Function: var holder } &&
         ReferenceEquals(holder, registry.GetHolder(key));
 
     private static void CheckCodecRoundTrip()
