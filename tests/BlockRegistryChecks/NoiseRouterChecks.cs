@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Asteria.Content.Biomes;
+using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
-using Asteria.World.LevelGen;
 using Asteria.Serialization;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.DensityFunctions;
