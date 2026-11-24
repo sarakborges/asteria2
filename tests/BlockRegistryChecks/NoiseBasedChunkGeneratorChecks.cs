@@ -392,7 +392,7 @@ internal static class NoiseBasedChunkGeneratorChecks
             world.MinY == -64 &&
             world.Height == 384 &&
             world.GetMinY() == -64 &&
-            world.GetMaxY() == 319,
+            world.MinY + world.Height - 1 == 319,
             "The default Overworld must use the complete Minecraft 26.3 build-height interval [-64, 319].");
 
         ProtoChunk chunk = world.GetChunk(ChunkPos.Zero);
@@ -402,7 +402,7 @@ internal static class NoiseBasedChunkGeneratorChecks
             "Default Overworld generation must materialize all 24 vertical sections through TERRAIN.");
 
         BlockPos bottom = new(3, world.GetMinY(), 4);
-        BlockPos top = new(3, world.GetMaxY(), 4);
+        BlockPos top = new(3, world.MinY + world.Height - 1, 4);
         Require(
             ReferenceEquals(world.GetBlockState(bottom), chunk.GetBlockState(bottom)) &&
             ReferenceEquals(world.GetBlockState(top), chunk.GetBlockState(top)),
