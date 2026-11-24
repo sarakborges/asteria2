@@ -146,7 +146,7 @@ internal static class OverworldFunctionSetChecks
         ];
 
         string[] expectedLocations = expectedPaths
-            .Select(static path => $"asteria:{path}")
+            .Select(static path => $"minecraft:{path}")
             .ToArray();
 
         Require(
