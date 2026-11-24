@@ -1443,5 +1443,15 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - A representação usa `.NET BitArray` com expansão dinâmica para reproduzir o crescimento de `java.util.BitSet`; não existe limite de coordenadas adicional em `Carve`, portanto o mapeamento linear e seus aliases permanecem iguais ao contrato da referência. Índices negativos são rejeitados pela API de armazenamento .NET.
 - Testes cobrem limites verticais inclusivos, máscara vazia, segmentos verticais contíguos, divisão de um run na borda entre colunas, indexação linear e rejeição de índice negativo.
 - Esta etapa apenas registra a geometria. Ela não decide o estado que preencherá uma cavidade: a integração posterior deve reutilizar `Aquifer.ComputeSubstance`, nem deve marcar `ChunkStatus.TERRAIN` como concluído antes de rodar os carvers.
-- Próxima dependência real do estágio `TERRAIN`: `WorldCarver`, `CaveWorldCarver`/`CanyonWorldCarver`, seleção de carvers pelas configurações de bioma e aplicação da máscara via aquifer. Só depois disso o port deve avançar para `FEATURES`.
+- Próxima dependência real do estágio `TERRAIN`: implementações `CaveWorldCarver`/`CanyonWorldCarver`, seleção de carvers pelas configurações de bioma e aplicação da máscara via aquifer. Só depois disso o port deve avançar para `FEATURES`.
 - Referência: Minecraft Java 26.3, `CarverOutput.java` e `CarvingMask.java` (https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/carvingmask/).
+
+## Incremento — geometria compartilhada de WorldCarver 26.3 (24/11/2026)
+
+- Portada a interface `WorldCarver`: alcance padrão 4, método de carving por contexto/random/chunk de destino/chunk de origem/saída, teste de chunk inicial e codec de parâmetros.
+- Portado `CarveEllipsoid`: early-out pela distância ao centro da chunk, cálculo e clamp dos índices X/Z, clamp vertical à `CarverOutput`, normalização em coordenadas elipsoidais e consulta ao `CarveSkipChecker` antes de marcar cada posição. Foram mantidas a expressão de borda e a iteração vertical estrita `worldY > minY) da referência.
+- Portado `CanReach`, que compara a distância horizontal ao centro da chunk com o raio restante derivado de `totalSteps - currentStep) e da espessura.
+- A adaptação C# expõe `MapCodec<WorldCarver>` no contrato em vez do wildcard Java `MapCodec<? extends WorldCarver>`; implementações concretas ainda fornecerão seus codecs e o registro dispatch. Nenhuma implementação fictícia foi adicionada.
+- Testes cobrem ponto central, limites X/Z, clamp Y inclusivo no máximo e exclusivo no mínimo, skip predicate, rejeição por alcance e early-out para elipsoide distante.
+- O estágio `TERRAIN` continua incompleto: ainda faltam `CaveWorldCarver`, `CanyonWorldCarver), registries/dados de carvers, lista de carvers por bioma e a aplicação da máscara consultando `Aquifer.ComputeSubstance`.
+- Referência: Minecraft Java 26.3, `WorldCarver.java` (https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/carver/worldcarver/).
