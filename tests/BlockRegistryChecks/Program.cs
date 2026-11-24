@@ -218,6 +218,7 @@ internal static class Program
         WorldCarverImplementationChecks.Run();
         ConfiguredCarverChecks.Run();
         BiomeGenerationSettingsChecks.Run();
+        BiomeManagerChecks.Run();
         FeatureSorterChecks.Run();
         PlacementModifierChecks.Run();
         WorldGenRegionChecks.Run();
