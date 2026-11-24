@@ -247,6 +247,7 @@ internal static class Program
         NoiseSettingsChecks.Run();
         AquiferConfigChecks.Run();
         SpawnTargetPointChecks.Run();
+        NoiseGeneratorDebugFunctionsChecks.Run();
         LegacyFbmInitializerChecks.Run();
         CubicSplineChecks.Run();
         TerrainProviderChecks.Run();
