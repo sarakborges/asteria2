@@ -16,6 +16,7 @@ internal static class DensityFunctionCodecBootstrap
 {
     private sealed record CodecCatalog(
         MapCodec<DensityFunction> Constant,
+        IReadOnlyDictionary<SimpleDensityFunction, MapCodec<DensityFunction>> Simple,
         MapCodec<DensityFunction> Noise,
         MapCodec<DensityFunction> DistanceToPoint,
         MapCodec<DensityFunction> EndOuterIslands,
@@ -48,6 +49,9 @@ internal static class DensityFunctionCodecBootstrap
         CodecCatalog codecs = Catalog.Value;
 
         Register(registry, "constant", codecs.Constant);
+        foreach (SimpleDensityFunction simple in SimpleDensityFunction.Values)
+            Register(registry, simple.Id, codecs.Simple[simple]);
+
         Register(registry, "noise", codecs.Noise);
         Register(registry, "end_outer_islands", codecs.EndOuterIslands);
         Register(registry, "distance_to_point", codecs.DistanceToPoint);
@@ -86,6 +90,7 @@ internal static class DensityFunctionCodecBootstrap
         return function switch
         {
             ConstantFunction => codecs.Constant,
+            SimpleDensityFunction simple => codecs.Simple[simple],
             NoiseFunction => codecs.Noise,
             DistanceToPointFunction => codecs.DistanceToPoint,
             EndIslandFunction => codecs.EndOuterIslands,
@@ -165,6 +170,14 @@ internal static class DensityFunctionCodecBootstrap
                     static value => new ConstantFunction(value),
                     static function => ((ConstantFunction)function).Value);
 
+        IReadOnlyDictionary<SimpleDensityFunction, MapCodec<DensityFunction>> simple =
+            SimpleDensityFunction.Values.ToDictionary(
+                static function => function,
+                static function => MapCodec<SimpleDensityFunction>.Unit(function)
+                    .XMap<DensityFunction>(
+                        static value => value,
+                        static value => (SimpleDensityFunction)value));
+
         var unary = Enum.GetValues<UnaryFunction.Type>()
             .ToDictionary(operation => operation, CreateUnaryCodec);
 
@@ -176,6 +189,7 @@ internal static class DensityFunctionCodecBootstrap
 
         return new CodecCatalog(
             constant,
+            simple,
             CreateNoiseCodec(),
             CreateDistanceToPointCodec(),
             CreateEndIslandCodec(),
