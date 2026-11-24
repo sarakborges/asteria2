@@ -1,11 +1,12 @@
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
+using Asteria.World.Attributes;
 
 namespace Asteria.Content.Biomes;
 
 /// <summary>
-/// Built-in Minecraft Java 26.3 Overworld biome climate and special-effect definitions.
-/// Mob spawn settings, placed features and carvers are intentionally not represented here.
+/// Built-in Minecraft Java 26.3 Overworld biome climate, special effects and carver settings.
+/// Mob spawn settings and placed-feature groups remain outside this port slice.
 /// </summary>
 public static class Biomes
 {
@@ -230,7 +231,9 @@ public static class Biomes
 
         return new Biome(
             new Biome.ClimateSettings(hasPrecipitation, temperature, temperatureModifier, downfall),
-            effects.Build());
+            EnvironmentAttributeMap.Empty,
+            effects.Build(),
+            BiomeGenerationSettings.CreateDefaultOverworld());
     }
 
     internal static void RegisterAll()
