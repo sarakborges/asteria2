@@ -32,7 +32,6 @@ public abstract class LightEngine : LayerLightEventListener
 
     public abstract string GetDebugData(long sectionNode);
 
-    public abstract LayerLightSectionStorage<DynamicMapPlaceholder>.SectionType GetDebugSectionTypePlaceholder(long sectionNode);
 
     public const int MAX_LEVEL = 15;
     protected const int MIN_OPACITY = 1;
@@ -227,9 +226,15 @@ public abstract class LightEngine<TMap, TStorage> : LightEngine
         Storage.GetLightValueForEngine(position.AsLong());
 
     public override string GetDebugData(long sectionNode) =>
-        GetDebugSectionType(sectionNode).Display();
+        Storage.GetDebugSectionType(sectionNode) switch
+        {
+            LayerLightSectionStorage<TMap>.SectionType.Empty => "2",
+            LayerLightSectionStorage<TMap>.SectionType.LightOnly => "1",
+            LayerLightSectionStorage<TMap>.SectionType.LightAndData => "0",
+            _ => throw new ArgumentOutOfRangeException(nameof(sectionNode))
+        };
 
-    public override LayerLightSectionStorage<TMap>.SectionType GetDebugSectionTypePlaceholder(long sectionNode) =>
+    public LayerLightSectionStorage<TMap>.SectionType GetDebugSectionType(long sectionNode) =>
         Storage.GetDebugSectionType(sectionNode);
 
     protected BlockState GetState(BlockPos position)

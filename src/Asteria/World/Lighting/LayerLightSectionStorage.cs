@@ -370,14 +370,4 @@ public abstract class LayerLightSectionStorage<TMap>
         LightOnly,
         LightAndData
     }
- 
-    public static string Display(this SectionType sectionType) =>
-        sectionType switch
-        {
-            SectionType.Empty => "2",
-            SectionType.LightOnly => "1",
-            SectionType.LightAndData => "0",
-            _ => throw new ArgumentOutOfRangeException(nameof(sectionType))
-        };
-
 }
