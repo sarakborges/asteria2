@@ -1,7 +1,6 @@
 using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Serialization;
-using Asteria.World.Level;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.Features;
 
@@ -27,7 +26,7 @@ public sealed class PlacedFeature
     }
 
     public bool Place(
-        OverworldWorld level,
+        WorldGenLevel level,
         NoiseBasedChunkGenerator generator,
         IRandomSource random,
         BlockPos origin) =>
