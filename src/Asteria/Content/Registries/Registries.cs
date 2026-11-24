@@ -22,6 +22,10 @@ public static class Registries
         RegistryKey<DensityFunction>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/density_function"));
 
+    public static RegistryKey<Registry<MapCodec<HeightProvider>>> HEIGHT_PROVIDER_TYPE { get; } =
+        RegistryKey<MapCodec<HeightProvider>>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/height_provider_type"));
+
     public static RegistryKey<Registry<MapCodec<IntProvider>>> INT_PROVIDER_TYPE { get; } =
         RegistryKey<MapCodec<IntProvider>>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/int_provider_type"));
