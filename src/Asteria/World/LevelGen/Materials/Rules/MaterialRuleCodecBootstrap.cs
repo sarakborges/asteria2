@@ -14,6 +14,7 @@ internal static class MaterialRuleCodecBootstrap
         Register(registry, "bandlands", BandlandsRule.TYPE_CODEC);
         Register(registry, "sequence", SequenceRule.TYPE_CODEC);
         Register(registry, "condition", ConditionRule.TYPE_CODEC);
+        Register(registry, "ore_vein", OreVeinRule.TYPE_CODEC);
     }
 
     private static void Register(

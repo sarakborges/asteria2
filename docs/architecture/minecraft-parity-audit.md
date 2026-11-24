@@ -1196,3 +1196,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Os icebergs produzem packed ice e uma camada superior limitada de snow block conforme o fluxo aleatório posicional por coluna.
 - Testes end-to-end com seed fixa cobrem tops derivados de ruído dos pilares de Eroded Badlands, prevenção de pilares através de água e geração de packed ice/snow block em Frozen Ocean.
 - Referência: [MaterialSystem — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/material/materialsystem/).
+
+## Incremento — OreVeinRule vanilla 26.3 (24/11/2026)
+
+- Adicionada a regra OreVeinRule, com os sete campos da especificação: ore_block, raw_ore_block, filler_block, raw_ore_chance, density, richness e filler_gap. O codec valida raw_ore_chance no intervalo [0, 1] e round-tripa estados de bloco e density functions inline/registradas.
+- O tipo ore_vein foi adicionado ao registry de codecs depois de condition, preservando a ordem de bootstrap vanilla.
+- Compile pré-amostra density e richness na extensão do volume do chunk; filler_gap é consultada apenas após o draw de richness. A avaliação por bloco usa factory posicional nomeada ore, recriada por coordenada, mantendo a ordem dos três draws e os short-circuits de Minecraft Java 26.3.
+- Adicionados factories para as variantes Copper (copper_ore/raw_copper_block/granite) e Iron (deepslate_iron_ore/raw_iron_block/tuff), ambas com raw ore chance 0.02.
+- Os testes de codec cobrem os sete campos, os limites de chance e as duas variantes. Testes end-to-end comparam os 256 blocos da camada de uma chunk contra os draws da factory posicional e cobrem density não positiva, minério, minério bruto, filler por baixa riqueza e filler_gap positivo.
+- Adaptação local: a chave de random factory usa ResourceLocation.WithDefaultNamespace("ore"), portanto o namespace padrão do jogo local (asteria) substitui o default namespace da referência externa. Não são adicionadas dependências nem strings de namespace externo no algoritmo.
+- Limites: as flags de debug globais de minério ainda não existem; a regra normal não depende delas. A rule foi registrada e pode ser serializada/compilada, mas ainda não foi inserida automaticamente numa configuração Overworld construída pelo runtime: o bootstrap dos NoiseGeneratorSettings/dados do Overworld e o carregamento de mundo continuam pendentes.
+- Referência: https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/material/rule/oreveinrule/

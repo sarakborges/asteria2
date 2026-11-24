@@ -2,6 +2,7 @@ using Asteria.World.LevelGen.Materials;
 using Asteria.Content.Blocks;
 using Asteria.Content.Biomes;
 using Asteria.Content.Chunks;
+using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Serialization;
@@ -25,6 +26,7 @@ internal static class NoiseBasedChunkGeneratorChecks
             CheckChunkCoordinateAndHeightmapMaterialization();
             CheckMaterialRuleSurfacePass();
             CheckBandlandsMaterialRuleUsesSeededClayBands();
+            CheckOreVeinMaterialRuleEvaluation();
             CheckErodedBadlandsExtension();
             CheckFrozenOceanExtension();
             CheckMultiNoiseBiomeSourceFillsChunkPalettes();
@@ -231,6 +233,136 @@ internal static class NoiseBasedChunkGeneratorChecks
             generatedBands.Any(state => ReferenceEquals(state, Blocks.WHITE_TERRACOTTA.DefaultState)) &&
             generatedBands.Any(state => ReferenceEquals(state, Blocks.LIGHT_GRAY_TERRACOTTA.DefaultState)),
             "Clay-band generation must create the five colored strata alongside orange and base terracotta.");
+    }
+
+    private static void CheckOreVeinMaterialRuleEvaluation()
+    {
+        static (ProtoChunk Chunk, RandomState RandomState) BuildChunkForRule(OreVeinRule rule)
+        {
+            NoiseGeneratorSettings settings = CreateSettings(
+                new ConstantFunction(0.25F),
+                seaLevel: 0,
+                materialRule: rule);
+            RandomState randomState = CreateRandomState(settings);
+            var generator = new NoiseBasedChunkGenerator(settings, randomState);
+            ProtoChunk chunk = CreateChunk(new ChunkPos(0, 0), -16, 48);
+            generator.BuildTerrain(
+                chunk,
+                _ => Holder<Biome>.Direct(Biomes.PLAINS));
+            return (chunk, randomState);
+        }
+
+        static void RequireColumnState(ProtoChunk chunk, Block block, string message)
+        {
+            for (int x = 0; x < 16; x++)
+            for (int z = 0; z < 16; z++)
+            {
+                Require(
+                    ReferenceEquals(chunk.GetBlockState(new BlockPos(x, 0, z)).Block, block),
+                    message);
+            }
+        }
+
+        OreVeinRule noVein = OreVeinRule.CreateCopper(
+            new ConstantFunction(0.0F),
+            new ConstantFunction(1.0F),
+            new ConstantFunction(-1.0F));
+        var noVeinResult = BuildChunkForRule(noVein);
+        RequireColumnState(
+            noVeinResult.Chunk,
+            Blocks.STONE,
+            "Non-positive vein density must return no material and preserve the existing block.");
+
+        OreVeinRule copper = new(
+            Blocks.COPPER_ORE.DefaultState,
+            Blocks.RAW_COPPER_BLOCK.DefaultState,
+            Blocks.GRANITE.DefaultState,
+            0.0F,
+            new ConstantFunction(1.0F),
+            new ConstantFunction(1.0F),
+            new ConstantFunction(-1.0F));
+        var copperResult = BuildChunkForRule(copper);
+        RequireColumnState(
+            copperResult.Chunk,
+            Blocks.COPPER_ORE,
+            "Full density/richness with a negative filler gap and zero raw chance must place copper ore.");
+
+        OreVeinRule rawCopper = copper with { RawOreChance = 1.0F };
+        var rawCopperResult = BuildChunkForRule(rawCopper);
+        RequireColumnState(
+            rawCopperResult.Chunk,
+            Blocks.RAW_COPPER_BLOCK,
+            "A raw ore chance of one must place the corresponding raw block in every rich vein position.");
+
+        OreVeinRule fillerFromRichness = copper with { Richness = new ConstantFunction(0.0F) };
+        var fillerResult = BuildChunkForRule(fillerFromRichness);
+        RequireColumnState(
+            fillerResult.Chunk,
+            Blocks.GRANITE,
+            "Non-positive richness must select the vein filler block.");
+
+        OreVeinRule fillerFromGap = copper with { FillerGap = new ConstantFunction(0.25F) };
+        var gapResult = BuildChunkForRule(fillerFromGap);
+        RequireColumnState(
+            gapResult.Chunk,
+            Blocks.GRANITE,
+            "A positive filler-gap density must override otherwise full richness and select the filler block.");
+
+        OreVeinRule probabilistic = new(
+            Blocks.COPPER_ORE.DefaultState,
+            Blocks.RAW_COPPER_BLOCK.DefaultState,
+            Blocks.GRANITE.DefaultState,
+            0.25F,
+            new ConstantFunction(0.5F),
+            new ConstantFunction(0.5F),
+            new ConstantFunction(-1.0F));
+        var probabilisticResult = BuildChunkForRule(probabilistic);
+        PositionalRandomFactory randomFactory =
+            probabilisticResult.RandomState.GetOrCreateRandomFactory(
+                ResourceLocation.WithDefaultNamespace("ore"));
+
+        int retainedStone = 0;
+        int copperCount = 0;
+        int rawCopperCount = 0;
+        int graniteCount = 0;
+        for (int x = 0; x < 16; x++)
+        for (int z = 0; z < 16; z++)
+        {
+            IRandomSource random = randomFactory.At(x, 0, z);
+            Block expected;
+            if (random.NextFloat() > 0.5F)
+            {
+                expected = Blocks.STONE;
+            }
+            else if (random.NextFloat() < 0.5F)
+            {
+                expected = random.NextFloat() < 0.25F
+                    ? Blocks.RAW_COPPER_BLOCK
+                    : Blocks.COPPER_ORE;
+            }
+            else
+            {
+                expected = Blocks.GRANITE;
+            }
+
+            Block actual = probabilisticResult.Chunk
+                .GetBlockState(new BlockPos(x, 0, z)).Block;
+            Require(
+                ReferenceEquals(actual, expected),
+                "OreVeinRule must preserve vanilla random draw order and positional decisions for density, richness and raw ore.");
+            if (ReferenceEquals(actual, Blocks.STONE))
+                retainedStone++;
+            else if (ReferenceEquals(actual, Blocks.COPPER_ORE))
+                copperCount++;
+            else if (ReferenceEquals(actual, Blocks.RAW_COPPER_BLOCK))
+                rawCopperCount++;
+            else if (ReferenceEquals(actual, Blocks.GRANITE))
+                graniteCount++;
+        }
+
+        Require(
+            retainedStone > 0 && copperCount > 0 && rawCopperCount > 0 && graniteCount > 0,
+            "The fixed-seed probabilistic fixture must exercise every ore-vein output state.");
     }
 
     private static void CheckErodedBadlandsExtension()
