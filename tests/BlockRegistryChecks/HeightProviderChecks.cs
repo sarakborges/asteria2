@@ -68,10 +68,9 @@ internal static class HeightProviderChecks
             "ConstantHeight must encode through the anchor shorthand rather than a dispatched provider object.");
 
         Require(
-            ReferenceEquals(
-                ConstantHeight.Of(VerticalAnchor.Absolute(0)),
-                ConstantHeight.ZERO),
-            "The zero constant height must use its canonical singleton.");
+            ConstantHeight.ZERO.Sample(new LegacyRandomSource(1L), context) == 0 &&
+            ConstantHeight.Of(VerticalAnchor.Absolute(0)).Value == VerticalAnchor.Absolute(0),
+            "ConstantHeight.ZERO and the factory must preserve the absolute-zero anchor without introducing factory caching.");
     }
 
     private static void CheckUniformHeightCodecAndSampling()
