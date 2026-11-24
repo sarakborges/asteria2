@@ -14,9 +14,6 @@ public static class FloatProviders
 
     public static Codec<FloatProvider> Codec(float minimum, float maximum)
     {
-        if (maximum < minimum)
-            throw new ArgumentOutOfRangeException(nameof(maximum));
-
         return CODEC.Validate(provider =>
         {
             if (provider.Min() < minimum)
