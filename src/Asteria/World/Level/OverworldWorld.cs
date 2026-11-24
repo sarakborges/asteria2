@@ -23,6 +23,7 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
     private readonly LevelHeightAccessor _heightAccessor;
     private readonly PalettedContainerFactory _containerFactory;
     private readonly Dictionary<ChunkPos, ProtoChunk> _chunks = new();
+    private readonly BiomeManager _biomeManager;
     private long _gameTime;
     private long _nextSubTickOrder;
 
@@ -113,15 +114,8 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
         return GetChunk(ChunkPos.Containing(position)).GetFluidState(position);
     }
 
-    public Holder<Biome> GetBiome(BlockPos position)
-    {
-        ArgumentNullException.ThrowIfNull(position);
-        ProtoChunk chunk = GetChunk(ChunkPos.Containing(position));
-        return chunk.GetNoiseBiome(
-            QuartPos.FromBlock(position.GetX()),
-            QuartPos.FromBlock(position.GetY()),
-            QuartPos.FromBlock(position.GetZ()));
-    }
+    public Holder<Biome> GetBiome(BlockPos position) =>
+        _biomeManager.GetBiome(position);
 
     public int GetHeight(Heightmap.Types type, int blockX, int blockZ)
     {
@@ -162,6 +156,9 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
         RegistryBootstrap.Initialize();
 
         _generator = NoiseBasedChunkGenerator.CreateOverworld(seed);
+        _biomeManager = new BiomeManager(
+            _generator.CreateUncachedBiomeResolver(),
+            BiomeManager.ObfuscateSeed(seed));
         _heightAccessor = heightAccessor ??
             LevelHeightAccessor.Create(_generator.GetMinY(), _generator.GetGenDepth());
 
