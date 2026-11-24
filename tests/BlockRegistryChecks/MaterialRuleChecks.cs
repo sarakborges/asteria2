@@ -91,16 +91,26 @@ internal static class MaterialRuleChecks
             "OreVeinRule must serialize all seven payload fields using the vanilla field names and discriminator.");
 
         MaterialRule decoded = MaterialRule.CODEC.Parse(ops, encoded).GetOrThrow();
+        Require(decoded is OreVeinRule,
+            "OreVeinRule discriminator must decode to the OreVeinRule implementation.");
+        OreVeinRule copper = (OreVeinRule)decoded;
         Require(
-            decoded is OreVeinRule copper &&
             ReferenceEquals(copper.OreBlock, Blocks.COPPER_ORE.DefaultState) &&
             ReferenceEquals(copper.RawOreBlock, Blocks.RAW_COPPER_BLOCK.DefaultState) &&
-            ReferenceEquals(copper.FillerBlock, Blocks.GRANITE.DefaultState) &&
-            Math.Abs(copper.RawOreChance - 0.02F) < 0.000001F &&
-            copper.Density.Range() == Interval.OfExact(0.75F) &&
-            copper.Richness.Range() == Interval.OfExact(0.25F) &&
-            copper.FillerGap.Range() == Interval.OfExact(-0.5F),
-            "OreVeinRule must round-trip block states, chance and all three inline density functions.");
+            ReferenceEquals(copper.FillerBlock, Blocks.GRANITE.DefaultState),
+            "OreVeinRule must resolve all three registered block-state fields to canonical states.");
+        Require(
+            Math.Abs(copper.RawOreChance - 0.02F) < 0.000001F,
+            "OreVeinRule must preserve the raw-ore probability field.");
+        Require(
+            copper.Density.Range().Equals(Interval.OfExact(0.75F)),
+            $"OreVeinRule density must round-trip exactly; got {copper.Density.Range()}.");
+        Require(
+            copper.Richness.Range().Equals(Interval.OfExact(0.25F)),
+            $"OreVeinRule richness must round-trip exactly; got {copper.Richness.Range()}.");
+        Require(
+            copper.FillerGap.Range().Equals(Interval.OfExact(-0.5F)),
+            $"OreVeinRule filler gap must round-trip exactly; got {copper.FillerGap.Range()}.");
 
         JsonNode invalidNode = JsonNode.Parse(encoded.GetRawText()) ??
             throw new InvalidOperationException("Could not clone OreVeinRule test payload.");
