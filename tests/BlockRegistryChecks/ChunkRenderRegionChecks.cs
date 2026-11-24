@@ -73,7 +73,7 @@ internal static class ChunkRenderRegionChecks
     private static void CheckEditedChunkRetentionOutsideRenderRegion()
     {
         var world = new OverworldWorld(
-            seed: 0x53545245414DUL,
+            seed: 0x53545245414DL,
             heightAccessor: LevelHeightAccessor.Create(-64, 96));
         ProtoChunk originalChunk = world.GetChunk(ChunkPos.Zero);
         BlockPos editedPosition = new(4, -1, 5);
