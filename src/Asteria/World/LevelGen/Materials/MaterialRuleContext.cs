@@ -1,4 +1,5 @@
 using Asteria.Content.Identifiers;
+using Asteria.Core;
 using Asteria.Content.Biomes;
 using Asteria.Content.Registries;
 using Asteria.World.LevelGen.Synth;
