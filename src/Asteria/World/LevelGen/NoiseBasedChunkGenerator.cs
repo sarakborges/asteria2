@@ -9,6 +9,7 @@ using Asteria.World;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Materials;
 using Asteria.World.LevelGen.Materials.Rules;
+using Asteria.World.LevelGen.Placement;
 
 namespace Asteria.World.LevelGen;
 
@@ -126,6 +127,122 @@ public sealed class NoiseBasedChunkGenerator
     }
 
     /// <summary>Returns lava below min(-54, sea level), then the configured fluid below sea level.</summary>
+    /// <summary>
+    /// Runs the placed-feature portion of Minecraft Java 26.3 biome decoration for one
+    /// center chunk. Structure placement is a separate, still-unported dependency.
+    /// </summary>
+    public void ApplyBiomeDecoration(WorldGenLevel level, ChunkAccess chunk) =>
+        ApplyBiomeDecoration(level, chunk, RandomSupport.GenerateUniqueSeed());
+
+    internal void ApplyBiomeDecoration(
+        WorldGenLevel level,
+        ChunkAccess chunk,
+        long randomSourceSeed)
+    {
+        ArgumentNullException.ThrowIfNull(level);
+        ArgumentNullException.ThrowIfNull(chunk);
+
+        if (_overworldBiomeSource is null)
+        {
+            throw new InvalidOperationException(
+                "Placed-feature decoration requires the configured Overworld biome source.");
+        }
+
+        ChunkPos centerPosition = chunk.GetPos();
+        SectionPos sectionPosition = SectionPos.Of(centerPosition, level.GetMinSectionY());
+        BlockPos origin = sectionPosition.Origin();
+        IReadOnlyList<FeatureSorter.StepFeatureData> featuresPerStep = GetFeaturesPerStep();
+
+        var random = new WorldgenRandom(new XoroshiroRandomSource(randomSourceSeed));
+        long decorationSeed = random.SetDecorationSeed(
+            level.Seed,
+            origin.GetX(),
+            origin.GetZ());
+
+        var possibleBiomes = new HashSet<Holder<Biome>>();
+        for (int offsetX = -1; offsetX <= 1; offsetX++)
+        for (int offsetZ = -1; offsetZ <= 1; offsetZ++)
+        {
+            ChunkAccess neighbor = level.GetChunk(
+                unchecked(centerPosition.X + offsetX),
+                unchecked(centerPosition.Z + offsetZ));
+
+            foreach (ChunkSection section in neighbor.GetSections())
+                section.GetBiomes().GetAll(biome => possibleBiomes.Add(biome));
+        }
+
+        possibleBiomes.IntersectWith(_overworldBiomeSource.PossibleBiomes);
+
+        var placer = new FeaturePlacer(level, this);
+        int generationSteps = Math.Max(
+            GenerationStep.Decoration.Values.Count,
+            featuresPerStep.Count);
+
+        try
+        {
+            for (int stepIndex = 0; stepIndex < generationSteps; stepIndex++)
+            {
+                if (stepIndex >= featuresPerStep.Count)
+                    continue;
+
+                FeatureSorter.StepFeatureData stepFeatureData = featuresPerStep[stepIndex];
+                var possibleFeatureIndices = new HashSet<int>();
+
+                foreach (Holder<Biome> biome in possibleBiomes)
+                {
+                    IReadOnlyList<HolderSet<PlacedFeature>> featuresInBiome =
+                        biome.Value.GenerationSettings.Features;
+                    if (stepIndex >= featuresInBiome.Count)
+                        continue;
+
+                    foreach (Holder<PlacedFeature> featureHolder in featuresInBiome[stepIndex])
+                    {
+                        int globalIndex = stepFeatureData.IndexMapping(featureHolder.Value);
+                        if (globalIndex < 0)
+                        {
+                            throw new InvalidOperationException(
+                                $"Placed feature {featureHolder.Value} from biome {biome} " +
+                                $"was missing from the sorted decoration step {stepIndex}.");
+                        }
+
+                        possibleFeatureIndices.Add(globalIndex);
+                    }
+                }
+
+                foreach (int globalIndex in possibleFeatureIndices.OrderBy(static index => index))
+                {
+                    PlacedFeature feature = stepFeatureData.Features[globalIndex];
+                    string description =
+                        BuiltInRegistries.PlacedFeature.GetKey(feature)?.ToString() ??
+                        feature.ToString();
+
+                    random.SetFeatureSeed(decorationSeed, globalIndex, stepIndex);
+                    level.SetCurrentlyGenerating(description);
+                    try
+                    {
+                        placer.PlaceWithBiomeCheck(feature, random, origin);
+                    }
+                    catch (Exception exception)
+                    {
+                        throw new InvalidOperationException(
+                            $"Feature placement failed for {description} in decoration step {stepIndex}.",
+                            exception);
+                    }
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException(
+                $"Biome decoration failed for chunk {centerPosition}; decoration seed {decorationSeed}.",
+                exception);
+        }
+        finally
+        {
+            level.SetCurrentlyGenerating(null);
+        }
+    }
+
     public static Aquifer.FluidPicker CreateFluidPicker(NoiseGeneratorSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
