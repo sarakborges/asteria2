@@ -33,6 +33,7 @@ internal static class PlacementModifierChecks
     public static void Run()
     {
         CheckTypeRegistry();
+        CheckModifierCodecs();
         CheckInSquarePlacement();
         CheckRarityFilter();
         CheckCountPlacement();
@@ -53,6 +54,52 @@ internal static class PlacementModifierChecks
                     ResourceLocation.Parse($"asteria:{id}")),
                 $"The placement modifier registry must expose asteria:{id}.");
         }
+    }
+
+    private static void CheckModifierCodecs()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+
+        PlacementModifier inSquare = PlacementModifierCodecs.CODEC
+            .Parse(ops, ParseJson("""{"type":"asteria:in_square"}"""))
+            .GetOrThrow();
+        Require(
+            ReferenceEquals(inSquare, InSquarePlacement.INSTANCE),
+            "The in_square dispatch codec must decode to the canonical singleton.");
+
+        PlacementModifier biome = PlacementModifierCodecs.CODEC
+            .Parse(ops, ParseJson("""{"type":"asteria:biome"}"""))
+            .GetOrThrow();
+        Require(
+            ReferenceEquals(biome, BiomeFilter.INSTANCE),
+            "The biome dispatch codec must decode to the canonical singleton.");
+
+        PlacementModifier rarity = PlacementModifierCodecs.CODEC
+            .Parse(ops, ParseJson("""{"type":"asteria:rarity_filter","chance":9}"""))
+            .GetOrThrow();
+        Require(
+            rarity is RarityFilter { Chance: 9 },
+            "The rarity_filter dispatch codec must decode its chance field.");
+
+        PlacementModifier count = PlacementModifierCodecs.CODEC
+            .Parse(ops, ParseJson("""{"type":"asteria:count","count":3}"""))
+            .GetOrThrow();
+        Require(
+            count is CountPlacement { CountProvider: ConstantInt { Value: 3 } },
+            "The count dispatch codec must decode the constant IntProvider shorthand.");
+
+        JsonElement encoded = PlacementModifierCodecs.CODEC
+            .EncodeStart(ops, CountPlacement.Of(4))
+            .GetOrThrow();
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:count" &&
+            ops.Get(encoded, "count").GetOrThrow().GetInt32() == 4,
+            "The count dispatch codec must encode the Asteria placement type and numeric constant shorthand.");
+
+        Require(
+            PlacementModifierCodecs.CODEC
+                .Parse(ops, ParseJson("""{"type":"asteria:missing"}""")).IsError,
+            "The placement modifier dispatch codec must reject unknown type identifiers.");
     }
 
     private static void CheckInSquarePlacement()
