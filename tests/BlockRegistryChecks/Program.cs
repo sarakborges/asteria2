@@ -221,6 +221,7 @@ internal static class Program
         FeatureSorterChecks.Run();
         PlacementModifierChecks.Run();
         WorldGenRegionChecks.Run();
+        BiomeDecorationChecks.Run();
         BlockStateProviderChecks.Run();
         Require(
             ReferenceEquals(
