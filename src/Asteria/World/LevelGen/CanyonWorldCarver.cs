@@ -9,12 +9,25 @@ namespace Asteria.World.LevelGen;
 /// Canyon carver from Minecraft Java 26.3. It generates the normalized width profile
 /// for each world-Y and uses the same seeded tunnel stream and reach pruning as vanilla.
 /// </summary>
-public sealed record CanyonWorldCarver(
-    float Probability,
-    HeightProvider Y,
-    FloatProvider VerticalRotation,
-    Shape CarverShape) : WorldCarver
+public sealed class CanyonWorldCarver : WorldCarver
 {
+    public float Probability { get; }
+    public HeightProvider Y { get; }
+    public FloatProvider VerticalRotation { get; }
+    public Shape CarverShape { get; }
+
+    public CanyonWorldCarver(
+        float probability,
+        HeightProvider y,
+        FloatProvider verticalRotation,
+        Shape carverShape)
+    {
+        Probability = probability;
+        Y = y ?? throw new ArgumentNullException(nameof(y));
+        VerticalRotation = verticalRotation ?? throw new ArgumentNullException(nameof(verticalRotation));
+        CarverShape = carverShape ?? throw new ArgumentNullException(nameof(carverShape));
+    }
+
     public static MapCodec<CanyonWorldCarver> MAP_CODEC { get; } =
         RecordCodecBuilder.MapCodec<CanyonWorldCarver>(instance =>
             instance.Group(
