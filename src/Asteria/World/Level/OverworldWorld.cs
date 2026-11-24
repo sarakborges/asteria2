@@ -179,6 +179,9 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
             availableChunks,
             _generator.CreateUncachedBiomeResolver());
 
+    ChunkAccess WorldGenLevel.GetChunk(int chunkX, int chunkZ) =>
+        GetChunk(new ChunkPos(chunkX, chunkZ));
+
     public ProtoChunk GetChunk(ChunkPos position)
     {
         EnsureValidPosition(position);
