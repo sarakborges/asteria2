@@ -20,7 +20,7 @@ internal static class PlacementModifierChecks
             throw new NotSupportedException("ProbeFeature is not serialized.");
 
         public bool Place(
-            OverworldWorld level,
+            WorldGenLevel level,
             NoiseBasedChunkGenerator generator,
             IRandomSource random,
             BlockPos origin)
@@ -446,7 +446,7 @@ internal static class PlacementModifierChecks
     }
 
     private static PlacementContext CreatePlacementContext(
-        OverworldWorld world,
+        WorldGenLevel world,
         NoiseBasedChunkGenerator generator,
         PlacedFeature? topFeature) =>
         new(world, generator, topFeature);
