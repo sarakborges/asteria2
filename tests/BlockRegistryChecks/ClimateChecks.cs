@@ -92,33 +92,53 @@ internal static class ClimateChecks
     private static void CheckParameterCodecs()
     {
         DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
-        Climate.Parameter parameter = Climate.Parameter.Span(-0.75F, 1.25F);
-        JsonElement encoded = Climate.Parameter.CODEC.EncodeStart(ops, parameter).GetOrThrow();
+        Climate.Parameter interval = Climate.Parameter.Span(-0.75F, 1.25F);
+        JsonElement encodedInterval = Climate.Parameter.CODEC.EncodeStart(ops, interval).GetOrThrow();
+        Require(
+            encodedInterval.ValueKind == JsonValueKind.Array &&
+            encodedInterval.GetArrayLength() == 2 &&
+            Math.Abs(encodedInterval[0].GetSingle() + 0.75F) < 1.0E-6F &&
+            Math.Abs(encodedInterval[1].GetSingle() - 1.25F) < 1.0E-6F,
+            "Climate.Parameter codec must encode non-point intervals as a two-value array.");
 
         Require(
-            Math.Abs(ops.Get(encoded, "min").GetOrThrow().GetSingle() + 0.75F) < 1.0E-6F &&
-            Math.Abs(ops.Get(encoded, "max").GetOrThrow().GetSingle() - 1.25F) < 1.0E-6F,
-            "Climate.Parameter codec must use min/max float fields.");
+            Climate.Parameter.CODEC.Parse(ops, encodedInterval).GetOrThrow() == interval,
+            "Climate.Parameter codec must round-trip array intervals.");
 
-        Climate.Parameter decoded = Climate.Parameter.CODEC.Parse(ops, encoded).GetOrThrow();
+        JsonElement decodedObject = ParseJson("""{"min":-0.75,"max":1.25}""");
         Require(
-            decoded == parameter,
-            "Climate.Parameter codec must round-trip its quantized interval.");
+            Climate.Parameter.CODEC.Parse(ops, decodedObject).GetOrThrow() == interval,
+            "Climate.Parameter codec must retain min/max object compatibility.");
+
+        Climate.Parameter point = Climate.Parameter.Point(0.25F);
+        JsonElement encodedPoint = Climate.Parameter.CODEC.EncodeStart(ops, point).GetOrThrow();
+        Require(
+            encodedPoint.ValueKind == JsonValueKind.Number &&
+            Math.Abs(encodedPoint.GetSingle() - 0.25F) < 1.0E-6F &&
+            Climate.Parameter.CODEC.Parse(ops, encodedPoint).GetOrThrow() == point,
+            "Climate.Parameter codec must encode and decode point parameters as a single number.");
 
         Require(
-            Climate.Parameter.CODEC.Parse(
-                ops,
-                ParseJson("""{"min":0.5,"max":-0.5}""")).IsError,
+            Climate.Parameter.CODEC.Parse(ops, ParseJson("[-0.5,0.5]")).GetOrThrow() ==
+                Climate.Parameter.Span(-0.5F, 0.5F),
+            "Climate.Parameter codec must decode vanilla two-element array intervals.");
+
+        Require(
+            Climate.Parameter.CODEC.Parse(ops, ParseJson("[0.5,-0.5]")).IsError &&
+            Climate.Parameter.CODEC.Parse(ops, ParseJson("""{"min":0.5,"max":-0.5}""")).IsError,
             "Climate.Parameter codec must reject intervals whose minimum exceeds their maximum.");
 
         Require(
-            Climate.Parameter.CODEC.Parse(
-                ops,
-                ParseJson("""{"min":-2.1,"max":1.0}""")).IsError &&
-            Climate.Parameter.CODEC.Parse(
-                ops,
-                ParseJson("""{"min":-1.0,"max":2.1}""")).IsError,
-            "Climate.Parameter codec must enforce the [-2, 2] coordinate bounds.");
+            Climate.Parameter.CODEC.Parse(ops, ParseJson("[-2.1,1.0]")).IsError &&
+            Climate.Parameter.CODEC.Parse(ops, ParseJson("[-1.0,2.1]")).IsError &&
+            Climate.Parameter.CODEC.Parse(ops, ParseJson("-2.1")).IsError &&
+            Climate.Parameter.CODEC.Parse(ops, ParseJson("2.1")).IsError,
+            "Climate.Parameter codec must enforce the [-2, 2] coordinate bounds for points and intervals.");
+
+        Require(
+            Climate.Parameter.CODEC.Parse(ops, ParseJson("[0.1]")).IsError &&
+            Climate.Parameter.CODEC.Parse(ops, ParseJson("[0.1,0.2,0.3]")).IsError,
+            "Climate.Parameter codec must reject interval arrays with any size other than two.");
 
         Require(
             Climate.Parameter.CODEC.Parse(

@@ -127,38 +127,82 @@ public static class Climate
 
     private readonly record struct ParameterRangeInput(float Min, float Max);
 
+    private sealed class ParameterCodec : Codec<Parameter>
+    {
+        private static readonly Codec<float> PointCodec =
+            Codecs.FloatRange(-2.0F, 2.0F);
+
+        private static readonly Codec<IReadOnlyList<float>> IntervalArrayCodec =
+            PointCodec.ListOf(2, 2);
+
+        private static readonly Codec<ParameterRangeInput> IntervalObjectCodec =
+            RecordCodecBuilder.Create<ParameterRangeInput>(instance =>
+                instance.Group(
+                    PointCodec.FieldOf("min")
+                        .ForGetter<ParameterRangeInput>(static interval => interval.Min),
+                    PointCodec.FieldOf("max")
+                        .ForGetter<ParameterRangeInput>(static interval => interval.Max))
+                .Apply(
+                    instance,
+                    static (min, max) => new ParameterRangeInput(min, max)));
+
+        public override DataResult<Pair<Parameter, TData>> Decode<TData>(
+            DynamicOps<TData> ops,
+            TData input)
+        {
+            DataResult<float> pointResult = PointCodec.Parse(ops, input);
+            if (pointResult.TryGetResult(out float point))
+                return Create(point, point).Map(value =>
+                    new Pair<Parameter, TData>(value, ops.Empty));
+
+            DataResult<IReadOnlyList<float>> arrayResult =
+                IntervalArrayCodec.Parse(ops, input);
+            if (arrayResult.TryGetResult(out IReadOnlyList<float>? values))
+            {
+                return Create(values[0], values[1]).Map(value =>
+                    new Pair<Parameter, TData>(value, ops.Empty));
+            }
+
+            DataResult<ParameterRangeInput> objectResult =
+                IntervalObjectCodec.Parse(ops, input);
+            if (objectResult.TryGetResult(out ParameterRangeInput interval))
+            {
+                return Create(interval.Min, interval.Max).Map(value =>
+                    new Pair<Parameter, TData>(value, ops.Empty));
+            }
+
+            return DataResult<Pair<Parameter, TData>>.Error(() =>
+                "Expected a climate parameter as a point, a two-value interval, or a min/max object.");
+        }
+
+        public override DataResult<TData> Encode<TData>(
+            Parameter input,
+            DynamicOps<TData> ops,
+            TData prefix)
+        {
+            float min = UnquantizeCoord(input.Min);
+            float max = UnquantizeCoord(input.Max);
+            if (input.Min == input.Max)
+                return PointCodec.Encode(min, ops, prefix);
+
+            return IntervalArrayCodec.Encode(new[] { min, max }, ops, prefix);
+        }
+
+        private static DataResult<Parameter> Create(float min, float max) =>
+            min > max
+                ? DataResult<Parameter>.Error(() =>
+                    $"Cannot construct climate interval, min > max ({min} > {max})")
+                : DataResult<Parameter>.Success(new Parameter(
+                    QuantizeCoord(min),
+                    QuantizeCoord(max)));
+
+        public override string ToString() => "ClimateParameter";
+    }
+
     public readonly record struct Parameter(long Min, long Max)
     {
         public static Codec<Parameter> CODEC { get; } =
-            CreateCodec();
-
-        private static Codec<Parameter> CreateCodec()
-        {
-            Codec<ParameterRangeInput> intervalCodec =
-                RecordCodecBuilder.Create<ParameterRangeInput>(instance =>
-                    instance.Group(
-                        Codecs.FloatRange(-2.0F, 2.0F)
-                            .FieldOf("min")
-                            .ForGetter<ParameterRangeInput>(static interval => interval.Min),
-                        Codecs.FloatRange(-2.0F, 2.0F)
-                            .FieldOf("max")
-                            .ForGetter<ParameterRangeInput>(static interval => interval.Max))
-                    .Apply(
-                        instance,
-                        static (min, max) => new ParameterRangeInput(min, max)));
-
-            return intervalCodec.FlatXMap(
-                static interval => interval.Min > interval.Max
-                    ? DataResult<Parameter>.Error(() =>
-                        $"Cannon construct interval, min > max ({interval.Min} > {interval.Max})")
-                    : DataResult<Parameter>.Success(new Parameter(
-                        QuantizeCoord(interval.Min),
-                        QuantizeCoord(interval.Max))),
-                static parameter => DataResult<ParameterRangeInput>.Success(
-                    new ParameterRangeInput(
-                        UnquantizeCoord(parameter.Min),
-                        UnquantizeCoord(parameter.Max))));
-        }
+            new ParameterCodec();
 
         public static Parameter Point(float value) =>
             Span(value, value);
