@@ -97,7 +97,7 @@ public static class BuiltInRegistries
     public static Registry<MaterialRule> MaterialRule { get; } =
         RegisterSimple<MaterialRule>(
             Registries.MATERIAL_RULE.Location,
-            static () => BuiltInMaterialRules.RegisterAll());
+            static () => { });
 
     public static Registry<NoiseGeneratorSettings> NoiseGeneratorSettings { get; } =
         RegisterSimple<NoiseGeneratorSettings>(
@@ -192,15 +192,30 @@ public static class BuiltInRegistries
 
     private static void Freeze()
     {
+        // Bind the root's registry values first. Child registries can then be staged
+        // independently while their registry objects remain the canonical root values.
         Root.Freeze();
 
         foreach (Holder<IRegistry>.Reference registryHolder in Root.ListElements())
         {
             IRegistry registry = registryHolder.Value;
+            if (ReferenceEquals(registry, MaterialRule))
+                continue;
+
             if (!registry.IsFrozen)
                 registry.BindAllTagsToEmpty();
             registry.Freeze();
         }
+
+        // MaterialRule JSON uses map codecs from MaterialRuleType and
+        // MaterialConditionType, whose standalone holders only bind during Freeze.
+        // Decode the graph after those dependencies are frozen, but before its own
+        // registry is frozen so all pre-reserved rule holders can be populated.
+        BuiltInMaterialRules.RegisterAll();
+
+        if (!MaterialRule.IsFrozen)
+            MaterialRule.BindAllTagsToEmpty();
+        MaterialRule.Freeze();
 
         foreach (Holder<IRegistry>.Reference registryHolder in Root.ListElements())
             registryHolder.Value.Validate();

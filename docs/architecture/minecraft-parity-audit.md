@@ -1210,7 +1210,8 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 
 ## Incremento — registry completo de material rules do Overworld 26.3 (24/11/2026)
 
-- O bootstrap do registry `worldgen/material_rule` deixou de ser vazio e agora carrega os 37 recursos nomeados do conjunto Overworld 26.3: bedrock_floor, overworld root, ore veins, superfície, ramificações de superfície por bioma, under-biome surface e regras subterrâneas.
+- O bootstrap do registry `worldgen/material_rule` carrega os 37 recursos nomeados do conjunto Overworld 26.3: bedrock_floor, overworld root, ore veins, superfície, ramificações de superfície por bioma, under-biome surface e regras subterrâneas.
+- O root registry é vinculado primeiro; os registries de blocos, biomas, noises, density functions, tipos de rule/condition e demais dependências são congelados antes do decode de material rules. A registry `MaterialRule` permanece aberta durante a resolução dos codecs e é congelada imediatamente após registrar os 37 valores.
 - Os JSONs foram empacotados em três catálogos embutidos sem alterar os objetos das regras ou os seus resource keys. A inicialização reserva primeiro todos os holders; em seguida faz decode com `RegistryOps` sobre os registries built-in; por fim registra os valores, permitindo referências forward e verificando chaves ausentes no freeze.
 - A ordem de bootstrap dos codecs foi ajustada para que MaterialRuleType e MaterialConditionType estejam registradas antes de decodificar os valores do registry material_rule. A registry de blocos, biomas, noises e density functions permanece anterior ao carregamento das regras.
 - Testes verificam os 37 valores vinculados, as definições de Copper/Iron e a sequência raiz do Overworld, incluindo a ordem e identidade dos quatro holders nomeados e o ramo de superfície.
