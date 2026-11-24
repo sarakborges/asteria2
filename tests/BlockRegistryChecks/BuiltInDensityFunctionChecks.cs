@@ -2,6 +2,7 @@ using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Util;
+using Asteria.Util.Context;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
@@ -32,6 +33,7 @@ internal static class BuiltInDensityFunctionChecks
         CheckBase3dNoiseFunctions();
         CheckOverworldClimateFunctions();
         CheckOverworldTerrainDensityHelpers();
+        CheckSimpleDensityFunctions();
     }
 
     private static void CheckRegistryAndRegistrationOrder()
@@ -122,6 +124,83 @@ internal static class BuiltInDensityFunctionChecks
             "The y gradient must clamp samples outside the dimension-derived vertical bounds.");
     }
 
+
+    private static void CheckSimpleDensityFunctions()
+    {
+        DensityFunction[] functions =
+        [
+            DensityFunctions.BlendAlpha(),
+            DensityFunctions.BlendOffset(),
+            DensityFunctions.Beardifier()
+        ];
+
+        Require(
+            ReferenceEquals(functions[0], SimpleDensityFunction.BLEND_ALPHA) &&
+            ReferenceEquals(functions[1], SimpleDensityFunction.BLEND_OFFSET) &&
+            ReferenceEquals(functions[2], SimpleDensityFunction.BEARDIFIER),
+            "The simple density-function factories must return the three canonical vanilla singleton nodes.");
+
+        Require(
+            SimpleDensityFunction.BLEND_ALPHA.Range().Equals(Interval.Of(0.0f, 1.0f)) &&
+            SimpleDensityFunction.BLEND_OFFSET.Range().Equals(Interval.INFINITE) &&
+            SimpleDensityFunction.BEARDIFIER.Range().Equals(Interval.INFINITE),
+            "Simple density-function ranges must match vanilla: blend alpha is [0, 1], blend offset and beardifier are unbounded.");
+
+        Require(
+            SimpleDensityFunction.BLEND_ALPHA.DomainAxes() ==
+                (DensityFunction.AXIS_X | DensityFunction.AXIS_Z) &&
+            SimpleDensityFunction.BLEND_OFFSET.DomainAxes() ==
+                (DensityFunction.AXIS_X | DensityFunction.AXIS_Z) &&
+            SimpleDensityFunction.BEARDIFIER.DomainAxes() == DensityFunction.ALL_AXES,
+            "Simple density-function domains must preserve their vanilla XZ and XYZ axis masks.");
+
+        var compileContext = new UnusedCompileContext();
+        var alpha = (ContextBoundSampler)SimpleDensityFunction.BLEND_ALPHA.CompileSampler(compileContext);
+        var offset = (ContextBoundSampler)SimpleDensityFunction.BLEND_OFFSET.CompileSampler(compileContext);
+        var beardifier = (ContextBoundSampler)SimpleDensityFunction.BEARDIFIER.CompileSampler(compileContext);
+
+        Require(
+            ReferenceEquals(alpha.Key, DensityFunctionContextKeys.BLEND_ALPHA) &&
+            ReferenceEquals(offset.Key, DensityFunctionContextKeys.BLEND_OFFSET) &&
+            ReferenceEquals(beardifier.Key, DensityFunctionContextKeys.BEARDIFIER) &&
+            alpha.SampleValue(SamplerContext.EmptyUncached, 0, 0, 0) == 1.0f &&
+            offset.SampleValue(SamplerContext.EmptyUncached, 0, 0, 0) == 0.0f &&
+            beardifier.SampleValue(SamplerContext.EmptyUncached, 0, 0, 0) == 0.0f,
+            "Simple density samplers must use their exact context keys and vanilla fallback values.");
+
+        ContextMap fields = ContextMap.CreateBuilder()
+            .WithParameter(
+                DensityFunctionContextKeys.BLEND_ALPHA,
+                new ConstantFunction.Sampler(0.25f))
+            .WithParameter(
+                DensityFunctionContextKeys.BLEND_OFFSET,
+                new ConstantFunction.Sampler(-3.5f))
+            .WithParameter(
+                DensityFunctionContextKeys.BEARDIFIER,
+                new ConstantFunction.Sampler(2.75f))
+            .Build();
+        SamplerContext context = SamplerContext.CreateBuilder()
+            .SetUserFields(fields)
+            .Build();
+
+        Require(
+            alpha.SampleValue(context, 12, 48, -7) == 0.25f &&
+            offset.SampleValue(context, 12, 48, -7) == -3.5f &&
+            beardifier.SampleValue(context, 12, 48, -7) == 2.75f,
+            "Simple density samplers must defer sampling to the sampler-context override when one is supplied.");
+
+        Require(
+            ReferenceEquals(
+                SimpleDensityFunction.BLEND_ALPHA.RewriteChildren(static function => function),
+                SimpleDensityFunction.BLEND_ALPHA) &&
+            ReferenceEquals(
+                SimpleDensityFunction.BLEND_OFFSET.RewriteChildren(static function => function),
+                SimpleDensityFunction.BLEND_OFFSET) &&
+            ReferenceEquals(
+                SimpleDensityFunction.BEARDIFIER.RewriteChildren(static function => function),
+                SimpleDensityFunction.BEARDIFIER),
+            "Simple density functions have no children and must retain their canonical singleton instances after rewrites.");
+    }
 
     private static void CheckOverworldTerrainDensityHelpers()
     {
