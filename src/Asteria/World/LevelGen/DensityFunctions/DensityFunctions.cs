@@ -114,6 +114,15 @@ public static class DensityFunctions
     public static DensityFunction Shift(Holder<NormalNoise> noiseData) =>
         new ShiftNoiseFunction.Shift(noiseData);
 
+    public static DensityFunction BlendAlpha() =>
+        SimpleDensityFunction.BLEND_ALPHA;
+
+    public static DensityFunction BlendOffset() =>
+        SimpleDensityFunction.BLEND_OFFSET;
+
+    public static DensityFunction Beardifier() =>
+        SimpleDensityFunction.BEARDIFIER;
+
     public static DensityFunction ShiftedNoise2d(
         DensityFunction shiftX,
         DensityFunction shiftZ,
