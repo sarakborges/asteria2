@@ -23,7 +23,7 @@ public sealed record WeightedStateProvider(
             static provider => provider,
             static provider => (WeightedStateProvider)provider);
 
-    public BlockState GetState(BlockGetter level, IRandomSource random, BlockPos position)
+    public override BlockState GetState(BlockGetter level, IRandomSource random, BlockPos position)
     {
         ArgumentNullException.ThrowIfNull(level);
         ArgumentNullException.ThrowIfNull(random);
@@ -31,5 +31,5 @@ public sealed record WeightedStateProvider(
         return WeightedList.GetRandomOrThrow(random);
     }
 
-    public MapCodec<BlockStateProvider> Codec() => TYPE_CODEC;
+    public override MapCodec<BlockStateProvider> Codec() => TYPE_CODEC;
 }
