@@ -284,7 +284,7 @@ internal static class BuiltInDensityFunctions
         upperBound = DensityFunctionFactories.Clamp(upperBound, -40.0f, 320.0f);
 
         DensityFunction depth = OffsetToDepth(offset);
-        DensityFunction initialDensity = DensityFunctionsDensityGradient(factor, depth);
+        DensityFunction initialDensity = NoiseGradientDensity(factor, depth);
         DensityFunction slidDensity = SlideOverworld(
             amplified,
             DensityFunctionFactories.Clamp(
@@ -298,11 +298,6 @@ internal static class BuiltInDensityFunctions
 
         return new FindTopSurfaceFunction(density, upperBound, -64, 8);
     }
-
-    private static DensityFunction DensityFunctionsDensityGradient(
-        DensityFunction factor,
-        DensityFunction depthWithJaggedness) =>
-        NoiseGradientDensity(factor, depthWithJaggedness);
 
     private static void RegisterOreVeins(Registry<DensityFunction> registry)
     {
