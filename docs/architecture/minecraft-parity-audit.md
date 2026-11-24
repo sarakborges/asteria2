@@ -1123,3 +1123,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Testes cobrem todos os intervalos e fronteiras exatas, inclusive os rótulos de diagnóstico.
 - Delimitação: este commit porta o contrato de intervalos e diagnóstico do builder. A emissão da tabela completa de ParameterPoint (oceanos, costas, slices de terreno e biomas subterrâneos), as definições dos biomas ausentes e sua resolução para holders ainda não estão implementadas. Nenhum placeholder de bioma é criado.
 - Referência: [OverworldBiomeBuilder — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/biome/overworldbiomebuilder/).
+
+
+## Incremento — distribuição completa de biomas Overworld 26.3 (24/11/2026)
+
+- OverworldBiomeBuilder agora emite a tabela integral de Climate.ParameterPoint com resource keys vanilla, seguindo a ordem de geração 26.3: off-coast, slices inland e biomas subterrâneos.
+- Portadas as matrizes OCEANS, MIDDLE_BIOMES, MIDDLE_BIOMES_VARIANT, PLATEAU_BIOMES, PLATEAU_BIOMES_VARIANT e SHATTERED_BIOMES, incluindo os picks de praia, badlands, savanna, slope, peaks e shattered variants.
+- A superfície emite dois parameter points por região (depth 0 e depth 1); caves usam depth 0.2–0.9 e Deep Dark usa depth 1.1 com erosion nos dois primeiros índices.
+- A API BuildParameterList<T> resolve cada resource key por callback antes de construir Climate.ParameterList<T> e sua R-tree; a emissão de chaves não cria holders ou definições de biomas inexistentes.
+- Harness verifica 7.594 entradas, 3.795 pares de superfície em cada profundidade, as três regiões subterrâneas e a entrada bottom-only, zero offset e resultados da R-tree em Mushroom Fields, Deep Frozen Ocean e Deep Dark.
+- Limites: o registry atual do Asteria2 ainda não contém a maioria das chaves vanilla emitidas, portanto o callback de resolução completa requer o port das definições e registros dos biomas. O builder de tabela não ativa a seleção completa no mundo ainda. O modo de debug special-case, spawnTarget/deepDarkRegion e conteúdos de geração dos biomas continuam etapas separadas.
+- Referência de código: `0khs/minecraft_source_26.3/net/minecraft/world/level/biome/OverworldBiomeBuilder.java` (Minecraft Java 26.3).

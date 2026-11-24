@@ -1,6 +1,6 @@
-using Asteria.World.LevelGen;
-
 using Asteria.Content.Biomes;
+using Asteria.Content.Identifiers;
+using Asteria.World.LevelGen;
 
 internal static class OverworldBiomeBuilderChecks
 {
@@ -11,6 +11,7 @@ internal static class OverworldBiomeBuilderChecks
         CheckErosionAndContinentalness(builder);
         CheckPeaksAndValleysAndWeirdness(builder);
         CheckDiagnosticBoundaries(builder);
+        CheckCompleteBiomeParameterTable(builder);
     }
 
     private static void CheckTemperatureAndHumidity(OverworldBiomeBuilder builder)
@@ -119,6 +120,56 @@ internal static class OverworldBiomeBuilderChecks
             builder.GetDebugStringForContinentalness(0.03) == "Mid inland" &&
             builder.GetDebugStringForContinentalness(0.3) == "Far inland",
             "Continentalness labels must follow the quantized upper-exclusive boundaries.");
+    }
+
+    private static void CheckCompleteBiomeParameterTable(OverworldBiomeBuilder builder)
+    {
+        IReadOnlyList<OverworldBiomeBuilder.BiomeParameter> entries =
+            builder.BuildBiomeParameters();
+
+        Require(entries.Count == 7594,
+            "The Minecraft 26.3 Overworld builder must emit 7,594 surface and underground parameter points.");
+
+        ResourceLocation Key(string name) =>
+            ResourceLocation.FromNamespaceAndPath("minecraft", name);
+
+        var distinctBiomes = entries.Select(entry => entry.Biome).ToHashSet();
+        Require(
+            new[]
+            {
+                "mushroom_fields", "deep_frozen_ocean", "deep_cold_ocean", "warm_ocean",
+                "snowy_plains", "badlands", "eroded_badlands", "windswept_savanna",
+                "stony_shore", "river", "frozen_river", "swamp", "mangrove_swamp",
+                "dripstone_caves", "lush_caves", "sulfur_caves", "deep_dark"
+            }.All(name => distinctBiomes.Contains(Key(name))),
+            "The parameter table must include representative off-coast, inland, valley and underground biomes.");
+
+        int depthSurface = entries.Count(entry => entry.Parameters.Depth == Climate.Parameter.Point(0.0F));
+        int depthCaves = entries.Count(entry => entry.Parameters.Depth == Climate.Parameter.Span(0.2F, 0.9F));
+        int depthBottom = entries.Count(entry => entry.Parameters.Depth == Climate.Parameter.Point(1.1F));
+        int depthOne = entries.Count(entry => entry.Parameters.Depth == Climate.Parameter.Point(1.0F));
+
+        Require(depthSurface == 3795 && depthOne == 3795,
+            "Every surface biome mapping must be emitted at both depth 0 and depth 1.");
+        Require(depthCaves == 3 && depthBottom == 1,
+            "The three cave biomes and the bottom-only Deep Dark mapping must retain their exact depth intervals.");
+        Require(entries.All(entry => entry.Parameters.Offset == 0L),
+            "Vanilla Overworld biome parameter entries must use zero offset.");
+
+        Climate.ParameterList<ResourceLocation> parameterList =
+            builder.BuildParameterList(static key => key);
+        Require(parameterList.Values().Count == 7594,
+            "The builder's registry-key resolver must preserve the entire ordered climate table.");
+
+        Require(
+            parameterList.FindValue(Climate.Target(0.0F, 0.0F, -1.1F, 0.0F, 0.0F, 0.0F)) == Key("mushroom_fields"),
+            "Mushroom fields must own the full-temperature/full-humidity off-coast climate region.");
+        Require(
+            parameterList.FindValue(Climate.Target(-0.9F, 0.0F, -0.7F, 0.0F, 0.0F, 0.0F)) == Key("deep_frozen_ocean"),
+            "The coldest temperature band over deep-ocean continentalness must select deep frozen ocean.");
+        Require(
+            parameterList.FindValue(Climate.Target(0.0F, 0.0F, 0.0F, -0.9F, 1.1F, 0.0F)) == Key("deep_dark"),
+            "The bottom-only parameter point must select Deep Dark at its target climate.");
     }
 
     private static void AssertRanges(
