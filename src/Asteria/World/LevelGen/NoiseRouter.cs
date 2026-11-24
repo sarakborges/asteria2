@@ -17,6 +17,28 @@ public sealed record NoiseRouter(
     DensityFunction ChunkSurfaceLevel,
     DensityFunction FinalDensity)
 {
+    /// <summary>
+    /// Creates the vanilla eight-channel Overworld router from the resolved
+    /// twelve-slot function set, omitting the four intermediate terrain functions.
+    /// </summary>
+    public static NoiseRouter CreateOverworld(
+        OverworldFunctionSet<DensityFunction> functions,
+        DensityFunction ridges)
+    {
+        ArgumentNullException.ThrowIfNull(functions);
+        ArgumentNullException.ThrowIfNull(ridges);
+
+        return new NoiseRouter(
+            functions.Temperature,
+            functions.Vegetation,
+            functions.Continents,
+            functions.Erosion,
+            functions.Depth,
+            ridges,
+            functions.ChunkSurfaceLevel,
+            functions.FinalDensity);
+    }
+
     private sealed record ClimateFunctions(
         DensityFunction Temperature,
         DensityFunction Vegetation,
