@@ -206,7 +206,7 @@ internal static class Program
         RegistryBootstrap.Initialize();
         Require(BuiltInRegistries.AreFrozen, "RegistryBootstrap.initialize must remain idempotent.");
         Require(BuiltInRegistries.Root.IsFrozen, "The root registry must be frozen before its child registries.");
-        Require(BuiltInRegistries.Root.Count == 21, "The root registry must contain the built-in block, fluid, item, biome, normal-noise, int-provider-type, float-provider-type, density-function, density-function-type, material-rule, material-rule-type, material-condition, material-condition-type, noise-generator-settings, chunk-status, particle, environment-attribute, attribute-type, position-source-type, world-clock and timeline registries.");
+        Require(BuiltInRegistries.Root.Count == 22, "The root registry must contain the built-in block, fluid, item, biome, normal-noise, height-provider-type, int-provider-type, float-provider-type, density-function, density-function-type, material-rule, material-rule-type, material-condition, material-condition-type, noise-generator-settings, chunk-status, particle, environment-attribute, attribute-type, position-source-type, world-clock and timeline registries.");
         DensityFunctionCodecChecks.Run();
         MaterialRuleChecks.Run();
         MaterialConditionChecks.Run();
@@ -214,6 +214,7 @@ internal static class Program
         BuiltInDensityFunctionChecks.Run();
         FloatProviderChecks.Run();
         IntProviderChecks.Run();
+        HeightProviderChecks.Run();
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
@@ -418,8 +419,8 @@ internal static class Program
             BuiltInRegistries.RootLocation == ResourceLocation.Parse("asteria:root"),
             "The root registry must use the Asteria namespace.");
         Require(
-            BuiltInRegistries.Root.Count == 21 && !BuiltInRegistries.Root.IsFrozen,
-            "The root registry must register all twenty built-in registries before bootstrap freezes it.");
+            BuiltInRegistries.Root.Count == 22 && !BuiltInRegistries.Root.IsFrozen,
+            "The root registry must register all twenty-one built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =
             RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Block.Location);
