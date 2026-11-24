@@ -1,3 +1,4 @@
+using Asteria.Content.Registries;
 using Asteria.World.LevelGen.Placement;
 
 namespace Asteria.Content.Biomes;
