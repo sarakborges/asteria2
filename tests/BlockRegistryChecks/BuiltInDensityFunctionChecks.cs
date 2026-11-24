@@ -43,6 +43,7 @@ internal static class BuiltInDensityFunctionChecks
         CheckOverworldTerrainDensityHelpers();
         CheckSimpleDensityFunctions();
         CheckBlendDensityFunction();
+        CheckOverworldTerrainRegistration();
     }
 
     private static void CheckRegistryAndRegistrationOrder()
@@ -73,7 +74,17 @@ internal static class BuiltInDensityFunctionChecks
                 "overworld/vegetation", "overworld_large_biomes/vegetation",
                 "overworld/continents", "overworld/erosion", "overworld/ridges",
                 "overworld/ridges_folded",
-                "overworld_large_biomes/continents", "overworld_large_biomes/erosion"
+                "overworld_large_biomes/continents", "overworld_large_biomes/erosion",
+                "overworld/offset", "overworld/factor", "overworld/depth", "overworld/jaggedness",
+                "overworld/sloped_cheese", "overworld/preliminary_surface_level", "overworld/chunk_surface_level",
+                "overworld_large_biomes/offset", "overworld_large_biomes/factor",
+                "overworld_large_biomes/depth", "overworld_large_biomes/jaggedness",
+                "overworld_large_biomes/sloped_cheese", "overworld_large_biomes/preliminary_surface_level",
+                "overworld_large_biomes/chunk_surface_level",
+                "overworld_amplified/offset", "overworld_amplified/factor",
+                "overworld_amplified/depth", "overworld_amplified/jaggedness",
+                "overworld_amplified/sloped_cheese", "overworld_amplified/preliminary_surface_level",
+                "overworld_amplified/chunk_surface_level"
             }, StringComparer.Ordinal),
             "The density-function registry must preserve the Minecraft 26.3 NoiseRouterData.bootstrap order for the ported entries.");
 
@@ -133,6 +144,149 @@ internal static class BuiltInDensityFunctionChecks
             "The y gradient must clamp samples outside the dimension-derived vertical bounds.");
     }
 
+
+    private static void CheckOverworldTerrainRegistration()
+    {
+        Registry<DensityFunction> registry = BuiltInRegistries.DensityFunction;
+
+        CheckTerrainProfile(
+            registry,
+            DensityFunctionKeys.OVERWORLD_FUNCTIONS,
+            amplified: false,
+            keyPrefix: "normal");
+        CheckTerrainProfile(
+            registry,
+            DensityFunctionKeys.LARGE_OVERWORLD_FUNCTIONS,
+            amplified: false,
+            keyPrefix: "large-biomes");
+        CheckTerrainProfile(
+            registry,
+            DensityFunctionKeys.AMPLIFIED_OVERWORLD_FUNCTIONS,
+            amplified: true,
+            keyPrefix: "amplified");
+    }
+
+    private static void CheckTerrainProfile(
+        Registry<DensityFunction> registry,
+        OverworldFunctionSet<RegistryKey<DensityFunction>> names,
+        bool amplified,
+        string keyPrefix)
+    {
+        DensityFunction offset = registry.GetValueOrThrow(names.Offset);
+        DensityFunction factor = registry.GetValueOrThrow(names.Factor);
+        DensityFunction depth = registry.GetValueOrThrow(names.Depth);
+        DensityFunction jaggedness = registry.GetValueOrThrow(names.Jaggedness);
+        DensityFunction slopedCheese = registry.GetValueOrThrow(names.SlopedCheese);
+        DensityFunction preliminarySurfaceLevel =
+            registry.GetValueOrThrow(names.PreliminarySurfaceLevel);
+        DensityFunction chunkSurfaceLevel =
+            registry.GetValueOrThrow(names.ChunkSurfaceLevel);
+
+        Require(
+            offset is CacheFunction
+            {
+                Input: LerpFunction
+                {
+                    Alpha: var offsetBlendAlpha,
+                    First: var offsetBlendTarget,
+                    Second: BinaryFunction
+                    {
+                        Operation: BinaryFunction.Type.ADD,
+                        Left: ConstantFunction { Value: -0.50375f },
+                        Right: SplineFunction
+                    }
+                }
+            } &&
+            ReferenceEquals(offsetBlendAlpha, SimpleDensityFunction.BLEND_ALPHA) &&
+            ReferenceEquals(offsetBlendTarget, SimpleDensityFunction.BLEND_OFFSET),
+            $"{keyPrefix} offset must use the vanilla global offset and blend_offset spline wrapper.");
+
+        Require(
+            factor is CacheFunction
+            {
+                Input: LerpFunction
+                {
+                    Alpha: var factorBlendAlpha,
+                    First: ConstantFunction { Value: 10.0f },
+                    Second: SplineFunction
+                }
+            } &&
+            ReferenceEquals(factorBlendAlpha, SimpleDensityFunction.BLEND_ALPHA),
+            $"{keyPrefix} factor must blend its vanilla spline toward the constant factor 10.");
+
+        Require(
+            depth is BinaryFunction
+            {
+                Operation: BinaryFunction.Type.ADD,
+                Left: GradientFunction
+                {
+                    Axis: var depthAxis,
+                    Tiling: TilingMode.CLAMP_TO_EDGE,
+                    FromCoordinate: -64,
+                    ToCoordinate: 320,
+                    FromValue: 1.5f,
+                    ToValue: -1.5f
+                },
+                Right: DensityFunctions.HolderHolder { Function: var offsetHolder }
+            } &&
+            ReferenceEquals(depthAxis, Direction.Axis.Y) &&
+            ReferenceEquals(offsetHolder, offset),
+            $"{keyPrefix} depth must be offset_to_depth of the registered offset holder.");
+
+        Require(
+            jaggedness is CacheFunction
+            {
+                Input: LerpFunction
+                {
+                    Alpha: var jaggednessBlendAlpha,
+                    First: ConstantFunction { Value: 0.0f },
+                    Second: SplineFunction
+                }
+            } &&
+            ReferenceEquals(jaggednessBlendAlpha, SimpleDensityFunction.BLEND_ALPHA),
+            $"{keyPrefix} jaggedness must be the unscaled spline blended toward zero and cached.");
+
+        Require(
+            slopedCheese is CacheFunction
+            {
+                Input: BinaryFunction
+                {
+                    Operation: BinaryFunction.Type.ADD,
+                    Right: DensityFunctions.HolderHolder { Function: var baseNoise }
+                }
+            } &&
+            ReferenceEquals(
+                baseNoise,
+                registry.GetValueOrThrow(DensityFunctionKeys.BASE_3D_NOISE_OVERWORLD)),
+            $"{keyPrefix} sloped_cheese must cache the initial density plus the shared Overworld base 3D noise.");
+
+        Require(
+            preliminarySurfaceLevel is FindTopSurfaceFunction
+            {
+                LowerBound: -64,
+                CellHeight: 8
+            },
+            $"{keyPrefix} preliminary_surface_level must use find_top_surface with the vanilla vertical sampling bounds.");
+
+        Require(
+            chunkSurfaceLevel is InterpolatedFunction
+            {
+                CellSizeXz: 16,
+                CellSizeY: 1,
+                Input: DensityFunctions.HolderHolder { Function: var surfaceLevel }
+            } &&
+            ReferenceEquals(surfaceLevel, preliminarySurfaceLevel),
+            $"{keyPrefix} chunk_surface_level must interpolate the registered preliminary surface level at 16x1 cells.");
+
+        if (amplified)
+        {
+            Require(
+                !names.Offset.Equals(DensityFunctionKeys.OVERWORLD_FUNCTIONS.Offset) &&
+                !names.Factor.Equals(DensityFunctionKeys.OVERWORLD_FUNCTIONS.Factor) &&
+                !names.Jaggedness.Equals(DensityFunctionKeys.OVERWORLD_FUNCTIONS.Jaggedness),
+                "Amplified terrain must register distinct offset, factor and jaggedness entries.");
+        }
+    }
 
     private static void CheckBlendDensityFunction()
     {
