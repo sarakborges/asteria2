@@ -33,7 +33,7 @@ internal static class PlacementModifierChecks
     public static void Run()
     {
         CheckTypeRegistry();
-        CheckWorldGenerationContextIntersection();
+        CheckWorldGenerationContextMatchesVanillaClamp();
         CheckModifierCodecs();
         CheckInSquarePlacement();
         CheckRarityFilter();
@@ -45,7 +45,7 @@ internal static class PlacementModifierChecks
         CheckFeaturePlacerOrder();
     }
 
-    private static void CheckWorldGenerationContextIntersection()
+    private static void CheckWorldGenerationContextMatchesVanillaClamp()
     {
         const long seed = 0x564552544943414CL;
         var world = new OverworldWorld(
@@ -56,9 +56,9 @@ internal static class PlacementModifierChecks
 
         Require(
             context.GenerationContext.GetMinGenY() == -64 &&
-            context.GenerationContext.GetGenDepth() == 84 &&
-            context.GenerationContext.GetMaxGenY() == 19,
-            "PlacementContext must intersect absolute world and generator vertical intervals, not combine their heights independently.");
+            context.GenerationContext.GetGenDepth() == 100 &&
+            context.GenerationContext.GetMaxGenY() == 35,
+            "WorldGenerationContext must preserve the 26.3 max(minY)/min(height) calculation when clamping a world to generator bounds.");
     }
 
     private static void CheckTypeRegistry()
