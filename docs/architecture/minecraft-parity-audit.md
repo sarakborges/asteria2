@@ -1435,3 +1435,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Testes usam nove `ProtoChunk` reais e cobrem pré-condições de status, registro de seções, coluna inicialmente desabilitada, atualizações de blocos após `INITIALIZE_LIGHT`, propagação BLOCK/SKY e a separação entre `LightCorrect` e a promoção de status.
 - A integração automática em `OverworldWorld` permanece pendente: seu gerador atual termina em `TERRAIN` e ainda não implementa `FEATURES`. Não se promove um chunk artificialmente para `FEATURES` apenas para acionar luz.
 - Referência de comportamento: Minecraft Java 26.3, `ThreadedLevelLightEngine.initializeLight`, `ThreadedLevelLightEngine.lightChunk`, `ThreadedLevelLightEngine.runUpdate` e `ChunkStatusTasks.initializeLight/light`.
+
+## Incremento — saída e máscara de carving 26.3 (24/11/2026)
+
+- Portados os contratos `CarverOutput` e `CarvingMask`. A máscara marca posições por índice linear `y - minY + (z + (x << 4)) * height`, preservando a ordem Y/Z/X da referência.
+- `Visit` agrupa bits adjacentes em segmentos e os divide por coluna, entregando X/Z e os limites Y inclusivos de cada intervalo. `IsEmpty` permanece O(1), sem percorrer toda a máscara.
+- A representação usa `.NET BitArray` com expansão dinâmica para reproduzir o crescimento de `java.util.BitSet`; não existe limite de coordenadas adicional em `Carve`, portanto o mapeamento linear e seus aliases permanecem iguais ao contrato da referência. Índices negativos são rejeitados pela API de armazenamento .NET.
+- Testes cobrem limites verticais inclusivos, máscara vazia, segmentos verticais contíguos, divisão de um run na borda entre colunas, indexação linear e rejeição de índice negativo.
+- Esta etapa apenas registra a geometria. Ela não decide o estado que preencherá uma cavidade: a integração posterior deve reutilizar `Aquifer.ComputeSubstance`, nem deve marcar `ChunkStatus.TERRAIN` como concluído antes de rodar os carvers.
+- Próxima dependência real do estágio `TERRAIN`: `WorldCarver`, `CaveWorldCarver`/`CanyonWorldCarver`, seleção de carvers pelas configurações de bioma e aplicação da máscara via aquifer. Só depois disso o port deve avançar para `FEATURES`.
+- Referência: Minecraft Java 26.3, `CarverOutput.java` e `CarvingMask.java` (https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/chunk/carvingmask/).
