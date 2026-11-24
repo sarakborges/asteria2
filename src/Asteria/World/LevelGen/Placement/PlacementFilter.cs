@@ -3,18 +3,22 @@ using Asteria.World.LevelGen;
 
 namespace Asteria.World.LevelGen.Placement;
 
-/// <summary>Filter modifier that emits its input position only when its predicate passes.</summary>
-public interface PlacementFilter : PlacementModifier
+/// <summary>Base class for placement filters that emit their input only when a predicate passes.</summary>
+public abstract class PlacementFilter : PlacementModifier
 {
-    bool ShouldPlace(PlacementContext context, IRandomSource random, BlockPos origin);
+    public abstract bool ShouldPlace(PlacementContext context, IRandomSource random, BlockPos origin);
 
-    void PlacementModifier.Modify(
+    public void Modify(
         PlacementContext context,
         IRandomSource random,
         BlockPos origin,
         Action<BlockPos> output)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(random);
+        ArgumentNullException.ThrowIfNull(origin);
         ArgumentNullException.ThrowIfNull(output);
+
         if (ShouldPlace(context, random, origin))
             output(origin);
     }
