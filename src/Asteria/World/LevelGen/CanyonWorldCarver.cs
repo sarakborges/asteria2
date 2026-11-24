@@ -223,47 +223,62 @@ public sealed record CanyonWorldCarver(
         float VerticalRadiusCenterFactor,
         FloatProvider YScale)
     {
-        public static Codec<Shape> CODEC { get; } =
-            RecordCodecBuilder.Create<Shape>(instance =>
+        private static readonly MapCodec<(
+            FloatProvider DistanceFactor,
+            FloatProvider Thickness,
+            int WidthSmoothness,
+            FloatProvider HorizontalRadiusFactor)> FirstFields =
+            RecordCodecBuilder.MapCodec<(
+                FloatProvider DistanceFactor,
+                FloatProvider Thickness,
+                int WidthSmoothness,
+                FloatProvider HorizontalRadiusFactor)>(instance =>
                 instance.Group(
-                        FloatProviders.CODEC
-                            .FieldOf("distance_factor")
-                            .ForGetter<Shape>(static shape => shape.DistanceFactor),
-                        FloatProviders.CODEC
-                            .FieldOf("thickness")
-                            .ForGetter<Shape>(static shape => shape.Thickness),
-                        Codecs.IntRange(1, int.MaxValue)
-                            .FieldOf("width_smoothness")
-                            .ForGetter<Shape>(static shape => shape.WidthSmoothness),
-                        FloatProviders.CODEC
-                            .FieldOf("horizontal_radius_factor")
-                            .ForGetter<Shape>(static shape => shape.HorizontalRadiusFactor),
-                        Codecs.FLOAT
-                            .FieldOf("vertical_radius_default_factor")
-                            .ForGetter<Shape>(static shape => shape.VerticalRadiusDefaultFactor),
-                        Codecs.FLOAT
-                            .FieldOf("vertical_radius_center_factor")
-                            .ForGetter<Shape>(static shape => shape.VerticalRadiusCenterFactor),
-                        FloatProviders.CODEC
-                            .FieldOf("y_scale")
-                            .ForGetter<Shape>(static shape => shape.YScale))
-                    .Apply(
-                        instance,
-                        static (
-                            distanceFactor,
-                            thickness,
-                            widthSmoothness,
-                            horizontalRadiusFactor,
-                            verticalRadiusDefaultFactor,
-                            verticalRadiusCenterFactor,
-                            yScale) =>
-                            new Shape(
-                                distanceFactor,
-                                thickness,
-                                widthSmoothness,
-                                horizontalRadiusFactor,
-                                verticalRadiusDefaultFactor,
-                                verticalRadiusCenterFactor,
-                                yScale)));
+                        FloatProviders.CODEC.FieldOf("distance_factor")
+                            .ForGetter<(FloatProvider, FloatProvider, int, FloatProvider)>(static shape => shape.Item1),
+                        FloatProviders.CODEC.FieldOf("thickness")
+                            .ForGetter<(FloatProvider, FloatProvider, int, FloatProvider)>(static shape => shape.Item2),
+                        Codecs.IntRange(1, int.MaxValue).FieldOf("width_smoothness")
+                            .ForGetter<(FloatProvider, FloatProvider, int, FloatProvider)>(static shape => shape.Item3),
+                        FloatProviders.CODEC.FieldOf("horizontal_radius_factor")
+                            .ForGetter<(FloatProvider, FloatProvider, int, FloatProvider)>(static shape => shape.Item4))
+                    .Apply(instance, static (distanceFactor, thickness, widthSmoothness, horizontalRadiusFactor) =>
+                        (distanceFactor, thickness, widthSmoothness, horizontalRadiusFactor)));
+
+        private static readonly MapCodec<(
+            float VerticalRadiusDefaultFactor,
+            float VerticalRadiusCenterFactor,
+            FloatProvider YScale)> LastFields =
+            RecordCodecBuilder.MapCodec<(
+                float VerticalRadiusDefaultFactor,
+                float VerticalRadiusCenterFactor,
+                FloatProvider YScale)>(instance =>
+                instance.Group(
+                        Codecs.FLOAT.FieldOf("vertical_radius_default_factor")
+                            .ForGetter<(float, float, FloatProvider)>(static shape => shape.Item1),
+                        Codecs.FLOAT.FieldOf("vertical_radius_center_factor")
+                            .ForGetter<(float, float, FloatProvider)>(static shape => shape.Item2),
+                        FloatProviders.CODEC.FieldOf("y_scale")
+                            .ForGetter<(float, float, FloatProvider)>(static shape => shape.Item3))
+                    .Apply(instance, static (defaultFactor, centerFactor, yScale) =>
+                        (defaultFactor, centerFactor, yScale)));
+
+        public static Codec<Shape> CODEC { get; } =
+            RecordCodecBuilder.MapCodec<Shape>(instance =>
+                instance.Group(
+                        FirstFields.ForGetter<Shape>(static shape =>
+                            (shape.DistanceFactor, shape.Thickness, shape.WidthSmoothness, shape.HorizontalRadiusFactor)),
+                        LastFields.ForGetter<Shape>(static shape =>
+                            (shape.VerticalRadiusDefaultFactor, shape.VerticalRadiusCenterFactor, shape.YScale)))
+                    .Apply(instance, static (first, last) =>
+                        new Shape(
+                            first.DistanceFactor,
+                            first.Thickness,
+                            first.WidthSmoothness,
+                            first.HorizontalRadiusFactor,
+                            last.VerticalRadiusDefaultFactor,
+                            last.VerticalRadiusCenterFactor,
+                            last.YScale)))
+            .Codec();
     }
 }
