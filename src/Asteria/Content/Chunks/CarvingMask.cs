@@ -14,6 +14,7 @@ public sealed class CarvingMask : CarverOutput
     private readonly int _maxY;
     private readonly int _height;
     private BitArray _mask;
+    private bool _isEmpty = true;
 
     public delegate bool Filter(int x, int y, int z);
 
@@ -44,6 +45,7 @@ public sealed class CarvingMask : CarverOutput
 
         EnsureCapacity(index);
         _mask[index] = true;
+        _isEmpty = false;
     }
 
     /// <summary>
@@ -63,16 +65,8 @@ public sealed class CarvingMask : CarverOutput
         }
     }
 
-    public bool IsEmpty()
-    {
-        for (int index = 0; index < _mask.Length; index++)
-        {
-            if (_mask[index])
-                return false;
-        }
-
-        return true;
-    }
+    public bool IsEmpty() =>
+        _isEmpty;
 
     private int GetIndex(int x, int y, int z) =>
         unchecked(y - _minY + (z + (x << 4)) * _height);
