@@ -61,6 +61,15 @@ public sealed class OverworldWorld : BlockGetter
             QuartPos.FromBlock(position.GetZ()));
     }
 
+    public int GetHeight(Heightmap.Types type, int blockX, int blockZ)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        ChunkPos position = new(
+            SectionPos.BlockToSectionCoord(blockX),
+            SectionPos.BlockToSectionCoord(blockZ));
+        return GetChunk(position).GetHeight(type, blockX, blockZ);
+    }
+
     public int LoadedChunkCount
     {
         get

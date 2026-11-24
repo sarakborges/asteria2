@@ -303,6 +303,11 @@ internal static class NoiseBasedChunkGeneratorChecks
             world.LoadedChunkCount == 1,
             "World biome queries must return the registered holder from the cached chunk's quart-resolution palette.");
 
+        Require(
+            world.GetHeight(Heightmap.Types.WORLD_SURFACE, 3, 4) ==
+                generated.GetHeight(Heightmap.Types.WORLD_SURFACE, 3, 4),
+            "World height queries must return the cached chunk's world-surface heightmap value.");
+
         ChunkPos neighbor = new(1, 0);
         BlockPos neighborPosition = new(neighbor.GetMinBlockX() + 3, -1, 4);
         BlockState neighborState = world.GetBlockState(neighborPosition);

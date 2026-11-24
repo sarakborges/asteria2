@@ -1249,3 +1249,8 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - OverworldWorld agora expõe GetBiome(BlockPos), resolvendo a chunk sob demanda e consultando sua palette quart com as coordenadas convertidas por QuartPos.FromBlock.
 - O retorno mantém a identidade do Holder<Biome> registrado na palette; o acesso não cria uma segunda fonte ou recalcula clima fora da etapa de geração.
 - Teste compara a consulta do mundo com a consulta direta da mesma chunk e confirma que a entrada existente do cache é reutilizada.
+
+## Incremento — consultas de heightmap em OverworldWorld (24/11/2026)
+
+- OverworldWorld agora expõe GetHeight(Heightmap.Types, blockX, blockZ), resolve a chunk pela coordenada X/Z e delega à heightmap já mantida por ela.
+- O teste compara a resposta do mundo com a mesma heightmap da ProtoChunk em cache e garante que não há um segundo caminho de cálculo.
