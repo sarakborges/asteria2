@@ -30,6 +30,7 @@ internal static class NoiseBasedChunkGeneratorChecks
             CheckErodedBadlandsExtension();
             CheckFrozenOceanExtension();
             CheckMultiNoiseBiomeSourceFillsChunkPalettes();
+            CheckBuiltInOverworldGeneratorFactory();
             CheckPreliminarySurfaceCondition();
         }
         finally
@@ -172,6 +173,59 @@ internal static class NoiseBasedChunkGeneratorChecks
         Require(
             ReferenceEquals(randomState.GetOrCreateMaterialSystem(settings), randomState.GetOrCreateMaterialSystem(settings)),
             "A RandomState must retain one MaterialSystem instance for its world-generation settings.");
+    }
+
+    private static void CheckBuiltInOverworldGeneratorFactory()
+    {
+        const long seed = 0x4A535F323633L;
+        NoiseBasedChunkGenerator generator = NoiseBasedChunkGenerator.CreateOverworld(seed);
+        NoiseGeneratorSettings expectedSettings =
+            BuiltInRegistries.NoiseGeneratorSettings.GetValueOrThrow(
+                RegistryKey<NoiseGeneratorSettings>.Create(
+                    BuiltInRegistries.NoiseGeneratorSettings.Key,
+                    ResourceLocation.FromNamespaceAndPath("minecraft", "overworld")));
+
+        Require(
+            ReferenceEquals(generator.Settings, expectedSettings) &&
+            generator.Seed == seed &&
+            generator.GetMinY() == -64 &&
+            generator.GetGenDepth() == 384 &&
+            generator.GetSeaLevel() == 63,
+            "CreateOverworld must compose the registered vanilla settings and the requested world seed.");
+
+        ProtoChunk chunk = CreateChunk(new ChunkPos(0, 0), -64, 96);
+        generator.BuildTerrain(chunk);
+
+        int solidSamples = 0;
+        for (int y = -64; y < 32; y += 4)
+        for (int z = 0; z < 16; z += 2)
+        for (int x = 0; x < 16; x += 2)
+        {
+            BlockState state = chunk.GetBlockState(new BlockPos(x, y, z));
+            if (!state.IsAir && state.GetFluidState().IsEmpty())
+                solidSamples++;
+        }
+
+        Require(
+            solidSamples > 0,
+            "The registered Overworld settings and seed must generate solid terrain through the default BuildTerrain path.");
+
+        int biomeCells = 0;
+        foreach (ChunkSection section in chunk.GetSections())
+        for (int quartY = 0; quartY < ChunkSection.BiomeContainerWidth; quartY++)
+        for (int quartZ = 0; quartZ < ChunkSection.BiomeContainerWidth; quartZ++)
+        for (int quartX = 0; quartX < ChunkSection.BiomeContainerWidth; quartX++)
+        {
+            Holder<Biome> biome = section.GetNoiseBiome(quartX, quartY, quartZ);
+            Require(
+                biome.IsBound,
+                "The built-in Overworld generator must fill every biome palette cell with a registered biome holder.");
+            biomeCells++;
+        }
+
+        Require(
+            biomeCells == chunk.GetSections().Count * 64,
+            "The built-in Overworld generator must populate the complete quart-resolution biome palette for every generated section.");
     }
 
     private static void CheckPreliminarySurfaceCondition()

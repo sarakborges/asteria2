@@ -2,6 +2,7 @@ using Asteria.Content.Biomes;
 using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
 using Asteria.Content.Chunks.Status;
+using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.World;
@@ -22,6 +23,7 @@ public sealed class NoiseBasedChunkGenerator
     private readonly NoiseGeneratorSettings _settings;
     private readonly RandomState _randomState;
     private readonly Aquifer.FluidPicker _globalFluidPicker;
+    private readonly MultiNoiseBiomeSource? _overworldBiomeSource;
 
     public NoiseGeneratorSettings Settings => _settings;
 
@@ -31,6 +33,8 @@ public sealed class NoiseBasedChunkGenerator
 
     public int GetSeaLevel() => _settings.SeaLevel;
 
+    public long Seed => _randomState.Seed;
+
     public NoiseBasedChunkGenerator(
         NoiseGeneratorSettings settings,
         RandomState randomState,
@@ -39,6 +43,54 @@ public sealed class NoiseBasedChunkGenerator
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _randomState = randomState ?? throw new ArgumentNullException(nameof(randomState));
         _globalFluidPicker = globalFluidPicker ?? CreateFluidPicker(settings);
+    }
+
+    private NoiseBasedChunkGenerator(
+        NoiseGeneratorSettings settings,
+        RandomState randomState,
+        MultiNoiseBiomeSource overworldBiomeSource)
+        : this(settings, randomState)
+    {
+        _overworldBiomeSource = overworldBiomeSource ??
+            throw new ArgumentNullException(nameof(overworldBiomeSource));
+    }
+
+    /// <summary>
+    /// Creates a seeded generator from the registered Minecraft 26.3 Overworld
+    /// noise settings, noise registry and complete vanilla Overworld biome source.
+    /// </summary>
+    public static NoiseBasedChunkGenerator CreateOverworld(long seed)
+    {
+        ResourceLocation settingsLocation =
+            ResourceLocation.FromNamespaceAndPath("minecraft", "overworld");
+        RegistryKey<NoiseGeneratorSettings> settingsKey =
+            RegistryKey<NoiseGeneratorSettings>.Create(
+                BuiltInRegistries.NoiseGeneratorSettings.Key,
+                settingsLocation);
+        NoiseGeneratorSettings settings =
+            BuiltInRegistries.NoiseGeneratorSettings.GetValueOrThrow(settingsKey);
+
+        MultiNoiseBiomeSource biomeSource =
+            MultiNoiseBiomeSource.CreateVanillaOverworld(BuiltInRegistries.Biome);
+        RandomState randomState = RandomState.Create(
+            BuiltInRegistries.Noise,
+            seed,
+            settings.UseLegacyRandomSource,
+            settings.NoiseRouter);
+
+        return new NoiseBasedChunkGenerator(settings, randomState, biomeSource);
+    }
+
+    /// <summary>
+    /// Builds this chunk with the vanilla Overworld biome source configured by CreateOverworld.
+    /// Custom generators must continue to supply their own biome source explicitly.
+    /// </summary>
+    public void BuildTerrain(ProtoChunk chunk)
+    {
+        MultiNoiseBiomeSource biomeSource = _overworldBiomeSource ??
+            throw new InvalidOperationException(
+                "This chunk generator has no configured Overworld biome source. Supply one to BuildTerrain.");
+        BuildTerrain(chunk, biomeSource);
     }
 
     /// <summary>Returns lava below min(-54, sea level), then the configured fluid below sea level.</summary>
