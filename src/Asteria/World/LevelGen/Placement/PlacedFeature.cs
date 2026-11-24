@@ -33,6 +33,13 @@ public sealed class PlacedFeature
         BlockPos origin) =>
         new FeaturePlacer(level, generator).Place(this, random, origin);
 
+    public bool PlaceWithBiomeCheck(
+        OverworldWorld level,
+        NoiseBasedChunkGenerator generator,
+        IRandomSource random,
+        BlockPos origin) =>
+        new FeaturePlacer(level, generator).PlaceWithBiomeCheck(this, random, origin);
+
     public IEnumerable<Holder<Feature>> GetFeatures()
     {
         yield return Feature;
