@@ -4,12 +4,13 @@ using Asteria.Serialization;
 namespace Asteria.World.LevelGen;
 
 /// <summary>Uniform inclusive height distribution between two vertical anchors.</summary>
-public sealed record UniformHeight(
-    VerticalAnchor Minimum,
-    VerticalAnchor Maximum) : HeightProvider
+public sealed class UniformHeight : HeightProvider
 {
     private readonly HashSet<long> _warnedFor = new();
     private readonly object _warningLock = new();
+
+    public VerticalAnchor Minimum { get; }
+    public VerticalAnchor Maximum { get; }
 
     public static MapCodec<UniformHeight> MAP_CODEC { get; } =
         RecordCodecBuilder.MapCodec<UniformHeight>(instance =>
@@ -27,6 +28,12 @@ public sealed record UniformHeight(
             static provider => provider,
             static provider => (UniformHeight)provider);
 
+    public UniformHeight(VerticalAnchor minimum, VerticalAnchor maximum)
+    {
+        Minimum = minimum ?? throw new ArgumentNullException(nameof(minimum));
+        Maximum = maximum ?? throw new ArgumentNullException(nameof(maximum));
+    }
+
     public static UniformHeight Of(VerticalAnchor minimum, VerticalAnchor maximum) =>
         new(minimum, maximum);
 
@@ -39,7 +46,7 @@ public sealed record UniformHeight(
         int maximum = Maximum.ResolveY(context);
         if (minimum > maximum)
         {
-            long key = unchecked(((long)minimum << 32) | maximum);
+            long key = unchecked(((long)minimum << 32) | (uint)maximum);
             bool shouldWarn;
             lock (_warningLock)
                 shouldWarn = _warnedFor.Add(key);
