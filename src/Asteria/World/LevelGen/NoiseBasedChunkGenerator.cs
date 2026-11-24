@@ -253,10 +253,9 @@ public sealed class NoiseBasedChunkGenerator
 
         var carvingMask = new CarvingMask(maskMinY, maskMaxY);
         ChunkPos targetChunk = chunk.GetPos();
-        var random = new WorldgenRandom(
-            _randomState.UseLegacyRandomSource
-                ? new LegacyRandomSource(0L)
-                : new XoroshiroRandomSource(0L));
+        // NoiseBasedChunkGenerator.generateCarvers uses a legacy WorldgenRandom
+        // for large-feature seeding in 26.3, regardless of the density noise algorithm.
+        var random = new WorldgenRandom(new LegacyRandomSource(0L));
 
         for (int offsetX = -8; offsetX <= 8; offsetX++)
         {
@@ -316,8 +315,6 @@ public sealed class NoiseBasedChunkGenerator
         CarvingMask carvingMask)
     {
         ChunkPos targetChunk = chunk.GetPos();
-        int minBlockX = targetChunk.GetMinBlockX();
-        int minBlockZ = targetChunk.GetMinBlockZ();
         var position = new BlockPos.MutableBlockPos();
 
         carvingMask.Visit((localX, localZ, bottomY, topY) =>
@@ -326,6 +323,7 @@ public sealed class NoiseBasedChunkGenerator
             int worldZ = targetChunk.GetBlockZ(localZ);
             position.SetX(worldX);
             position.SetZ(worldZ);
+            bool hasGrass = false;
 
             for (int worldY = topY; worldY >= bottomY; worldY--)
             {
@@ -334,8 +332,11 @@ public sealed class NoiseBasedChunkGenerator
                 if (existingState.Is(BlockTags.Uncarvable))
                     continue;
 
-                bool hasGrass = existingState.Is(Blocks.GRASS_BLOCK) ||
-                    existingState.Is(Blocks.MYCELIUM);
+                if (existingState.Is(Blocks.GRASS_BLOCK) ||
+                    existingState.Is(Blocks.MYCELIUM))
+                {
+                    hasGrass = true;
+                }
                 BlockState? carvedState = noiseChunk.Aquifer.ComputeSubstance(
                     worldX,
                     worldY,
