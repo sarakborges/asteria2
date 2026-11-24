@@ -6,22 +6,25 @@ namespace Asteria.World.LevelGen.DensityFunctions;
 /// <summary>
 /// Evaluation context for density samplers, including vanilla point and volume caches.
 /// </summary>
-public sealed class SamplerContext
+public sealed class SamplerContext : IDisposable
 {
     public static readonly SamplerContext EmptyUncached =
-        new(ContextMap.Empty, DensityBufferArena.Global, enableCaches: false);
+        new(ContextMap.Empty, DensityBufferArena.Global, enableCaches: false, isShared: true);
 
     private const int CacheSizeStep = 16;
 
     private readonly ContextMap _userFields;
     private readonly DensityBufferArena _bufferArena;
     private CacheCell[]? _cacheCells;
+    private readonly bool _isShared;
+    private bool _disposed;
 
     private SamplerContext(ContextMap userFields, DensityBufferArena bufferArena, bool enableCaches)
     {
         _userFields = userFields ?? throw new ArgumentNullException(nameof(userFields));
         _bufferArena = bufferArena ?? throw new ArgumentNullException(nameof(bufferArena));
         _cacheCells = enableCaches ? Array.Empty<CacheCell>() : null;
+        _isShared = isShared;
     }
 
     public static Builder CreateBuilder() => new();
@@ -34,12 +37,14 @@ public sealed class SamplerContext
 
     public ScopedDensityBuffer AcquireBuffer(DensityVolume volume)
     {
+        ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(volume);
         return _bufferArena.Acquire(volume.Size());
     }
 
     private CacheCell? GetCacheCell(int cacheId)
     {
+        ThrowIfDisposed();
         if (_cacheCells is null)
             return null;
 
@@ -117,6 +122,33 @@ public sealed class SamplerContext
         public ScopedDensityBuffer? Buffer;
         public long ValueKey;
         public float Value = float.NaN;
+    }
+
+    public void Dispose()
+    {
+        if (_isShared || _disposed)
+            return;
+
+        _disposed = true;
+        if (_cacheCells is null)
+            return;
+
+        foreach (CacheCell cell in _cacheCells)
+        {
+            cell.Buffer?.Close();
+            cell.Buffer = null;
+            cell.Volume = null;
+            cell.Value = float.NaN;
+            cell.ValueKey = 0L;
+        }
+
+        _cacheCells = null;
+    }
+
+    private void ThrowIfDisposed()
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(SamplerContext));
     }
 
     public sealed class Builder
