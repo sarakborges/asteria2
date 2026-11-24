@@ -105,11 +105,21 @@ internal static class StructureEnumChecks
         Require(ReferenceEquals(codec.Parse(ops, encoded).GetOrThrow(), value),
             $"Uncompressed enum codec must round-trip '{serializedName}' by singleton identity.");
 
-        // The compressed branch is selected by DynamicOps.CompressMaps; the regular JSON
-        // ops instance exercises the name branch. The integer IDs are independently
-        // validated against declaration order here.
-        Require(compressedId >= 0,
-            "Compressed enum IDs must be non-negative declaration indices.");
+        DynamicOps<JsonElement> compressedOps = JsonOps.COMPRESSED;
+        JsonElement compressedEncoded = codec.EncodeStart(compressedOps, value).GetOrThrow();
+
+        Require(compressedEncoded.ValueKind == JsonValueKind.Number &&
+                compressedEncoded.GetInt32() == compressedId,
+            $"Compressed enum codec must encode '{serializedName}' with its declaration ID.");
+
+        Require(ReferenceEquals(
+                codec.Parse(compressedOps, compressedEncoded).GetOrThrow(),
+                value),
+            $"Compressed enum codec must round-trip '{serializedName}' by declaration ID.");
+
+        Require(codec.Parse(compressedOps, compressedOps.CreateInt(-1)).IsError &&
+                codec.Parse(compressedOps, compressedOps.CreateInt(compressedId + 100)).IsError,
+            "Compressed enum codec must reject negative and out-of-range declaration IDs.");
     }
 
     private static void Require(bool condition, string message)
