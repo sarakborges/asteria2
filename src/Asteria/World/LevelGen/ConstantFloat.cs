@@ -8,11 +8,10 @@ public sealed record ConstantFloat(float Value) : FloatProvider
     public static ConstantFloat ZERO { get; } = new(0.0f);
 
     public static MapCodec<ConstantFloat> MAP_CODEC { get; } =
-        RecordCodecBuilder.MapCodec<ConstantFloat>(instance =>
-            instance.Group(
-                    Codecs.FLOAT.FieldOf("value")
-                        .ForGetter<ConstantFloat>(static provider => provider.Value))
-                .Apply(instance, static value => Of(value)));
+        Codecs.FLOAT.FieldOf("value")
+            .XMap<ConstantFloat>(
+                static value => Of(value),
+                static provider => provider.Value);
 
     public static MapCodec<FloatProvider> TYPE_CODEC { get; } =
         MAP_CODEC.XMap<FloatProvider>(
