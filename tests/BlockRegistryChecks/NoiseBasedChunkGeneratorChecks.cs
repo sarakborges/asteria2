@@ -475,18 +475,18 @@ internal static class NoiseBasedChunkGeneratorChecks
             chunk,
             _ => Holder<Biome>.Direct(Biomes.PLAINS));
 
-        int carvedAirCount = 0;
+        int changedTerrainCount = 0;
         for (int y = minY; y <= chunk.GetMaxY(); y++)
         for (int x = 0; x < 16; x++)
         for (int z = 0; z < 16; z++)
         {
             BlockState state = chunk.GetBlockState(new BlockPos(x, y, z));
-            if (state.IsAir)
+            if (!ReferenceEquals(state, Blocks.STONE.DefaultState))
             {
                 Require(
                     y >= minY + 2 && y <= protectedMaxY,
                     "Carving must remain inside the vanilla vertical mask bounds and ellipsoid lower-exclusive edge.");
-                carvedAirCount++;
+                changedTerrainCount++;
             }
 
             if (y <= minY + 1 || y > protectedMaxY)
@@ -498,8 +498,8 @@ internal static class NoiseBasedChunkGeneratorChecks
         }
 
         Require(
-            carvedAirCount > 0,
-            "BuildTerrain must run biome carvers and fill the carved positions with the aquifer's air result.");
+            changedTerrainCount > 0,
+            "BuildTerrain must run biome carvers and apply non-null aquifer states to marked positions.");
         Require(
             ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.TERRAIN),
             "The chunk may reach TERRAIN only after the carving pass and mask application complete.");
