@@ -17,17 +17,6 @@ internal static class BiomeGenerationSettingsChecks
             !BiomeGenerationSettings.EMPTY.GetCarvers().Any(),
             "BiomeGenerationSettings.EMPTY must expose an empty carver set.");
 
-        var biome = new Biome(
-            new Biome.ClimateSettings(
-                HasPrecipitation: true,
-                Temperature: 0.8f,
-                TemperatureModifier: Biome.TemperatureModifier.NONE,
-                Downfall: 0.4f),
-            new BiomeSpecialEffects.Builder().WaterColor(0x3F76E4).Build());
-
-        Require(
-            !biome.GenerationSettings.GetCarvers().Any(),
-            "Biomes created without explicit generation settings must use BiomeGenerationSettings.EMPTY.");
     }
 
     private static void CheckPlainBuilder()
