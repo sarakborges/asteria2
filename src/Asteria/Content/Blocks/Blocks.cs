@@ -1,6 +1,7 @@
 using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.Content.Materials;
+using Asteria.Content.Fluids;
 using Asteria.Core;
 using Asteria.Core.Shapes;
 using Asteria.World;
@@ -27,6 +28,26 @@ public static class Blocks
     public static Block GRASS_BLOCK { get; } = new(
         BlockProperties.Of().MapColor(MapColor.GRASS).Strength(0.6f));
 
+    public static Block WATER { get; } = new LiquidBlock(
+        CreateLiquidProperties(MapColor.WATER),
+        Fluids.WATER);
+
+    public static Block LAVA { get; } = new LiquidBlock(
+        CreateLiquidProperties(MapColor.FIRE),
+        Fluids.LAVA);
+
+    private static BlockProperties CreateLiquidProperties(MapColor mapColor)
+    {
+#pragma warning disable CS0618
+        return BlockProperties.Of()
+            .MapColor(mapColor)
+            .Strength(100.0f)
+            .Replaceable()
+            .NoCollision()
+            .Liquid();
+#pragma warning restore CS0618
+    }
+
     internal static void RegisterAll()
     {
         Register("air", AIR);
@@ -34,6 +55,8 @@ public static class Blocks
         Register("stone", STONE);
         Register("dirt", DIRT);
         Register("grass_block", GRASS_BLOCK);
+        Register("water", WATER);
+        Register("lava", LAVA);
     }
 
     private static void Register(string path, Block block) =>

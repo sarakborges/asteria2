@@ -63,7 +63,7 @@ internal static class FluidChecks
 
     public static void Run()
     {
-        Require(BuiltInRegistries.Fluid.Count == 1, "The built-in fluid registry must contain the empty fluid.");
+        Require(BuiltInRegistries.Fluid.Count == 3, "The built-in fluid registry must contain empty, water and lava.");
         Require(
             FluidTags.Water.Registry == BuiltInRegistries.Fluid.Key &&
             FluidTags.Water.Location == ResourceLocation.Parse("asteria:water"),
@@ -75,8 +75,8 @@ internal static class FluidChecks
             ReferenceEquals(Fluids.EMPTY.BuiltInRegistryHolder?.Value, Fluids.EMPTY),
             "The empty fluid must retain its intrusive registry holder.");
         Require(
-            Fluid.FluidStateRegistry.Count == 1,
-            "The empty fluid contributes exactly one singleton state.");
+            Fluid.FluidStateRegistry.Count == 3,
+            "The empty, water and lava source fluids contribute one singleton state each.");
         Require(
             Fluid.FluidStateRegistry.GetId(Fluids.EMPTY.DefaultFluidState) == 0,
             "The empty fluid state must receive the first fluid-state ID.");
@@ -99,6 +99,22 @@ internal static class FluidChecks
             empty.GetAABB(EmptyBlockGetter.Instance, BlockPos.Zero) is null,
             "An empty fluid must not have a bounding box.");
         Require(!empty.IsFull(), "The empty fluid state must not be full.");
+
+        CheckBuiltInSourceFluid(
+            Fluids.WATER,
+            FluidIds.WATER,
+            Blocks.WATER,
+            "water");
+        CheckBuiltInSourceFluid(
+            Fluids.LAVA,
+            FluidIds.LAVA,
+            Blocks.LAVA,
+            "lava");
+
+        Require(
+            Fluid.FluidStateRegistry.GetId(Fluids.WATER.DefaultFluidState) == 1 &&
+            Fluid.FluidStateRegistry.GetId(Fluids.LAVA.DefaultFluidState) == 2,
+            "Built-in fluid states must preserve the registered EMPTY/WATER/LAVA ID order.");
 
         var fluid = new TestFluid();
         _tickFluid = fluid;
@@ -142,6 +158,50 @@ internal static class FluidChecks
             "A fluid state must reject source checks against another fluid type.");
 
         WaterloggedBlockState = new FluidBlock(defaultState).DefaultState;
+    }
+
+    private static void CheckBuiltInSourceFluid(
+        SourceFluid fluid,
+        ResourceLocation fluidId,
+        Block block,
+        string name)
+    {
+        Require(
+            ReferenceEquals(BuiltInRegistries.Fluid.GetValue(fluidId), fluid) &&
+            ReferenceEquals(fluid.BuiltInRegistryHolder?.Value, fluid),
+            $"The built-in {name} fluid must be registered with its intrusive holder.");
+
+        FluidState state = fluid.DefaultFluidState;
+        Require(
+            state.IsSource() &&
+            state.IsSourceOfType(fluid) &&
+            state.GetAmount() == FluidState.AmountFull &&
+            state.IsFull(),
+            $"The built-in {name} fluid must expose a full source state.");
+
+        Require(
+            Math.Abs(state.GetOwnHeight() - (8.0f / 9.0f)) < 1.0E-6f &&
+            Math.Abs(state.GetHeight(EmptyBlockGetter.Instance, BlockPos.Zero) - (8.0f / 9.0f)) < 1.0E-6f,
+            $"The built-in {name} fluid must use the vanilla source-fluid height of amount / 9.");
+
+        Require(
+            Math.Abs(state.GetShape(EmptyBlockGetter.Instance, BlockPos.Zero).Max(Direction.Axis.Y) - (8.0 / 9.0)) < 1.0E-6,
+            $"The built-in {name} source-fluid shape must use its vanilla height.");
+
+        BlockState blockState = block.DefaultState;
+        Require(
+            blockState.IsLiquid &&
+            ReferenceEquals(blockState.GetFluidState().Fluid, fluid),
+            $"The built-in {name} liquid block must expose the corresponding source FluidState.");
+
+        Require(
+            blockState.GetShape(EmptyBlockGetter.Instance, BlockPos.Zero).IsEmpty() &&
+            blockState.GetCollisionShape(EmptyBlockGetter.Instance, BlockPos.Zero).IsEmpty(),
+            $"The built-in {name} liquid block must not have a collision or block shape.");
+
+        Require(
+            blockState.IsReplaceable,
+            $"The built-in {name} liquid block must be replaceable.");
     }
 
     public static void CheckChunkSectionIntegration()

@@ -991,3 +991,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Corrigido o bootstrap dos três perfis de terreno do Overworld: `final_density` agora registra apenas o `min(post_processed, noodle)` definido pelo grafo vanilla.
 - Removida a soma implícita de `SimpleDensityFunction.BEARDIFIER`. Em 26.3, o beardifier deixou de ser acrescentado implicitamente ao `final_density`; a função continua disponível para inclusão explícita quando o grafo de dados exigir.
 - Atualizados os testes dos perfis normal, large-biomes e amplified para verificar a estrutura sem a soma implícita.
+
+
+## Incremento — estados fonte de água e lava (24/11/2026)
+
+- Registrados os tipos de fluido fonte WATER e LAVA, mantendo EMPTY como primeiro ID do registry e adicionando os dois tipos na ordem esperada para este slice.
+- Estados fonte têm quantidade 8, isSource=true, altura própria amount / 9, altura 1 quando o mesmo fluido está acima e shape calculado pela altura contextual.
+- Registrados os blocos líquidos WATER e LAVA, com estado de fluido correspondente, propriedades liquid/replaceable/no-collision e shape de bloco vazio.
+- Testes cobrem holders e IDs dos tipos/estados, source/amount/height/shape e a associação BlockState para FluidState.
+- Escopo explícito: apenas variantes fonte estão portadas. Estados fluidos, espalhamento, ticks e conversão de fonte ainda não foram portados; estes registros fecham as dependências de estado necessárias ao próximo port do NoiseBasedAquifer, não implementam a simulação completa de fluidos.
