@@ -130,7 +130,7 @@ public abstract class LayerLightSectionStorage<TMap>
         }
     }
 
-    protected DataLayer CreateDataLayer(long sectionNode) =>
+    protected virtual DataLayer CreateDataLayer(long sectionNode) =>
         _queuedSections.TryGetValue(sectionNode, out DataLayer? queued)
             ? queued
             : new DataLayer();
