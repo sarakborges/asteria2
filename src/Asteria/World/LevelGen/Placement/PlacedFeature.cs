@@ -1,6 +1,8 @@
 using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Serialization;
+using Asteria.World.Level;
+using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.Features;
 
 namespace Asteria.World.LevelGen.Placement;
@@ -23,6 +25,13 @@ public sealed class PlacedFeature
         ArgumentNullException.ThrowIfNull(placement);
         Placement = Array.AsReadOnly(placement.ToArray());
     }
+
+    public bool Place(
+        OverworldWorld level,
+        NoiseBasedChunkGenerator generator,
+        IRandomSource random,
+        BlockPos origin) =>
+        new FeaturePlacer(level, generator).Place(this, random, origin);
 
     public IEnumerable<Holder<Feature>> GetFeatures()
     {
