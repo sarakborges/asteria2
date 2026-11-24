@@ -11,7 +11,7 @@ namespace Asteria.World.LevelGen.Features.StateProviders;
 /// Supplies a block state for one feature placement position.
 /// The typed codec, state-or-provider shorthand and holder codec follow Minecraft Java 26.3.
 /// </summary>
-public interface BlockStateProvider
+public abstract record BlockStateProvider
 {
     Codec<BlockStateProvider> TYPED_CODEC { get; } = CreateTypedCodec();
 
@@ -27,7 +27,7 @@ public interface BlockStateProvider
             Registries.BLOCK_STATE_PROVIDER,
             DIRECT_CODEC);
 
-    BlockState GetState(BlockGetter level, IRandomSource random, BlockPos position);
+    public abstract BlockState GetState(BlockGetter level, IRandomSource random, BlockPos position);
 
     BlockState? GetOptionalState(
         BlockGetter level,
@@ -35,7 +35,7 @@ public interface BlockStateProvider
         BlockPos position) =>
         GetState(level, random, position);
 
-    MapCodec<BlockStateProvider> Codec();
+    public abstract MapCodec<BlockStateProvider> Codec();
 
     static SimpleStateProvider Of(BlockState state) =>
         new(state ?? throw new ArgumentNullException(nameof(state)));
