@@ -17,17 +17,21 @@ public sealed class MaterialRuleContext
     public int BlockZ { get; private set; }
     public int SurfaceGradientX { get; private set; }
     public int SurfaceGradientZ { get; private set; }
-    public int WaterHeight { get; private set; }
+    public int WaterHeight { get; private set; } = int.MinValue;
     public int StoneDepthBelow { get; private set; }
     public int StoneDepthAbove { get; private set; }
     public int SurfaceDepth { get; private set; }
+    public double SurfaceSecondary { get; private set; }
+    public int MinSurfaceLevel { get; private set; } = int.MaxValue;
 
     public void UpdateXZ(
         int blockX,
         int blockZ,
         int surfaceGradientX,
         int surfaceGradientZ,
-        int surfaceDepth = 0)
+        int surfaceDepth = 0,
+        double surfaceSecondary = 0.0,
+        int minSurfaceLevel = int.MaxValue)
     {
         _lastUpdateXZ = unchecked(_lastUpdateXZ + 1);
         _lastUpdateY = unchecked(_lastUpdateY + 1);
@@ -36,6 +40,8 @@ public sealed class MaterialRuleContext
         SurfaceGradientX = surfaceGradientX;
         SurfaceGradientZ = surfaceGradientZ;
         SurfaceDepth = surfaceDepth;
+        SurfaceSecondary = surfaceSecondary;
+        MinSurfaceLevel = minSurfaceLevel;
     }
 
     /// <summary>Creates an XZ-scoped evaluator invalidated only by column updates.</summary>

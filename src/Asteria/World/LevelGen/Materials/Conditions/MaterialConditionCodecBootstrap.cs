@@ -4,15 +4,18 @@ using Asteria.Serialization;
 
 namespace Asteria.World.LevelGen.Materials.Conditions;
 
-/// <summary>Registers built-in material-condition map codecs in vanilla bootstrap order.</summary>
+/// <summary>Registers built-in material-condition map codecs in Minecraft Java 26.3 order.</summary>
 internal static class MaterialConditionCodecBootstrap
 {
     internal static void RegisterAll(Registry<MapCodec<MaterialCondition>> registry)
     {
         ArgumentNullException.ThrowIfNull(registry);
+        Register(registry, "water", WaterCondition.TYPE_CODEC);
         Register(registry, "steep", SteepCondition.TYPE_CODEC);
         Register(registry, "not", NotCondition.TYPE_CODEC);
         Register(registry, "hole", HoleCondition.TYPE_CODEC);
+        Register(registry, "above_preliminary_surface", AbovePreliminarySurfaceCondition.TYPE_CODEC);
+        Register(registry, "stone_depth", StoneDepthCondition.TYPE_CODEC);
     }
 
     private static void Register(
