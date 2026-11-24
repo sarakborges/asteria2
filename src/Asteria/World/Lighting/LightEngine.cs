@@ -12,7 +12,31 @@ public abstract class LightEngine
 {
     public abstract void CheckBlock(BlockPos position);
 
+    public abstract bool HasLightWork();
+
+    public abstract int RunLightUpdates();
+
     public abstract void UpdateSectionStatus(SectionPos sectionPosition, bool sectionEmpty);
+
+    public abstract void SetLightEnabled(ChunkPos position, bool enabled);
+
+    public abstract override void PropagateLightSources(ChunkPos position);
+
+    public abstract LayerLightEventListener GetLayerListener();
+
+    public abstract DataLayer? GetDataLayerData(SectionPos position);
+
+    public abstract int GetLightValue(BlockPos position);
+
+    public abstract void QueueSectionData(long sectionNode, DataLayer? data);
+
+    public abstract void RetainData(ChunkPos position, bool retain);
+
+    public abstract string GetDebugData(long sectionNode);
+
+    public abstract LightSectionType GetDebugSectionType(long sectionNode);
+
+    public abstract bool LightOnInColumn(long sectionZeroNode);
 
     public const int MAX_LEVEL = 15;
     protected const int MIN_OPACITY = 1;
@@ -112,10 +136,10 @@ public abstract class LightEngine<TMap, TStorage> : LightEngine, LayerLightEvent
         _blockNodesToCheck.Add(position.AsLong());
     }
 
-    public void QueueSectionData(long sectionNode, DataLayer? data) =>
+    public override void QueueSectionData(long sectionNode, DataLayer? data) =>
         Storage.QueueSectionData(sectionNode, data);
 
-    public void RetainData(ChunkPos position, bool retain)
+    public override void RetainData(ChunkPos position, bool retain)
     {
         Storage.RetainData(SectionPos.GetZeroNode(position.X, position.Z), retain);
     }
@@ -123,10 +147,10 @@ public abstract class LightEngine<TMap, TStorage> : LightEngine, LayerLightEvent
     public override void UpdateSectionStatus(SectionPos sectionPosition, bool sectionEmpty) =>
         Storage.UpdateSectionStatus(sectionPosition.AsLong(), sectionEmpty);
 
-    public virtual void SetLightEnabled(ChunkPos position, bool enabled) =>
+    public override void SetLightEnabled(ChunkPos position, bool enabled) =>
         Storage.SetLightEnabled(SectionPos.GetZeroNode(position.X, position.Z), enabled);
 
-    public int RunLightUpdates()
+    public override int RunLightUpdates()
     {
         foreach (long blockNode in _blockNodesToCheck)
             CheckNode(blockNode);
@@ -191,29 +215,34 @@ public abstract class LightEngine<TMap, TStorage> : LightEngine, LayerLightEvent
         _increaseQueue.Enqueue(increaseData);
     }
 
-    public bool HasLightWork() =>
+    public override bool HasLightWork() =>
         Storage.HasInconsistencies() ||
         _blockNodesToCheck.Count > 0 ||
         _decreaseQueue.Count > 0 ||
         _increaseQueue.Count > 0;
 
-    public DataLayer? GetDataLayerData(SectionPos position) =>
+    public override LayerLightEventListener GetLayerListener() => this;
+
+    public override DataLayer? GetDataLayerData(SectionPos position) =>
         Storage.GetDataLayerData(position.AsLong());
 
-    public int GetLightValue(BlockPos position) =>
+    public override int GetLightValue(BlockPos position) =>
         Storage.GetLightValueForEngine(position.AsLong());
 
-    public string GetDebugData(long sectionNode) =>
+    public override string GetDebugData(long sectionNode) =>
         Storage.GetDebugSectionType(sectionNode) switch
         {
-            LayerLightSectionStorage<TMap>.SectionType.Empty => "2",
-            LayerLightSectionStorage<TMap>.SectionType.LightOnly => "1",
-            LayerLightSectionStorage<TMap>.SectionType.LightAndData => "0",
+            LightSectionType.Empty => "2",
+            LightSectionType.LightOnly => "1",
+            LightSectionType.LightAndData => "0",
             _ => throw new ArgumentOutOfRangeException(nameof(sectionNode))
         };
 
-    public LayerLightSectionStorage<TMap>.SectionType GetDebugSectionType(long sectionNode) =>
+    public override LightSectionType GetDebugSectionType(long sectionNode) =>
         Storage.GetDebugSectionType(sectionNode);
+
+    public override bool LightOnInColumn(long sectionZeroNode) =>
+        Storage.LightOnInColumn(sectionZeroNode);
 
     protected BlockState GetState(BlockPos position)
     {

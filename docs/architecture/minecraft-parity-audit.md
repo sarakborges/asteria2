@@ -1415,3 +1415,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - A rotina de fontes usa `ChunkSkyLightSources` de cada `LightChunk`; vizinhos ausentes usam a estrutura vazia do motor, sem forçar chunk generation. O motor compartilha as filas e o cache comum já portados.
 - Testes de integração inicializam as fontes de céu em chunks abertas e verificam luz 15 no corpo, nas seções inferiores e acima do topo; também cobrem coordenadas negativas e vizinhos ausentes.
 - Fonte: `SkyLightEngine.java` de Minecraft Java 26.3. A agregação SKY/BLOCK e o lifecycle que alimenta os engines ainda precisam ser concluídos.
+
+
+## Incremento — LevelLightEngine 26.3 (24/11/2026)
+
+- Portado o coordenador que reúne `BlockLightEngine` e `SkyLightEngine`, despacha os eventos de bloco/seção/coluna, executa as atualizações na ordem BLOCK e SKY e oferece listeners reais ou dummy por canal.
+- Portada a API de integração: debug por canal, tipos de seção, filas de dados serializados, retenção de dados, brilho bruto como máximo entre bloco e céu após sky dampening, verificação de coluna ativa e faixa de seções com padding vertical de um nível em cada extremo.
+- Para representar `LayerLightSectionStorage.SectionType` sem duplicar tipos genéricos em C#, a enumeração foi extraída para `LightSectionType`; os valores e a semântica permanecem `Empty`, `LightOnly`, `LightAndData`.
+- Testes cobrem a instância `EMPTY`, canais desabilitados, listeners dummy, bounds/padding, operações no-op, combinação SKY/BLOCK, brilho bruto e atenuação, debug state, light column e dados de seção enfileirados.
+- Ainda não existe pipeline de cliente/renderização consumindo `LightSection`/`DataLayer`; esta etapa completa o coordenador comum do sistema de iluminação sem reinstalar um renderer improvisado.

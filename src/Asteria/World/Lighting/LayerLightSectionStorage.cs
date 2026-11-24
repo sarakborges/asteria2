@@ -320,7 +320,7 @@ public abstract class LayerLightSectionStorage<TMap>
         SectionsAffectedByLightUpdates.Clear();
     }
 
-    public SectionType GetDebugSectionType(long sectionNode) =>
+    public LightSectionType GetDebugLightSectionType(long sectionNode) =>
         SectionState.GetType(SectionStates.GetValueOrDefault(sectionNode));
 
     protected byte GetSectionState(long sectionNode) =>
@@ -353,21 +353,15 @@ public abstract class LayerLightSectionStorage<TMap>
         public static int GetNeighborCount(byte state) =>
             state & NeighborCountBits;
 
-        public static SectionType GetType(byte state)
+        public static LightSectionType GetType(byte state)
         {
             if (state == Empty)
-                return SectionType.Empty;
+                return LightSectionType.Empty;
 
             return ContainsData(state)
-                ? SectionType.LightAndData
-                : SectionType.LightOnly;
+                ? LightSectionType.LightAndData
+                : LightSectionType.LightOnly;
         }
     }
 
-    public enum SectionType
-    {
-        Empty,
-        LightOnly,
-        LightAndData
-    }
 }
