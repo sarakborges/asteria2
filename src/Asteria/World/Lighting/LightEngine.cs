@@ -255,6 +255,8 @@ public abstract class LightEngine<TMap, TStorage> : LightEngine, LayerLightEvent
         Array.Clear(_lastChunks);
     }
 
+    public abstract void PropagateLightSources(ChunkPos position);
+
     protected abstract void CheckNode(long blockNode);
 
     protected abstract void PropagateIncrease(long fromNode, long increaseData, int fromLevel);
