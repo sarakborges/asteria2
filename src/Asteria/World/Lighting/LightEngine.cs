@@ -8,30 +8,11 @@ namespace Asteria.World.Lighting;
 /// <summary>
 /// Common contract and shape rules shared by the block and sky light engines.
 /// </summary>
-public abstract class LightEngine : LayerLightEventListener
+public abstract class LightEngine
 {
     public abstract void CheckBlock(BlockPos position);
 
-    public abstract bool HasLightWork();
-
-    public abstract int RunLightUpdates();
-
     public abstract void UpdateSectionStatus(SectionPos sectionPosition, bool sectionEmpty);
-
-    public abstract void SetLightEnabled(ChunkPos position, bool enabled);
-
-    public abstract void PropagateLightSources(ChunkPos position);
-
-    public abstract DataLayer? GetDataLayerData(SectionPos position);
-
-    public abstract int GetLightValue(BlockPos position);
-
-    public abstract void QueueSectionData(long sectionNode, DataLayer? data);
-
-    public abstract void RetainData(ChunkPos position, bool retain);
-
-    public abstract string GetDebugData(long sectionNode);
-
 
     public const int MAX_LEVEL = 15;
     protected const int MIN_OPACITY = 1;
@@ -96,10 +77,7 @@ public abstract class LightEngine : LayerLightEventListener
     }
 }
 
-/// <summary>
-/// Queue-based light propagation shared by the SKY and BLOCK specializations.
-/// </summary>
-public abstract class LightEngine<TMap, TStorage> : LightEngine
+public abstract class LightEngine<TMap, TStorage> : LightEngine, LayerLightEventListener
     where TMap : DataLayerStorageMap<TMap>
     where TStorage : LayerLightSectionStorage<TMap>
 {
@@ -134,10 +112,10 @@ public abstract class LightEngine<TMap, TStorage> : LightEngine
         _blockNodesToCheck.Add(position.AsLong());
     }
 
-    public override void QueueSectionData(long sectionNode, DataLayer? data) =>
+    public void QueueSectionData(long sectionNode, DataLayer? data) =>
         Storage.QueueSectionData(sectionNode, data);
 
-    public override void RetainData(ChunkPos position, bool retain)
+    public void RetainData(ChunkPos position, bool retain)
     {
         Storage.RetainData(SectionPos.GetZeroNode(position.X, position.Z), retain);
     }
@@ -145,10 +123,10 @@ public abstract class LightEngine<TMap, TStorage> : LightEngine
     public override void UpdateSectionStatus(SectionPos sectionPosition, bool sectionEmpty) =>
         Storage.UpdateSectionStatus(sectionPosition.AsLong(), sectionEmpty);
 
-    public override void SetLightEnabled(ChunkPos position, bool enabled) =>
+    public virtual void SetLightEnabled(ChunkPos position, bool enabled) =>
         Storage.SetLightEnabled(SectionPos.GetZeroNode(position.X, position.Z), enabled);
 
-    public override int RunLightUpdates()
+    public int RunLightUpdates()
     {
         foreach (long blockNode in _blockNodesToCheck)
             CheckNode(blockNode);
@@ -213,19 +191,19 @@ public abstract class LightEngine<TMap, TStorage> : LightEngine
         _increaseQueue.Enqueue(increaseData);
     }
 
-    public override bool HasLightWork() =>
+    public bool HasLightWork() =>
         Storage.HasInconsistencies() ||
         _blockNodesToCheck.Count > 0 ||
         _decreaseQueue.Count > 0 ||
         _increaseQueue.Count > 0;
 
-    public override DataLayer? GetDataLayerData(SectionPos position) =>
+    public DataLayer? GetDataLayerData(SectionPos position) =>
         Storage.GetDataLayerData(position.AsLong());
 
-    public override int GetLightValue(BlockPos position) =>
+    public int GetLightValue(BlockPos position) =>
         Storage.GetLightValueForEngine(position.AsLong());
 
-    public override string GetDebugData(long sectionNode) =>
+    public string GetDebugData(long sectionNode) =>
         Storage.GetDebugSectionType(sectionNode) switch
         {
             LayerLightSectionStorage<TMap>.SectionType.Empty => "2",
