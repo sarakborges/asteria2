@@ -126,11 +126,11 @@ public sealed class DataLayer
 
     public string LayerToString(int layer)
     {
-        _ = layer;
         var builder = new StringBuilder();
+        int startIndex = unchecked(layer << 8);
         for (int index = 0; index < 256; index++)
         {
-            builder.Append(Get(index).ToString("x", CultureInfo.InvariantCulture));
+            builder.Append(Get(unchecked(startIndex + index)).ToString("x", CultureInfo.InvariantCulture));
             if ((index & 15) == 15)
                 builder.Append('\n');
         }
