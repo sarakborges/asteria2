@@ -108,6 +108,16 @@ internal static class WorldCarverChecks
         Require(
             !WorldCarver.CanReach(ChunkPos.Zero, 100.0, 100.0, currentStep: 0, totalSteps: 10, thickness: 1.0f),
             "A distant carver position outside its remaining reach must be rejected.");
+        Require(
+            WorldCarver.CanReach(
+                ChunkPos.Zero,
+                x: 65_544.0,
+                z: 8.0,
+                currentStep: 0,
+                totalSteps: 65_536,
+                thickness: 1.0f),
+            "CanReach must square remaining steps as double and avoid integer overflow on long paths.");
+
 
         var output = new RecordingCarverOutput(0, 15);
         WorldCarver.CarveEllipsoid(
