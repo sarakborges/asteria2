@@ -39,7 +39,7 @@ public sealed record UniformHeight(
         int maximum = Maximum.ResolveY(context);
         if (minimum > maximum)
         {
-            long key = unchecked(((long)minimum << 32) | (uint)maximum);
+            long key = unchecked(((long)minimum << 32) | maximum);
             bool shouldWarn;
             lock (_warningLock)
                 shouldWarn = _warnedFor.Add(key);
