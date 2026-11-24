@@ -25,6 +25,8 @@ using BuiltInDensityFunctions = Asteria.World.LevelGen.BuiltInDensityFunctions;
 using Asteria.World.LevelGen.Materials.Rules;
 using Asteria.World.LevelGen.Materials.Conditions;
 using Asteria.World.LevelGen;
+using Asteria.World.LevelGen.Features;
+using Asteria.World.LevelGen.Placement;
 
 namespace Asteria.Content.Registries;
 
@@ -82,6 +84,26 @@ public static class BuiltInRegistries
         RegisterSimple<WorldCarver>(
             Registries.CARVER.Location,
             static () => Carvers.RegisterAll());
+
+    public static Registry<MapCodec<Feature>> FeatureType { get; } =
+        RegisterSimple<MapCodec<Feature>>(
+            Registries.FEATURE_TYPE.Location,
+            static () => { });
+
+    public static Registry<Feature> Feature { get; } =
+        RegisterSimple<Feature>(
+            Registries.FEATURE.Location,
+            static () => { });
+
+    public static Registry<MapCodec<PlacementModifier>> PlacementModifierType { get; } =
+        RegisterSimple<MapCodec<PlacementModifier>>(
+            Registries.PLACEMENT_MODIFIER_TYPE.Location,
+            static () => { });
+
+    public static Registry<PlacedFeature> PlacedFeature { get; } =
+        RegisterSimple<PlacedFeature>(
+            Registries.PLACED_FEATURE.Location,
+            static () => { });
 
     public static DefaultedRegistry<Biome> Biome { get; } =
         RegisterDefaultedWithIntrusiveHolders<Biome>(
