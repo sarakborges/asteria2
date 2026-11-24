@@ -1282,3 +1282,9 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Fonte: `mj41/mc26-data`, branch `mc-26.3`, `data/minecraft/tags/block/blocks_motion*.json`, `dirt.json`, `grass_blocks.json`, `sand.json`, `terracotta.json`, `ice.json`, `ores.json`, `copper_ores.json` e `iron_ores.json`.
 
 - Incremento adicional: os checks de NoiseBasedChunkGenerator deixaram de substituir as tags por uma lista sintética contendo somente STONE. O harness agora roda com o mesmo conjunto de tags inicializado pelo bootstrap; o teste de reload de tags restaura o conjunto built-in ao terminar.
+
+## Incremento — inicialização do Overworld no runtime Godot (24/11/2026)
+
+- `Main._Ready` mantém as verificações de bootstrap e então cria um `OverworldWorld` com seed fixa de desenvolvimento `132456789`, gerando a chunk `[0, 0]` até `TERRAIN`.
+- A referência do mundo fica exposta na propriedade `Main.World`; o log registra seed, posição, total de seções, seções não vazias e índice de status.
+- README atualizado para distinguir geração real de chunk do estado ainda não jogável. A cena ainda não renderiza blocos nem cria jogador/física.
