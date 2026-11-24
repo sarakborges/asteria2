@@ -201,6 +201,127 @@ internal static class BuiltInDensityFunctionChecks
         Require(
             offsetNullRejected && factorNullRejected && depthNullRejected,
             "Overworld terrain density helpers must reject null density-function inputs.");
+
+        CheckPreliminarySurfaceLevel(amplified: false, expectedTopStart: 240, expectedTopEnd: 256, expectedBottomTarget: 0.1171875f);
+        CheckPreliminarySurfaceLevel(amplified: true, expectedTopStart: 304, expectedTopEnd: 320, expectedBottomTarget: 0.4f);
+    }
+
+    private static void CheckPreliminarySurfaceLevel(
+        bool amplified,
+        int expectedTopStart,
+        int expectedTopEnd,
+        float expectedBottomTarget)
+    {
+        DensityFunction offset = DensityFunctions.Constant(0.125f);
+        DensityFunction factor = DensityFunctions.Constant(2.0f);
+
+        DensityFunction function = BuiltInDensityFunctions.PreliminarySurfaceLevel(
+            offset,
+            factor,
+            amplified);
+
+        Require(
+            function is FindTopSurfaceFunction
+            {
+                LowerBound: -64,
+                CellHeight: 8,
+                UpperBound: ClampFunction { Min: -40.0f, Max: 320.0f }
+            },
+            "preliminary_surface_level must use find_top_surface with lower bound -64, cell height 8, and the clamped upper-bound function.");
+
+        if (function is not FindTopSurfaceFunction surface ||
+            surface.Density is not BinaryFunction
+            {
+                Operation: BinaryFunction.Type.ADD,
+                Right: ConstantFunction { Value: -0.390625f },
+                Left: LerpFunction
+                {
+                    Alpha: GradientFunction
+                    {
+                        Axis: var bottomAxis,
+                        Tiling: TilingMode.CLAMP_TO_EDGE,
+                        FromCoordinate: -64,
+                        ToCoordinate: -40,
+                        FromValue: 0.0f,
+                        ToValue: 1.0f
+                    },
+                    First: ConstantFunction { Value: var bottomTarget },
+                    Second: LerpFunction
+                    {
+                        Alpha: GradientFunction
+                        {
+                            Axis: var topAxis,
+                            Tiling: TilingMode.CLAMP_TO_EDGE,
+                            FromCoordinate: var topStart,
+                            ToCoordinate: var topEnd,
+                            FromValue: 1.0f,
+                            ToValue: 0.0f
+                        },
+                        First: ConstantFunction { Value: -0.078125f },
+                        Second: ClampFunction
+                        {
+                            Min: -64.0f,
+                            Max: 64.0f,
+                            Input: BinaryFunction
+                            {
+                                Operation: BinaryFunction.Type.ADD,
+                                Right: ConstantFunction { Value: -0.703125f },
+                                Left: BinaryFunction
+                                {
+                                    Operation: BinaryFunction.Type.MUL,
+                                    Right: ConstantFunction { Value: 4.0f },
+                                    Left: UnaryFunction
+                                    {
+                                        Operation: UnaryFunction.Type.QUARTER_NEGATIVE,
+                                        Input: BinaryFunction
+                                        {
+                                            Operation: BinaryFunction.Type.MUL,
+                                            Left: BinaryFunction { Operation: BinaryFunction.Type.ADD },
+                                            Right: ConstantFunction { Value: 2.0f }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } ||
+            !ReferenceEquals(bottomAxis, Direction.Axis.Y) ||
+            !ReferenceEquals(topAxis, Direction.Axis.Y) ||
+            topStart != expectedTopStart ||
+            topEnd != expectedTopEnd ||
+            bottomTarget != expectedBottomTarget)
+        {
+            throw new InvalidOperationException(
+                $"The {(amplified ? "amplified" : "normal")} preliminary surface-level function must preserve vanilla slide order, Y ranges and targets.");
+        }
+
+        Require(
+            surface.UpperBound is ClampFunction
+            {
+                Input: BinaryFunction
+                {
+                    Operation: BinaryFunction.Type.ADD,
+                    Left: BinaryFunction
+                    {
+                        Operation: BinaryFunction.Type.MUL,
+                        Right: ConstantFunction { Value: -128.0f },
+                        Left: BinaryFunction
+                        {
+                            Operation: BinaryFunction.Type.SUB,
+                            Left: BinaryFunction
+                            {
+                                Operation: BinaryFunction.Type.DIV,
+                                Left: ConstantFunction { Value: 0.2734375f },
+                                Right: ConstantFunction { Value: 2.0f }
+                            },
+                            Right: ConstantFunction { Value: 0.125f }
+                        }
+                    },
+                    Right: ConstantFunction { Value: 128.0f }
+                }
+            },
+            "preliminary_surface_level upper bound must preserve the vanilla remap expression and constants.");
     }
 
     private static void CheckShiftFunctions()
