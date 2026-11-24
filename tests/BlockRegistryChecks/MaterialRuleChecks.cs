@@ -53,7 +53,7 @@ internal static class MaterialRuleChecks
         JsonElement encoded = MaterialRule.CODEC.EncodeStart(ops, rule).GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "block" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:block" &&
             ops.Get(encoded, "result_state").GetOrThrow().GetString() == "asteria:stone",
             "BlockRule must serialize with the vanilla block discriminator and result_state field.");
 
@@ -79,7 +79,7 @@ internal static class MaterialRuleChecks
         JsonElement encoded = MaterialRule.CODEC.EncodeStart(ops, rule).GetOrThrow();
 
         Require(
-            ops.Get(encoded, "type").GetOrThrow().GetString() == "sequence" &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:sequence" &&
             ops.Get(encoded, "sequence").GetOrThrow().GetArrayLength() == 2,
             "SequenceRule must serialize its ordered children under the vanilla sequence field.");
 
