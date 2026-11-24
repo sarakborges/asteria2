@@ -27,9 +27,6 @@ public static class EnvironmentAttributes
     public static readonly EnvironmentAttribute<bool> WATER_EVAPORATES = Boolean(false, true);
     public static readonly EnvironmentAttribute<bool> FAST_LAVA = Boolean(false, true, false);
     public static readonly EnvironmentAttribute<bool> INCREASED_FIRE_BURNOUT = Boolean(false);
-    public static readonly EnvironmentAttribute<bool> MONSTERS_BURN = Boolean(false);
-    public static readonly EnvironmentAttribute<float> CREATURE_WORLD_GEN_SPAWN_PROBABILITY =
-        Float(0.1F, false, AttributeRange<float>.UnitFloatEpsilon);
 
     public static readonly EnvironmentAttribute<IReadOnlyList<AmbientParticle>> AMBIENT_PARTICLES =
         EnvironmentAttribute<IReadOnlyList<AmbientParticle>>.CreateBuilder(AttributeTypes.AMBIENT_PARTICLES)
@@ -55,8 +52,6 @@ public static class EnvironmentAttributes
         Register("gameplay/water_evaporates", WATER_EVAPORATES);
         Register("gameplay/fast_lava", FAST_LAVA);
         Register("gameplay/increased_fire_burnout", INCREASED_FIRE_BURNOUT);
-        Register("gameplay/monsters_burn", MONSTERS_BURN);
-        Register("gameplay/creature_world_gen_spawn_probability", CREATURE_WORLD_GEN_SPAWN_PROBABILITY);
         Register("visual/ambient_particles", AMBIENT_PARTICLES);
     }
 

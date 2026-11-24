@@ -550,14 +550,11 @@ internal static class EnvironmentAttributeChecks
     {
         Require(BuiltInRegistries.EnvironmentAttribute.Location == ResourceLocation.Parse("asteria:environment_attribute"),
             "The environment-attribute registry must use the Asteria key.");
-        Require(BuiltInRegistries.EnvironmentAttribute.Count == 19,
+        Require(BuiltInRegistries.EnvironmentAttribute.Count == 17,
             "The registry must contain only generic environmental definitions within the product scope.");
         Require(ReferenceEquals(
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:visual/fog_end_distance")),
                 EnvironmentAttributes.FOG_END_DISTANCE) &&
-            ReferenceEquals(
-                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/creature_world_gen_spawn_probability")),
-                EnvironmentAttributes.CREATURE_WORLD_GEN_SPAWN_PROBABILITY) &&
             ReferenceEquals(
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:visual/ambient_particles")),
                 EnvironmentAttributes.AMBIENT_PARTICLES),
@@ -568,8 +565,10 @@ internal static class EnvironmentAttributeChecks
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:visual/default_dripstone_particle")) is null &&
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/can_start_raid")) is null &&
                 BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/surface_slime_spawn_chance")) is null &&
-                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/can_pillager_patrol_spawn")) is null,
-            "Audio, bed, raid/illager, slime and object-specific definitions must not enter the generic environment registry.");
+                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/can_pillager_patrol_spawn")) is null &&
+                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/monsters_burn")) is null &&
+                BuiltInRegistries.EnvironmentAttribute.GetValue(ResourceLocation.Parse("asteria:gameplay/creature_world_gen_spawn_probability")) is null,
+            "Audio, bed, mob, raid/illager, slime and object-specific definitions must not enter the generic environment registry.");
         Require(EnvironmentAttributes.AMBIENT_PARTICLES.DefaultValue.Count == 0 &&
                 EnvironmentAttributes.AMBIENT_PARTICLES.IsSyncable &&
                 AttributeTypes.PARTICLE.ValueCodec is not null &&
