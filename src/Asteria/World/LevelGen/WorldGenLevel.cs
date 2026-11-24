@@ -1,6 +1,7 @@
 using Asteria.Content.Biomes;
 using Asteria.Content.Blocks;
 using Asteria.Content.Fluids;
+using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.World;
 
