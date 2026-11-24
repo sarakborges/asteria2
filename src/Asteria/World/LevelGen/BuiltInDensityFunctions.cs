@@ -12,7 +12,7 @@ namespace Asteria.World.LevelGen;
 /// </summary>
 internal static class BuiltInDensityFunctions
 {
-    internal const int Count = 23;
+    internal const int Count = 44;
 
     private readonly record struct OreVeinDefinition(
         RegistryKey<DensityFunction> DensityKey,
@@ -115,6 +115,8 @@ internal static class BuiltInDensityFunctions
         }
 
         RegisterOverworldClimateFunctions(registry);
+
+        RegisterOverworldTerrainFunctions(registry);
     }
 
     private static void RegisterOverworldClimateFunctions(Registry<DensityFunction> registry)
@@ -159,6 +161,142 @@ internal static class BuiltInDensityFunctions
                 DensityFunctionFactories.Cache(shiftedNoise));
         }
     }
+
+    private static void RegisterOverworldTerrainFunctions(Registry<DensityFunction> registry)
+    {
+        DensityFunction jaggedNoise = DensityFunctionFactories.Noise(
+            GetNoise(Noises.JAGGED),
+            1500.0,
+            0.0);
+
+        RegisterTerrainNoises(
+            registry,
+            jaggedNoise,
+            GetFunction(registry, DensityFunctionKeys.OVERWORLD_CONTINENTS),
+            GetFunction(registry, DensityFunctionKeys.OVERWORLD_EROSION),
+            DensityFunctionKeys.OVERWORLD_FUNCTIONS,
+            amplified: false);
+
+        RegisterTerrainNoises(
+            registry,
+            jaggedNoise,
+            GetFunction(registry, DensityFunctionKeys.OVERWORLD_LARGE_CONTINENTS),
+            GetFunction(registry, DensityFunctionKeys.OVERWORLD_LARGE_EROSION),
+            DensityFunctionKeys.LARGE_OVERWORLD_FUNCTIONS,
+            amplified: false);
+
+        RegisterTerrainNoises(
+            registry,
+            jaggedNoise,
+            GetFunction(registry, DensityFunctionKeys.OVERWORLD_CONTINENTS),
+            GetFunction(registry, DensityFunctionKeys.OVERWORLD_EROSION),
+            DensityFunctionKeys.AMPLIFIED_OVERWORLD_FUNCTIONS,
+            amplified: true);
+    }
+
+    private static void RegisterTerrainNoises(
+        Registry<DensityFunction> registry,
+        DensityFunction jaggedNoise,
+        DensityFunction continentsFunction,
+        DensityFunction erosionFunction,
+        OverworldFunctionSet<RegistryKey<DensityFunction>> names,
+        bool amplified)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        ArgumentNullException.ThrowIfNull(jaggedNoise);
+        ArgumentNullException.ThrowIfNull(continentsFunction);
+        ArgumentNullException.ThrowIfNull(erosionFunction);
+
+        var continents = new SplineFunction.Coordinate(continentsFunction);
+        var erosion = new SplineFunction.Coordinate(erosionFunction);
+        var weirdness = new SplineFunction.Coordinate(
+            GetFunction(registry, DensityFunctionKeys.RIDGES));
+        var ridges = new SplineFunction.Coordinate(
+            GetFunction(registry, DensityFunctionKeys.RIDGES_FOLDED));
+
+        DensityFunction offsetSpline = DensityFunctionFactories.Spline(
+            TerrainProvider.OverworldOffset(continents, erosion, ridges, amplified));
+        DensityFunction offset = RegisterAndWrap(
+            registry,
+            names.Offset,
+            SplineWithBlending(
+                DensityFunctionFactories.Add(
+                    DensityFunctionFactories.Constant(-0.50375f),
+                    offsetSpline),
+                DensityFunctionFactories.BlendOffset()));
+
+        DensityFunction factorSpline = DensityFunctionFactories.Spline(
+            TerrainProvider.OverworldFactor(
+                continents,
+                erosion,
+                weirdness,
+                ridges,
+                amplified));
+        DensityFunction factor = RegisterAndWrap(
+            registry,
+            names.Factor,
+            SplineWithBlending(
+                factorSpline,
+                DensityFunctionFactories.Constant(10.0f)));
+
+        DensityFunction depth = RegisterAndWrap(
+            registry,
+            names.Depth,
+            OffsetToDepth(offset));
+
+        DensityFunction jaggednessSpline = DensityFunctionFactories.Spline(
+            TerrainProvider.OverworldJaggedness(
+                continents,
+                erosion,
+                weirdness,
+                ridges,
+                amplified));
+        DensityFunction unscaledJaggedness = RegisterAndWrap(
+            registry,
+            names.Jaggedness,
+            SplineWithBlending(
+                jaggednessSpline,
+                DensityFunctionFactories.Zero()));
+
+        DensityFunction jaggedness = DensityFunctionFactories.Cache(
+            DensityFunctionFactories.Mul(
+                unscaledJaggedness,
+                DensityFunctionFactories.HalfNegative(jaggedNoise)));
+
+        DensityFunction initialDensity = NoiseGradientDensity(
+            factor,
+            DensityFunctionFactories.Add(depth, jaggedness));
+
+        DensityFunction slopedCheese = RegisterAndWrap(
+            registry,
+            names.SlopedCheese,
+            DensityFunctionFactories.Cache(
+                DensityFunctionFactories.Add(
+                    initialDensity,
+                    GetFunction(registry, DensityFunctionKeys.BASE_3D_NOISE_OVERWORLD))));
+
+        DensityFunction preliminarySurfaceLevel = RegisterAndWrap(
+            registry,
+            names.PreliminarySurfaceLevel,
+            PreliminarySurfaceLevel(offset, factor, amplified));
+
+        registry.Register(
+            names.ChunkSurfaceLevel,
+            DensityFunctionFactories.Interpolate(
+                preliminarySurfaceLevel,
+                16,
+                1),
+            RegistrationInfo.BuiltIn);
+    }
+
+    private static DensityFunction SplineWithBlending(
+        DensityFunction spline,
+        DensityFunction blendingTarget) =>
+        DensityFunctionFactories.Cache(
+            DensityFunctionFactories.Lerp(
+                DensityFunctionFactories.BlendAlpha(),
+                blendingTarget,
+                spline));
 
     private static DensityFunction PeaksAndValleys(DensityFunction weirdness)
     {
