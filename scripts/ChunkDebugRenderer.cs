@@ -1,4 +1,6 @@
+using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
+using Asteria.Core;
 using Asteria.World.Rendering;
 using Godot;
 
@@ -12,11 +14,11 @@ public partial class ChunkDebugRenderer : Node3D
 {
     public int FaceCount { get; private set; }
 
-    public void Display(ProtoChunk chunk)
+    public void Display(ProtoChunk chunk, Func<BlockPos, BlockState?>? getLoadedNeighborState = null)
     {
         ArgumentNullException.ThrowIfNull(chunk);
 
-        ChunkDebugMeshData data = ChunkDebugMeshBuilder.Build(chunk);
+        ChunkDebugMeshData data = ChunkDebugMeshBuilder.Build(chunk, getLoadedNeighborState);
         FaceCount = data.FaceCount;
         if (data.IsEmpty)
             return;

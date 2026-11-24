@@ -13,9 +13,9 @@ Asteria é exclusivamente single-player/offline/local. Redstone e multiplayer/ne
 
 ## Estado atual
 
-O runtime inicializa os registries, cria um `OverworldWorld` single-player com seed de desenvolvimento fixa e gera a chunk de origem até `TERRAIN`. A cena exibe essa chunk por uma malha 3D de diagnóstico: somente blocos `MODEL` com forma de cubo completo, coloridos por `MapColor`. Essa visualização não é o renderer do jogo e não cobre modelos, texturas, fluidos ou camadas de transparência. Ainda não há jogador, física, simulação ou persistência local.
+O runtime inicializa os registries, cria um `OverworldWorld` single-player com seed de desenvolvimento fixa e gera uma região de 3×3 chunks até `TERRAIN`. A cena exibe essa região por uma malha 3D de diagnóstico: somente blocos `MODEL` com forma de cubo completo, coloridos por `MapColor`, com colisão estática derivada da mesma geometria. Há um controlador temporário em primeira pessoa com gravidade, colisão, caminhada e salto. Essa visualização não é o renderer do jogo e não cobre modelos, texturas, fluidos ou camadas de transparência.
 
-A base inclui modelos de conteúdo, block states, registries, armazenamento paletizado, geometria voxel, chunks, biomas, ruído e partes do lifecycle/tick. O mundo local já mantém chunks geradas sob demanda e oferece consultas e escrita de blocos; ainda faltam as etapas de geração posteriores a `TERRAIN`, iluminação completa, chunks ativas, renderer definitivo, jogador/física, simulação e persistência.
+A base inclui modelos de conteúdo, block states, registries, armazenamento paletizado, geometria voxel, chunks, biomas, ruído e partes do lifecycle/tick. O mundo local já mantém chunks geradas sob demanda e oferece consultas e escrita de blocos. O controlador e a região visível ainda são um teste limitado: faltam streaming de chunks ativas, etapas de geração posteriores a `TERRAIN`, iluminação completa, renderer definitivo, interação com blocos, simulação e persistência.
 
 A referência de paridade é Minecraft Java 26.3. Os sistemas fora do escopo do produto estão documentados em [docs/architecture/project-scope.md](docs/architecture/project-scope.md).
 
@@ -25,7 +25,7 @@ A referência de paridade é Minecraft Java 26.3. Os sistemas fora do escopo do 
 2. Aguarde a importação inicial dos arquivos.
 3. Execute com `F6` ou `F5`.
 
-A execução inicializa os registries, gera a chunk de origem do Overworld e mostra sua visualização 3D de diagnóstico. A câmera e a luz também são temporárias; a cena ainda não oferece movimentação ou interação.
+A execução gera uma região 3×3 em torno da origem e inicia o controlador temporário em primeira pessoa. Use W/A/S/D ou as setas para caminhar, mouse para olhar e Espaço para saltar. Esc libera o mouse; clique para capturá-lo novamente. A câmera, a geometria e as colisões são componentes de diagnóstico, não a implementação definitiva.
 
 ## Estrutura
 

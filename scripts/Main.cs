@@ -11,6 +11,7 @@ namespace Asteria;
 public partial class Main : Node3D
 {
     private const long DevelopmentWorldSeed = 132456789L;
+    private const int DevelopmentChunkRadius = 1;
 
     public OverworldWorld? World { get; private set; }
 
@@ -30,32 +31,59 @@ public partial class Main : Node3D
             $"{Block.BlockStateRegistry.Count} block states.");
 
         World = new OverworldWorld(DevelopmentWorldSeed);
-        ProtoChunk originChunk = World.GetChunk(ChunkPos.Zero);
-        int nonEmptySections = originChunk.GetSections().Count(section => !section.HasOnlyAir);
-
-        var chunkRenderer = new ChunkDebugRenderer
+        var chunks = new List<ProtoChunk>
         {
-            Name = "ChunkDebugRenderer"
+            World.GetChunk(ChunkPos.Zero)
         };
-        AddChild(chunkRenderer);
-        chunkRenderer.Display(originChunk);
 
-        CreateDebugCamera(originChunk);
+        foreach (ChunkPos position in ChunkPos.RangeClosed(ChunkPos.Zero, DevelopmentChunkRadius))
+        {
+            if (position == ChunkPos.Zero)
+                continue;
+
+            chunks.Add(World.GetChunk(position));
+        }
+
+        ProtoChunk originChunk = chunks[0];
+        int nonEmptySections = originChunk.GetSections().Count(section => !section.HasOnlyAir);
+        int debugFaces = 0;
+
+        foreach (ProtoChunk chunk in chunks)
+        {
+            var chunkRenderer = new ChunkDebugRenderer
+            {
+                Name = $"ChunkDebugRenderer_{chunk.GetPos().X}_{chunk.GetPos().Z}"
+            };
+            AddChild(chunkRenderer);
+            chunkRenderer.Display(chunk, GetLoadedNeighborState);
+            debugFaces += chunkRenderer.FaceCount;
+        }
+
+        CreateDebugSun();
+        Vector3 playerSpawn = FindPlayerSpawnPosition(originChunk);
+        CreatePlayer(playerSpawn);
 
         GD.Print(
-            $"Overworld ready: seed={World.Seed}, chunk={originChunk.GetPos()}, " +
-            $"sections={originChunk.GetSections().Length}, nonEmptySections={nonEmptySections}, " +
-            $"status={originChunk.GetPersistedStatus().GetIndex()}, " +
-            $"debugFaces={chunkRenderer.FaceCount}");
+            $"Overworld ready: seed={World.Seed}, chunks={World.LoadedChunkCount}, " +
+            $"origin={originChunk.GetPos()}, sections={originChunk.GetSections().Length}, " +
+            $"nonEmptySections={nonEmptySections}, status={originChunk.GetPersistedStatus().GetIndex()}, " +
+            $"debugFaces={debugFaces}, playerSpawn={playerSpawn}");
     }
 
-    private void CreateDebugCamera(ProtoChunk chunk)
+    private BlockState? GetLoadedNeighborState(BlockPos position)
     {
-        ChunkPos position = chunk.GetPos();
-        int targetX = position.GetMiddleBlockX();
-        int targetZ = position.GetMiddleBlockZ();
-        int surfaceY = chunk.GetHeight(Heightmap.Types.WORLD_SURFACE, targetX, targetZ);
+        if (World is null ||
+            !World.TryGetChunk(ChunkPos.Containing(position), out ProtoChunk? chunk) ||
+            chunk is null)
+        {
+            return null;
+        }
 
+        return chunk.GetBlockState(position);
+    }
+
+    private void CreateDebugSun()
+    {
         var sun = new DirectionalLight3D
         {
             Name = "DebugSun",
@@ -63,21 +91,113 @@ public partial class Main : Node3D
             ShadowEnabled = true
         };
         AddChild(sun);
+    }
 
-        var camera = new Camera3D
+    private static Vector3 FindPlayerSpawnPosition(ProtoChunk chunk)
+    {
+        ChunkPos position = chunk.GetPos();
+        int centerX = position.GetMiddleBlockX();
+        int centerZ = position.GetMiddleBlockZ();
+        int bestX = -1;
+        int bestZ = -1;
+        int bestY = chunk.GetMinY();
+        double bestDistance = double.PositiveInfinity;
+
+        for (int localZ = 1; localZ < 15; localZ++)
         {
-            Name = "DebugCamera",
-            Position = new Vector3(
-                targetX + 28.0f,
-                Math.Max(surfaceY + 34.0f, 96.0f),
-                targetZ + 28.0f),
-            Current = true,
-            Fov = 70.0f,
-            Far = 768.0f
+            for (int localX = 1; localX < 15; localX++)
+            {
+                int worldX = position.GetBlockX(localX);
+                int worldZ = position.GetBlockZ(localZ);
+                int surfaceY = chunk.GetHeight(Heightmap.Types.WORLD_SURFACE, worldX, worldZ);
+                if (surfaceY < chunk.GetMinY())
+                    continue;
+
+                BlockState surfaceState = chunk.GetBlockState(new BlockPos(worldX, surfaceY, worldZ));
+                if (surfaceState.IsAir || !surfaceState.GetFluidState().IsEmpty())
+                    continue;
+
+                BlockState feetState = chunk.GetBlockState(new BlockPos(worldX, surfaceY + 1, worldZ));
+                BlockState headState = chunk.GetBlockState(new BlockPos(worldX, surfaceY + 2, worldZ));
+                if (!feetState.IsAir || !headState.IsAir)
+                    continue;
+
+                double deltaX = localX - 7.5;
+                double deltaZ = localZ - 7.5;
+                double distance = deltaX * deltaX + deltaZ * deltaZ;
+                if (distance >= bestDistance)
+                    continue;
+
+                bestX = worldX;
+                bestZ = worldZ;
+                bestY = surfaceY;
+                bestDistance = distance;
+            }
+        }
+
+        if (bestX < 0)
+        {
+            bestX = centerX;
+            bestZ = centerZ;
+            bestY = chunk.GetHeight(Heightmap.Types.OCEAN_FLOOR, centerX, centerZ);
+            if (bestY < chunk.GetMinY())
+                throw new InvalidOperationException("The generated origin chunk has no solid player spawn surface.");
+        }
+
+        return new Vector3(bestX + 0.5f, bestY + 1.95f, bestZ + 0.5f);
+    }
+
+    private void CreatePlayer(Vector3 spawnPosition)
+    {
+        RegisterMovementActions();
+
+        var player = new PlayerController
+        {
+            Name = "Player",
+            Position = spawnPosition,
+            FloorSnapLength = 0.2f
         };
-        AddChild(camera);
-        camera.LookAt(
-            new Vector3(targetX, surfaceY, targetZ),
-            Vector3.Up);
+        player.AddChild(new CollisionShape3D
+        {
+            Name = "CapsuleCollision",
+            Shape = new CapsuleShape3D
+            {
+                Radius = 0.35f,
+                Height = 1.8f
+            }
+        });
+        player.AddChild(new Camera3D
+        {
+            Name = "Camera3D",
+            Position = new Vector3(0.0f, 0.72f, 0.0f),
+            Current = true,
+            Fov = 75.0f,
+            Far = 768.0f
+        });
+
+        AddChild(player);
+    }
+
+    private static void RegisterMovementActions()
+    {
+        AddKeyAction("move_forward", Key.W, Key.Up);
+        AddKeyAction("move_back", Key.S, Key.Down);
+        AddKeyAction("move_left", Key.A, Key.Left);
+        AddKeyAction("move_right", Key.D, Key.Right);
+        AddKeyAction("jump", Key.Space);
+    }
+
+    private static void AddKeyAction(string action, params Key[] keys)
+    {
+        if (!InputMap.HasAction(action))
+            InputMap.AddAction(action);
+
+        foreach (Key key in keys)
+        {
+            InputMap.ActionAddEvent(action, new InputEventKey
+            {
+                PhysicalKeycode = key
+            });
+        }
     }
 }

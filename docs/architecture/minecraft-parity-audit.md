@@ -1298,3 +1298,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O harness verifica chunk vazia, cubo isolado, culling entre blocos adjacentes e verticais, fluidos não tratados como cubos sólidos, consulta de vizinha de borda e orientação de normais.
 - `ChunkDebugRenderer` converte os dados em `ArrayMesh` via `SurfaceTool` e cria colisão estática trimesh para a geometria de diagnóstico; `Main` adiciona uma câmera e luz direcionais e mostra apenas a chunk [0, 0].
 - Limitações intencionais: sem modelos de bloco, texturas/atlas, fluidos, transparência, animação, meshing greedy, vizinhança carregada pelo runtime, iluminação voxel, chunks adicionais, jogador ou interação. Não substitui o renderer definitivo nem altera os dados do mundo.
+
+
+## Incremento — controlador em primeira pessoa e região de teste (24/11/2026)
+
+- O runtime gera a origem e as oito chunks vizinhas imediatas (região 3×3), todas até `TERRAIN`, antes de gerar as malhas. Isso permite consultar somente vizinhas já carregadas para remover faces internas nas bordas.
+- `ChunkDebugRenderer` aceita um callback de consulta que não gera chunks; a mesma malha diagnóstica produz o corpo estático trimesh por meio do helper da Godot.
+- Adicionado `PlayerController` temporário com `CharacterBody3D`, cápsula, gravidade, aceleração no solo/ar, salto e mouse look. O `Main` registra WASD/setas e espaço; Esc libera o mouse e clique o captura novamente.
+- A posição inicial procura uma superfície sólida seca próxima ao centro da chunk de origem, com espaço para a cápsula; se não existir, usa a altura sólida do centro.
+- Essa região fixa não implementa streaming ou carregamento por distância. A colisão deriva apenas dos cubos completos representados na malha de diagnóstico; blocos não cúbicos, líquidos, modelos e interação ainda não têm representação física/visual.
+- Não há inventário, quebra/colocação, respawn, persistência ou lifecycle completo do jogador. O controlador é somente uma etapa de validação do terreno e da física básica, não declara o mundo jogável completo.
