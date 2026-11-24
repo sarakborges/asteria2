@@ -15,6 +15,7 @@ internal static class MaterialConditionChecks
     public static void Run()
     {
         CheckConditionTypeRegistry();
+        CheckNamedVanillaConditions();
         CheckNotConditionCodecAndEvaluation();
         CheckLazyXZConditions();
         CheckWaterConditionCodecAndEvaluation();
@@ -57,8 +58,72 @@ internal static class MaterialConditionChecks
             ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "above_preliminary_surface")), AbovePreliminarySurfaceCondition.TYPE_CODEC) &&
             ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "stone_depth")), StoneDepthCondition.TYPE_CODEC),
             "The material-condition registry must expose the singleton or record codec instances.");
-        Require(BuiltInRegistries.MaterialCondition.Count == 0,
-            "The material-condition value registry stays empty until data bootstrap registers values.");
+        Require(BuiltInRegistries.MaterialCondition.Count == 8,
+            "The named vanilla material-condition registry must contain the eight floor, ceiling and water conditions.");
+    }
+
+    private static void CheckNamedVanillaConditions()
+    {
+        Registry<MaterialCondition> registry = BuiltInRegistries.MaterialCondition;
+        ResourceLocation[] keys =
+        [
+            VanillaMaterialConditions.ON_FLOOR,
+            VanillaMaterialConditions.UNDER_FLOOR,
+            VanillaMaterialConditions.DEEP_UNDER_FLOOR,
+            VanillaMaterialConditions.VERY_DEEP_UNDER_FLOOR,
+            VanillaMaterialConditions.ON_CEILING,
+            VanillaMaterialConditions.UNDER_CEILING,
+            VanillaMaterialConditions.NOT_UNDERWATER,
+            VanillaMaterialConditions.NOT_UNDER_DEEP_WATER
+        ];
+        Require(
+            keys.All(key => key.ToString().StartsWith("minecraft:", StringComparison.Ordinal) && registry.GetValue(key) is not null),
+            "Every built-in material condition must resolve from its vanilla Minecraft registry key.");
+
+        Require(
+            registry.GetValue(VanillaMaterialConditions.ON_FLOOR) is
+                StoneDepthCondition { Offset: 0, AddSurfaceDepth: false, SecondaryDepthRange: 0 } floor &&
+                ReferenceEquals(floor.SurfaceType, Asteria.World.LevelGen.Placement.CaveSurface.FLOOR) &&
+            registry.GetValue(VanillaMaterialConditions.UNDER_FLOOR) is
+                StoneDepthCondition { Offset: 0, AddSurfaceDepth: true, SecondaryDepthRange: 0 } &&
+            registry.GetValue(VanillaMaterialConditions.DEEP_UNDER_FLOOR) is
+                StoneDepthCondition { Offset: 0, AddSurfaceDepth: true, SecondaryDepthRange: 6 } &&
+            registry.GetValue(VanillaMaterialConditions.VERY_DEEP_UNDER_FLOOR) is
+                StoneDepthCondition { Offset: 0, AddSurfaceDepth: true, SecondaryDepthRange: 30 } &&
+            registry.GetValue(VanillaMaterialConditions.ON_CEILING) is
+                StoneDepthCondition { Offset: 0, AddSurfaceDepth: false, SecondaryDepthRange: 0 } ceiling &&
+                ReferenceEquals(ceiling.SurfaceType, Asteria.World.LevelGen.Placement.CaveSurface.CEILING) &&
+            registry.GetValue(VanillaMaterialConditions.UNDER_CEILING) is
+                StoneDepthCondition { Offset: 0, AddSurfaceDepth: true, SecondaryDepthRange: 0 } &&
+            registry.GetValue(VanillaMaterialConditions.NOT_UNDERWATER) is
+                WaterCondition { Offset: -1, SurfaceDepthMultiplier: 0, AddStoneDepth: false } &&
+            registry.GetValue(VanillaMaterialConditions.NOT_UNDER_DEEP_WATER) is
+                WaterCondition { Offset: -6, SurfaceDepthMultiplier: -1, AddStoneDepth: true },
+            "Named vanilla conditions must preserve their exact StoneDepthCondition and WaterCondition constructors.");
+
+        var context = new MaterialRuleContext();
+        context.UpdateXZ(0, 0, 0, 0, surfaceDepth: 3, surfaceSecondary: 1.0);
+        ConditionEvaluator onFloor = registry.GetValue(VanillaMaterialConditions.ON_FLOOR)!.Compile(context);
+        ConditionEvaluator underFloor = registry.GetValue(VanillaMaterialConditions.UNDER_FLOOR)!.Compile(context);
+        ConditionEvaluator deepUnderFloor = registry.GetValue(VanillaMaterialConditions.DEEP_UNDER_FLOOR)!.Compile(context);
+        context.UpdateY(stoneDepthAbove: 1, stoneDepthBelow: 1, waterHeight: int.MinValue, blockY: 40);
+        Require(onFloor() && underFloor() && deepUnderFloor(),
+            "Floor conditions must classify the top block and the expected depth extension.");
+
+        context.UpdateY(stoneDepthAbove: 4, stoneDepthBelow: 1, waterHeight: int.MinValue, blockY: 36);
+        Require(!onFloor() && underFloor() && deepUnderFloor(),
+            "Under-floor conditions must include surface-depth extension while on-floor remains shallow.");
+
+        ConditionEvaluator notUnderwater =
+            registry.GetValue(VanillaMaterialConditions.NOT_UNDERWATER)!.Compile(context);
+        ConditionEvaluator notUnderDeepWater =
+            registry.GetValue(VanillaMaterialConditions.NOT_UNDER_DEEP_WATER)!.Compile(context);
+        context.UpdateY(stoneDepthAbove: 1, stoneDepthBelow: 0, waterHeight: 70, blockY: 69);
+        Require(notUnderwater() && notUnderDeepWater(),
+            "Water boundary conditions must distinguish the surface from deep-water thresholds.");
+        context.UpdateY(stoneDepthAbove: 1, stoneDepthBelow: 0, waterHeight: 70, blockY: 59);
+        Require(!notUnderwater() && !notUnderDeepWater(),
+            "Water boundary conditions must reject positions below their respective water thresholds.");
     }
 
     private static void CheckNotConditionCodecAndEvaluation()

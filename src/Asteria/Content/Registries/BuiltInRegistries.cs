@@ -92,7 +92,7 @@ public static class BuiltInRegistries
     public static Registry<MaterialCondition> MaterialCondition { get; } =
         RegisterSimple<MaterialCondition>(
             Registries.MATERIAL_CONDITION.Location,
-            static () => { });
+            static () => VanillaMaterialConditions.RegisterAll());
 
     public static Registry<MapCodec<MaterialCondition>> MaterialConditionType { get; } =
         RegisterSimple<MapCodec<MaterialCondition>>(

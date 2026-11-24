@@ -1164,3 +1164,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Os holders de NormalNoise e DensityFunction usados pelo Overworld também passaram a usar resource keys `minecraft:*`, permitindo que as referências do NoiseRouter e das regras materiais 26.3 apontem diretamente para as entradas registradas.
 - Testes de codecs foram atualizados para exigir os discriminadores e referências vanilla; namespaces genéricos de identificadores e streams posicionais customizados permanecem independentes.
 - Esta correção alinha os IDs públicos dos dados de worldgen. A registry de material_rule ainda precisa receber os arquivos vanilla e seus holders; a árvore Overworld completa ainda não está em execução no carregamento de mundo.
+
+
+## Incremento — condições nomeadas de material do Overworld 26.3 (24/11/2026)
+
+- Registradas as oito condições vanilla referenciadas por chave na árvore de material do Overworld: `on_floor`, `under_floor`, `deep_under_floor`, `very_deep_under_floor`, `on_ceiling`, `under_ceiling`, `not_underwater` e `not_under_deep_water`.
+- As condições são holders reais na registry `asteria:worldgen/material_condition`, com resource IDs `minecraft:*`; seus valores reutilizam os ports StoneDepthCondition e WaterCondition sem duplicar lógica.
+- Parâmetros correspondem a VanillaMaterialConditions 26.3: profundidade secundária 0/6/30 nos floor checks, ceiling floor type apropriado e water checks (-1,0,false)/(-6,-1,true).
+- BuiltInRegistries agora registra esses valores durante o bootstrap. Testes verificam todos os oito holders, os construtores exatos e limites de classificação de piso/água.
+- Próximo passo: completar rule types como bandlands/ore_vein, os restantes registries de noises/density functions usados pelos veios e as regras de material referenciadas, antes de construir o holder `minecraft:overworld`.
