@@ -17,7 +17,7 @@ internal static class FeatureSorterChecks
             throw new NotSupportedException("FeatureSorter checks do not serialize feature fixtures.");
 
         public bool Place(
-            OverworldWorld level,
+            WorldGenLevel level,
             NoiseBasedChunkGenerator generator,
             IRandomSource random,
             BlockPos origin) =>
