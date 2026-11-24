@@ -50,8 +50,14 @@ public static class BuiltInBlockTags
             GetHolder(BuiltInBlocks.LIGHT_GRAY_TERRACOTTA)
         ];
 
+        Holder<Block>[] uncarvable =
+        [
+            GetHolder(BuiltInBlocks.BEDROCK)
+        ];
+
         KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>[] definitions =
         [
+            new(BlockTags.Uncarvable, uncarvable),
             new(BlockTags.BlocksMotionInHeightmap, motionWithoutLeaves),
             new(BlockTags.BlocksMotionInHeightmapNoLeaves, motionWithoutLeaves),
             new(BlockTags.Leaves, Array.Empty<Holder<Block>>()),
