@@ -50,10 +50,18 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
 
     public bool SetBlock(BlockPos position, BlockState state, int updateFlags = 3)
     {
+        ArgumentNullException.ThrowIfNull(state);
         if (!EnsureCanWrite(position))
             return false;
 
         _ = SetBlockState(position, state, updateFlags);
+        if ((updateFlags & 16) == 0)
+        {
+            BlockPos? postProcessPosition = state.GetPostProcessPos(this, position);
+            if (postProcessPosition is not null)
+                GetChunk(ChunkPos.Containing(postProcessPosition)).MarkPosForPostProcessing(postProcessPosition);
+        }
+
         return true;
     }
 
