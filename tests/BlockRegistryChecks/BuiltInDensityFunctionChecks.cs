@@ -29,6 +29,9 @@ internal static class BuiltInDensityFunctionChecks
 
         public float BlendDensity(int blockX, int blockY, int blockZ, float density) =>
             density + blockX + blockY * 10.0f + blockZ * 100.0f;
+
+        public BlenderOutputBuffer BlendOffsetAndFactor(DensityVolume volume) =>
+            BlenderOutputBuffer.CreateNeutral(volume);
     }
 
     public static void Run()
