@@ -14,8 +14,8 @@ public sealed class LevelLightEngine : LightEventListener
     public static readonly LevelLightEngine EMPTY = new();
 
     private readonly LevelHeightAccessor _levelHeightAccessor;
-    private readonly LightEngine? _blockEngine;
-    private readonly LightEngine? _skyEngine;
+    private readonly LayerLightEngine? _blockEngine;
+    private readonly LayerLightEngine? _skyEngine;
 
     public LevelLightEngine(
         LightChunkGetter chunkSource,
@@ -81,9 +81,9 @@ public sealed class LevelLightEngine : LightEventListener
     {
         ArgumentNullException.ThrowIfNull(layer);
         if (layer == LightLayer.BLOCK)
-            return _blockEngine?.GetLayerListener() ?? LayerLightEventListener.Dummy.Instance;
+            return _blockEngine ?? LayerLightEventListener.Dummy.Instance;
 
-        return _skyEngine?.GetLayerListener() ?? LayerLightEventListener.Dummy.Instance;
+        return _skyEngine ?? LayerLightEventListener.Dummy.Instance;
     }
 
     public string GetDebugData(LightLayer layer, SectionPos position)
