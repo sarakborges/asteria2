@@ -10,9 +10,12 @@ internal static class MaterialConditionCodecBootstrap
     internal static void RegisterAll(Registry<MapCodec<MaterialCondition>> registry)
     {
         ArgumentNullException.ThrowIfNull(registry);
+        Register(registry, "biome", BiomeCondition.TYPE_CODEC);
+        Register(registry, "noise_threshold", NoiseThresholdCondition.TYPE_CODEC);
         Register(registry, "vertical_gradient", VerticalGradientCondition.TYPE_CODEC);
         Register(registry, "y_above", YCondition.TYPE_CODEC);
         Register(registry, "water", WaterCondition.TYPE_CODEC);
+        Register(registry, "temperature", TemperatureCondition.TYPE_CODEC);
         Register(registry, "steep", SteepCondition.TYPE_CODEC);
         Register(registry, "not", NotCondition.TYPE_CODEC);
         Register(registry, "hole", HoleCondition.TYPE_CODEC);

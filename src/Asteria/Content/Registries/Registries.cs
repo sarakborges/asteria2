@@ -4,6 +4,7 @@ using Asteria.World.LevelGen.Synth;
 using Asteria.World.LevelGen.Materials.Rules;
 using Asteria.World.LevelGen.Materials.Conditions;
 using Asteria.World.LevelGen;
+using Asteria.Content.Biomes;
 
 namespace Asteria.Content.Registries;
 
@@ -12,6 +13,10 @@ namespace Asteria.Content.Registries;
 /// </summary>
 public static class Registries
 {
+    public static RegistryKey<Registry<Biome>> BIOME { get; } =
+        RegistryKey<Biome>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "biome"));
+
     public static RegistryKey<Registry<DensityFunction>> DENSITY_FUNCTION { get; } =
         RegistryKey<DensityFunction>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/density_function"));

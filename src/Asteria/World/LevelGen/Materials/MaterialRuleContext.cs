@@ -1,4 +1,7 @@
 using Asteria.Content.Identifiers;
+using Asteria.Content.Biomes;
+using Asteria.Content.Registries;
+using Asteria.World.LevelGen.Synth;
 using Asteria.World.LevelGen;
 
 namespace Asteria.World.LevelGen.Materials;
@@ -11,6 +14,11 @@ public sealed class MaterialRuleContext
 {
     private readonly WorldGenerationContext? _worldGenerationContext;
     private readonly RandomState? _randomState;
+    private readonly Func<BlockPos, Holder<Biome>>? _biomeGetter;
+    private readonly IReadOnlySet<Holder<Biome>>? _possibleBiomes;
+    private readonly Dictionary<RegistryKey<NormalNoise>, Func<double>> _noiseSamplers2D = new();
+    private readonly Dictionary<RegistryKey<NormalNoise>, Func<double>> _noiseSamplers3D = new();
+    private Holder<Biome>? _biome;
 
     public MaterialRuleContext()
     {
@@ -18,11 +26,63 @@ public sealed class MaterialRuleContext
 
     public MaterialRuleContext(
         WorldGenerationContext worldGenerationContext,
-        RandomState? randomState = null)
+        RandomState? randomState = null,
+        Func<BlockPos, Holder<Biome>>? biomeGetter = null,
+        IReadOnlySet<Holder<Biome>>? possibleBiomes = null)
     {
         _worldGenerationContext = worldGenerationContext ??
             throw new ArgumentNullException(nameof(worldGenerationContext));
         _randomState = randomState;
+        _biomeGetter = biomeGetter;
+        _possibleBiomes = possibleBiomes;
+    }
+
+    public IReadOnlySet<Holder<Biome>>? PossibleBiomes => _possibleBiomes;
+
+    public Holder<Biome> GetBiome()
+    {
+        if (_biome is not null)
+            return _biome;
+
+        Func<BlockPos, Holder<Biome>> getter = _biomeGetter ??
+            throw new InvalidOperationException("Biome conditions require a biome getter.");
+        return _biome = getter(new BlockPos(BlockX, BlockY, BlockZ));
+    }
+
+    public int GetSeaLevel() =>
+        (_worldGenerationContext ??
+            throw new InvalidOperationException("Sea level requires a WorldGenerationContext."))
+            .SeaLevel();
+
+    public Func<double> GetNoiseSampler(RegistryKey<NormalNoise> noiseId, bool is3D)
+    {
+        Dictionary<RegistryKey<NormalNoise>, Func<double>> samplers =
+            is3D ? _noiseSamplers3D : _noiseSamplers2D;
+        if (samplers.TryGetValue(noiseId, out Func<double>? cached))
+            return cached;
+
+        RandomState randomState = _randomState ??
+            throw new InvalidOperationException("Noise conditions require a RandomState.");
+        Noise noise = randomState.GetOrCreateNoise(noiseId);
+        long lastUpdate = is3D ? unchecked(_lastUpdateY - 1L) : unchecked(_lastUpdateXZ - 1L);
+        double lastValue = 0.0;
+
+        Func<double> sampler = () =>
+        {
+            long currentUpdate = is3D ? _lastUpdateY : _lastUpdateXZ;
+            if (lastUpdate != currentUpdate)
+            {
+                lastValue = is3D
+                    ? noise.Get(BlockX, BlockY, BlockZ)
+                    : noise.Get(BlockX, 0.0, BlockZ);
+                lastUpdate = currentUpdate;
+            }
+
+            return lastValue;
+        };
+
+        samplers.Add(noiseId, sampler);
+        return sampler;
     }
 
     public int ResolveAnchorY(VerticalAnchor anchor)
@@ -118,6 +178,7 @@ public sealed class MaterialRuleContext
         int blockY)
     {
         _lastUpdateY = unchecked(_lastUpdateY + 1);
+        _biome = null;
         BlockY = blockY;
         WaterHeight = waterHeight;
         StoneDepthBelow = stoneDepthBelow;
