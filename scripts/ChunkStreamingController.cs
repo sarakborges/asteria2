@@ -146,6 +146,44 @@ public partial class ChunkStreamingController : Node3D
         }
     }
 
+
+    /// <summary>
+    /// Rebuilds the visible mesh after a block mutation. Only renderers whose
+    /// shared border can be affected are rebuilt; the world cache is not unloaded.
+    /// </summary>
+    public void RefreshAfterBlockChange(BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        if (!_configured)
+            return;
+
+        ChunkPos chunkPosition = ChunkPos.Containing(position);
+        RefreshRenderer(chunkPosition);
+
+        int localX = position.GetX() & 15;
+        int localZ = position.GetZ() & 15;
+        if (localX == 0)
+            RefreshRenderer(new ChunkPos(unchecked(chunkPosition.X - 1), chunkPosition.Z));
+        if (localX == 15)
+            RefreshRenderer(new ChunkPos(unchecked(chunkPosition.X + 1), chunkPosition.Z));
+        if (localZ == 0)
+            RefreshRenderer(new ChunkPos(chunkPosition.X, unchecked(chunkPosition.Z - 1)));
+        if (localZ == 15)
+            RefreshRenderer(new ChunkPos(chunkPosition.X, unchecked(chunkPosition.Z + 1)));
+    }
+
+    private void RefreshRenderer(ChunkPos position)
+    {
+        if (!_renderers.TryGetValue(position, out ChunkDebugRenderer? renderer) ||
+            !_world.TryGetChunk(position, out ProtoChunk? chunk) ||
+            chunk is null)
+        {
+            return;
+        }
+
+        renderer.Display(chunk, GetRenderedNeighborState);
+    }
+
     private BlockState? GetRenderedNeighborState(BlockPos position)
     {
         ChunkPos neighborPosition = ChunkPos.Containing(position);

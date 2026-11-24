@@ -1318,3 +1318,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Novas chunks visíveis são registradas antes da construção da malha. Os renderers cardinais adjacentes são reconstruídos quando uma vizinha entra ou sai da região, fazendo o culling de faces acompanhar a vizinhança efetivamente renderizada, sem carregar chunks através do callback.
 - O harness verifica que uma chunk modificada continua no cache e conserva o estado alterado depois que a nova região deixa de incluí-la. O teste de `ChunkRenderRegion` cobre região 1×1, 3×3, ordem centro-primeiro, coordenadas negativas, borda de worldgen e raio inválido.
 - Limitações: o cache de dados cresce com a exploração; não há geração assíncrona/scheduler real, evicção, persistência, chunks completas/lighting ou renderer definitivo. O orçamento é por contagem, não por milissegundos.
+
+
+## Incremento — interação direta com blocos no runtime de teste (24/11/2026)
+
+- `PlayerController` usa `BlockGetter.Clip` com `ClipContext.Block.Outline` e sem seleção de fluidos para obter o bloco e a face atingida até 5 blocos à frente da câmera.
+- Clique esquerdo remove instantaneamente o bloco atingido, exceto estados com destroy speed negativo; a mutação passa por `OverworldWorld.SetBlockState` e marca a chunk como não salva.
+- Clique direito tenta colocar `Blocks.DIRT` na posição adjacente à face atingida. A posição precisa estar dentro da altura construída, ser ar/substituível e não intersectar o volume aproximado da cápsula do jogador.
+- Após cada mutação, `ChunkStreamingController.RefreshAfterBlockChange` reconstrói a malha da chunk alterada e somente as vizinhas cardinais quando a alteração toca uma borda horizontal.
+- O raycast reutiliza o DDA/clip de formas já portado e testado em `ChunkChecks`; não há um raycast de voxel paralelo dentro do controlador.
+- Limitações: mineração instantânea, colocação fixa de terra, sem inventário/seleção de item, ferramentas, drops, partículas, animação, alcance configurável, cooldown ou atualizações de bloco completas. Continua sendo uma ferramenta de teste, não o sistema final de interação.

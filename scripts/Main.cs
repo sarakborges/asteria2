@@ -49,6 +49,7 @@ public partial class Main : Node3D
             player,
             DevelopmentRenderRadius,
             DevelopmentChunkLoadsPerFrame);
+        player.ConfigureWorld(World, streaming.RefreshAfterBlockChange);
         AddChild(streaming);
 
         GD.Print(

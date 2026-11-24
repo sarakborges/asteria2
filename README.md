@@ -25,7 +25,7 @@ A referência de paridade é Minecraft Java 26.3. Os sistemas fora do escopo do 
 2. Aguarde a importação inicial dos arquivos.
 3. Execute com `F6` ou `F5`.
 
-A execução gera a chunk de origem e inicia o streaming em uma região 3×3 ao redor do jogador. Use W/A/S/D ou as setas para caminhar, mouse para olhar e Espaço para saltar. Esc libera o mouse; clique para capturá-lo novamente. A câmera, a geometria e as colisões são componentes temporários de diagnóstico.
+A execução gera a chunk de origem e inicia o streaming em uma região 3×3 ao redor do jogador. Use W/A/S/D ou as setas para caminhar, mouse para olhar e Espaço para saltar. Clique esquerdo remove instantaneamente o bloco atingido; clique direito coloca terra na face adjacente, desde que não intercepte o jogador. Esc libera o mouse; clique para capturá-lo novamente. Essas ações são ferramentas temporárias de teste, sem inventário, ferramentas, drops ou tempo de mineração.
 
 ## Estrutura
 
