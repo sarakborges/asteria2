@@ -1294,7 +1294,7 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 
 - Adicionado `ChunkDebugMeshBuilder`, independente de Godot, para produzir uma triangle list de blocos cúbicos completos com render shape `MODEL`. A varredura usa o caminho de blocos não vazios de `ChunkAccess.FindBlocks`.
 - Faces compartilhadas com blocos sólidos são omitidas. Para bordas horizontais, o consumidor pode fornecer apenas estados de chunks já carregadas; a função não provoca geração de vizinhas. Sem vizinha carregada, a borda permanece aberta.
-- Cada vértice contém posição local à chunk, normal externa e RGB de `MapColor`. O uso de map color é exclusivamente diagnóstico e não representa texturas ou materiais finais.
+- Cada vértice contém posição local à chunk, normal externa e RGB de `MapColor`. A ordem dos triângulos segue a convenção de faces frontais horárias da Godot, mantendo as normais externas. O uso de map color é exclusivamente diagnóstico e não representa texturas ou materiais finais.
 - O harness verifica chunk vazia, cubo isolado, culling entre blocos adjacentes e verticais, fluidos não tratados como cubos sólidos, consulta de vizinha de borda e orientação de normais.
-- `ChunkDebugRenderer` converte os dados em `ArrayMesh` via `SurfaceTool`; `Main` adiciona uma câmera e luz direcionais e mostra apenas a chunk [0, 0].
+- `ChunkDebugRenderer` converte os dados em `ArrayMesh` via `SurfaceTool` e cria colisão estática trimesh para a geometria de diagnóstico; `Main` adiciona uma câmera e luz direcionais e mostra apenas a chunk [0, 0].
 - Limitações intencionais: sem modelos de bloco, texturas/atlas, fluidos, transparência, animação, meshing greedy, vizinhança carregada pelo runtime, iluminação voxel, chunks adicionais, jogador ou interação. Não substitui o renderer definitivo nem altera os dados do mundo.

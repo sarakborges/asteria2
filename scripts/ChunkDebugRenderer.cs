@@ -25,7 +25,7 @@ public partial class ChunkDebugRenderer : Node3D
         {
             VertexColorUseAsAlbedo = true,
             Roughness = 1.0f,
-            CullMode = BaseMaterial3D.CullModeEnum.Disabled
+            CullMode = BaseMaterial3D.CullModeEnum.Back
         };
 
         var surface = new SurfaceTool();
@@ -56,5 +56,6 @@ public partial class ChunkDebugRenderer : Node3D
                 chunk.GetPos().GetMinBlockZ())
         };
         AddChild(meshInstance);
+        meshInstance.CreateTrimeshCollision();
     }
 }

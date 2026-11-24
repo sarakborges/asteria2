@@ -168,12 +168,13 @@ public static class ChunkDebugMeshBuilder
         byte green,
         byte blue)
     {
+        // Godot treats clockwise triangles as front-facing. Keep the stored normals outward.
         AppendVertex(vertices, x, y, z, face, face.A, red, green, blue);
+        AppendVertex(vertices, x, y, z, face, face.C, red, green, blue);
         AppendVertex(vertices, x, y, z, face, face.B, red, green, blue);
-        AppendVertex(vertices, x, y, z, face, face.C, red, green, blue);
         AppendVertex(vertices, x, y, z, face, face.A, red, green, blue);
-        AppendVertex(vertices, x, y, z, face, face.C, red, green, blue);
         AppendVertex(vertices, x, y, z, face, face.D, red, green, blue);
+        AppendVertex(vertices, x, y, z, face, face.C, red, green, blue);
     }
 
     private static void AppendVertex(

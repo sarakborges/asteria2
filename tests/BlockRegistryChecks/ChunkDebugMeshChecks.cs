@@ -66,6 +66,30 @@ internal static class ChunkDebugMeshChecks
             closedBorder.FaceCount == 5,
             "A loaded neighboring chunk state must cull a shared face without causing a chunk lookup or load.");
 
+        for (int index = 0; index < isolated.Vertices.Count; index += 3)
+        {
+            ChunkDebugMeshVertex first = isolated.Vertices[index];
+            ChunkDebugMeshVertex second = isolated.Vertices[index + 1];
+            ChunkDebugMeshVertex third = isolated.Vertices[index + 2];
+
+            float abX = second.X - first.X;
+            float abY = second.Y - first.Y;
+            float abZ = second.Z - first.Z;
+            float acX = third.X - first.X;
+            float acY = third.Y - first.Y;
+            float acZ = third.Z - first.Z;
+            float crossX = abY * acZ - abZ * acY;
+            float crossY = abZ * acX - abX * acZ;
+            float crossZ = abX * acY - abY * acX;
+            float normalDot = crossX * first.NormalX +
+                crossY * first.NormalY +
+                crossZ * first.NormalZ;
+
+            Require(
+                normalDot < 0.0f,
+                "Diagnostic triangles must use Godot's clockwise front-face winding with outward vertex normals.");
+        }
+
         ChunkDebugMeshVertex upVertex = isolated.Vertices.First(vertex =>
             vertex.NormalX == 0.0f && vertex.NormalY == 1.0f && vertex.NormalZ == 0.0f);
         ChunkDebugMeshVertex northVertex = isolated.Vertices.First(vertex =>
