@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Asteria.Content.Blocks;
+using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.Serialization;
 using Asteria.World.LevelGen;
