@@ -153,7 +153,7 @@ public sealed class NoiseBasedChunkGenerator
         BlockPos origin = sectionPosition.Origin();
         IReadOnlyList<FeatureSorter.StepFeatureData> featuresPerStep = GetFeaturesPerStep();
 
-        var random = new WorldgenRandom(_settings.GetRandomSource().NewInstance(randomSourceSeed));
+        var random = new WorldgenRandom(new XoroshiroRandomSource(randomSourceSeed));
         long decorationSeed = random.SetDecorationSeed(
             level.Seed,
             origin.GetX(),
