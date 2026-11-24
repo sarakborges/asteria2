@@ -447,7 +447,7 @@ internal static class NoiseBasedChunkGeneratorChecks
         bool aquiferProducedFluid = false;
         using (var aquiferProbe = new NoiseChunk(
             randomState,
-            beardifier: null,
+            null,
             settings,
             NoiseBasedChunkGenerator.CreateFluidPicker(settings),
             IChunkBlender.Empty,
