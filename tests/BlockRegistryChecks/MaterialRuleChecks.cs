@@ -125,8 +125,8 @@ internal static class MaterialRuleChecks
         var context = new MaterialRuleContext();
         context.UpdateXZ(10, -12, 2, -3);
         Require(
-            context.LastUpdateXZ == 1 &&
-            context.LastUpdateY == 1 &&
+            context.LastUpdateXZ == long.MinValue + 2 &&
+            context.LastUpdateY == long.MinValue + 2 &&
             context.BlockX == 10 &&
             context.BlockZ == -12 &&
             context.SurfaceGradientX == 2 &&
@@ -135,7 +135,7 @@ internal static class MaterialRuleChecks
 
         context.UpdateY(4, 5, 63, -31);
         Require(
-            context.LastUpdateY == 2 &&
+            context.LastUpdateY == long.MinValue + 3 &&
             context.BlockY == -31 &&
             context.StoneDepthAbove == 4 &&
             context.StoneDepthBelow == 5 &&

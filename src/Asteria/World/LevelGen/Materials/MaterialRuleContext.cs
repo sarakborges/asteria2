@@ -6,8 +6,8 @@ namespace Asteria.World.LevelGen.Materials;
 /// </summary>
 public sealed class MaterialRuleContext
 {
-    private long _lastUpdateXZ;
-    private long _lastUpdateY;
+    private long _lastUpdateXZ = long.MinValue + 1;
+    private long _lastUpdateY = long.MinValue + 1;
 
     public long LastUpdateXZ => _lastUpdateXZ;
     public long LastUpdateY => _lastUpdateY;
