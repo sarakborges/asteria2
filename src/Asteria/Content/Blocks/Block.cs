@@ -95,6 +95,18 @@ public class Block
         DefaultState = state;
     }
 
+    /// <summary>Default BlockBehaviour.canSurvive implementation from Minecraft Java 26.3.</summary>
+    public virtual bool CanSurvive(
+        BlockState state,
+        BlockGetter level,
+        BlockPos position)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(level);
+        ArgumentNullException.ThrowIfNull(position);
+        return true;
+    }
+
     public virtual FluidState GetFluidState(BlockState state)
     {
         ArgumentNullException.ThrowIfNull(state);
