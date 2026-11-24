@@ -25,7 +25,7 @@ public sealed record ConstantHeight : HeightProvider
         Value = value ?? throw new ArgumentNullException(nameof(value));
 
     public static ConstantHeight Of(VerticalAnchor value) =>
-        ReferenceEquals(value, VerticalAnchor.Absolute(0))
+        value.Equals(VerticalAnchor.Absolute(0))
             ? ZERO
             : new ConstantHeight(value);
 
