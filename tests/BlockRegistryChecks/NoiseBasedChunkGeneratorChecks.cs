@@ -1,3 +1,4 @@
+using Asteria.World.LevelGen.Materials;
 using Asteria.Content.Blocks;
 using Asteria.Content.Biomes;
 using Asteria.Content.Chunks;
@@ -23,6 +24,7 @@ internal static class NoiseBasedChunkGeneratorChecks
             CheckNegativeDensityMaterializesLavaWaterAndAir();
             CheckChunkCoordinateAndHeightmapMaterialization();
             CheckMaterialRuleSurfacePass();
+            CheckBandlandsMaterialRuleUsesSeededClayBands();
             CheckMultiNoiseBiomeSourceFillsChunkPalettes();
             CheckPreliminarySurfaceCondition();
         }
@@ -187,6 +189,46 @@ internal static class NoiseBasedChunkGeneratorChecks
         Require(
             ReferenceEquals(chunk.GetBlockState(new BlockPos(5, -16, 6)), Blocks.STONE.DefaultState),
             "Blocks below the preliminary-surface threshold must retain their original material.");
+    }
+
+    private static void CheckBandlandsMaterialRuleUsesSeededClayBands()
+    {
+        NoiseGeneratorSettings settings = CreateSettings(
+            new ConstantFunction(0.25f),
+            seaLevel: 0,
+            materialRule: BandlandsRule.INSTANCE);
+        RandomState randomState = CreateRandomState(settings);
+        var generator = new NoiseBasedChunkGenerator(settings, randomState);
+        ProtoChunk chunk = CreateChunk(new ChunkPos(0, 0), -16, 48);
+
+        generator.BuildTerrain(
+            chunk,
+            _ => Holder<Biome>.Direct(Biomes.PLAINS));
+
+        MaterialSystem materialSystem = randomState.GetOrCreateMaterialSystem(settings);
+        int x = 7;
+        int z = 9;
+        BlockState expected = materialSystem.GetBand(x, 0, z);
+        Require(
+            ReferenceEquals(chunk.GetBlockState(new BlockPos(x, 0, z)), expected),
+            "BandlandsRule must use the seeded material system's clay-band state at the current world position.");
+        Require(
+            ReferenceEquals(materialSystem.GetBand(x, 0, z), materialSystem.GetBand(x, 192, z)) &&
+            ReferenceEquals(materialSystem.GetBand(x, 0, z), materialSystem.GetBand(x, 192, z)),
+            "Clay bands must repeat with the vanilla 192-block vertical period.");
+
+        BlockState[] generatedBands = MaterialSystem.GenerateClayBands(
+            new XoroshiroRandomSource(132456789L)
+                .ForkPositional()
+                .FromHashOf("minecraft:clay_bands"));
+        Require(
+            generatedBands.Length == 192 &&
+            generatedBands.Any(state => ReferenceEquals(state, Blocks.YELLOW_TERRACOTTA.DefaultState)) &&
+            generatedBands.Any(state => ReferenceEquals(state, Blocks.BROWN_TERRACOTTA.DefaultState)) &&
+            generatedBands.Any(state => ReferenceEquals(state, Blocks.RED_TERRACOTTA.DefaultState)) &&
+            generatedBands.Any(state => ReferenceEquals(state, Blocks.WHITE_TERRACOTTA.DefaultState)) &&
+            generatedBands.Any(state => ReferenceEquals(state, Blocks.LIGHT_GRAY_TERRACOTTA.DefaultState)),
+            "Clay-band generation must create the five colored strata alongside orange and base terracotta.");
     }
 
     private static void CheckMultiNoiseBiomeSourceFillsChunkPalettes()

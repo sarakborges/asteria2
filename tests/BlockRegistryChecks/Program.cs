@@ -193,7 +193,7 @@ internal static class Program
 
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&
-            Block.BlockStateRegistry.Count == 40 &&
+            Block.BlockStateRegistry.Count == 44 &&
             !BuiltInRegistries.AreFrozen,
             "Block states must receive IDs during block construction, before registry bootstrap.");
         CheckBuiltInRegistryRoot();
@@ -223,7 +223,7 @@ internal static class Program
                     RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Item.Location)),
                 BuiltInRegistries.Item),
             "The root registry must resolve the item registry by its registry key.");
-        Require(BuiltInRegistries.Block.Count == 34, "The 34 current vanilla Overworld-generation blocks should be registered.");
+        Require(BuiltInRegistries.Block.Count == 38, "The 38 current vanilla Overworld-generation blocks should be registered.");
 
         (string Key, Block Value)[] overworldMaterialBlocks =
         [
@@ -237,7 +237,9 @@ internal static class Program
             ("powder_snow", Blocks.POWDER_SNOW), ("sand", Blocks.SAND),
             ("sandstone", Blocks.SANDSTONE), ("cinnabar", Blocks.CINNABAR),
             ("sulfur", Blocks.SULFUR), ("coarse_dirt", Blocks.COARSE_DIRT),
-            ("orange_terracotta", Blocks.ORANGE_TERRACOTTA), ("red_sand", Blocks.RED_SAND),
+            ("orange_terracotta", Blocks.ORANGE_TERRACOTTA), ("yellow_terracotta", Blocks.YELLOW_TERRACOTTA),
+            ("brown_terracotta", Blocks.BROWN_TERRACOTTA), ("red_terracotta", Blocks.RED_TERRACOTTA),
+            ("light_gray_terracotta", Blocks.LIGHT_GRAY_TERRACOTTA), ("red_sand", Blocks.RED_SAND),
             ("red_sandstone", Blocks.RED_SANDSTONE), ("terracotta", Blocks.TERRACOTTA),
             ("white_terracotta", Blocks.WHITE_TERRACOTTA), ("deepslate", Blocks.DEEPSLATE),
             ("ice", Blocks.ICE), ("packed_ice", Blocks.PACKED_ICE),
@@ -257,6 +259,10 @@ internal static class Program
             ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:copper_ore")), Blocks.COPPER_ORE) &&
             ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:powder_snow")), Blocks.POWDER_SNOW) &&
             ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:orange_terracotta")), Blocks.ORANGE_TERRACOTTA) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:yellow_terracotta")), Blocks.YELLOW_TERRACOTTA) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:brown_terracotta")), Blocks.BROWN_TERRACOTTA) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:red_terracotta")), Blocks.RED_TERRACOTTA) &&
+            ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:light_gray_terracotta")), Blocks.LIGHT_GRAY_TERRACOTTA) &&
             ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:sulfur")), Blocks.SULFUR) &&
             ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:deepslate")), Blocks.DEEPSLATE) &&
             ReferenceEquals(BuiltInRegistries.Block.GetValue(ResourceLocation.Parse("minecraft:calcite")), Blocks.CALCITE),
@@ -329,7 +335,7 @@ internal static class Program
         Require(BuiltInRegistries.AttributeType.Count == 9, "The attribute-type registry must contain the seven existing value types plus particle and ambient-particle types.");
         Require(Fluid.FluidStateRegistry.Count == 3, "The fluid-state ID map must contain every registered fluid state.");
         Require(ReferenceEquals(Blocks.AIR.DefaultState.GetFluidState(), Fluids.EMPTY.DefaultFluidState), "Air must contain the empty fluid state.");
-        Require(Block.BlockStateRegistry.Count == 40, "Expected 34 built-in block states and six test states.");
+        Require(Block.BlockStateRegistry.Count == 44, "Expected 38 built-in block states and six test states.");
         FluidChecks.Run();
         BlockTagChecks.Run();
         BlockPositionTransformChecks.Run();
@@ -632,10 +638,10 @@ internal static class Program
             BuiltInRegistries.Block.GetHolder(missingKey) is null,
             "Defaulted registries must keep resource-key, optional, and holder lookups exact rather than falling back.");
         Require(
-            BuiltInRegistries.Block.Count == 34 &&
+            BuiltInRegistries.Block.Count == 38 &&
             ReferenceEquals(BuiltInRegistries.Block.GetValue(airKey), Blocks.AIR) &&
             ReferenceEquals(BuiltInRegistries.Block.GetOptional(airKey), Blocks.AIR),
-            "The production block registry must contain the 34 built-in Overworld-generation blocks; test fixtures must stay outside it.");
+            "The production block registry must contain the 38 built-in Overworld-generation blocks; test fixtures must stay outside it.");
         Require(ReferenceEquals(BuiltInRegistries.Block.GetAny(), Blocks.AIR.BuiltInRegistryHolder), "DefaultedMappedRegistry.getAny must return its default holder.");
         Holder<Block>.Reference? randomDefaultedHolder = BuiltInRegistries.Block.GetRandom(new Random(0));
         Require(

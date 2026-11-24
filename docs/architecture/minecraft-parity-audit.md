@@ -1173,3 +1173,15 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Parâmetros correspondem a VanillaMaterialConditions 26.3: profundidade secundária 0/6/30 nos floor checks, ceiling floor type apropriado e water checks (-1,0,false)/(-6,-1,true).
 - BuiltInRegistries agora registra esses valores durante o bootstrap. Testes verificam todos os oito holders, os construtores exatos e limites de classificação de piso/água.
 - Próximo passo: completar rule types como bandlands/ore_vein, os restantes registries de noises/density functions usados pelos veios e as regras de material referenciadas, antes de construir o holder `minecraft:overworld`.
+
+
+## Incremento — clay bands e BandlandsRule vanilla (24/11/2026)
+
+- Registrados os quatro blocos de terracota colorida usados pela distribuição badlands: yellow, brown, red e light_gray, com MapColor e propriedades de mineração vanilla.
+- MaterialSystem agora gera os 192 estados de clay bands usando o fluxo posicional derivado do hash `minecraft:clay_bands`, com a mesma sequência de larguras, quantidades e probabilidades de faixas da referência 26.3.
+- Adicionado o ruído `clay_bands_offset` à amostragem do MaterialSystem; GetBand aplica o offset ruidoso arredondado à coordenada Y e consulta a tabela circular de 192 entradas.
+- MaterialRuleContext delega GetBand ao MaterialSystem, e BandlandsRule foi adicionada como singleton serializável `minecraft:bandlands` que consulta o material por coordenada.
+- MaterialRuleCodecBootstrap inclui bandlands na posição da ordem vanilla entre block e sequence.
+- Testes cobrem codec unitário/singleton, uso efetivo da regra no BuildTerrain, período vertical 192, determinismo via seed posicional e presença das variantes coloridas.
+- O registry de blocos agora contém 38 entradas; os 38 estados de produção mais seis estados de fixture compõem 44 IDs no harness.
+- Delimitação: o port ainda não adiciona os demais domínios badlands (pillar/roof surface extension) nem a árvore completa `minecraft:overworld`; o suporte a clay bands está pronto para a próxima parte da regra de superfície.

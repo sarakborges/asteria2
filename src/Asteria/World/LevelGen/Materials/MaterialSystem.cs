@@ -22,6 +22,8 @@ public sealed class MaterialSystem
     private readonly PositionalRandomFactory _noiseRandom;
     private readonly Noise _surfaceNoise;
     private readonly Noise _surfaceSecondaryNoise;
+    private readonly Noise _clayBandsOffsetNoise;
+    private readonly BlockState[] _clayBands;
 
     public DensityFunction PreliminarySurfaceFunction { get; }
     public BlockState DefaultBlock => _defaultBlock;
@@ -41,6 +43,10 @@ public sealed class MaterialSystem
         _noiseRandom = noiseRandom ?? throw new ArgumentNullException(nameof(noiseRandom));
         _surfaceNoise = randomState.GetOrCreateNoise(Noises.SURFACE);
         _surfaceSecondaryNoise = randomState.GetOrCreateNoise(Noises.SURFACE_SECONDARY);
+        _clayBandsOffsetNoise = randomState.GetOrCreateNoise(Noises.CLAY_BANDS_OFFSET);
+        IRandomSource clayBandsRandom = _noiseRandom.FromHashOf(
+            Asteria.Content.Identifiers.ResourceLocation.FromNamespaceAndPath("minecraft", "clay_bands"));
+        _clayBands = GenerateClayBands(clayBandsRandom);
     }
 
     public int GetSurfaceDepth(int blockX, int blockZ)
@@ -54,6 +60,65 @@ public sealed class MaterialSystem
         _surfaceSecondaryNoise.Get(blockX, 0.0, blockZ);
 
     public int GetSeaLevel() => _seaLevel;
+
+    /// <summary>Returns the vanilla clay-band state for a world-space block position.</summary>
+    public BlockState GetBand(int worldX, int y, int worldZ)
+    {
+        double bandOffsetNoise = _clayBandsOffsetNoise.Get(worldX, 0.0, worldZ) * 4.0;
+        int offset = Mth.Floor(bandOffsetNoise + 0.5);
+        int index = (y + offset + _clayBands.Length) % _clayBands.Length;
+        return _clayBands[index];
+    }
+
+    internal static BlockState[] GenerateClayBands(IRandomSource random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+
+        BlockState[] bands = new BlockState[192];
+        Array.Fill(bands, Blocks.TERRACOTTA.DefaultState);
+
+        for (int index = 0; index < bands.Length; index++)
+        {
+            index += random.NextInt(5) + 1;
+            if (index < bands.Length)
+                bands[index] = Blocks.ORANGE_TERRACOTTA.DefaultState;
+        }
+
+        MakeClayBands(random, bands, 1, Blocks.YELLOW_TERRACOTTA.DefaultState);
+        MakeClayBands(random, bands, 2, Blocks.BROWN_TERRACOTTA.DefaultState);
+        MakeClayBands(random, bands, 1, Blocks.RED_TERRACOTTA.DefaultState);
+
+        int whiteBandCount = random.NextIntBetweenInclusive(9, 15);
+        int start = 0;
+        for (int band = 0; band < whiteBandCount && start < bands.Length; band++)
+        {
+            bands[start] = Blocks.WHITE_TERRACOTTA.DefaultState;
+            if (start - 1 > 0 && random.NextBoolean())
+                bands[start - 1] = Blocks.LIGHT_GRAY_TERRACOTTA.DefaultState;
+            if (start + 1 < bands.Length && random.NextBoolean())
+                bands[start + 1] = Blocks.LIGHT_GRAY_TERRACOTTA.DefaultState;
+
+            start += random.NextInt(16) + 4;
+        }
+
+        return bands;
+    }
+
+    private static void MakeClayBands(
+        IRandomSource random,
+        BlockState[] bands,
+        int baseWidth,
+        BlockState state)
+    {
+        int bandCount = random.NextIntBetweenInclusive(6, 15);
+        for (int band = 0; band < bandCount; band++)
+        {
+            int width = baseWidth + random.NextInt(3);
+            int start = random.NextInt(bands.Length);
+            for (int offset = 0; start + offset < bands.Length && offset < width; offset++)
+                bands[start + offset] = state;
+        }
+    }
 
     /// <summary>
     /// Applies the configured material rule once per solid block in each occupied column.

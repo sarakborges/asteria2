@@ -83,6 +83,18 @@ public static class Blocks
     public static Block ORANGE_TERRACOTTA { get; } = new(
         BlockProperties.Of().MapColor(MapColor.TERRACOTTA_ORANGE).RequiresCorrectToolForDrops().Strength(1.25f, 4.2f));
 
+    public static Block YELLOW_TERRACOTTA { get; } = new(
+        BlockProperties.Of().MapColor(MapColor.TERRACOTTA_YELLOW).RequiresCorrectToolForDrops().Strength(1.25f, 4.2f));
+
+    public static Block BROWN_TERRACOTTA { get; } = new(
+        BlockProperties.Of().MapColor(MapColor.TERRACOTTA_BROWN).RequiresCorrectToolForDrops().Strength(1.25f, 4.2f));
+
+    public static Block RED_TERRACOTTA { get; } = new(
+        BlockProperties.Of().MapColor(MapColor.TERRACOTTA_RED).RequiresCorrectToolForDrops().Strength(1.25f, 4.2f));
+
+    public static Block LIGHT_GRAY_TERRACOTTA { get; } = new(
+        BlockProperties.Of().MapColor(MapColor.TERRACOTTA_LIGHT_GRAY).RequiresCorrectToolForDrops().Strength(1.25f, 4.2f));
+
     public static Block RED_SAND { get; } = new(
         BlockProperties.Of().MapColor(MapColor.COLOR_ORANGE).Strength(0.5f));
 
@@ -156,6 +168,10 @@ public static class Blocks
         Register("sulfur", SULFUR);
         Register("coarse_dirt", COARSE_DIRT);
         Register("orange_terracotta", ORANGE_TERRACOTTA);
+        Register("yellow_terracotta", YELLOW_TERRACOTTA);
+        Register("brown_terracotta", BROWN_TERRACOTTA);
+        Register("red_terracotta", RED_TERRACOTTA);
+        Register("light_gray_terracotta", LIGHT_GRAY_TERRACOTTA);
         Register("red_sand", RED_SAND);
         Register("red_sandstone", RED_SANDSTONE);
         Register("terracotta", TERRACOTTA);

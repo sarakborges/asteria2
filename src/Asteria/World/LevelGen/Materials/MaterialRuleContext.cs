@@ -230,6 +230,11 @@ public sealed class MaterialRuleContext
         };
     }
 
+    public BlockState GetBand(int worldX, int blockY, int worldZ) =>
+        (_materialSystem ??
+            throw new InvalidOperationException("Clay-band material rules require a connected MaterialSystem."))
+            .GetBand(worldX, blockY, worldZ);
+
     public int ResolveAnchorY(VerticalAnchor anchor)
     {
         ArgumentNullException.ThrowIfNull(anchor);

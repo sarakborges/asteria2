@@ -23,6 +23,7 @@ internal static class MaterialRuleChecks
     public static void Run()
     {
         CheckTypeRegistry();
+        CheckBandlandsRuleCodec();
         CheckBlockRuleCodecAndEvaluator();
         CheckSequenceRuleCodecAndEvaluation();
         CheckUnknownMaterialRuleType();
@@ -32,20 +33,37 @@ internal static class MaterialRuleChecks
     private static void CheckTypeRegistry()
     {
         Registry<MapCodec<MaterialRule>> registry = BuiltInRegistries.MaterialRuleType;
-        Require(registry.Count == 3, "The material-rule type registry must contain block, sequence and condition.");
+        Require(registry.Count == 4, "The material-rule type registry must contain block, bandlands, sequence and condition.");
         Require(
             registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "block")) &&
+            registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "bandlands")) &&
             registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "sequence")) &&
             registry.ContainsKey(ResourceLocation.FromNamespaceAndPath("minecraft", "condition")),
             "Material-rule codec types must use the vanilla block and sequence identifiers.");
         Require(
             ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "block")), BlockRule.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "bandlands")), BandlandsRule.TYPE_CODEC) &&
             ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "sequence")), SequenceRule.TYPE_CODEC) &&
             ReferenceEquals(registry.GetValue(ResourceLocation.FromNamespaceAndPath("minecraft", "condition")), ConditionRule.TYPE_CODEC),
             "The registry must expose the same map-codec instances returned by each material rule.");
         Require(
             BuiltInRegistries.MaterialRule.Count == 0,
             "The material-rule value registry must remain empty until data-driven material rules are bootstrapped.");
+    }
+
+    private static void CheckBandlandsRuleCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        JsonElement encoded = MaterialRule.CODEC.EncodeStart(ops, BandlandsRule.INSTANCE).GetOrThrow();
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:bandlands" &&
+            encoded.EnumerateObject().Count() == 1,
+            "BandlandsRule must serialize as the vanilla unit rule with no payload fields.");
+
+        MaterialRule decoded = MaterialRule.CODEC.Parse(ops, encoded).GetOrThrow();
+        Require(
+            ReferenceEquals(decoded, BandlandsRule.INSTANCE),
+            "BandlandsRule must decode to its singleton instance.");
     }
 
     private static void CheckBlockRuleCodecAndEvaluator()

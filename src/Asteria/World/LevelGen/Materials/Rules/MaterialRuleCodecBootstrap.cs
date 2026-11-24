@@ -11,6 +11,7 @@ internal static class MaterialRuleCodecBootstrap
     {
         ArgumentNullException.ThrowIfNull(registry);
         Register(registry, "block", BlockRule.TYPE_CODEC);
+        Register(registry, "bandlands", BandlandsRule.TYPE_CODEC);
         Register(registry, "sequence", SequenceRule.TYPE_CODEC);
         Register(registry, "condition", ConditionRule.TYPE_CODEC);
     }
