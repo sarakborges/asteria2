@@ -344,7 +344,6 @@ public sealed class NoiseBasedChunkGenerator
             int worldZ = targetChunk.GetBlockZ(localZ);
             position.SetX(worldX);
             position.SetZ(worldZ);
-            bool hasGrass = false;
 
             for (int worldY = topY; worldY >= bottomY; worldY--)
             {
@@ -353,19 +352,14 @@ public sealed class NoiseBasedChunkGenerator
                 if (existingState.Is(BlockTags.Uncarvable))
                     continue;
 
-                if (existingState.Is(Blocks.GRASS_BLOCK) ||
-                    existingState.Is(Blocks.MYCELIUM))
-                {
-                    hasGrass = true;
-                }
-                BlockState? carvedState = noiseChunk.Aquifer.ComputeSubstance(
+                bool hasGrass = existingState.Is(Blocks.GRASS_BLOCK) ||
+                    existingState.Is(Blocks.MYCELIUM);
+                BlockState? aquiferState = noiseChunk.Aquifer.ComputeSubstance(
                     worldX,
                     worldY,
                     worldZ,
                     density: 0.0);
-
-                if (carvedState is null)
-                    continue;
+                BlockState carvedState = aquiferState ?? Blocks.AIR.DefaultState;
 
                 chunk.SetBlockState(position, carvedState, flags: 0);
                 if (noiseChunk.Aquifer.ShouldScheduleFluidUpdate() &&
