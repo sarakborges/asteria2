@@ -1455,3 +1455,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Testes cobrem ponto central, limites X/Z, clamp Y inclusivo no máximo e exclusivo no mínimo, skip predicate, rejeição por alcance e early-out para elipsoide distante.
 - O estágio `TERRAIN` continua incompleto: ainda faltam `CaveWorldCarver`, `CanyonWorldCarver`, registries/dados de carvers, lista de carvers por bioma e a aplicação da máscara consultando `Aquifer.ComputeSubstance`.
 - Referência: Minecraft Java 26.3, `WorldCarver.java` (https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/carver/worldcarver/).
+
+## Incremento — FloatProvider de worldgen 26.3
+
+- Portado o contrato de `FloatProvider` e as quatro implementações de contexto livre da geração: `ConstantFloat`, `UniformFloat`, `ClampedNormalFloat` e `TrapezoidFloat`.
+- Portados os codecs de cada tipo e o despacho `FloatProviders.CODEC`, incluindo a forma numérica abreviada para constantes e os validadores de faixa `Codec(min)` e `Codec(min, max)`.
+- Registrado `worldgen/float_provider_type` com os identificadores vanilla `constant`, `uniform`, `clamped_normal` e `trapezoid`. O registry local usa o namespace de registry Asteria, enquanto as entradas preservam o namespace `minecraft`.
+- A família é a de providers *context-free* usada por worldgen. Não é o registry `context_float_provider` introduzido em 26.3 para operações contextuais.
+- Adicionados testes de codec, round-trip, validação de limites, rejeição de tipos desconhecidos e consumo determinístico do RNG. Os testes foram registrados no harness, mas ainda precisam ser executados em ambiente com .NET SDK.
+- Este incremento entrega a dependência de float providers para os carvers, mas não os conecta ainda ao pipeline: `IntProvider`, `HeightProvider`, `CaveWorldCarver`, `CanyonWorldCarver`, settings de carver e aplicação da máscara continuam pendentes. `TERRAIN` permanece incompleto.
+- Referência: `FloatProvider`, `FloatProviders`, `ConstantFloat`, `UniformFloat`, `ClampedNormalFloat` e `TrapezoidFloat` de Minecraft Java 26.3.
