@@ -5,7 +5,7 @@ namespace Asteria.World.LevelGen;
 
 /// <summary>
 /// Configured Overworld carvers and their registry keys from Minecraft Java 26.3.
-/// These are data definitions; the chunk-generation pipeline consumes them later.
+/// BiomeGenerationSettings references these canonical values during terrain carving.
 /// </summary>
 public static class Carvers
 {
