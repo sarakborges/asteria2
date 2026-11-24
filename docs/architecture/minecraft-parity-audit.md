@@ -1498,3 +1498,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionados testes de registry, defaults opcionais da caverna, round-trip dos dois carvers, validação de probability/count/thickness/width_smoothness e determinismo das posições escavadas para sementes e chunks iguais. Os testes foram registrados no harness, mas não foram executados sem o .NET SDK.
 - Os carvers ainda não estão ligados ao `NoiseBasedChunkGenerator`: faltam `BiomeGenerationSettings` e a lista de carvers associada aos biomas, iteração vanilla da região 17×17 de chunks de origem, `CarvingMask` por etapa e aplicação da máscara pelo aquifer, incluindo `UNCARVABLE`, post-processing de fluidos e reparo de material sob grass/mycelium. Portanto `TERRAIN` continua incompleto e o status não foi promovido por este incremento.
 - Referência: `CaveWorldCarver`, `CanyonWorldCarver`, `CanyonWorldCarver.Shape`, `WorldCarverTypes` e `WorldCarver` de Minecraft Java 26.3.
+
+## Incremento — registry de carvers configurados do Overworld 26.3
+
+- Adicionado `Registries.CARVER` e `BuiltInRegistries.Carver`, distinto de `CarverType`: o primeiro guarda os valores configurados; o segundo guarda os codecs de tipos concretos.
+- Portados os três valores de dados oficiais de `Carvers.java` 26.3: `minecraft:cave`, `minecraft:cave_extra_underground` e `minecraft:canyon`. Probabilidades, anchors verticais, distribuições, parâmetros de forma e flags foram transcritos para os providers já portados, sem substituir as distribuições por constantes ou aproximações.
+- A ordem de registro do bootstrap agora inicializa os registries de codecs e providers, registra os carvers configurados e só então registra os biomas. Isso permite que o próximo incremento associe holders canônicos aos dados de geração dos biomas.
+- Adicionados testes para existência dos três registros, resolução chave-valor e todos os parâmetros configurados de Cave, Cave Extra Underground e Canyon. Os testes estão registrados no harness, mas não foram executados porque o ambiente continua sem .NET SDK.
+- Os carvers configurados ainda não estão associados aos biomas e o `NoiseBasedChunkGenerator` ainda não os executa. Permanecem: `BiomeGenerationSettings`, holders de carvers por bioma, iteração vanilla dos 17×17 chunks de origem, máscaras por etapa de carving e aplicação das máscaras via aquifer com tags e post-processing. `TERRAIN` permanece incompleto.
+- Referência: `Carvers.java` de Minecraft Java 26.3 para os três IDs e seus parâmetros configurados.
