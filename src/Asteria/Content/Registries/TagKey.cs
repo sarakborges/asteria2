@@ -1,4 +1,5 @@
 using Asteria.Content.Identifiers;
+using Asteria.Serialization;
 
 namespace Asteria.Content.Registries;
 
@@ -43,6 +44,25 @@ public readonly record struct TagKey<T> where T : class
     public TagKey<TOther>? Cast<TOther>(RegistryKey<Registry<TOther>> registry)
         where TOther : class =>
         IsFor(registry) ? TagKey<TOther>.Create(registry, Location) : null;
+
+    /// <summary>
+    /// Codec for the hash-prefixed tag identifiers used by registry holder-set codecs.
+    /// </summary>
+    public static Codec<TagKey<T>> HashedCodec(RegistryKey<Registry<T>> registry) =>
+        Codecs.STRING.FlatXMap(
+            name =>
+            {
+                if (!name.StartsWith("#", StringComparison.Ordinal))
+                    return DataResult<TagKey<T>>.Error("Not a tag id");
+
+                ResourceLocation? location = ResourceLocation.TryParse(name[1..]);
+                return location.HasValue
+                    ? DataResult<TagKey<T>>.Success(Create(registry, location.Value))
+                    : DataResult<TagKey<T>>.Error(() => $"Invalid tag id: {name}");
+            },
+            tag => tag.Location.IsValid
+                ? DataResult<string>.Success($"#{tag.Location}")
+                : DataResult<string>.Error("Not a tag id"));
 
     public override string ToString() =>
         $"TagKey[{Registry.Location} / {Location}]";

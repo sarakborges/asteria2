@@ -7,6 +7,58 @@ namespace Asteria.Serialization;
 /// <summary>Specialized data codecs shared by built-in content types.</summary>
 public static class ExtraCodecs
 {
+    /// <summary>
+    /// Encodes a one-element list as the element itself and all other list sizes as arrays,
+    /// matching DataFixerUpper's compactListCodec.
+    /// </summary>
+    public static Codec<IReadOnlyList<TValue>> CompactListCodec<TValue>(
+        Codec<TValue> elementCodec) =>
+        CompactListCodec(elementCodec, elementCodec.ListOf());
+
+    public static Codec<IReadOnlyList<TValue>> CompactListCodec<TValue>(
+        Codec<TValue> elementCodec,
+        Codec<IReadOnlyList<TValue>> listCodec)
+    {
+        ArgumentNullException.ThrowIfNull(elementCodec);
+        ArgumentNullException.ThrowIfNull(listCodec);
+        return new CompactListCodecImplementation<TValue>(elementCodec, listCodec);
+    }
+
+    private sealed class CompactListCodecImplementation<TValue> : Codec<IReadOnlyList<TValue>>
+    {
+        private readonly Codec<TValue> _elementCodec;
+        private readonly Codec<IReadOnlyList<TValue>> _listCodec;
+        private readonly Codec<IReadOnlyList<TValue>> _decodeCodec;
+
+        public CompactListCodecImplementation(
+            Codec<TValue> elementCodec,
+            Codec<IReadOnlyList<TValue>> listCodec)
+        {
+            _elementCodec = elementCodec;
+            _listCodec = listCodec;
+            _decodeCodec = listCodec.WithAlternative(
+                elementCodec,
+                static value => Array.AsReadOnly(new[] { value }));
+        }
+
+        public override DataResult<TData> Encode<TData>(
+            IReadOnlyList<TValue> input,
+            DynamicOps<TData> ops,
+            TData prefix)
+        {
+            ArgumentNullException.ThrowIfNull(input);
+
+            return input.Count == 1
+                ? _elementCodec.Encode(input[0], ops, prefix)
+                : _listCodec.Encode(input, ops, prefix);
+        }
+
+        public override DataResult<Pair<IReadOnlyList<TValue>, TData>> Decode<TData>(
+            DynamicOps<TData> ops,
+            TData input) =>
+            _decodeCodec.Decode(ops, input);
+    }
+
     public static readonly Codec<Vector3> VECTOR3F = CreateVector3Codec();
     public static readonly Codec<Vector4> VECTOR4F = CreateVector4Codec();
 
