@@ -262,7 +262,7 @@ internal static class PlacementModifierChecks
         OffsetPlacement decoded = OffsetPlacement.MAP_CODEC
             .Parse(
                 ops,
-                ParseJson("""{"x":{"min_inclusive":-2,"max_inclusive":3},"y":2,"z":-4}"""))
+                ParseJson("""{"x":{"type":"minecraft:uniform","min_inclusive":-2,"max_inclusive":3},"y":2,"z":-4}"""))
             .GetOrThrow();
 
         var origin = new BlockPos(10, 70, -20);
