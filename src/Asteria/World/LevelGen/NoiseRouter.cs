@@ -3,6 +3,7 @@ using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.Serialization;
 using Asteria.World.LevelGen.DensityFunctions;
+using DensityFunctionFactories = Asteria.World.LevelGen.DensityFunctions.DensityFunctions;
 
 namespace Asteria.World.LevelGen;
 
@@ -71,7 +72,7 @@ public sealed record NoiseRouter(
             throw new InvalidOperationException(
                 $"Unbound density function in {registry.Key}: {key}");
 
-        return new DensityFunctions.HolderHolder(holder);
+        return new DensityFunctionFactories.HolderHolder(holder);
     }
 
     private sealed record ClimateFunctions(
