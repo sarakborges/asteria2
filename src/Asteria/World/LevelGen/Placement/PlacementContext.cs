@@ -1,7 +1,6 @@
 using Asteria.Content.Blocks;
 using Asteria.Core;
 using Asteria.World;
-using Asteria.World.Level;
 using Asteria.World.LevelGen;
 
 namespace Asteria.World.LevelGen.Placement;
@@ -12,13 +11,13 @@ namespace Asteria.World.LevelGen.Placement;
 /// </summary>
 public sealed class PlacementContext
 {
-    public OverworldWorld Level { get; }
+    public WorldGenLevel Level { get; }
     public NoiseBasedChunkGenerator Generator { get; }
     public PlacedFeature? TopFeature { get; }
     public WorldGenerationContext GenerationContext { get; }
 
     public PlacementContext(
-        OverworldWorld level,
+        WorldGenLevel level,
         NoiseBasedChunkGenerator generator,
         PlacedFeature? topFeature)
     {
