@@ -31,6 +31,9 @@ public static class Mth
         return SinTable[(int)(index & SinMask)];
     }
 
+    public static float Sqrt(float value) =>
+        (float)Math.Sqrt(value);
+
     public static int Floor(float value) => Floor((double)value);
 
     public static int Floor(double value)
@@ -130,6 +133,9 @@ public static class Mth
         unchecked(numerator - FloorDiv(numerator, denominator) * denominator);
 
 
+    public static float LengthSquared(float x, float y, float z) =>
+        x * x + y * y + z * z;
+
     public static double LengthSquared(double x, double y) =>
         x * x + y * y;
 
@@ -141,6 +147,19 @@ public static class Mth
 
     public static double Length(double x, double y, double z) =>
         Math.Sqrt(LengthSquared(x, y, z));
+
+    /// <summary>
+    /// Bit-level inverse-square-root approximation retained by Minecraft Java 26.3
+    /// for structure terrain-adaptation sampling.
+    /// </summary>
+    public static double FastInvSqrt(double value)
+    {
+        double half = 0.5 * value;
+        long bits = BitConverter.DoubleToInt64Bits(value);
+        bits = unchecked(6910469410427058090L - (bits >> 1));
+        value = BitConverter.Int64BitsToDouble(bits);
+        return value * (1.5 - half * value * value);
+    }
 
     private static long JavaLongCast(double value)
     {
