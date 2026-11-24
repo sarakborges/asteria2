@@ -100,7 +100,7 @@ public static class BuiltInRegistries
     public static Registry<MapCodec<Feature>> FeatureType { get; } =
         RegisterSimple<MapCodec<Feature>>(
             Registries.FEATURE_TYPE.Location,
-            static () => { });
+            static () => FeatureCodecBootstrap.RegisterAll(FeatureType));
 
     public static Registry<Feature> Feature { get; } =
         RegisterSimple<Feature>(
