@@ -33,6 +33,7 @@ internal static class PlacementModifierChecks
     public static void Run()
     {
         CheckTypeRegistry();
+        CheckWorldGenerationContextIntersection();
         CheckModifierCodecs();
         CheckInSquarePlacement();
         CheckRarityFilter();
@@ -42,6 +43,22 @@ internal static class PlacementModifierChecks
         CheckOffsetPlacement();
         CheckBiomeFilter();
         CheckFeaturePlacerOrder();
+    }
+
+    private static void CheckWorldGenerationContextIntersection()
+    {
+        const long seed = 0x564552544943414CL;
+        var world = new OverworldWorld(
+            seed,
+            LevelHeightAccessor.Create(-80, 100));
+        NoiseBasedChunkGenerator generator = NoiseBasedChunkGenerator.CreateOverworld(seed);
+        var context = new PlacementContext(world, generator, topFeature: null);
+
+        Require(
+            context.GenerationContext.GetMinGenY() == -64 &&
+            context.GenerationContext.GetGenDepth() == 84 &&
+            context.GenerationContext.GetMaxGenY() == 19,
+            "PlacementContext must intersect absolute world and generator vertical intervals, not combine their heights independently.");
     }
 
     private static void CheckTypeRegistry()
