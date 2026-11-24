@@ -1,5 +1,4 @@
 using Asteria.Core;
-using Asteria.World.Level;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.Features;
 
@@ -11,13 +10,13 @@ namespace Asteria.World.LevelGen.Placement;
 /// </summary>
 public sealed class FeaturePlacer
 {
-    private readonly OverworldWorld _level;
+    private readonly WorldGenLevel _level;
     private readonly NoiseBasedChunkGenerator _generator;
     private readonly List<BlockPos> _positions = new();
     private readonly List<int> _modifierIndices = new();
     private readonly List<BlockPos> _modifiedPositions = new();
 
-    public FeaturePlacer(OverworldWorld level, NoiseBasedChunkGenerator generator)
+    public FeaturePlacer(WorldGenLevel level, NoiseBasedChunkGenerator generator)
     {
         _level = level ?? throw new ArgumentNullException(nameof(level));
         _generator = generator ?? throw new ArgumentNullException(nameof(generator));
