@@ -203,6 +203,107 @@ internal static class BuiltInDensityFunctions
             4.0f);
     }
 
+    /// <summary>
+    /// Applies Minecraft Java 26.3's Overworld top and bottom density slides.
+    /// </summary>
+    internal static DensityFunction SlideOverworld(
+        bool amplified,
+        DensityFunction density) =>
+        Slide(
+            density,
+            -64,
+            384,
+            amplified ? 16 : 80,
+            amplified ? 0 : 64,
+            -0.078125f,
+            0,
+            24,
+            amplified ? 0.4f : 0.1171875f);
+
+    /// <summary>
+    /// Applies the vanilla top and bottom Y-gradient slides in their original order.
+    /// </summary>
+    internal static DensityFunction Slide(
+        DensityFunction density,
+        int minY,
+        int height,
+        int topStartY,
+        int topEndY,
+        float topTarget,
+        int bottomStartY,
+        int bottomEndY,
+        float bottomTarget)
+    {
+        ArgumentNullException.ThrowIfNull(density);
+
+        DensityFunction topFactor = DensityFunctionFactories.YClampedGradient(
+            minY + height - topStartY,
+            minY + height - topEndY,
+            1.0f,
+            0.0f);
+
+        DensityFunction slidTop = DensityFunctionFactories.Lerp(
+            topFactor,
+            topTarget,
+            density);
+
+        DensityFunction bottomFactor = DensityFunctionFactories.YClampedGradient(
+            minY + bottomStartY,
+            minY + bottomEndY,
+            0.0f,
+            1.0f);
+
+        return DensityFunctionFactories.Lerp(
+            bottomFactor,
+            bottomTarget,
+            slidTop);
+    }
+
+    /// <summary>
+    /// Builds the vanilla Overworld preliminary surface-level function.
+    /// </summary>
+    internal static DensityFunction PreliminarySurfaceLevel(
+        DensityFunction offset,
+        DensityFunction factor,
+        bool amplified)
+    {
+        ArgumentNullException.ThrowIfNull(offset);
+        ArgumentNullException.ThrowIfNull(factor);
+
+        DensityFunction upperBound = Remap(
+            DensityFunctionFactories.Sub(
+                DensityFunctionFactories.Div(
+                    DensityFunctionFactories.Constant(0.2734375f),
+                    factor),
+                offset),
+            1.5f,
+            -1.5f,
+            -64.0f,
+            320.0f);
+
+        upperBound = DensityFunctionFactories.Clamp(upperBound, -40.0f, 320.0f);
+
+        DensityFunction depth = OffsetToDepth(offset);
+        DensityFunction initialDensity = DensityFunctionsDensityGradient(factor, depth);
+        DensityFunction slidDensity = SlideOverworld(
+            amplified,
+            DensityFunctionFactories.Clamp(
+                DensityFunctionFactories.Add(initialDensity, -0.703125f),
+                -64.0f,
+                64.0f));
+
+        DensityFunction density = DensityFunctionFactories.Add(
+            slidDensity,
+            -0.390625f);
+
+        return new FindTopSurfaceFunction(density, upperBound, -64, 8);
+    }
+
+    private static DensityFunction DensityFunctionsDensityGradient(
+        DensityFunction factor,
+        DensityFunction depthWithJaggedness) =>
+        NoiseGradientDensity(factor, depthWithJaggedness);
+
     private static void RegisterOreVeins(Registry<DensityFunction> registry)
     {
         Holder<NormalNoise> veininessNoise = GetNoise(Noises.ORE_VEININESS);
