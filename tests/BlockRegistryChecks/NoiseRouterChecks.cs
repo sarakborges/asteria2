@@ -28,6 +28,7 @@ internal static class NoiseRouterChecks
     {
         CheckCodecRoundTrip();
         CheckClimateSamplerMapping();
+        CheckOverworldFunctionSetMapping();
     }
 
     private static NoiseRouter CreateRouter() =>
@@ -40,6 +41,43 @@ internal static class NoiseRouterChecks
             new ConstantFunction(-0.75f),
             new ConstantFunction(0.875f),
             new ConstantFunction(-1.0f));
+
+    private static void CheckOverworldFunctionSetMapping()
+    {
+        var functions = new OverworldFunctionSet<DensityFunction>(
+            new ConstantFunction(1.0f),
+            new ConstantFunction(2.0f),
+            new ConstantFunction(3.0f),
+            new ConstantFunction(4.0f),
+            new ConstantFunction(5.0f),
+            new ConstantFunction(6.0f),
+            new ConstantFunction(7.0f),
+            new ConstantFunction(8.0f),
+            new ConstantFunction(9.0f),
+            new ConstantFunction(10.0f),
+            new ConstantFunction(11.0f),
+            new ConstantFunction(12.0f));
+        DensityFunction ridges = new ConstantFunction(13.0f);
+
+        NoiseRouter router = NoiseRouter.CreateOverworld(functions, ridges);
+
+        Require(
+            ReferenceEquals(router.Temperature, functions.Temperature) &&
+            ReferenceEquals(router.Vegetation, functions.Vegetation) &&
+            ReferenceEquals(router.Continents, functions.Continents) &&
+            ReferenceEquals(router.Erosion, functions.Erosion) &&
+            ReferenceEquals(router.Depth, functions.Depth) &&
+            ReferenceEquals(router.Ridges, ridges) &&
+            ReferenceEquals(router.ChunkSurfaceLevel, functions.ChunkSurfaceLevel) &&
+            ReferenceEquals(router.FinalDensity, functions.FinalDensity),
+            "NoiseRouter.createOverworld must map the twelve-slot function set to the exact eight vanilla router channels.");
+
+        Require(
+            router.Ridges is ConstantFunction { Value: 13.0f } &&
+            router.ChunkSurfaceLevel is ConstantFunction { Value: 11.0f } &&
+            router.FinalDensity is ConstantFunction { Value: 12.0f },
+            "NoiseRouter.createOverworld must take ridges from the shared ridge function and retain chunk_surface_level/final_density from the function set.");
+    }
 
     private static void CheckCodecRoundTrip()
     {
