@@ -5,8 +5,10 @@ using Asteria.World.LevelGen;
 namespace Asteria.World.LevelGen.Placement;
 
 /// <summary>Emits a position with probability 1/chance.</summary>
-public sealed record RarityFilter(int Chance) : PlacementFilter
+public sealed class RarityFilter : PlacementFilter
 {
+    public int Chance { get; }
+
     public static MapCodec<RarityFilter> MAP_CODEC { get; } =
         Codecs.IntRange(1, int.MaxValue)
             .FieldOf("chance")
@@ -19,10 +21,12 @@ public sealed record RarityFilter(int Chance) : PlacementFilter
             static modifier => modifier,
             static modifier => (RarityFilter)modifier);
 
+    public RarityFilter(int chance) => Chance = chance;
+
     public static RarityFilter OnAverageOnceEvery(int chance) =>
         new(chance);
 
-    public bool ShouldPlace(
+    public override bool ShouldPlace(
         PlacementContext context,
         IRandomSource random,
         BlockPos origin)
@@ -33,5 +37,5 @@ public sealed record RarityFilter(int Chance) : PlacementFilter
         return random.NextFloat() < 1.0f / Chance;
     }
 
-    public MapCodec<PlacementModifier> Codec() => TYPE_CODEC;
+    public override MapCodec<PlacementModifier> Codec() => TYPE_CODEC;
 }
