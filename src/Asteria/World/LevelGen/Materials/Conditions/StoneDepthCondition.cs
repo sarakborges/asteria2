@@ -21,7 +21,7 @@ public sealed record StoneDepthCondition(
                         .ForGetter<StoneDepthCondition>(static condition => condition.AddSurfaceDepth),
                     Codecs.INT.FieldOf("secondary_depth_range")
                         .ForGetter<StoneDepthCondition>(static condition => condition.SecondaryDepthRange),
-                    CaveSurfaceCodecs.CODEC.FieldOf("surface_type")
+                    CaveSurface.CODEC.FieldOf("surface_type")
                         .ForGetter<StoneDepthCondition>(static condition => condition.SurfaceType))
                 .Apply(
                     instance,

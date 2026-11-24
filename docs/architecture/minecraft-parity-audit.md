@@ -1031,3 +1031,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `MaterialRuleContext` ganhou `surfaceDepth` e caches lazy de condições XZ/Y, invalidados pelos contadores vanilla de atualização.
 - Testes cobrem codecs namespaced, holders, singleton codecs, inversão, cache e invalidação XZ, HoleCondition e integração serializada/compilada de ConditionRule.
 - Permanecem pendentes condições dependentes de biome, noise e serviços completos de superfície, além de MaterialSystem e do dataset vanilla.
+
+
+## Incremento — condições de água, superfície preliminar e profundidade (24/11/2026)
+
+- Portadas `WaterCondition` (`offset`, `surface_depth_multiplier`, `add_stone_depth`) e seu predicado lazy por Y, incluindo o caso sem água acima e validação -20…20.
+- Portada `AbovePreliminarySurfaceCondition`, comparando `blockY >= minSurfaceLevel` conforme 26.3.
+- Portados `CaveSurface` (`ceiling`/`floor`) e `StoneDepthCondition`, incluindo profundidade acima/abaixo, `surfaceDepth`, faixa secundária mapeada de -1…1 e cache lazy Y.
+- O contexto aceita `surfaceSecondary` e `minSurfaceLevel` na atualização de coluna; seu cálculo permanece responsabilidade do MaterialSystem, ainda não portado.
+- O registry atualiza a ordem relativa vanilla dos seis tipos implementados: water, steep, not, hole, above_preliminary_surface e stone_depth. Tipos anteriores que exigem biome, noise ou vertical anchors seguem pendentes.
+- Testes cobrem codecs, limites, comparações de floor/ceiling e atualizações das caches XZ/Y.
