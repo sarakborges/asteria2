@@ -1083,3 +1083,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Os codecs e o bootstrap de material conditions seguem a ordem relativa 26.3 para `vertical_gradient` e `y_above` antes de `water`.
 - Testes cobrem codecs de anchors e condições, bounds, interseção de altura e determinismo posicional.
 - Permanecem pendentes condições de biome, noise threshold e temperature, além da execução do MaterialSystem que popula os dados do contexto durante a passada de superfície.
+
+
+## Incremento — biome, noise threshold e temperature conditions (24/11/2026)
+
+- Adicionada a chave canônica `Registries.BIOME` e implementada `BiomeCondition` com `biome_is`, holder sets, cache lazy de biome por posição Y e otimização `possibleBiomes` para resultado constante verdadeiro/falso.
+- Implementada `NoiseThresholdCondition` com resource key `noise`, limites inclusivos `min_threshold`/`max_threshold` e campo opcional `is_3d`; o contexto reutiliza `NormalNoise` e cacheia amostras 2D por XZ e 3D por Y.
+- Implementada `TemperatureCondition` como singleton, consultando `Biome.ColdEnoughToSnow` na posição atual e no sea level da dimensão.
+- Atualizada a ordem dos codecs no bootstrap de 26.3: biome, noise_threshold, vertical_gradient, y_above, water, temperature, steep, not, hole, above_preliminary_surface, stone_depth.
+- Testes cobrem holder-set serializado em RegistryOps, cache e invalidação de biome, pré-computação por biomas possíveis, codecs 2D/3D, limites de ruído e temperatura em baixa/alta altitude.
+- O cálculo de `surfaceDepth`, `surfaceSecondary`, `minSurfaceLevel`, `possibleBiomes` e o preenchimento do contexto durante a passada de superfície ainda dependem do `MaterialSystem`, que permanece o próximo port.
