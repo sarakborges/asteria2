@@ -1,11 +1,82 @@
+using System.Text.Json;
+using Asteria.Content.Registries;
 using Asteria.Core;
+using Asteria.Serialization;
 using Asteria.World;
 using Asteria.World.LevelGen.Structure;
 
 internal static class BoundingBoxChecks
 {
+    private static void CheckCodec()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        var expected = new BoundingBox(-12, -64, 23, 45, 319, -7);
+
+        JsonElement encoded = BoundingBox.CODEC.EncodeStart(ops, expected).GetOrThrow();
+        IReadOnlyList<JsonElement> components = ops.GetList(encoded).GetOrThrow();
+        Require(components.Count == 6 &&
+                components[0].GetInt32() == -12 &&
+                components[1].GetInt32() == -64 &&
+                components[2].GetInt32() == 23 &&
+                components[3].GetInt32() == 45 &&
+                components[4].GetInt32() == 319 &&
+                components[5].GetInt32() == -7,
+            "BoundingBox.CODEC must encode exactly minX/minY/minZ/maxX/maxY/maxZ.");
+
+        BoundingBox decoded = BoundingBox.CODEC.Parse(ops, encoded).GetOrThrow();
+        Require(decoded.Equals(expected),
+            "BoundingBox.CODEC must round-trip all six integer bounds.");
+
+        JsonElement shortList = ops.CreateList(new[]
+        {
+            ops.CreateInt(1), ops.CreateInt(2), ops.CreateInt(3),
+            ops.CreateInt(4), ops.CreateInt(5)
+        });
+        DataResult<BoundingBox> shortResult = BoundingBox.CODEC.Parse(ops, shortList);
+        Require(shortResult.IsError &&
+                shortResult.ErrorMessage == "Input is not a list of 6 ints" &&
+                !shortResult.HasResultOrPartial,
+            "BoundingBox.CODEC must reject lists shorter than six without a partial box.");
+
+        JsonElement longList = ops.CreateList(new[]
+        {
+            ops.CreateInt(1), ops.CreateInt(2), ops.CreateInt(3),
+            ops.CreateInt(4), ops.CreateInt(5), ops.CreateInt(6), ops.CreateInt(7)
+        });
+        DataResult<BoundingBox> longResult = BoundingBox.CODEC.Parse(ops, longList);
+        Require(longResult.IsError &&
+                longResult.ErrorMessage == "Input is not a list of 6 ints" &&
+                longResult.TryGetPartial(out BoundingBox partial) &&
+                partial.Equals(new BoundingBox(1, 2, 3, 4, 5, 6)),
+            "BoundingBox.CODEC must keep the first six values as a partial result for oversized lists.");
+
+        JsonElement invalidComponent = ops.CreateList(new[]
+        {
+            ops.CreateInt(1), ops.CreateInt(2), ops.CreateString("not an int"),
+            ops.CreateInt(4), ops.CreateInt(5), ops.CreateInt(6)
+        });
+        Require(BoundingBox.CODEC.Parse(ops, invalidComponent).IsError,
+            "BoundingBox.CODEC must reject a component that is not an integer.");
+
+        Require(ReferenceEquals(
+                BoundingBox.CODEC.Parse(ops, encoded).Lifecycle,
+                Lifecycle.Stable()),
+            "BoundingBox.CODEC must be marked stable like the vanilla disk codec.");
+
+        JsonElement inverted = ops.CreateList(new[]
+        {
+            ops.CreateInt(5), ops.CreateInt(4), ops.CreateInt(3),
+            ops.CreateInt(-1), ops.CreateInt(-2), ops.CreateInt(-3)
+        });
+        Require(BoundingBox.CODEC.Parse(ops, inverted).GetOrThrow()
+                .Equals(new BoundingBox(-1, -2, -3, 5, 4, 3)),
+            "BoundingBox.CODEC must pass inverted axes through the constructor's vanilla normalization.");
+    }
+
     public static void Run()
     {
+        CheckCodec();
+
         var box = new BoundingBox(-4, 10, -8, 3, 14, 7);
         Require(box.MinX() == -4 && box.MinY() == 10 && box.MinZ() == -8 &&
             box.MaxX() == 3 && box.MaxY() == 14 && box.MaxZ() == 7,

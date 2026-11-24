@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using Asteria.Content.Registries;
 using Asteria.Core;
+using Asteria.Serialization;
 using Asteria.World;
 
 namespace Asteria.World.LevelGen.Structure;
@@ -10,6 +12,40 @@ namespace Asteria.World.LevelGen.Structure;
 /// </summary>
 public class BoundingBox : IEquatable<BoundingBox>
 {
+    /// <summary>
+    /// Stable six-integer local-data codec in minX/minY/minZ/maxX/maxY/maxZ order.
+    /// Oversized input retains the first six integers as a partial result, matching
+    /// Minecraft Java 26.3 Util.fixedSize(IntStream, 6).
+    /// </summary>
+    public static Codec<BoundingBox> CODEC { get; } =
+        Codecs.INT.ListOf().FlatXMap(
+            static values =>
+            {
+                if (values.Count != 6)
+                {
+                    const string error = "Input is not a list of 6 ints";
+                    return values.Count > 6
+                        ? DataResult<BoundingBox>.Error(
+                            error,
+                            new BoundingBox(
+                                values[0], values[1], values[2],
+                                values[3], values[4], values[5]))
+                        : DataResult<BoundingBox>.Error(error);
+                }
+
+                return DataResult<BoundingBox>.Success(
+                    new BoundingBox(
+                        values[0], values[1], values[2],
+                        values[3], values[4], values[5]));
+            },
+            static box => DataResult<IReadOnlyList<int>>.Success(
+                new[]
+                {
+                    box._minX, box._minY, box._minZ,
+                    box._maxX, box._maxY, box._maxZ
+                }))
+        .WithLifecycle(Lifecycle.Stable());
+
     private int _minX;
     private int _minY;
     private int _minZ;

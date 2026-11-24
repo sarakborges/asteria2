@@ -459,7 +459,7 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 
 ## Incremento — ciclo de vida de chunks: ChunkStatus (23/11/2026)
 
-- Portados `ChunkType` e os dez `ChunkStatus` do Minecraft Java 26.3 na ordem original, com parent chain, índices, comparação de status, `max`, resolução pelo nome e codec do registry.
+- Portados os nove estágios de chunk mantidos no escopo single-player. A etapa vanilla `SPAWN` foi removida porque executa spawn de mobs; os demais estágios mantêm a ordem relativa, parent chain, índices, comparações, `max`, resolução por nome e codec do registry.
 - Adicionado o registry built-in `chunk_status` ao root registry. `full` é o único status de tipo `LEVELCHUNK`; os nove anteriores são `PROTOCHUNK`.
 - Os status iniciais compartilham o conjunto `WORLDGEN_HEIGHTMAPS`; `terrain` e os seguintes compartilham `FINAL_HEIGHTMAPS`, conforme a referência.
 - Esse commit porta apenas o metadado dos estágios. Execução de tarefas, dependências de vizinhança e promoção ProtoChunk/LevelChunk permanecem pendentes de `ChunkStep`, `ChunkPyramid`, `ProtoChunk` e `LevelChunk`.
@@ -503,15 +503,15 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Portado `DensityBuffer` de Minecraft Java 26.3: array `float[]`, tamanho/capacidade fixos, `set`, `setRange`, `addTo`, `get`, `fill` e `copyFrom`.
 - `copyFrom` mantém a mensagem e o tipo de erro da referência ao receber tamanho incompatível. Não foi introduzido pooling: somente a factory `createUnpooled` faz parte da classe-base atual.
 - Testes verificam armazenamento linear, preenchimento de intervalo semiaberto, soma em precisão `float`, cópia, mismatch, capacidade fixa e buffer vazio.
-- `DensityVolume` ainda depende do port de `BoundingBox`; `Noise.addToVolume` e a integração do volume serão conectados quando esse contrato estiver disponível.
+- `BoundingBox` agora está disponível para `DensityVolume`; `Noise.addToVolume` e a integração do volume continuam pendentes.
 
 
 ## Incremento — BoundingBox geométrico (23/11/2026)
 
-- Portada a geometria completa de `BoundingBox` de Minecraft Java 26.3: construção/normalização, ordenação por cantos, caixa infinita, orientação por direção, chunks intersectados, interseção 3D/2D, encapsulamento, translação, inflação, contenção, dimensões, centro, enumeração de cantos, igualdade, hash e string.
+- Portada a geometria completa de `BoundingBox` e o codec de dados local de Minecraft Java 26.3: seis inteiros na ordem minX/minY/minZ/maxX/maxY/maxZ, com resultado parcial para listas longas e lifecycle Stable. A geometria inclui construção/normalização, cantos, caixa infinita, orientação por direção, chunks intersectados, interseção 3D/2D, encapsulamento, translação, inflação, contenção, dimensões, centro, enumeração de cantos, igualdade, hash e string.
 - A classe permanece com limites inclusivos, mesma ordem de cantos e mutabilidade nas operações `move`/`encapsulate`.
-- `CODEC` de disco permanece pendente do escopo atual de persistência; `STREAM_CODEC` é excluído por multiplayer/rede. A geometria não depende desses codecs.
-- `BoundingBoxChecks` cobre normalização, limites, interseção, transforms, orientação cardinal, chunks, cantos, igualdade e hash.
+- `CODEC` de dados local está implementado. `STREAM_CODEC` permanece excluído por pertencer à camada de protocolo/rede.
+- `BoundingBoxChecks` cobre codec, ordem dos seis campos, round-trip, comprimentos inválidos e valor parcial, além de normalização, limites, interseção, transforms, orientação cardinal, chunks, cantos, igualdade e hash.
 - O tipo agora fornece o contrato exigido por `DensityVolume.intersects` sem criar uma abstração geométrica ad hoc.
 
 
