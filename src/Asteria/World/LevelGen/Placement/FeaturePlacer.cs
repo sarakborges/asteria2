@@ -50,13 +50,13 @@ public sealed class FeaturePlacer
 
         Feature feature = placedFeature.Feature.Value;
         IReadOnlyList<PlacementModifier> placement = placedFeature.Placement;
-        if (placement.Count == 0)
-            return feature.Place(_level, _generator, random, origin);
-
         var context = new PlacementContext(
             _level,
             _generator,
             biomeCheck ? placedFeature : null);
+
+        if (placement.Count == 0)
+            return feature.Place(_level, _generator, random, origin);
 
         bool placedAny = false;
         _positions.Add(origin);
