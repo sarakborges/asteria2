@@ -1390,3 +1390,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - `onNodeAdded`/`onNodeRemoved` atualizam a seção superior por coluna, inclusive varrendo para baixo até encontrar a próxima camada ainda armazenada.
 - Testes cobrem defaults de luz publicada/em atualização, flags por coluna, top/bottom section, projeção de luz, repetição de fatia, armazenamento homogêneo lazy, dados enfileirados e remoção da seção superior.
 - Fonte consultada: `SkyLightSectionStorage.java` de Minecraft Java 26.3. A propagação de céu propriamente dita ainda depende de `SkyLightEngine` e do motor comum de atualização.
+
+
+## Incremento — motor comum de filas de luz 26.3 (24/11/2026)
+
+- Portados os contratos `LightEventListener`/`LayerLightEventListener` e o listener dummy sem luz. O adaptador não genérico `LightEngine` mantém os dois hooks já usados por `ProtoChunk`; o motor genérico concentra o fluxo de propagação e implementa a interface de listener.
+- O motor comum mantém conjunto de blocos a verificar, filas FIFO de pares (posição/dados) para redução e aumento, cache de duas chunks incluindo resultados ausentes, fallback de consulta para bedrock quando a chunk não está disponível, e a ordem 26.3: verificar blocos, propagar reduções, limpar cache, processar inconsistências, publicar snapshots e então propagar aumentos.
+- Portada a codificação compacta `QueueEntry`: bits de nível, seis direções, flags de shape vazio e origem de emissão; também os construtores para redução/aumento por direções e fontes SKY. Os auxiliares de shape de luz incluem `GetLightDampeningInto`, `GetOcclusionShape` e comparação de propriedades relevantes.
+- Testes cobrem máscara e truncamento de nível, todos os bits de direção, omissão de uma direção, flags de emissão/shape, direções de fonte SKY, listener dummy e auxiliares de oclusão.
+- As especializações BLOCK/SKY ainda precisam ligar suas transições de bloco e algoritmos próprios a este núcleo; o port comum não apresenta terreno nem produz iluminação visual por conta própria.
