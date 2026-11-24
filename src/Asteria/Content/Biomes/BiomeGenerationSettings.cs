@@ -93,7 +93,16 @@ public sealed class BiomeGenerationSettings
             Holder<PlacedFeature> feature)
         {
             ArgumentNullException.ThrowIfNull(step);
-            int index = GenerationStep.Decoration.Values.IndexOf(step);
+            int index = -1;
+            for (int candidate = 0; candidate < GenerationStep.Decoration.Values.Count; candidate++)
+            {
+                if (ReferenceEquals(GenerationStep.Decoration.Values[candidate], step))
+                {
+                    index = candidate;
+                    break;
+                }
+            }
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(step));
 
