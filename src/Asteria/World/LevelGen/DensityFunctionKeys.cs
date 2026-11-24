@@ -60,6 +60,13 @@ public static class DensityFunctionKeys
     public static RegistryKey<DensityFunction> OVERWORLD_LARGE_CHUNK_SURFACE_LEVEL { get; } = CreateKey("overworld_large_biomes/chunk_surface_level");
     public static RegistryKey<DensityFunction> OVERWORLD_LARGE_FINAL_DENSITY { get; } = CreateKey("overworld_large_biomes/final_density");
 
+    public static RegistryKey<DensityFunction> SPAGHETTI_ROUGHNESS_FUNCTION { get; } = CreateKey("overworld/caves/spaghetti_roughness_function");
+    public static RegistryKey<DensityFunction> ENTRANCES { get; } = CreateKey("overworld/caves/entrances");
+    public static RegistryKey<DensityFunction> NOODLE { get; } = CreateKey("overworld/caves/noodle");
+    public static RegistryKey<DensityFunction> PILLARS { get; } = CreateKey("overworld/caves/pillars");
+    public static RegistryKey<DensityFunction> SPAGHETTI_2D_THICKNESS_MODULATOR { get; } = CreateKey("overworld/caves/spaghetti_2d_thickness_modulator");
+    public static RegistryKey<DensityFunction> SPAGHETTI_2D { get; } = CreateKey("overworld/caves/spaghetti_2d");
+
     /// <summary>
     /// Vanilla's twelve density-function keys for normal Overworld generation.
     /// </summary>
