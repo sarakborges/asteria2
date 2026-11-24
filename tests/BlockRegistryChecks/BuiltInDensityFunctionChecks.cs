@@ -58,35 +58,37 @@ internal static class BuiltInDensityFunctionChecks
             registry.Key.RegistryLocation == BuiltInRegistries.RootLocation,
             "The density-function value registry must use Asteria's worldgen/density_function registry key.");
 
+        string[] expectedPaths =
+        [
+            "zero", "y",
+            "overworld/ore_vein/toggle",
+            "overworld/ore_vein/richness",
+            "overworld/ore_vein/mask",
+            "overworld/ore_vein/copper_density",
+            "overworld/ore_vein/iron_density",
+            "overworld/ore_vein/gap",
+            "shift_x", "shift_z",
+            "overworld/base_3d_noise", "nether/base_3d_noise", "end/base_3d_noise",
+            "overworld/temperature", "overworld_large_biomes/temperature",
+            "overworld/vegetation", "overworld_large_biomes/vegetation",
+            "overworld/continents", "overworld/erosion", "overworld/ridges",
+            "overworld/ridges_folded",
+            "overworld_large_biomes/continents", "overworld_large_biomes/erosion",
+            "overworld/offset", "overworld/factor", "overworld/depth", "overworld/jaggedness",
+            "overworld/sloped_cheese", "overworld/preliminary_surface_level", "overworld/chunk_surface_level",
+            "overworld_large_biomes/offset", "overworld_large_biomes/factor",
+            "overworld_large_biomes/depth", "overworld_large_biomes/jaggedness",
+            "overworld_large_biomes/sloped_cheese", "overworld_large_biomes/preliminary_surface_level",
+            "overworld_large_biomes/chunk_surface_level",
+            "overworld_amplified/offset", "overworld_amplified/factor",
+            "overworld_amplified/depth", "overworld_amplified/jaggedness",
+            "overworld_amplified/sloped_cheese", "overworld_amplified/preliminary_surface_level",
+            "overworld_amplified/chunk_surface_level"
+        ];
+
         Require(
-            actualPaths.SequenceEqual(new[]
-            {
-                "zero", "y",
-                "overworld/ore_vein/toggle",
-                "overworld/ore_vein/richness",
-                "overworld/ore_vein/mask",
-                "overworld/ore_vein/copper_density",
-                "overworld/ore_vein/iron_density",
-                "overworld/ore_vein/gap",
-                "shift_x", "shift_z",
-                "overworld/base_3d_noise", "nether/base_3d_noise", "end/base_3d_noise",
-                "overworld/temperature", "overworld_large_biomes/temperature",
-                "overworld/vegetation", "overworld_large_biomes/vegetation",
-                "overworld/continents", "overworld/erosion", "overworld/ridges",
-                "overworld/ridges_folded",
-                "overworld_large_biomes/continents", "overworld_large_biomes/erosion",
-                "overworld/offset", "overworld/factor", "overworld/depth", "overworld/jaggedness",
-                "overworld/sloped_cheese", "overworld/preliminary_surface_level", "overworld/chunk_surface_level",
-                "overworld_large_biomes/offset", "overworld_large_biomes/factor",
-                "overworld_large_biomes/depth", "overworld_large_biomes/jaggedness",
-                "overworld_large_biomes/sloped_cheese", "overworld_large_biomes/preliminary_surface_level",
-                "overworld_large_biomes/chunk_surface_level",
-                "overworld_amplified/offset", "overworld_amplified/factor",
-                "overworld_amplified/depth", "overworld_amplified/jaggedness",
-                "overworld_amplified/sloped_cheese", "overworld_amplified/preliminary_surface_level",
-                "overworld_amplified/chunk_surface_level"
-            }, StringComparer.Ordinal),
-            "The density-function registry must preserve the Minecraft 26.3 NoiseRouterData.bootstrap order for the ported entries.");
+            actualPaths.SequenceEqual(expectedPaths, StringComparer.Ordinal),
+            $"The density-function registry must preserve the Minecraft 26.3 NoiseRouterData.bootstrap order. Expected [{string.Join(", ", expectedPaths)}], got [{string.Join(", ", actualPaths)}].");
 
         Require(
             registry.Entries.All(holder => holder.IsBound),
@@ -230,7 +232,7 @@ internal static class BuiltInDensityFunctionChecks
                 Right: DensityFunctions.HolderHolder { Function: var offsetHolder }
             } &&
             ReferenceEquals(depthAxis, Direction.Axis.Y) &&
-            ReferenceEquals(offsetHolder, offset),
+            ReferenceEquals(offsetHolder, registry.GetHolder(names.Offset)),
             $"{keyPrefix} depth must be offset_to_depth of the registered offset holder.");
 
         Require(
@@ -257,7 +259,7 @@ internal static class BuiltInDensityFunctionChecks
             } &&
             ReferenceEquals(
                 baseNoise,
-                registry.GetValueOrThrow(DensityFunctionKeys.BASE_3D_NOISE_OVERWORLD)),
+                registry.GetHolder(DensityFunctionKeys.BASE_3D_NOISE_OVERWORLD)),
             $"{keyPrefix} sloped_cheese must cache the initial density plus the shared Overworld base 3D noise.");
 
         Require(
@@ -275,7 +277,7 @@ internal static class BuiltInDensityFunctionChecks
                 CellSizeY: 1,
                 Input: DensityFunctions.HolderHolder { Function: var surfaceLevel }
             } &&
-            ReferenceEquals(surfaceLevel, preliminarySurfaceLevel),
+            ReferenceEquals(surfaceLevel, registry.GetHolder(names.PreliminarySurfaceLevel)),
             $"{keyPrefix} chunk_surface_level must interpolate the registered preliminary surface level at 16x1 cells.");
 
         if (amplified)
