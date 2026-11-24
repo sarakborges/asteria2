@@ -430,7 +430,7 @@ internal static class NoiseBasedChunkGeneratorChecks
         var aquiferConfig = new Aquifer.Config(
             BarrierNoise: new ConstantFunction(100.0f),
             FluidLevelFloodednessNoise: new ConstantFunction(0.5f),
-            FluidLevelSpreadNoise: new ConstantFunction(0.0f),
+            FluidLevelSpreadNoise: new ConstantFunction(10.0f),
             LavaNoise: new ConstantFunction(0.0f),
             Exclusion: new ConstantFunction(0.0f),
             SurfaceLevel: new ConstantFunction(128.0f));
