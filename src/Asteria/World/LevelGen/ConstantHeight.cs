@@ -3,7 +3,7 @@ using Asteria.Serialization;
 namespace Asteria.World.LevelGen;
 
 /// <summary>Resolves one vertical anchor without consuming random values.</summary>
-public sealed record ConstantHeight : HeightProvider
+public sealed class ConstantHeight : HeightProvider
 {
     public static ConstantHeight ZERO { get; } =
         new(VerticalAnchor.Absolute(0));
@@ -27,8 +27,9 @@ public sealed record ConstantHeight : HeightProvider
     public static ConstantHeight Of(VerticalAnchor value) =>
         new(value);
 
-    public int Sample(IRandomSource random, WorldGenerationContext context)
+    public override int Sample(IRandomSource random, WorldGenerationContext context)
     {
+        ArgumentNullException.ThrowIfNull(random);
         ArgumentNullException.ThrowIfNull(context);
         return Value.ResolveY(context);
     }
