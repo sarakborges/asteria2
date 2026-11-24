@@ -44,6 +44,7 @@ internal static class BuiltInDensityFunctionChecks
         CheckSimpleDensityFunctions();
         CheckBlendDensityFunction();
         CheckOverworldTerrainRegistration();
+        CheckMappedNoiseFactories();
     }
 
     private static void CheckRegistryAndRegistrationOrder()
@@ -146,6 +147,91 @@ internal static class BuiltInDensityFunctionChecks
             "The y gradient must clamp samples outside the dimension-derived vertical bounds.");
     }
 
+
+    private static void CheckMappedNoiseFactories()
+    {
+        Holder<NormalNoise> noiseHolder =
+            BuiltInRegistries.Noise.GetHolder(Noises.SPAGHETTI_3D_THICKNESS) ??
+            throw new InvalidOperationException("Missing built-in spaghetti 3D thickness noise holder.");
+
+        DensityFunction mapped = DensityFunctions.MappedNoise(
+            noiseHolder,
+            2.0,
+            0.5,
+            -0.065f,
+            -0.088f);
+
+        Require(
+            mapped is BinaryFunction
+            {
+                Operation: BinaryFunction.Type.ADD,
+                Left: BinaryFunction
+                {
+                    Operation: BinaryFunction.Type.MUL,
+                    Left: NoiseFunction
+                    {
+                        XzScale: 2.0,
+                        YScale: 0.5,
+                        NoiseData: var actualNoise,
+                        ShiftX: ConstantFunction { Value: 0.0f },
+                        ShiftY: ConstantFunction { Value: 0.0f },
+                        ShiftZ: ConstantFunction { Value: 0.0f }
+                    },
+                    Right: ConstantFunction { Value: var scale }
+                },
+                Right: ConstantFunction { Value: var offset }
+            } &&
+            ReferenceEquals(actualNoise, noiseHolder) &&
+            MathF.Abs(scale - (-0.0115f)) < 0.000001f &&
+            MathF.Abs(offset - (-0.0765f)) < 0.000001f,
+            "mapped_noise must build the vanilla unshifted noise node and exact linear remap from [-1, 1] to its target interval.");
+
+        DensityFunction yScaled = DensityFunctions.MappedNoise(
+            noiseHolder,
+            0.75,
+            -0.1f,
+            0.2f);
+
+        Require(
+            yScaled is BinaryFunction
+            {
+                Operation: BinaryFunction.Type.ADD,
+                Left: BinaryFunction
+                {
+                    Operation: BinaryFunction.Type.MUL,
+                    Left: NoiseFunction { XzScale: 1.0, YScale: 0.75 }
+                }
+            },
+            "The y-scale mapped_noise overload must default its horizontal scale to one.");
+
+        DensityFunction defaultScale = DensityFunctions.MappedNoise(
+            noiseHolder,
+            -1.0f,
+            1.0f);
+
+        Require(
+            defaultScale is BinaryFunction
+            {
+                Operation: BinaryFunction.Type.MUL,
+                Left: NoiseFunction { XzScale: 1.0, YScale: 1.0 },
+                Right: ConstantFunction { Value: 1.0f }
+            },
+            "The two-target mapped_noise overload must default both scales to one and omit a zero remap offset.");
+
+        bool nullRejected = false;
+        try
+        {
+            DensityFunctions.MappedNoise(null!, 1.0, 1.0, -1.0f, 1.0f);
+        }
+        catch (ArgumentNullException)
+        {
+            nullRejected = true;
+        }
+
+        Require(
+            nullRejected,
+            "mapped_noise must reject a null normal-noise holder.");
+    }
 
     private static void CheckOverworldTerrainRegistration()
     {
