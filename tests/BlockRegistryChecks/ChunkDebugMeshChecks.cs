@@ -66,7 +66,7 @@ internal static class ChunkDebugMeshChecks
             closedBorder.FaceCount == 5,
             "A loaded neighboring chunk state must cull a shared face without causing a chunk lookup or load.");
 
-        ChunkDebugMeshVertex upVertex = isolated.Vertices.Single(vertex =>
+        ChunkDebugMeshVertex upVertex = isolated.Vertices.First(vertex =>
             vertex.NormalX == 0.0f && vertex.NormalY == 1.0f && vertex.NormalZ == 0.0f);
         ChunkDebugMeshVertex northVertex = isolated.Vertices.First(vertex =>
             vertex.NormalX == 0.0f && vertex.NormalY == 0.0f && vertex.NormalZ == -1.0f);
