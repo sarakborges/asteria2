@@ -58,12 +58,6 @@ public static class BuiltInRegistries
             ResourceLocation.FromNamespaceAndPath("asteria", "air"),
             static () => BuiltInItems.RegisterAll());
 
-    public static DefaultedRegistry<Biome> Biome { get; } =
-        RegisterDefaultedWithIntrusiveHolders<Biome>(
-            ResourceLocation.FromNamespaceAndPath("asteria", "biome"),
-            ResourceLocation.FromNamespaceAndPath("minecraft", "plains"),
-            static () => BuiltInBiomes.RegisterAll());
-
     public static Registry<MapCodec<WorldCarver>> CarverType { get; } =
         RegisterSimple<MapCodec<WorldCarver>>(
             Registries.CARVER_TYPE.Location,
@@ -83,6 +77,17 @@ public static class BuiltInRegistries
         RegisterSimple<MapCodec<FloatProvider>>(
             Registries.FLOAT_PROVIDER_TYPE.Location,
             static () => FloatProviderCodecBootstrap.RegisterAll(FloatProviderType));
+
+    public static Registry<WorldCarver> Carver { get; } =
+        RegisterSimple<WorldCarver>(
+            Registries.CARVER.Location,
+            static () => Carvers.RegisterAll());
+
+    public static DefaultedRegistry<Biome> Biome { get; } =
+        RegisterDefaultedWithIntrusiveHolders<Biome>(
+            ResourceLocation.FromNamespaceAndPath("asteria", "biome"),
+            ResourceLocation.FromNamespaceAndPath("minecraft", "plains"),
+            static () => BuiltInBiomes.RegisterAll());
 
     public static Registry<NormalNoise> Noise { get; } =
         RegisterSimple<NormalNoise>(
