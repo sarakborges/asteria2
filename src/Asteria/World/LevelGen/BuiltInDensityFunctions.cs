@@ -12,7 +12,7 @@ namespace Asteria.World.LevelGen;
 /// </summary>
 internal static class BuiltInDensityFunctions
 {
-    internal const int Count = 44;
+    internal const int Count = 53;
 
     private readonly record struct OreVeinDefinition(
         RegistryKey<DensityFunction> DensityKey,
@@ -192,6 +192,8 @@ internal static class BuiltInDensityFunctions
             GetFunction(registry, DensityFunctionKeys.OVERWORLD_EROSION),
             DensityFunctionKeys.AMPLIFIED_OVERWORLD_FUNCTIONS,
             amplified: true);
+
+        RegisterOverworldCaveFunctions(registry);
     }
 
     private static void RegisterTerrainNoises(
@@ -287,7 +289,366 @@ internal static class BuiltInDensityFunctions
                 16,
                 1),
             RegistrationInfo.BuiltIn);
+
+        DensityFunction surfaceWithEntrances = DensityFunctionFactories.Min(
+            slopedCheese,
+            DensityFunctionFactories.Mul(
+                GetFunction(registry, DensityFunctionKeys.ENTRANCES),
+                5.0f));
+
+        DensityFunction caves = DensityFunctionFactories.RangeChoice(
+            slopedCheese,
+            -1_000_000.0f,
+            1.5625f,
+            surfaceWithEntrances,
+            BuildUnderground(registry, slopedCheese));
+
+        DensityFunction postProcessed = PostProcess(
+            SlideOverworld(amplified, caves),
+            4,
+            8);
+
+        registry.Register(
+            names.FinalDensity,
+            DensityFunctionFactories.Add(
+                DensityFunctionFactories.Min(
+                    postProcessed,
+                    GetFunction(registry, DensityFunctionKeys.NOODLE)),
+                DensityFunctionFactories.Beardifier()),
+            RegistrationInfo.BuiltIn);
     }
+
+    private static void RegisterOverworldCaveFunctions(Registry<DensityFunction> registry)
+    {
+        DensityFunction spaghettiRoughnessNoise =
+            DensityFunctionFactories.Noise(GetNoise(Noises.SPAGHETTI_ROUGHNESS));
+        DensityFunction spaghettiRoughnessModulator =
+            DensityFunctionFactories.MappedNoise(
+                GetNoise(Noises.SPAGHETTI_ROUGHNESS_MODULATOR),
+                0.0f,
+                -0.1f);
+
+        RegisterAndWrap(
+            registry,
+            DensityFunctionKeys.SPAGHETTI_ROUGHNESS_FUNCTION,
+            DensityFunctionFactories.Cache(
+                DensityFunctionFactories.Mul(
+                    spaghettiRoughnessModulator,
+                    DensityFunctionFactories.Add(
+                        DensityFunctionFactories.Abs(spaghettiRoughnessNoise),
+                        -0.4f))));
+
+        DensityFunction spaghetti2DThickness = DensityFunctionFactories.Cache(
+            DensityFunctionFactories.MappedNoise(
+                GetNoise(Noises.SPAGHETTI_2D_THICKNESS),
+                2.0,
+                1.0,
+                -0.6f,
+                -1.3f));
+
+        registry.Register(
+            DensityFunctionKeys.SPAGHETTI_2D_THICKNESS_MODULATOR,
+            spaghetti2DThickness,
+            RegistrationInfo.BuiltIn);
+
+        registry.Register(
+            DensityFunctionKeys.SPAGHETTI_2D,
+            BuildSpaghetti2D(registry, spaghetti2DThickness),
+            RegistrationInfo.BuiltIn);
+
+        registry.Register(
+            DensityFunctionKeys.ENTRANCES,
+            BuildEntrances(registry),
+            RegistrationInfo.BuiltIn);
+
+        registry.Register(
+            DensityFunctionKeys.NOODLE,
+            BuildNoodle(registry),
+            RegistrationInfo.BuiltIn);
+
+        registry.Register(
+            DensityFunctionKeys.PILLARS,
+            BuildPillars(),
+            RegistrationInfo.BuiltIn);
+    }
+
+    private static DensityFunction BuildEntrances(Registry<DensityFunction> registry)
+    {
+        DensityFunction spaghetti3DRarityModulator =
+            DensityFunctionFactories.Cache(
+                DensityFunctionFactories.Noise(
+                    GetNoise(Noises.SPAGHETTI_3D_RARITY),
+                    2.0,
+                    1.0));
+
+        DensityFunction spaghetti3DThicknessModulator =
+            DensityFunctionFactories.MappedNoise(
+                GetNoise(Noises.SPAGHETTI_3D_THICKNESS),
+                -0.065f,
+                -0.088f);
+
+        DensityFunction spaghetti3DCave1 = WrapRarity3D(
+            spaghetti3DRarityModulator,
+            GetNoise(Noises.SPAGHETTI_3D_1));
+        DensityFunction spaghetti3DCave2 = WrapRarity3D(
+            spaghetti3DRarityModulator,
+            GetNoise(Noises.SPAGHETTI_3D_2));
+
+        DensityFunction spaghetti3D = DensityFunctionFactories.Clamp(
+            DensityFunctionFactories.Add(
+                DensityFunctionFactories.Max(spaghetti3DCave1, spaghetti3DCave2),
+                spaghetti3DThicknessModulator),
+            -1.0f,
+            1.0f);
+
+        DensityFunction spaghettiRoughness =
+            GetFunction(registry, DensityFunctionKeys.SPAGHETTI_ROUGHNESS_FUNCTION);
+        DensityFunction bigEntranceNoise =
+            DensityFunctionFactories.Noise(GetNoise(Noises.CAVE_ENTRANCE), 0.75, 0.5);
+        DensityFunction bigEntrances = DensityFunctionFactories.Add(
+            DensityFunctionFactories.Add(bigEntranceNoise, 0.37f),
+            DensityFunctionFactories.YClampedGradient(-10, 30, 0.3f, 0.0f));
+
+        return DensityFunctionFactories.Cache(
+            DensityFunctionFactories.Min(
+                bigEntrances,
+                DensityFunctionFactories.Add(spaghettiRoughness, spaghetti3D)));
+    }
+
+    private static DensityFunction BuildNoodle(Registry<DensityFunction> registry)
+    {
+        DensityFunction y = GetFunction(registry, DensityFunctionKeys.Y);
+
+        DensityFunction noodleToggle = YLimitedInterpolatable(
+            y,
+            DensityFunctionFactories.Noise(GetNoise(Noises.NOODLE)),
+            -60,
+            320,
+            -1.0f,
+            4,
+            8);
+
+        DensityFunction noodleThickness = YLimitedInterpolatable(
+            y,
+            DensityFunctionFactories.MappedNoise(
+                GetNoise(Noises.NOODLE_THICKNESS),
+                1.0,
+                -0.05f,
+                -0.1f),
+            -60,
+            320,
+            0.0f,
+            4,
+            8);
+
+        const double noodleRidgeFrequency = 2.6666666666666665;
+        DensityFunction noodleRidgeA = YLimitedInterpolatable(
+            y,
+            DensityFunctionFactories.Noise(
+                GetNoise(Noises.NOODLE_RIDGE_A),
+                noodleRidgeFrequency,
+                noodleRidgeFrequency),
+            -60,
+            320,
+            0.0f,
+            4,
+            8);
+
+        DensityFunction noodleRidgeB = YLimitedInterpolatable(
+            y,
+            DensityFunctionFactories.Noise(
+                GetNoise(Noises.NOODLE_RIDGE_B),
+                noodleRidgeFrequency,
+                noodleRidgeFrequency),
+            -60,
+            320,
+            0.0f,
+            4,
+            8);
+
+        DensityFunction noodleRidged = DensityFunctionFactories.Mul(
+            DensityFunctionFactories.Max(
+                DensityFunctionFactories.Abs(noodleRidgeA),
+                DensityFunctionFactories.Abs(noodleRidgeB)),
+            1.5f);
+
+        return DensityFunctionFactories.RangeChoice(
+            noodleToggle,
+            -1_000_000.0f,
+            0.0f,
+            DensityFunctionFactories.Constant(64.0f),
+            DensityFunctionFactories.Add(noodleThickness, noodleRidged));
+    }
+
+    private static DensityFunction BuildPillars()
+    {
+        DensityFunction pillarNoise =
+            DensityFunctionFactories.Noise(GetNoise(Noises.PILLAR), 25.0, 0.3);
+        DensityFunction pillarRareness =
+            DensityFunctionFactories.MappedNoise(
+                GetNoise(Noises.PILLAR_RARENESS),
+                0.0f,
+                -2.0f);
+        DensityFunction pillarThickness =
+            DensityFunctionFactories.MappedNoise(
+                GetNoise(Noises.PILLAR_THICKNESS),
+                0.0f,
+                1.1f);
+        DensityFunction pillarsWithRareness = DensityFunctionFactories.Add(
+            DensityFunctionFactories.Mul(pillarNoise, 2.0f),
+            pillarRareness);
+
+        return DensityFunctionFactories.Cache(
+            DensityFunctionFactories.Mul(
+                pillarsWithRareness,
+                DensityFunctionFactories.Cube(pillarThickness)));
+    }
+
+    private static DensityFunction BuildSpaghetti2D(
+        Registry<DensityFunction> registry,
+        DensityFunction spaghetti2DThickness)
+    {
+        DensityFunction spaghetti2DRarityModulator =
+            DensityFunctionFactories.Noise(
+                GetNoise(Noises.SPAGHETTI_2D_MODULATOR),
+                2.0,
+                1.0);
+
+        DensityFunction spaghetti2DCave = WrapRarity2D(
+            spaghetti2DRarityModulator,
+            GetNoise(Noises.SPAGHETTI_2D));
+
+        DensityFunction spaghetti2DElevationModulator =
+            DensityFunctionFactories.MappedNoise(
+                GetNoise(Noises.SPAGHETTI_2D_ELEVATION),
+                0.0,
+                -8.0f,
+                8.0f);
+
+        DensityFunction slopedSpaghetti = DensityFunctionFactories.Abs(
+            DensityFunctionFactories.Add(
+                DensityFunctionFactories.Cache(spaghetti2DElevationModulator),
+                DensityFunctionFactories.YClampedGradient(-64, 320, 8.0f, -40.0f)));
+
+        DensityFunction layerRidged = DensityFunctionFactories.Cube(
+            DensityFunctionFactories.Add(slopedSpaghetti, spaghetti2DThickness));
+
+        DensityFunction caveNoise = DensityFunctionFactories.Add(
+            spaghetti2DCave,
+            DensityFunctionFactories.Mul(spaghetti2DThickness, 0.083f));
+
+        return DensityFunctionFactories.Clamp(
+            DensityFunctionFactories.Max(caveNoise, layerRidged),
+            -1.0f,
+            1.0f);
+    }
+
+    private static DensityFunction BuildUnderground(
+        Registry<DensityFunction> registry,
+        DensityFunction slopedCheese)
+    {
+        DensityFunction spaghetti2D =
+            GetFunction(registry, DensityFunctionKeys.SPAGHETTI_2D);
+        DensityFunction spaghettiRoughness =
+            GetFunction(registry, DensityFunctionKeys.SPAGHETTI_ROUGHNESS_FUNCTION);
+        DensityFunction entrances =
+            GetFunction(registry, DensityFunctionKeys.ENTRANCES);
+
+        DensityFunction layerNoise =
+            DensityFunctionFactories.Noise(GetNoise(Noises.CAVE_LAYER), 8.0);
+        DensityFunction layerizedCaverns =
+            DensityFunctionFactories.Mul(
+                DensityFunctionFactories.Square(layerNoise),
+                4.0f);
+
+        DensityFunction cheese =
+            DensityFunctionFactories.Noise(
+                GetNoise(Noises.CAVE_CHEESE),
+                0.6666666666666666);
+
+        DensityFunction solidifiedCheeseWithTopSlide =
+            DensityFunctionFactories.Add(
+                DensityFunctionFactories.Clamp(
+                    DensityFunctionFactories.Add(cheese, 0.27f),
+                    -1.0f,
+                    1.0f),
+                DensityFunctionFactories.Clamp(
+                    DensityFunctionFactories.Add(
+                        DensityFunctionFactories.Mul(slopedCheese, -0.64f),
+                        1.5f),
+                    0.0f,
+                    0.5f));
+
+        DensityFunction baseCaveDensity = DensityFunctionFactories.Add(
+            layerizedCaverns,
+            solidifiedCheeseWithTopSlide);
+
+        DensityFunction undergroundSubtractions = DensityFunctionFactories.Min(
+            DensityFunctionFactories.Min(baseCaveDensity, entrances),
+            DensityFunctionFactories.Add(spaghetti2D, spaghettiRoughness));
+
+        DensityFunction pillarsWithoutCutoff =
+            GetFunction(registry, DensityFunctionKeys.PILLARS);
+        DensityFunction pillars = DensityFunctionFactories.RangeChoice(
+            pillarsWithoutCutoff,
+            -1_000_000.0f,
+            0.03f,
+            DensityFunctionFactories.Constant(-1_000_000.0f),
+            pillarsWithoutCutoff);
+
+        return DensityFunctionFactories.Max(undergroundSubtractions, pillars);
+    }
+
+    private static DensityFunction PostProcess(
+        DensityFunction slide,
+        int cellSizeXz,
+        int cellSizeY)
+    {
+        DensityFunction blended = DensityFunctionFactories.BlendDensity(slide);
+        DensityFunction scaled = DensityFunctionFactories.Mul(blended, 0.64f);
+        DensityFunction interpolated = DensityFunctionFactories.Interpolate(
+            scaled,
+            cellSizeXz,
+            cellSizeY);
+
+        return DensityFunctionFactories.Squeeze(interpolated);
+    }
+
+    private static DensityFunction WrapRarity2D(
+        DensityFunction input,
+        Holder<NormalNoise> noise) =>
+        DensityFunctionFactories.Abs(
+            DensityFunctionFactories.IntervalSelect(
+                input,
+                [-0.75f, -0.5f, 0.5f, 0.75f],
+                [
+                    NoiseFunctionForRarity(noise, 0.5f),
+                    NoiseFunctionForRarity(noise, 0.75f),
+                    NoiseFunctionForRarity(noise, 1.0f),
+                    NoiseFunctionForRarity(noise, 2.0f),
+                    NoiseFunctionForRarity(noise, 3.0f)
+                ]));
+
+    private static DensityFunction WrapRarity3D(
+        DensityFunction input,
+        Holder<NormalNoise> noise) =>
+        DensityFunctionFactories.Abs(
+            DensityFunctionFactories.IntervalSelect(
+                input,
+                [-0.5f, 0.0f, 0.5f],
+                [
+                    NoiseFunctionForRarity(noise, 0.75f),
+                    NoiseFunctionForRarity(noise, 1.0f),
+                    NoiseFunctionForRarity(noise, 1.5f),
+                    NoiseFunctionForRarity(noise, 2.0f)
+                ]));
+
+    private static DensityFunction NoiseFunctionForRarity(
+        Holder<NormalNoise> noise,
+        float rarity) =>
+        DensityFunctionFactories.Mul(
+            DensityFunctionFactories.Noise(noise, 1.0 / rarity, 1.0 / rarity),
+            rarity);
 
     private static DensityFunction SplineWithBlending(
         DensityFunction spline,
