@@ -9,6 +9,7 @@ using Asteria.Core;
 using Asteria.World;
 using Asteria.World.Level;
 using Asteria.World.LevelGen.DensityFunctions;
+using Asteria.World.Ticks;
 
 namespace Asteria.World.LevelGen;
 
@@ -25,6 +26,7 @@ public sealed class WorldGenRegion : WorldGenLevel
     private readonly Dictionary<ChunkPos, ChunkAccess> _chunks;
     private readonly BiomeResolver _uncachedBiomeResolver;
     private string? _currentlyGenerating;
+    private long _nextSubTickOrder;
 
     public WorldGenRegion(
         OverworldWorld level,
@@ -74,6 +76,20 @@ public sealed class WorldGenRegion : WorldGenLevel
     }
 
     public long Seed => _level.Seed;
+
+    public long GetGameTime() => _level.GetGameTime();
+
+    public void ScheduleBlockTick(BlockPos position, Block block, int delay)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        ArgumentNullException.ThrowIfNull(block);
+        GetChunk(position).GetBlockTicks().Schedule(new ScheduledTick<Block>(
+            block,
+            position,
+            unchecked(GetGameTime() + delay),
+            TickPriority.NORMAL,
+            Interlocked.Increment(ref _nextSubTickOrder) - 1));
+    }
 
     public ChunkStep GeneratingStep => _generatingStep;
 
