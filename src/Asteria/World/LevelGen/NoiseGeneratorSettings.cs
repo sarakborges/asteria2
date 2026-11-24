@@ -27,11 +27,47 @@ public sealed record NoiseGeneratorSettings(
         BlockState DefaultFluid,
         NoiseRouter NoiseRouter);
 
+    private readonly record struct OptionalAquiferConfig(Aquifer.Config? Value);
+
     private sealed record MaterialAndFluidSettings(
         Holder<MaterialRuleDefinition> MaterialRule,
         IReadOnlyList<SpawnTargetPoint> SpawnTarget,
         int SeaLevel,
-        Aquifer.Config? Aquifers);
+        OptionalAquiferConfig Aquifers);
+
+    private sealed class OptionalAquiferConfigMapCodec : MapCodec<OptionalAquiferConfig>
+    {
+        private const string FIELD_NAME = "aquifers";
+
+        public override DataResult<OptionalAquiferConfig> Decode<TData>(
+            DynamicOps<TData> ops,
+            MapLike<TData> input)
+        {
+            if (!input.TryGet(FIELD_NAME, out TData encoded))
+                return DataResult<OptionalAquiferConfig>.Success(default);
+
+            return Aquifer.Config.CODEC.Parse(ops, encoded)
+                .Map(static value => new OptionalAquiferConfig(value));
+        }
+
+        public override DataResult<TData> Encode<TData>(
+            OptionalAquiferConfig input,
+            DynamicOps<TData> ops,
+            TData prefix)
+        {
+            if (input.Value is null)
+                return DataResult<TData>.Success(prefix);
+
+            return Aquifer.Config.CODEC.EncodeStart(ops, input.Value).FlatMap(encoded =>
+                ops.MergeToMap(prefix, ops.CreateString(FIELD_NAME), encoded));
+        }
+
+        public override IReadOnlyList<TData> Keys<TData>(DynamicOps<TData> ops) =>
+            new[] { ops.CreateString(FIELD_NAME) };
+    }
+
+    private static MapCodec<OptionalAquiferConfig> OptionalAquifersCodec { get; } =
+        new OptionalAquiferConfigMapCodec();
 
     private sealed record RandomAndDebugSettings(
         bool UseLegacyRandomSource,
@@ -66,8 +102,8 @@ public sealed record NoiseGeneratorSettings(
                         .ForGetter<MaterialAndFluidSettings>(static settings => settings.SpawnTarget),
                     Codecs.INT.FieldOf("sea_level")
                         .ForGetter<MaterialAndFluidSettings>(static settings => settings.SeaLevel),
-                    Aquifer.Config.CODEC.OptionalFieldOf("aquifers", null!)
-                        .ForGetter<MaterialAndFluidSettings>(static settings => settings.Aquifers!))
+                    OptionalAquifersCodec
+                        .ForGetter<MaterialAndFluidSettings>(static settings => settings.Aquifers))
                 .Apply(
                     instance,
                     static (materialRule, spawnTarget, seaLevel, aquifers) =>
@@ -75,7 +111,7 @@ public sealed record NoiseGeneratorSettings(
                             materialRule,
                             spawnTarget,
                             seaLevel,
-                            aquifers)));
+                            new OptionalAquiferConfig(aquifers))));
 
     private static MapCodec<RandomAndDebugSettings> RandomAndDebugSettingsCodec { get; } =
         RecordCodecBuilder.MapCodec<RandomAndDebugSettings>(instance =>
@@ -104,7 +140,7 @@ public sealed record NoiseGeneratorSettings(
                             settings.MaterialRule,
                             settings.SpawnTarget,
                             settings.SeaLevel,
-                            settings.Aquifers)),
+                            new OptionalAquiferConfig(settings.Aquifers))),
                     RandomAndDebugSettingsCodec.ForGetter<NoiseGeneratorSettings>(static settings =>
                         new RandomAndDebugSettings(
                             settings.UseLegacyRandomSource,
@@ -120,7 +156,7 @@ public sealed record NoiseGeneratorSettings(
                             material.MaterialRule,
                             material.SpawnTarget,
                             material.SeaLevel,
-                            material.Aquifers,
+                            material.Aquifers.Value,
                             runtime.UseLegacyRandomSource,
                             runtime.DebugFunctions)))
         .Codec();
