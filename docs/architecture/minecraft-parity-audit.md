@@ -1399,3 +1399,11 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Portada a codificação compacta `QueueEntry`: bits de nível, seis direções, flags de shape vazio e origem de emissão; também os construtores para redução/aumento por direções e fontes SKY. Os auxiliares de shape de luz incluem `GetLightDampeningInto`, `GetOcclusionShape` e comparação de propriedades relevantes.
 - Testes cobrem máscara e truncamento de nível, todos os bits de direção, omissão de uma direção, flags de emissão/shape, direções de fonte SKY, listener dummy e auxiliares de oclusão.
 - As especializações BLOCK/SKY ainda precisam ligar suas transições de bloco e algoritmos próprios a este núcleo; o port comum não apresenta terreno nem produz iluminação visual por conta própria.
+
+
+## Incremento — BlockLightEngine 26.3 (24/11/2026)
+
+- Portada a especialização de propagação BLOCK: revalidação de nós, emissão condicionada à luz habilitada na coluna, filas de remoção e aumento, propagação em seis direções, atenuação mínima 1, regras de oclusão de faces e recuperação de emissores durante reduções.
+- `PropagateLightSources` habilita o canal por coluna e enumera fontes diretamente da `LightChunk` existente; consulta de vizinhança permanece não geradora e usa bedrock para chunks ausentes, conforme o motor comum.
+- Teste de integração cria um emissor de estado com nível 14, verifica valores 14/13/12 e remove a fonte para confirmar propagação da redução até zero; há verificações de borda ausente e coluna com BLOCK desabilitado.
+- Fonte: `BlockLightEngine.java` de Minecraft Java 26.3. A especialização SKY e o agregador `LevelLightEngine` permanecem pendentes.
