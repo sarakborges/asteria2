@@ -247,7 +247,6 @@ public sealed class NoiseBasedChunkGenerator
             chunk,
             noiseChunk,
             generationContext,
-            carverBiomeResolver,
             carverBiomeGetter,
             materialSystem);
         chunk.SetPersistedStatus(ChunkStatus.TERRAIN);
@@ -261,7 +260,6 @@ public sealed class NoiseBasedChunkGenerator
         ProtoChunk chunk,
         NoiseChunk noiseChunk,
         WorldGenerationContext generationContext,
-        BiomeResolver biomeResolver,
         Func<BlockPos, Holder<Biome>> biomeGetter,
         MaterialSystem materialSystem)
     {
