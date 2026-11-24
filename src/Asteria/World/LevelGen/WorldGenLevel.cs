@@ -1,5 +1,6 @@
 using Asteria.Content.Biomes;
 using Asteria.Content.Blocks;
+using Asteria.Content.Chunks;
 using Asteria.Content.Fluids;
 using Asteria.Content.Registries;
 using Asteria.Core;
@@ -15,6 +16,10 @@ namespace Asteria.World.LevelGen;
 public interface WorldGenLevel : BlockGetter
 {
     long Seed { get; }
+
+    ChunkAccess GetChunk(int chunkX, int chunkZ);
+
+    void SetCurrentlyGenerating(string? description) { }
 
     Holder<Biome> GetBiome(BlockPos position);
 
