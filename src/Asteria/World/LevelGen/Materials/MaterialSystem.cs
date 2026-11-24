@@ -322,7 +322,7 @@ public sealed class MaterialSystem
             stoneDepthAbove: 1,
             stoneDepthBelow: 1,
             waterHeight: underFluid ? unchecked(blockY + 1) : int.MinValue,
-            blockY);
+            blockY: blockY);
         return rule(blockX, blockY, blockZ);
     }
 
