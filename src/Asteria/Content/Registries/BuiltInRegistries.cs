@@ -64,6 +64,11 @@ public static class BuiltInRegistries
             ResourceLocation.FromNamespaceAndPath("minecraft", "plains"),
             static () => BuiltInBiomes.RegisterAll());
 
+    public static Registry<MapCodec<WorldCarver>> CarverType { get; } =
+        RegisterSimple<MapCodec<WorldCarver>>(
+            Registries.CARVER_TYPE.Location,
+            static () => WorldCarverCodecBootstrap.RegisterAll(CarverType));
+
     public static Registry<MapCodec<HeightProvider>> HeightProviderType { get; } =
         RegisterSimple<MapCodec<HeightProvider>>(
             Registries.HEIGHT_PROVIDER_TYPE.Location,
