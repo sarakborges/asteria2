@@ -114,7 +114,7 @@ public interface WorldCarver
         double zMid = chunkPosition.GetMiddleBlockZ();
         double xd = x - xMid;
         double zd = z - zMid;
-        double remaining = (double)totalSteps - currentStep;
+        double remaining = unchecked(totalSteps - currentStep);
         double radius = thickness + 2.0f + 16.0f;
 
         return xd * xd + zd * zd - remaining * remaining <= radius * radius;
