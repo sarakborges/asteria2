@@ -150,7 +150,7 @@ internal static class SimpleBlockFeatureChecks
         Require(
             ReferenceEquals(tick.Type, Blocks.GRASS_BLOCK) &&
             tick.Pos.Equals(position) &&
-            tick.TriggerTick == 1,
+            tick.Delay == 1,
             "SimpleBlockFeature must schedule the block tick one tick after current world time.");
 
         ScheduledTick<Block> scheduled = ticks.ScheduledTicks().Single();
