@@ -343,6 +343,7 @@ internal static class Program
         ProtoChunkChecks.Run();
         TickChecks.Run();
         ChunkChecks.Run(TestBlocks.TEST_BLOCK.DefaultState, FluidChecks.WaterloggedBlockState, FluidChecks.SourceFluidState);
+        ChunkDebugMeshChecks.Run();
         PalettedContainerChecks.Run();
         BiomeChecks.Run();
         ClimateChecks.Run();
