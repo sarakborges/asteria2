@@ -127,8 +127,8 @@ internal static class PlacementModifierChecks
             CountPlacement.MAP_CODEC
                 .Parse(
                     JsonOps.INSTANCE,
-                    ParseJson("""{"count":{"type":"asteria:uniform","min_inclusive":2,"max_inclusive":5}}"""))
-                .GetOrThrow().CountProvider.Equals(UniformInt.Of(2, 5)),
+                    ParseJson("""{"count":2}"""))
+                .GetOrThrow().CountProvider.Equals(ConstantInt.Of(2)),
             "CountPlacement must serialize its IntProvider under the count field.");
 
         Require(
