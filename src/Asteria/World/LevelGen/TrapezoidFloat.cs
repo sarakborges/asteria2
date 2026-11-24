@@ -65,7 +65,7 @@ public sealed record TrapezoidFloat(
     public MapCodec<FloatProvider> Codec() => TYPE_CODEC;
 
     public override string ToString() =>
-        $"trapezoid({Minimum.ToString(System.Globalization.CultureInfo.InvariantCulture)}-" +
-        $"{Maximum.ToString(System.Globalization.CultureInfo.InvariantCulture)} plateau " +
-        $"{Plateau.ToString(System.Globalization.CultureInfo.InvariantCulture)})";
+        $"trapezoid({Plateau.ToString(System.Globalization.CultureInfo.InvariantCulture)}) in " +
+        $"[{Minimum.ToString(System.Globalization.CultureInfo.InvariantCulture)}-" +
+        $"{Maximum.ToString(System.Globalization.CultureInfo.InvariantCulture)}]";
 }
