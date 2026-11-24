@@ -73,13 +73,15 @@ internal static class DensityBufferPoolChecks
 
         bestFit.Close();
 
-        ScopedDensityBuffer capacity64Only = pool.Acquire(49);
+        var upperBoundPool = new DensityBufferPool(maxAge: 2);
+        ScopedDensityBuffer capacity64Only = upperBoundPool.Acquire(49);
         capacity64Only.Close();
-        ScopedDensityBuffer fresh32 = pool.Acquire(17);
+
+        ScopedDensityBuffer fresh32 = upperBoundPool.Acquire(17);
         Require(
             fresh32.Capacity() == 32 &&
             !ReferenceEquals(fresh32, capacity64Only) &&
-            pool.Count == 1,
+            upperBoundPool.Count == 1,
             "The pool must reject a buffer whose capacity equals the exclusive maximum reuse bound.");
         fresh32.Close();
     }
