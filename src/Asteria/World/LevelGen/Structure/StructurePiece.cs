@@ -163,6 +163,22 @@ public abstract class StructurePiece
     public void Move(int dx, int dy, int dz) =>
         _boundingBox.Move(dx, dy, dz);
 
+    public static StructurePiece? FindCollisionPiece(
+        IReadOnlyList<StructurePiece> pieces,
+        BoundingBox box)
+    {
+        ArgumentNullException.ThrowIfNull(pieces);
+        ArgumentNullException.ThrowIfNull(box);
+
+        foreach (StructurePiece piece in pieces)
+        {
+            if (piece.GetBoundingBox().Intersects(box))
+                return piece;
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// Encompasses every supplied piece box. Minecraft throws when the stream has no elements.
     /// </summary>
