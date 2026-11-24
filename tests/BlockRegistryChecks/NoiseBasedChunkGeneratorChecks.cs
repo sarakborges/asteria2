@@ -159,6 +159,10 @@ internal static class NoiseBasedChunkGeneratorChecks
             generator.GetGenDepth() == 384 &&
             generator.GetSeaLevel() == 63,
             "CreateOverworld must compose the registered vanilla settings and the requested world seed.");
+        Require(
+            generator.GetFeaturesPerStep().Count == 0,
+            "CreateOverworld must validate and memoize the decoration-step feature order before it returns the generator.");
+
 
         ProtoChunk chunk = CreateChunk(new ChunkPos(0, 0), -64, 96);
         generator.BuildTerrain(chunk);
