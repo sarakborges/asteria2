@@ -105,7 +105,9 @@ public abstract class LayerLightSectionStorage<TMap>
             SectionPos.SectionRelative(BlockPos.GetY(blockNode)),
             SectionPos.SectionRelative(BlockPos.GetZ(blockNode)),
             level);
-        SectionPos.AroundAndAtBlockPos(blockNode, SectionsAffectedByLightUpdates.Add);
+        SectionPos.AroundAndAtBlockPos(
+            blockNode,
+            sectionNode => { SectionsAffectedByLightUpdates.Add(sectionNode); });
     }
 
     protected void MarkSectionAndNeighborsAsAffected(long sectionNode)

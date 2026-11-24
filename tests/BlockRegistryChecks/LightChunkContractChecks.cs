@@ -9,11 +9,16 @@ internal static class LightChunkContractChecks
     private sealed class TestLightChunkGetter : LightChunkGetter
     {
         private readonly LightChunk _chunk;
+        private readonly ChunkPos _position;
 
-        public TestLightChunkGetter(LightChunk chunk) => _chunk = chunk;
+        public TestLightChunkGetter(LightChunk chunk, ChunkPos position)
+        {
+            _chunk = chunk;
+            _position = position;
+        }
 
         public LightChunk? GetChunkForLighting(int chunkX, int chunkZ) =>
-            chunkX == _chunk.GetPos().X && chunkZ == _chunk.GetPos().Z
+            chunkX == _position.X && chunkZ == _position.Z
                 ? _chunk
                 : null;
 
@@ -36,14 +41,14 @@ internal static class LightChunkContractChecks
         lightChunk.FindBlockLightSources((_, _) => sourceCount++);
         Require(sourceCount == 0, "An empty chunk must enumerate no block-light sources.");
 
-        var getter = new TestLightChunkGetter(lightChunk);
+        var getter = new TestLightChunkGetter(lightChunk, chunk.GetPos());
         Require(ReferenceEquals(getter.GetChunkForLighting(3, -2), chunk),
             "LightChunkGetter must resolve an already available chunk at its coordinates.");
         Require(getter.GetChunkForLighting(3, -1) is null,
             "LightChunkGetter must return null for a missing chunk.");
         Require(ReferenceEquals(getter.GetLevel(), chunk),
             "LightChunkGetter must expose the associated block level.");
-        getter.OnLightUpdate(LightLayer.SKY, SectionPos.Of(3, 0, -2));
+        ((LightChunkGetter)getter).OnLightUpdate(LightLayer.SKY, SectionPos.Of(3, 0, -2));
 
         Require(Enum.GetNames<LightLayer>().SequenceEqual(new[] { "SKY", "BLOCK" }),
             "LightLayer must retain the vanilla SKY, BLOCK enum order.");
