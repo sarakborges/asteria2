@@ -24,7 +24,7 @@ public sealed class WorldGenRegion : WorldGenLevel
     private readonly ChunkStep _generatingStep;
     private readonly ChunkAccess _center;
     private readonly Dictionary<ChunkPos, ChunkAccess> _chunks;
-    private readonly BiomeResolver _uncachedBiomeResolver;
+    private readonly BiomeManager _biomeManager;
     private string? _currentlyGenerating;
     private long _nextSubTickOrder;
 
@@ -39,8 +39,10 @@ public sealed class WorldGenRegion : WorldGenLevel
         _generatingStep = generatingStep ?? throw new ArgumentNullException(nameof(generatingStep));
         _center = center ?? throw new ArgumentNullException(nameof(center));
         ArgumentNullException.ThrowIfNull(availableChunks);
-        _uncachedBiomeResolver = uncachedBiomeResolver ??
-            throw new ArgumentNullException(nameof(uncachedBiomeResolver));
+        ArgumentNullException.ThrowIfNull(uncachedBiomeResolver);
+        _biomeManager = new BiomeManager(
+            uncachedBiomeResolver,
+            BiomeManager.ObfuscateSeed(_level.Seed));
 
         if (generatingStep.DirectDependencies.Size() == 0)
             throw new ArgumentException(
@@ -166,14 +168,8 @@ public sealed class WorldGenRegion : WorldGenLevel
         return GetChunk(chunkPosition).GetFluidState(position);
     }
 
-    public Holder<Biome> GetBiome(BlockPos position)
-    {
-        ArgumentNullException.ThrowIfNull(position);
-        return _uncachedBiomeResolver.GetNoiseBiome(
-            QuartPos.FromBlock(position.GetX()),
-            QuartPos.FromBlock(position.GetY()),
-            QuartPos.FromBlock(position.GetZ()));
-    }
+    public Holder<Biome> GetBiome(BlockPos position) =>
+        _biomeManager.GetBiome(position);
 
     public int GetHeight(Heightmap.Types type, int blockX, int blockZ)
     {
