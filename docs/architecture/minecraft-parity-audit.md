@@ -1185,3 +1185,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Testes cobrem codec unitário/singleton, uso efetivo da regra no BuildTerrain, período vertical 192, determinismo via seed posicional e presença das variantes coloridas.
 - O registry de blocos agora contém 38 entradas; os 38 estados de produção mais seis estados de fixture compõem 44 IDs no harness.
 - Delimitação: o port ainda não adiciona os demais domínios badlands (pillar/roof surface extension) nem a árvore completa `minecraft:overworld`; o suporte a clay bands está pronto para a próxima parte da regra de superfície.
+
+
+## Incremento — extensões de superfície Eroded Badlands e Frozen Ocean (24/11/2026)
+
+- MaterialSystem agora carrega os seis ruídos específicos de badlands e icebergs já registrados nos dados de worldgen.
+- Na entrada de cada coluna, consulta o bioma na altura superficial inicial. Para Eroded Badlands, aplica pilares antes de recalcular heightmap/gradientes; o topo usa os ruídos badlands_surface, badlands_pillar e badlands_pillar_roof com escalas/amplitudes vanilla.
+- A extensão de Badlands só preenche ar acima do bloco padrão e aborta se encontrar água antes de alcançar o bloco-base; writes continuam restritos ao build height por meio do contrato de ChunkAccess.
+- Após o scan genérico e avaliação das material rules, Frozen Ocean e Deep Frozen Ocean executam a extensão de iceberg. O port mantém as escalas/amplitudes dos três ruídos, a redução de dois blocos quando o bioma indica derretimento, os limites de sea level/minSurfaceLevel, a ordem dos dois draws iniciais e a avaliação condicional dos draws por bloco (1% no ar, 15% na água).
+- Os icebergs produzem packed ice e uma camada superior limitada de snow block conforme o fluxo aleatório posicional por coluna.
+- Testes end-to-end com seed fixa cobrem tops derivados de ruído dos pilares de Eroded Badlands, prevenção de pilares através de água e geração de packed ice/snow block em Frozen Ocean.
+- Referência: [MaterialSystem — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/material/materialsystem/).

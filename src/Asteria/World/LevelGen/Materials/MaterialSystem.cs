@@ -11,9 +11,8 @@ using Asteria.World.LevelGen.Synth;
 namespace Asteria.World.LevelGen.Materials;
 
 /// <summary>
-/// Surface-material pass from Minecraft Java 26.3. This slice implements the generic column
-/// scan and material-rule context; biome-specific badlands/frozen-ocean extensions and clay-band
-/// replacement remain separate content-dependent increments.
+/// Surface-material pass from Minecraft Java 26.3, including generic rules, Badlands pillars,
+/// Frozen Ocean icebergs and the deterministic clay-band palette.
 /// </summary>
 public sealed class MaterialSystem
 {
@@ -23,6 +22,12 @@ public sealed class MaterialSystem
     private readonly Noise _surfaceNoise;
     private readonly Noise _surfaceSecondaryNoise;
     private readonly Noise _clayBandsOffsetNoise;
+    private readonly Noise _badlandsPillarNoise;
+    private readonly Noise _badlandsPillarRoofNoise;
+    private readonly Noise _badlandsSurfaceNoise;
+    private readonly Noise _icebergPillarNoise;
+    private readonly Noise _icebergPillarRoofNoise;
+    private readonly Noise _icebergSurfaceNoise;
     private readonly BlockState[] _clayBands;
 
     public DensityFunction PreliminarySurfaceFunction { get; }
@@ -44,6 +49,12 @@ public sealed class MaterialSystem
         _surfaceNoise = randomState.GetOrCreateNoise(Noises.SURFACE);
         _surfaceSecondaryNoise = randomState.GetOrCreateNoise(Noises.SURFACE_SECONDARY);
         _clayBandsOffsetNoise = randomState.GetOrCreateNoise(Noises.CLAY_BANDS_OFFSET);
+        _badlandsPillarNoise = randomState.GetOrCreateNoise(Noises.BADLANDS_PILLAR);
+        _badlandsPillarRoofNoise = randomState.GetOrCreateNoise(Noises.BADLANDS_PILLAR_ROOF);
+        _badlandsSurfaceNoise = randomState.GetOrCreateNoise(Noises.BADLANDS_SURFACE);
+        _icebergPillarNoise = randomState.GetOrCreateNoise(Noises.ICEBERG_PILLAR);
+        _icebergPillarRoofNoise = randomState.GetOrCreateNoise(Noises.ICEBERG_PILLAR_ROOF);
+        _icebergSurfaceNoise = randomState.GetOrCreateNoise(Noises.ICEBERG_SURFACE);
         IRandomSource clayBandsRandom = _noiseRandom.FromHashOf(
             Asteria.Content.Identifiers.ResourceLocation.FromNamespaceAndPath("minecraft", "clay_bands"));
         _clayBands = GenerateClayBands(clayBandsRandom);
@@ -177,12 +188,22 @@ public sealed class MaterialSystem
             {
                 int blockX = minBlockX + x;
                 int blockZ = minBlockZ + z;
-                int height = chunk.GetHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) + 1;
-                int gradientX = GetSurfaceGradientX(chunk, x, z);
-                int gradientZ = GetSurfaceGradientZ(chunk, x, z);
+                int startingHeight = chunk.GetHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) + 1;
 
                 columnPosition.SetX(blockX);
                 columnPosition.SetZ(blockZ);
+                Holder<Biome> surfaceBiome = biomeGetter(
+                    new BlockPos(blockX, startingHeight, blockZ));
+
+                if (ReferenceEquals(surfaceBiome.Value, Biomes.ERODED_BADLANDS))
+                {
+                    ErodedBadlandsExtension(
+                        chunk, columnPosition, blockX, blockZ, startingHeight);
+                }
+
+                int height = chunk.GetHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) + 1;
+                int gradientX = GetSurfaceGradientX(chunk, x, z);
+                int gradientZ = GetSurfaceGradientZ(chunk, x, z);
                 context.UpdateXZ(blockX, blockZ, gradientX, gradientZ);
 
                 int stoneAboveDepth = 0;
@@ -235,6 +256,132 @@ public sealed class MaterialSystem
                         }
                     }
                 }
+
+                if (ReferenceEquals(surfaceBiome.Value, Biomes.FROZEN_OCEAN) ||
+                    ReferenceEquals(surfaceBiome.Value, Biomes.DEEP_FROZEN_OCEAN))
+                {
+                    FrozenOceanExtension(
+                        context.MinSurfaceLevel,
+                        surfaceBiome.Value,
+                        chunk,
+                        columnPosition,
+                        blockX,
+                        blockZ,
+                        startingHeight);
+                }
+            }
+        }
+    }
+
+    private void ErodedBadlandsExtension(
+        ChunkAccess chunk,
+        BlockPos.MutableBlockPos columnPosition,
+        int blockX,
+        int blockZ,
+        int height)
+    {
+        double pillarBuffer = Math.Min(
+            Math.Abs(_badlandsSurfaceNoise.Get(blockX, 0.0, blockZ) * 8.25),
+            _badlandsPillarNoise.Get(blockX * 0.2, 0.0, blockZ * 0.2) * 15.0);
+
+        if (pillarBuffer <= 0.0)
+            return;
+
+        double pillarFloor = Math.Abs(
+            _badlandsPillarRoofNoise.Get(blockX * 0.75, 0.0, blockZ * 0.75) * 1.5);
+        double extensionTop = 64.0 + Math.Min(
+            pillarBuffer * pillarBuffer * 2.5,
+            Math.Ceiling(pillarFloor * 50.0) + 24.0);
+        int startY = Mth.Floor(extensionTop);
+
+        if (height > startY)
+            return;
+
+        for (int y = startY; y >= chunk.GetMinY(); y--)
+        {
+            BlockState state = chunk.GetBlockState(columnPosition.SetY(y));
+            if (ReferenceEquals(state.Block, _defaultBlock.Block))
+                break;
+            if (state.Is(Blocks.WATER))
+                return;
+        }
+
+        for (int y = startY; y >= chunk.GetMinY(); y--)
+        {
+            columnPosition.SetY(y);
+            if (!chunk.GetBlockState(columnPosition).IsAir)
+                break;
+
+            SetBlock(chunk, columnPosition, _defaultBlock);
+        }
+    }
+
+    private void FrozenOceanExtension(
+        int minSurfaceLevel,
+        Biome surfaceBiome,
+        ChunkAccess chunk,
+        BlockPos.MutableBlockPos columnPosition,
+        int blockX,
+        int blockZ,
+        int height)
+    {
+        double iceberg = Math.Min(
+            Math.Abs(_icebergSurfaceNoise.Get(blockX, 0.0, blockZ) * 8.25),
+            _icebergPillarNoise.Get(blockX * 1.28, 0.0, blockZ * 1.28) * 15.0);
+
+        if (iceberg <= 1.8)
+            return;
+
+        double icebergRoof = Math.Abs(
+            _icebergPillarRoofNoise.Get(blockX * 1.17, 0.0, blockZ * 1.17) * 1.5);
+        double icebergTop = Math.Min(
+            iceberg * iceberg * 1.2,
+            Math.Ceiling(icebergRoof * 40.0) + 14.0);
+
+        if (surfaceBiome.ShouldMeltFrozenOceanIcebergSlightly(
+                new BlockPos(blockX, _seaLevel, blockZ),
+                _seaLevel))
+        {
+            icebergTop -= 2.0;
+        }
+
+        if (icebergTop <= 2.0)
+            return;
+
+        double icebergBottom = _seaLevel - icebergTop - 7.0;
+        icebergTop += _seaLevel;
+
+        IRandomSource random = _noiseRandom.At(blockX, 0, blockZ);
+        int snowDepth = 0;
+        int maxSnowDepth = 2 + random.NextInt(4);
+        int minSnowHeight = _seaLevel + 18 + random.NextInt(10);
+        int icebergTopY = (int)icebergTop;
+
+        for (int y = Math.Max(height, icebergTopY + 1); y >= minSurfaceLevel; y--)
+        {
+            columnPosition.SetY(y);
+            BlockState state = chunk.GetBlockState(columnPosition);
+
+            bool replace =
+                state.IsAir &&
+                y < icebergTopY &&
+                random.NextDouble() > 0.01 ||
+                state.Is(Blocks.WATER) &&
+                y > (int)icebergBottom &&
+                y < _seaLevel &&
+                random.NextDouble() > 0.15;
+
+            if (!replace)
+                continue;
+
+            if (snowDepth <= maxSnowDepth && y > minSnowHeight)
+            {
+                SetBlock(chunk, columnPosition, Blocks.SNOW_BLOCK.DefaultState);
+                snowDepth++;
+            }
+            else
+            {
+                SetBlock(chunk, columnPosition, Blocks.PACKED_ICE.DefaultState);
             }
         }
     }

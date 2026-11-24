@@ -25,6 +25,8 @@ internal static class NoiseBasedChunkGeneratorChecks
             CheckChunkCoordinateAndHeightmapMaterialization();
             CheckMaterialRuleSurfacePass();
             CheckBandlandsMaterialRuleUsesSeededClayBands();
+            CheckErodedBadlandsExtension();
+            CheckFrozenOceanExtension();
             CheckMultiNoiseBiomeSourceFillsChunkPalettes();
             CheckPreliminarySurfaceCondition();
         }
@@ -231,6 +233,116 @@ internal static class NoiseBasedChunkGeneratorChecks
             "Clay-band generation must create the five colored strata alongside orange and base terracotta.");
     }
 
+    private static void CheckErodedBadlandsExtension()
+    {
+        DensityFunction terrainDensity =
+            DensityFunctions.YClampedGradient(40, 41, 1.0F, -1.0F);
+        NoiseGeneratorSettings settings = CreateSettings(
+            terrainDensity,
+            seaLevel: 0,
+            noiseHeight: 256);
+        RandomState randomState = CreateRandomState(settings);
+        var generator = new NoiseBasedChunkGenerator(settings, randomState);
+        ProtoChunk chunk = CreateChunk(new ChunkPos(0, 0), -64, 256);
+
+        generator.BuildTerrain(
+            chunk,
+            _ => Holder<Biome>.Direct(Biomes.ERODED_BADLANDS));
+
+        Noise badlandsSurface = randomState.GetOrCreateNoise(Noises.BADLANDS_SURFACE);
+        Noise badlandsPillar = randomState.GetOrCreateNoise(Noises.BADLANDS_PILLAR);
+        Noise badlandsRoof = randomState.GetOrCreateNoise(Noises.BADLANDS_PILLAR_ROOF);
+        int expectedPillars = 0;
+
+        for (int x = 0; x < 16; x++)
+        for (int z = 0; z < 16; z++)
+        {
+            double pillarBuffer = Math.Min(
+                Math.Abs(badlandsSurface.Get(x, 0.0, z) * 8.25),
+                badlandsPillar.Get(x * 0.2, 0.0, z * 0.2) * 15.0);
+            if (pillarBuffer <= 0.0)
+                continue;
+
+            double pillarFloor = Math.Abs(badlandsRoof.Get(x * 0.75, 0.0, z * 0.75) * 1.5);
+            int expectedTop = Mth.Floor(64.0 + Math.Min(
+                pillarBuffer * pillarBuffer * 2.5,
+                Math.Ceiling(pillarFloor * 50.0) + 24.0));
+            if (expectedTop < 41 || expectedTop > chunk.GetMaxY())
+                continue;
+
+            Require(
+                ReferenceEquals(
+                    chunk.GetBlockState(new BlockPos(x, expectedTop, z)).Block,
+                    Blocks.STONE),
+                "Eroded Badlands must extend each eligible pillar to its exact noise-derived top.");
+            expectedPillars++;
+        }
+
+        Require(expectedPillars > 0,
+            "The fixed-seed Eroded Badlands fixture must contain at least one in-range pillar.");
+
+        NoiseGeneratorSettings oceanSettings = CreateSettings(
+            terrainDensity,
+            seaLevel: 63,
+            noiseHeight: 256);
+        var oceanGenerator = new NoiseBasedChunkGenerator(
+            oceanSettings,
+            CreateRandomState(oceanSettings));
+        ProtoChunk oceanChunk = CreateChunk(new ChunkPos(0, 0), -64, 256);
+        oceanGenerator.BuildTerrain(
+            oceanChunk,
+            _ => Holder<Biome>.Direct(Biomes.ERODED_BADLANDS));
+
+        Require(
+            ReferenceEquals(
+                oceanChunk.GetBlockState(new BlockPos(0, 62, 0)),
+                Blocks.WATER.DefaultState),
+            "The Eroded Badlands water guard fixture must contain a water column above the stone floor.");
+        for (int y = 41; y <= oceanChunk.GetMaxY(); y++)
+        for (int x = 0; x < 16; x++)
+        for (int z = 0; z < 16; z++)
+        {
+            Require(
+                !ReferenceEquals(oceanChunk.GetBlockState(new BlockPos(x, y, z)).Block, Blocks.STONE),
+                "Eroded Badlands must not extend a pillar through an intervening water column.");
+        }
+    }
+
+    private static void CheckFrozenOceanExtension()
+    {
+        const int seaLevel = 63;
+        DensityFunction terrainDensity =
+            DensityFunctions.YClampedGradient(40, 41, 1.0F, -1.0F);
+        NoiseGeneratorSettings settings = CreateSettings(
+            terrainDensity,
+            seaLevel,
+            noiseHeight: 256);
+        var generator = new NoiseBasedChunkGenerator(settings, CreateRandomState(settings));
+        ProtoChunk chunk = CreateChunk(new ChunkPos(0, 0), -64, 256);
+
+        generator.BuildTerrain(
+            chunk,
+            _ => Holder<Biome>.Direct(Biomes.FROZEN_OCEAN));
+
+        int packedIceAboveSea = 0;
+        int snowBlocksAboveSea = 0;
+        for (int y = seaLevel + 1; y <= chunk.GetMaxY(); y++)
+        for (int x = 0; x < 16; x++)
+        for (int z = 0; z < 16; z++)
+        {
+            BlockState state = chunk.GetBlockState(new BlockPos(x, y, z));
+            if (ReferenceEquals(state.Block, Blocks.PACKED_ICE))
+                packedIceAboveSea++;
+            else if (ReferenceEquals(state.Block, Blocks.SNOW_BLOCK))
+                snowBlocksAboveSea++;
+        }
+
+        Require(packedIceAboveSea > 0,
+            "Frozen Ocean must generate packed-ice iceberg columns above sea level for the fixed seed.");
+        Require(snowBlocksAboveSea > 0,
+            "Frozen Ocean must cap sufficiently tall iceberg columns with the seeded snow-block layers.");
+    }
+
     private static void CheckMultiNoiseBiomeSourceFillsChunkPalettes()
     {
         Climate.ParameterPoint plainsPoint = Climate.Parameters(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -283,7 +395,8 @@ internal static class NoiseBasedChunkGeneratorChecks
         DensityFunction finalDensity,
         int seaLevel,
         MaterialRule? materialRule = null,
-        float climateTemperature = 0.0f)
+        float climateTemperature = 0.0f,
+        int noiseHeight = 96)
     {
         DensityFunction climate = new ConstantFunction(climateTemperature);
         var router = new NoiseRouter(
@@ -291,7 +404,7 @@ internal static class NoiseBasedChunkGeneratorChecks
             climate, climate, climate, finalDensity);
 
         return new NoiseGeneratorSettings(
-            NoiseSettings.Create(-64, 96),
+            NoiseSettings.Create(-64, noiseHeight),
             Blocks.STONE.DefaultState,
             Blocks.WATER.DefaultState,
             router,
