@@ -151,8 +151,8 @@ internal static class NoiseChunkChecks
         using (ScopedDensityBuffer sampled = bound.SampleVolume(volume))
         {
             Require(
-                sampled.CurrentSize == volume.Size() &&
-                Enumerable.Range(0, sampled.CurrentSize).All(index => sampled.Get(index) == 0.75f),
+                sampled.Size() == volume.Size() &&
+                Enumerable.Range(0, sampled.Size()).All(index => sampled.Get(index) == 0.75f),
                 "NoiseChunk's bound cache sampler must sample the full requested volume into its context-owned arena.");
         }
 
@@ -195,7 +195,7 @@ internal static class NoiseChunkChecks
             Array.Empty<SpawnTargetPoint>(),
             63,
             aquifers,
-            useLegacyRandomSource: false,
+            false,
             NoiseGeneratorDebugFunctions.EMPTY);
     }
 

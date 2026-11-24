@@ -19,7 +19,7 @@ public sealed class SamplerContext : IDisposable
     private readonly bool _isShared;
     private bool _disposed;
 
-    private SamplerContext(ContextMap userFields, DensityBufferArena bufferArena, bool enableCaches)
+    private SamplerContext(ContextMap userFields, DensityBufferArena bufferArena, bool enableCaches, bool isShared = false)
     {
         _userFields = userFields ?? throw new ArgumentNullException(nameof(userFields));
         _bufferArena = bufferArena ?? throw new ArgumentNullException(nameof(bufferArena));
