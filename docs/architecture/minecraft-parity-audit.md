@@ -1465,3 +1465,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionados testes de codec, round-trip, validação de limites, rejeição de tipos desconhecidos e consumo determinístico do RNG. Os testes foram registrados no harness, mas ainda precisam ser executados em ambiente com .NET SDK.
 - Este incremento entrega a dependência de float providers para os carvers, mas não os conecta ainda ao pipeline: `IntProvider`, `HeightProvider`, `CaveWorldCarver`, `CanyonWorldCarver`, settings de carver e aplicação da máscara continuam pendentes. `TERRAIN` permanece incompleto.
 - Referência: `FloatProvider`, `FloatProviders`, `ConstantFloat`, `UniformFloat`, `ClampedNormalFloat` e `TrapezoidFloat` de Minecraft Java 26.3.
+
+## Incremento — IntProvider de worldgen 26.3
+
+- Portado o contrato `IntProvider` e os oito tipos context-free de Minecraft 26.3: `ConstantInt`, `UniformInt`, `BiasedToBottomInt`, `VeryBiasedToBottomInt`, `ClampedInt`, `WeightedListInt`, `ClampedNormalInt` e `TrapezoidInt`.
+- Portados o despacho `IntProviders.CODEC`, o shorthand numérico para constantes, `NON_NEGATIVE_CODEC`, `POSITIVE_CODEC`, os validadores de faixa e os oito codecs específicos.
+- `WeightedListInt` reutiliza os ports já existentes de `Weighted` e `WeightedList`, incluindo codec de distribuição não vazia e seleção por peso antes da amostragem do provider escolhido.
+- Registrado `worldgen/int_provider_type`; os oito IDs dos providers permanecem no namespace `minecraft`. Esse registry de worldgen é distinto de `context_int_provider`, introduzido para operações contextuais.
+- Adicionados testes de codecs, limites inclusivos, shorthand, distribuição ponderada, validação e sequência exata de chamadas ao RNG. Os testes estão registrados no harness, mas ainda precisam rodar em ambiente com .NET SDK.
+- Com os increments de `FloatProvider` e `IntProvider`, estão disponíveis os dois contratos de números context-free exigidos pelos carvers. A implementação ainda não inclui `HeightProvider`, `CaveWorldCarver`, `CanyonWorldCarver`, settings/listas de carvers por bioma nem a aplicação de `CarvingMask` via aquifer. `TERRAIN` segue incompleto.
+- Referência: interfaces e codecs `IntProvider`/`IntProviders` e as oito implementações de Minecraft Java 26.3.
