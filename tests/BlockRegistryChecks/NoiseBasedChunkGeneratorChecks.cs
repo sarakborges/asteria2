@@ -12,10 +12,49 @@ internal static class NoiseBasedChunkGeneratorChecks
 {
     public static void Run()
     {
-        CheckGlobalFluidPickerBoundaries();
-        CheckPositiveDensityUsesDefaultBlock();
-        CheckNegativeDensityMaterializesLavaWaterAndAir();
-        CheckChunkCoordinateAndHeightmapMaterialization();
+        BindVanillaTerrainHeightmapTags();
+        try
+        {
+            CheckGlobalFluidPickerBoundaries();
+            CheckPositiveDensityUsesDefaultBlock();
+            CheckNegativeDensityMaterializesLavaWaterAndAir();
+            CheckChunkCoordinateAndHeightmapMaterialization();
+        }
+        finally
+        {
+            RestoreEmptyBlockTags();
+        }
+    }
+
+    private static void BindVanillaTerrainHeightmapTags()
+    {
+        Holder<Block>.Reference stone = Blocks.STONE.BuiltInRegistryHolder ??
+            throw new InvalidOperationException("Built-in stone must have a registry holder.");
+
+        KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>[] definitions =
+        [
+            new(BlockTags.BlocksMotionInHeightmap, new Holder<Block>[] { stone }),
+            new(BlockTags.BlocksMotionInHeightmapNoLeaves, new Holder<Block>[] { stone }),
+            new(BlockTags.Leaves, Array.Empty<Holder<Block>>()),
+            new(BlockTags.FallDamageResetting, Array.Empty<Holder<Block>>()),
+            new(BlockTags.CausesSuffocation, Array.Empty<Holder<Block>>())
+        ];
+
+        BuiltInRegistries.Block.PrepareTagReload(definitions).Apply();
+    }
+
+    private static void RestoreEmptyBlockTags()
+    {
+        KeyValuePair<TagKey<Block>, IEnumerable<Holder<Block>>>[] definitions =
+        [
+            new(BlockTags.BlocksMotionInHeightmap, Array.Empty<Holder<Block>>()),
+            new(BlockTags.BlocksMotionInHeightmapNoLeaves, Array.Empty<Holder<Block>>()),
+            new(BlockTags.Leaves, Array.Empty<Holder<Block>>()),
+            new(BlockTags.FallDamageResetting, Array.Empty<Holder<Block>>()),
+            new(BlockTags.CausesSuffocation, Array.Empty<Holder<Block>>())
+        ];
+
+        BuiltInRegistries.Block.PrepareTagReload(definitions).Apply();
     }
 
     private static void CheckGlobalFluidPickerBoundaries()
