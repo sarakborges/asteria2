@@ -35,6 +35,7 @@ internal static class NoiseBasedChunkGeneratorChecks
             CheckMultiNoiseBiomeSourceFillsChunkPalettes();
             CheckBuiltInOverworldGeneratorFactory();
             CheckOverworldWorldChunkCache();
+            CheckDefaultOverworldBuildHeight();
             CheckPreliminarySurfaceCondition();
         }
         finally
@@ -381,6 +382,55 @@ internal static class NoiseBasedChunkGeneratorChecks
             rejectedInvalidPosition &&
             world.LoadedChunkCount == 1,
             "OverworldWorld must reject chunk coordinates outside the supported generation bounds without changing its cache.");
+    }
+
+    private static void CheckDefaultOverworldBuildHeight()
+    {
+        const long seed = 0x4F5652574F524C44L;
+        var world = new OverworldWorld(seed);
+        Require(
+            world.MinY == -64 &&
+            world.Height == 384 &&
+            world.GetMinY() == -64 &&
+            world.GetMaxY() == 319,
+            "The default Overworld must use the complete Minecraft 26.3 build-height interval [-64, 319].");
+
+        ProtoChunk chunk = world.GetChunk(ChunkPos.Zero);
+        Require(
+            chunk.GetSections().Length == 24 &&
+            chunk.GetPersistedStatus().IsOrAfter(ChunkStatus.TERRAIN),
+            "Default Overworld generation must materialize all 24 vertical sections through TERRAIN.");
+
+        BlockPos bottom = new(3, world.GetMinY(), 4);
+        BlockPos top = new(3, world.GetMaxY(), 4);
+        Require(
+            ReferenceEquals(world.GetBlockState(bottom), chunk.GetBlockState(bottom)) &&
+            ReferenceEquals(world.GetBlockState(top), chunk.GetBlockState(top)),
+            "World block queries must resolve both vertical extremes from a full-height generated chunk.");
+
+        Holder<Biome> bottomBiome = world.GetBiome(bottom);
+        Holder<Biome> topBiome = world.GetBiome(top);
+        Require(
+            bottomBiome.IsBound &&
+            topBiome.IsBound &&
+            ReferenceEquals(
+                bottomBiome,
+                chunk.GetNoiseBiome(
+                    QuartPos.FromBlock(bottom.GetX()),
+                    QuartPos.FromBlock(bottom.GetY()),
+                    QuartPos.FromBlock(bottom.GetZ()))) &&
+            ReferenceEquals(
+                topBiome,
+                chunk.GetNoiseBiome(
+                    QuartPos.FromBlock(top.GetX()),
+                    QuartPos.FromBlock(top.GetY()),
+                    QuartPos.FromBlock(top.GetZ()))),
+            "Full-height world biome queries must resolve the first and last quart cells without clamping errors.");
+
+        Require(
+            world.LoadedChunkCount == 1 &&
+            world.GetLoadedChunks().Count == 1,
+            "The full-height smoke test must retain exactly its one generated chunk.");
     }
 
     private static void CheckPreliminarySurfaceCondition()

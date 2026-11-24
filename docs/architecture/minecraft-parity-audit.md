@@ -1267,3 +1267,9 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - A chamada devolve o estado anterior; se a identidade do estado mudar, a chunk é marcada como não salva para sinalizar dados mutados.
 - Escritas fora da altura construída devolvem VOID_AIR sem sintetizar chunk. O teste confirma retorno do estado anterior, leitura do novo estado, dirty flag e short-circuit vertical.
 - Delimitação: ProtoChunk ainda não despacha atualizações de vizinhos ou eventos de bloco; esse comportamento depende de LevelChunk/Level e do scheduler de ticks.
+
+## Incremento — validação da altura completa do Overworld (24/11/2026)
+
+- Adicionado um teste de integração usando o construtor padrão de OverworldWorld, sem LevelHeightAccessor reduzido.
+- A verificação gera uma ProtoChunk com as 24 seções do intervalo vanilla -64..319 e consulta blocos e biomas nos dois extremos verticais.
+- O teste confirma o status TERRAIN e a retenção da chunk no cache. Isso valida a altura completa de geração, mas ainda não mede o custo em runtime nem implementa o pipeline acima de TERRAIN.
