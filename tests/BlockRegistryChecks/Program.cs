@@ -217,6 +217,7 @@ internal static class Program
         HeightProviderChecks.Run();
         WorldCarverImplementationChecks.Run();
         ConfiguredCarverChecks.Run();
+        BiomeGenerationSettingsChecks.Run();
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
