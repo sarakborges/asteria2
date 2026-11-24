@@ -1,4 +1,5 @@
 using Asteria.Core;
+using Asteria.Serialization;
 
 namespace Asteria.World.LevelGen.Placement;
 
@@ -23,5 +24,5 @@ public abstract class RepeatingPlacement : PlacementModifier
             output(origin);
     }
 
-    public abstract Serialization.MapCodec<PlacementModifier> Codec();
+    public abstract MapCodec<PlacementModifier> Codec();
 }
