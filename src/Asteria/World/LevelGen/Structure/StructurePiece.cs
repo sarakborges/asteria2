@@ -48,4 +48,17 @@ public abstract class StructurePiece
 
     public BlockPos GetLocatorPosition() =>
         _boundingBox.GetCenter();
+
+    /// <summary>
+    /// Encompasses every supplied piece box. Minecraft throws when the stream has no elements.
+    /// </summary>
+    public static BoundingBox CreateBoundingBox(IEnumerable<StructurePiece> pieces)
+    {
+        ArgumentNullException.ThrowIfNull(pieces);
+
+        return BoundingBox.EncapsulatingBoxes(
+                   pieces.Select(static piece => piece.GetBoundingBox()))
+               ?? throw new InvalidOperationException(
+                   "Unable to calculate boundingbox without pieces");
+    }
 }
