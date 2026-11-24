@@ -1475,3 +1475,15 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adicionados testes de codecs, limites inclusivos, shorthand, distribuição ponderada, validação e sequência exata de chamadas ao RNG. Os testes estão registrados no harness, mas ainda precisam rodar em ambiente com .NET SDK.
 - Com os increments de `FloatProvider` e `IntProvider`, estão disponíveis os dois contratos de números context-free exigidos pelos carvers. A implementação ainda não inclui `HeightProvider`, `CaveWorldCarver`, `CanyonWorldCarver`, settings/listas de carvers por bioma nem a aplicação de `CarvingMask` via aquifer. `TERRAIN` segue incompleto.
 - Referência: interfaces e codecs `IntProvider`/`IntProviders` e as oito implementações de Minecraft Java 26.3.
+
+## Incremento — HeightProvider de worldgen 26.3
+
+- Portado o contrato contextual `HeightProvider`, reutilizando `VerticalAnchor` e `WorldGenerationContext` já existentes. O codec principal aceita tanto um anchor inline quanto uma variante registrada, reproduzindo `CONSTANT_OR_DISPATCH_CODEC`.
+- Portadas as seis variantes de `HeightProviderType`: `ConstantHeight`, `UniformHeight`, `BiasedToBottomHeight`, `VeryBiasedToBottomHeight`, `TrapezoidHeight` e `WeightedListHeight`.
+- Portados os campos exatos: `value`; `min_inclusive`/`max_inclusive`; `inner` opcional com default 1 nas duas variantes biased; `plateau` opcional com default 0; e `distribution` não vazia para listas ponderadas.
+- As amostragens preservam as chamadas e a ordem do RNG 26.3: duas etapas para `BiasedToBottomHeight`, três para `VeryBiasedToBottomHeight`, dois intervalos inclusivos para `TrapezoidHeight`, e seleção ponderada antes da amostragem do provider interno.
+- `UniformHeight` mantém a supressão por par de anchors das mensagens de intervalo vazio; as outras variantes mantêm o aviso por amostragem inválida. O comportamento de intervalo invertido retorna o mínimo resolvido conforme a referência.
+- Registrado `worldgen/height_provider_type` com os seis IDs vanilla. `HeightProvider.CODEC` despacha por esse registry e usa `VerticalAnchor.CODEC` como forma abreviada de `ConstantHeight`.
+- Adicionados testes de registry, shorthand, round-trip dos codecs, valores default, distribuição ponderada, sequências determinísticas de RNG e ranges inválidos. Os testes estão no harness, mas ainda precisam ser executados em ambiente com .NET SDK.
+- Com `FloatProvider`, `IntProvider` e `HeightProvider`, as três famílias de providers numéricos/verticais necessárias aos carvers estão disponíveis. Ainda faltam `CaveWorldCarver`, `CanyonWorldCarver`, settings e associação de carvers por bioma e aplicação de `CarvingMask` via aquifer. Portanto `TERRAIN` ainda não está concluído.
+- Referência: classes `HeightProvider`, `HeightProviderType` e as seis implementações em Minecraft Java 26.3.
