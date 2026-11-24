@@ -256,6 +256,7 @@ internal static class Program
         LegacyFbmInitializerChecks.Run();
         CubicSplineChecks.Run();
         TerrainProviderChecks.Run();
+        OverworldBiomeBuilderChecks.Run();
         SplineFunctionChecks.Run();
         DensitySamplerContextBindingChecks.Run();
         InterpolatedFunctionChecks.Run();

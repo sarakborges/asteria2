@@ -1113,3 +1113,13 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - O overload de biomeGetter permanece para fontes fixas/customizadas e é adaptado à interface quart-resolution; a nova sobrecarga MultiNoiseBiomeSource usa PossibleBiomes para as otimizações de condições.
 - Testes cobrem seleção entre Plains/Desert por seis eixos climáticos, conjunto de biomas possíveis e preenchimento de todas as células quart de todas as seções de um chunk.
 - Delimitação: o registry local ainda contém somente Plains e Desert; o dataset completo OverworldBiomeBuilder, demais definições de bioma e presets/codec da BiomeSource continuam pendentes. Não há seleção climática integrada a dimensões ou carregamento de mundo nesta etapa.
+
+
+## Incremento — faixas climáticas vanilla do OverworldBiomeBuilder (24/11/2026)
+
+- Portadas as faixas de temperatura (5), umidade (5), erosão (7), continentalidade (7), peaks-and-valleys (5) e weirdness (2) de Minecraft Java 26.3, incluindo os intervalos congelado/não congelado e as subdivisões de continentalidade costeira e interior.
+- Adicionada a classificação diagnóstica por dimensão. Temperatura, umidade, erosão e continentalidade quantizam a coordenada climática antes de aplicar os limites superiores exclusivos; peaks-and-valleys compara o valor bruto com as fronteiras da função vanilla, sem quantização adicional.
+- Reutilizada a função TerrainProvider.PeaksAndValleys já portada, evitando duplicação da fórmula.
+- Testes cobrem todos os intervalos e fronteiras exatas, inclusive os rótulos de diagnóstico.
+- Delimitação: este commit porta o contrato de intervalos e diagnóstico do builder. A emissão da tabela completa de ParameterPoint (oceanos, costas, slices de terreno e biomas subterrâneos), as definições dos biomas ausentes e sua resolução para holders ainda não estão implementadas. Nenhum placeholder de bioma é criado.
+- Referência: [OverworldBiomeBuilder — Minecraft Java 26.3](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/biome/overworldbiomebuilder/).
