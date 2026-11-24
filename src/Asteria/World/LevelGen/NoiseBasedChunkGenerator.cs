@@ -21,6 +21,12 @@ public sealed class NoiseBasedChunkGenerator
 
     public NoiseGeneratorSettings Settings => _settings;
 
+    public int GetMinY() => _settings.NoiseSettings.MinY;
+
+    public int GetGenDepth() => _settings.NoiseSettings.Height;
+
+    public int GetSeaLevel() => _settings.SeaLevel;
+
     public NoiseBasedChunkGenerator(
         NoiseGeneratorSettings settings,
         RandomState randomState,

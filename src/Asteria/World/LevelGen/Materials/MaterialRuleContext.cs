@@ -1,3 +1,6 @@
+using Asteria.Content.Identifiers;
+using Asteria.World.LevelGen;
+
 namespace Asteria.World.LevelGen.Materials;
 
 /// <summary>
@@ -6,6 +9,38 @@ namespace Asteria.World.LevelGen.Materials;
 /// </summary>
 public sealed class MaterialRuleContext
 {
+    private readonly WorldGenerationContext? _worldGenerationContext;
+    private readonly RandomState? _randomState;
+
+    public MaterialRuleContext()
+    {
+    }
+
+    public MaterialRuleContext(
+        WorldGenerationContext worldGenerationContext,
+        RandomState? randomState = null)
+    {
+        _worldGenerationContext = worldGenerationContext ??
+            throw new ArgumentNullException(nameof(worldGenerationContext));
+        _randomState = randomState;
+    }
+
+    public int ResolveAnchorY(VerticalAnchor anchor)
+    {
+        ArgumentNullException.ThrowIfNull(anchor);
+        return (_worldGenerationContext ??
+            throw new InvalidOperationException("Vertical anchors require a WorldGenerationContext."))
+            .ResolveAnchorY(anchor);
+    }
+
+    public PositionalRandomFactory GetOrCreateRandomFactory(ResourceLocation name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return (_randomState ??
+            throw new InvalidOperationException("Positional random factories require a RandomState."))
+            .GetOrCreateRandomFactory(name);
+    }
+
     private long _lastUpdateXZ = long.MinValue + 1;
     private long _lastUpdateY = long.MinValue + 1;
 

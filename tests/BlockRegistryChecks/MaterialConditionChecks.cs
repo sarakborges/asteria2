@@ -17,18 +17,23 @@ internal static class MaterialConditionChecks
         CheckWaterConditionCodecAndEvaluation();
         CheckAbovePreliminarySurfaceCondition();
         CheckStoneDepthConditionCodecAndEvaluation();
+        CheckYConditionCodecAndEvaluation();
+        CheckVerticalGradientConditionCodecAndEvaluation();
+        CheckVerticalAnchorsAndWorldGenerationContext();
         CheckConditionRuleCodecAndEvaluation();
     }
 
     private static void CheckConditionTypeRegistry()
     {
         Registry<MapCodec<MaterialCondition>> registry = BuiltInRegistries.MaterialConditionType;
-        Require(registry.Count == 6,
-            "The material-condition type registry must contain water, steep, not, hole, above_preliminary_surface and stone_depth.");
+        Require(registry.Count == 8,
+            "The material-condition type registry must contain vertical_gradient, y_above, water, steep, not, hole, above_preliminary_surface and stone_depth.");
         Require(
             registry.ContainsKey(ResourceLocation.WithDefaultNamespace("steep")) &&
             registry.ContainsKey(ResourceLocation.WithDefaultNamespace("not")) &&
             registry.ContainsKey(ResourceLocation.WithDefaultNamespace("hole")) &&
+            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("vertical_gradient")) &&
+            registry.ContainsKey(ResourceLocation.WithDefaultNamespace("y_above")) &&
             registry.ContainsKey(ResourceLocation.WithDefaultNamespace("water")) &&
             registry.ContainsKey(ResourceLocation.WithDefaultNamespace("above_preliminary_surface")) &&
             registry.ContainsKey(ResourceLocation.WithDefaultNamespace("stone_depth")),
@@ -37,6 +42,8 @@ internal static class MaterialConditionChecks
             ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("steep")), SteepCondition.TYPE_CODEC) &&
             ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("not")), NotCondition.TYPE_CODEC) &&
             ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("hole")), HoleCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("vertical_gradient")), VerticalGradientCondition.TYPE_CODEC) &&
+            ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("y_above")), YCondition.TYPE_CODEC) &&
             ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("water")), WaterCondition.TYPE_CODEC) &&
             ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("above_preliminary_surface")), AbovePreliminarySurfaceCondition.TYPE_CODEC) &&
             ReferenceEquals(registry.GetValue(ResourceLocation.WithDefaultNamespace("stone_depth")), StoneDepthCondition.TYPE_CODEC),
@@ -188,6 +195,171 @@ internal static class MaterialConditionChecks
                     Asteria.World.LevelGen.Placement.CaveSurface.FLOOR,
             "CaveSurface codec must use the vanilla ceiling/floor names.");
     }
+
+    private static void CheckVerticalAnchorsAndWorldGenerationContext()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        var generation = new WorldGenerationContext(-64, 384, 63);
+
+        VerticalAnchor[] anchors =
+        [
+            VerticalAnchor.Absolute(-12),
+            VerticalAnchor.AboveBottom(7),
+            VerticalAnchor.BelowTop(5),
+            VerticalAnchor.RelativeToSeaLevel(-2)
+        ];
+        int[] expected = [-12, -57, 314, 61];
+
+        for (int index = 0; index < anchors.Length; index++)
+        {
+            JsonElement encoded = VerticalAnchor.CODEC.EncodeStart(ops, anchors[index]).GetOrThrow();
+            VerticalAnchor decoded = VerticalAnchor.CODEC.Parse(ops, encoded).GetOrThrow();
+            Require(
+                decoded == anchors[index] &&
+                decoded.ResolveY(generation) == expected[index],
+                "VerticalAnchor must round-trip and resolve absolute, bottom-, top- and sea-relative values.");
+        }
+
+        Require(
+            VerticalAnchor.CODEC.Parse(
+                ops,
+                JsonDocument.Parse("""{ "absolute": 1, "below_top": 2 }""").RootElement).IsError,
+            "VerticalAnchor must reject maps with more than one anchor representation.");
+        Require(
+            VerticalAnchor.CODEC.Parse(
+                ops,
+                JsonDocument.Parse("""{ "absolute": 2032 }""").RootElement).IsError,
+            "VerticalAnchor absolute values must obey the dimension Y bounds.");
+
+        var settings = CreateNoiseSettings();
+        var randomState = CreateRandomState(settings);
+        var generator = new NoiseBasedChunkGenerator(settings, randomState);
+        var accessor = LevelHeightAccessor.Create(-32, 64);
+        var fromGenerator = new WorldGenerationContext(generator, accessor);
+
+        Require(
+            fromGenerator.GetMinGenY() == -32 &&
+            fromGenerator.GetGenDepth() == 64 &&
+            fromGenerator.SeaLevel() == settings.SeaLevel,
+            "WorldGenerationContext must intersect generator and level height bounds while preserving sea level.");
+    }
+
+    private static void CheckYConditionCodecAndEvaluation()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        MaterialCondition condition = new YCondition(
+            VerticalAnchor.Absolute(10),
+            SurfaceDepthMultiplier: 2,
+            AddStoneDepth: false);
+        JsonElement encoded = MaterialCondition.CODEC.EncodeStart(ops, condition).GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:y_above" &&
+            ops.Get(encoded, "anchor").GetOrThrow().ValueKind == JsonValueKind.Object &&
+            ops.Get(encoded, "surface_depth_multiplier").GetOrThrow().GetInt32() == 2 &&
+            !ops.Get(encoded, "add_stone_depth").GetOrThrow().GetBoolean(),
+            "YCondition must serialize its vanilla y_above discriminator and fields.");
+
+        MaterialCondition decoded = MaterialCondition.CODEC.Parse(ops, encoded).GetOrThrow();
+        Require(decoded is YCondition yCondition &&
+                yCondition.Anchor == VerticalAnchor.Absolute(10) &&
+                yCondition.SurfaceDepthMultiplier == 2 &&
+                !yCondition.AddStoneDepth,
+            "YCondition must round-trip its anchor and surface-depth parameters.");
+
+        var context = new MaterialRuleContext(new WorldGenerationContext(-64, 384, 63));
+        context.UpdateXZ(0, 0, 0, 0, surfaceDepth: 3);
+        ConditionEvaluator evaluator = decoded.Compile(context);
+
+        context.UpdateY(5, 0, int.MinValue, 15);
+        Require(!evaluator(),
+            "YCondition must include surfaceDepthMultiplier when testing the current block Y.");
+        context.UpdateY(5, 0, int.MinValue, 16);
+        Require(evaluator(),
+            "YCondition must pass at the inclusive anchor plus scaled surface depth.");
+
+        MaterialCondition addStone = new YCondition(
+            VerticalAnchor.Absolute(10),
+            SurfaceDepthMultiplier: 0,
+            AddStoneDepth: true);
+        ConditionEvaluator stoneEvaluator = addStone.Compile(context);
+        context.UpdateY(2, 0, int.MinValue, 8);
+        Require(stoneEvaluator(),
+            "YCondition must add stoneDepthAbove when add_stone_depth is true.");
+    }
+
+    private static void CheckVerticalGradientConditionCodecAndEvaluation()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        MaterialCondition condition = new VerticalGradientCondition(
+            ResourceLocation.Parse("asteria:test_gradient"),
+            VerticalAnchor.Absolute(0),
+            VerticalAnchor.Absolute(10));
+        JsonElement encoded = MaterialCondition.CODEC.EncodeStart(ops, condition).GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:vertical_gradient" &&
+            ops.Get(encoded, "random_name").GetOrThrow().GetString() == "asteria:test_gradient" &&
+            ops.Get(encoded, "true_at_and_below").GetOrThrow().ValueKind == JsonValueKind.Object &&
+            ops.Get(encoded, "false_at_and_above").GetOrThrow().ValueKind == JsonValueKind.Object,
+            "VerticalGradientCondition must serialize the random name and both vertical anchors.");
+
+        MaterialCondition decoded = MaterialCondition.CODEC.Parse(ops, encoded).GetOrThrow();
+        Require(decoded is VerticalGradientCondition gradient &&
+                gradient.RandomName == ResourceLocation.Parse("asteria:test_gradient"),
+            "VerticalGradientCondition must round-trip its named positional random source.");
+
+        NoiseGeneratorSettings settings = CreateNoiseSettings();
+        RandomState randomState = CreateRandomState(settings);
+        var generation = new WorldGenerationContext(-64, 384, 63);
+        var firstContext = new MaterialRuleContext(generation, randomState);
+        var secondContext = new MaterialRuleContext(generation, randomState);
+        firstContext.UpdateXZ(7, -3, 0, 0);
+        secondContext.UpdateXZ(7, -3, 0, 0);
+        ConditionEvaluator first = decoded.Compile(firstContext);
+        ConditionEvaluator second = decoded.Compile(secondContext);
+
+        firstContext.UpdateY(0, 0, int.MinValue, 0);
+        secondContext.UpdateY(0, 0, int.MinValue, 0);
+        Require(first() && second(),
+            "VerticalGradientCondition must be true at and below its lower anchor.");
+
+        firstContext.UpdateY(0, 0, int.MinValue, 10);
+        secondContext.UpdateY(0, 0, int.MinValue, 10);
+        Require(!first() && !second(),
+            "VerticalGradientCondition must be false at and above its upper anchor.");
+
+        firstContext.UpdateY(0, 0, int.MinValue, 5);
+        secondContext.UpdateY(0, 0, int.MinValue, 5);
+        Require(first() == second(),
+            "VerticalGradientCondition must use deterministic positional randomness for intermediate Y values.");
+    }
+
+    private static NoiseGeneratorSettings CreateNoiseSettings()
+    {
+        var density = new ConstantFunction(0.0f);
+        var router = new NoiseRouter(
+            density, density, density, density,
+            density, density, density, density);
+        return new NoiseGeneratorSettings(
+            NoiseSettings.Create(-64, 384),
+            Blocks.STONE.DefaultState,
+            Blocks.WATER.DefaultState,
+            router,
+            Holder<MaterialRule>.Direct(new BlockRule(Blocks.STONE.DefaultState)),
+            Array.Empty<SpawnTargetPoint>(),
+            63,
+            Aquifers: null,
+            UseLegacyRandomSource: false,
+            DebugFunctions: NoiseGeneratorDebugFunctions.EMPTY);
+    }
+
+    private static RandomState CreateRandomState(NoiseGeneratorSettings settings) =>
+        RandomState.Create(
+            BuiltInRegistries.Noise,
+            783124L,
+            settings.UseLegacyRandomSource,
+            settings.NoiseRouter);
 
     private static void CheckConditionRuleCodecAndEvaluation()
     {

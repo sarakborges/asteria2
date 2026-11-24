@@ -1072,3 +1072,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Os dois heightmaps de worldgen são preparados antes da escrita; ao final são primados os quatro heightmaps finais. O preenchimento mantém a ordem Z/X/Y descendente do fluxo vanilla.
 - Testes cobrem default block em densidade positiva, fronteiras do picker lava/água/ar, coordenadas de chunks deslocados e os seis heightmaps.
 - Delimitação: esta etapa materializa `final_density`/aquifer. `MaterialSystem`/surface rules e carvers ainda precisam executar depois na pipeline TERRAIN; não é ainda um mundo completo jogável e não adiciona sistemas de mobs.
+
+
+## Incremento — VerticalAnchor, WorldGenerationContext e condições de altura (24/11/2026)
+
+- Portados `WorldGenerationContext` e `VerticalAnchor` com as quatro variantes serializáveis: absolute, above_bottom, below_top e relative_to_sea_level; bounds numéricos seguem DimensionType 26.3.
+- `MaterialRuleContext` agora pode receber contexto de geração e `RandomState`; expõe `ResolveAnchorY` e `GetOrCreateRandomFactory` sem inventar valores quando esses serviços não foram fornecidos.
+- Portada `YCondition` (`y_above`) com limite inclusivo, multiplicador de surface depth e opção de somar stone depth above; predicado usa cache lazy Y.
+- Portada `VerticalGradientCondition` com anchors capturados na compilação, factory posicional nomeada e probabilidade interpolada por Y; os extremos true/false são inclusivos e a zona intermediária é determinística por coordenada.
+- Os codecs e o bootstrap de material conditions seguem a ordem relativa 26.3 para `vertical_gradient` e `y_above` antes de `water`.
+- Testes cobrem codecs de anchors e condições, bounds, interseção de altura e determinismo posicional.
+- Permanecem pendentes condições de biome, noise threshold e temperature, além da execução do MaterialSystem que popula os dados do contexto durante a passada de superfície.
