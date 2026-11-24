@@ -22,6 +22,12 @@ internal static class WorldGenRegionChecks
         NoiseBasedChunkGenerator generator = NoiseBasedChunkGenerator.CreateOverworld(seed);
         PalettedContainerFactory factory = PalettedContainerFactory.CreateBuiltIn();
         ChunkStep featuresStep = ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.FEATURES);
+        Require(
+            featuresStep.DirectDependencies.Size() == 9 &&
+            ReferenceEquals(featuresStep.DirectDependencies.Get(0), ChunkStatus.TERRAIN) &&
+            ReferenceEquals(featuresStep.DirectDependencies.Get(1), ChunkStatus.TERRAIN) &&
+            ReferenceEquals(featuresStep.DirectDependencies.Get(2), ChunkStatus.STRUCTURE_STARTS),
+            "The FEATURES step must retain its 9-ring direct dependency status profile.");
 
         ProtoChunk center = CreateChunk(
             new ChunkPos(0, 0),
@@ -49,8 +55,7 @@ internal static class WorldGenRegionChecks
             factory,
             ChunkStatus.STRUCTURE_STARTS);
 
-        var region = new WorldGenRegion(
-            world,
+        var region = world.CreateWorldGenRegion(
             featuresStep,
             center,
             new ChunkAccess[]
@@ -59,8 +64,7 @@ internal static class WorldGenRegionChecks
                 readNeighbor,
                 wrongStatusNeighbor,
                 outOfRangeNeighbor
-            },
-            generator.CreateUncachedBiomeResolver());
+            });
 
         Require(
             region.GetChunk(0, 0) == center &&
@@ -150,12 +154,10 @@ internal static class WorldGenRegionChecks
             factory,
             ChunkStatus.STRUCTURE_STARTS);
 
-        var region = new WorldGenRegion(
-            world,
+        var region = world.CreateWorldGenRegion(
             featuresStep,
             center,
-            new ChunkAccess[] { neighbor, readOnlyNeighbor },
-            generator.CreateUncachedBiomeResolver());
+            new ChunkAccess[] { neighbor, readOnlyNeighbor });
 
         var writablePosition = new BlockPos(17, 12, 4);
         var readOnlyPosition = new BlockPos(32, 12, 4);
