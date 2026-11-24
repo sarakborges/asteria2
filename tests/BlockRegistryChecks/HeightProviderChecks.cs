@@ -265,7 +265,18 @@ internal static class HeightProviderChecks
         HeightProvider decoded = HeightProvider.CODEC.Parse(ops, encoded).GetOrThrow();
         Require(
             decoded is WeightedListHeight weighted &&
-            weighted.Distribution.Equals(distribution),
+            weighted.Distribution.Count == 2 &&
+            weighted.Distribution[0].Weight == 2 &&
+            weighted.Distribution[0].Value is ConstantHeight { Value: var firstAnchor } &&
+            firstAnchor == VerticalAnchor.Absolute(4) &&
+            weighted.Distribution[1].Weight == 1 &&
+            weighted.Distribution[1].Value is UniformHeight
+                {
+                    Minimum: var secondMinimum,
+                    Maximum: var secondMaximum
+                } &&
+            secondMinimum == VerticalAnchor.Absolute(8) &&
+            secondMaximum == VerticalAnchor.Absolute(10),
             "WeightedListHeight must round-trip nested providers and their weights.");
 
         var expectedRandom = new LegacyRandomSource(667788L);
