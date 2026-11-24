@@ -17,5 +17,8 @@
              Link="Util/%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="../../src/Asteria/World/**/*.cs"
              Link="World/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../data/worldgen/material-rule-catalog/*.json">
+      <LogicalName>Asteria.Worldgen.MaterialRuleCatalog.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

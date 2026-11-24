@@ -79,11 +79,6 @@ public static class BuiltInRegistries
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/density_function_type"),
             static () => DensityFunctionCodecBootstrap.RegisterAll(DensityFunctionType));
 
-    public static Registry<MaterialRule> MaterialRule { get; } =
-        RegisterSimple<MaterialRule>(
-            Registries.MATERIAL_RULE.Location,
-            static () => { });
-
     public static Registry<MapCodec<MaterialRule>> MaterialRuleType { get; } =
         RegisterSimple<MapCodec<MaterialRule>>(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/material_rule_type"),
@@ -98,6 +93,11 @@ public static class BuiltInRegistries
         RegisterSimple<MapCodec<MaterialCondition>>(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/material_condition_type"),
             static () => MaterialConditionCodecBootstrap.RegisterAll(MaterialConditionType));
+
+    public static Registry<MaterialRule> MaterialRule { get; } =
+        RegisterSimple<MaterialRule>(
+            Registries.MATERIAL_RULE.Location,
+            static () => BuiltInMaterialRules.RegisterAll());
 
     public static Registry<NoiseGeneratorSettings> NoiseGeneratorSettings { get; } =
         RegisterSimple<NoiseGeneratorSettings>(

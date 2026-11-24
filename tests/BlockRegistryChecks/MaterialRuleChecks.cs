@@ -26,12 +26,72 @@ internal static class MaterialRuleChecks
     public static void Run()
     {
         CheckTypeRegistry();
+        CheckBuiltInOverworldRuleRegistry();
         CheckBandlandsRuleCodec();
         CheckOreVeinRuleCodec();
         CheckBlockRuleCodecAndEvaluator();
         CheckSequenceRuleCodecAndEvaluation();
         CheckUnknownMaterialRuleType();
         CheckContextUpdates();
+    }
+
+    private static void CheckBuiltInOverworldRuleRegistry()
+    {
+        Registry<MaterialRule> registry = BuiltInRegistries.MaterialRule;
+        Require(
+            registry.Count == 37,
+            "The built-in Overworld material-rule registry must contain all 37 named 26.3 rule resources.");
+
+        ResourceLocation Key(string path) =>
+            ResourceLocation.FromNamespaceAndPath("minecraft", path);
+
+        string[] expectedKeys =
+        [
+            "bedrock_floor",
+            "overworld",
+            "overworld/biome_surface",
+            "overworld/biome_surface/default",
+            "overworld/copper_ore_vein",
+            "overworld/iron_ore_vein",
+            "overworld/surface",
+            "overworld/underground",
+            "overworld/under_biome_surface",
+            "overworld/under_biome_surface/default"
+        ];
+
+        foreach (string path in expectedKeys)
+        {
+            Holder<MaterialRule>.Reference? holder = registry.GetHolder(Key(path));
+            Require(
+                holder is not null && holder.IsBound,
+                $"Built-in material-rule resource '{path}' must resolve to a bound registry holder.");
+        }
+
+        Require(
+            registry.GetValue(Key("overworld/copper_ore_vein")) is OreVeinRule copper &&
+            ReferenceEquals(copper.OreBlock, Blocks.COPPER_ORE.DefaultState) &&
+            registry.GetValue(Key("overworld/iron_ore_vein")) is OreVeinRule iron &&
+            ReferenceEquals(iron.OreBlock, Blocks.DEEPSLATE_IRON_ORE.DefaultState),
+            "Built-in Copper and Iron material-rule resources must decode to their vanilla OreVeinRule definitions.");
+
+        Require(
+            registry.GetValue(Key("overworld")) is SequenceRule
+            {
+                Sequence.Count: 5,
+                Sequence:
+                [
+                    MaterialRule.HolderHolder bedrock,
+                    MaterialRule.HolderHolder copper,
+                    MaterialRule.HolderHolder iron,
+                    ConditionRule,
+                    MaterialRule.HolderHolder underground
+                ]
+            } &&
+            ReferenceEquals(bedrock.Rule, registry.GetHolder(Key("bedrock_floor"))) &&
+            ReferenceEquals(copper.Rule, registry.GetHolder(Key("overworld/copper_ore_vein"))) &&
+            ReferenceEquals(iron.Rule, registry.GetHolder(Key("overworld/iron_ore_vein"))) &&
+            ReferenceEquals(underground.Rule, registry.GetHolder(Key("overworld/underground"))),
+            "The root Overworld sequence must retain its ordered references to bedrock, both ore veins, surface and underground rules.");
     }
 
     private static void CheckTypeRegistry()

@@ -1207,3 +1207,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Adaptação local: a chave de random factory usa ResourceLocation.WithDefaultNamespace("ore"), portanto o namespace padrão do jogo local (asteria) substitui o default namespace da referência externa. Não são adicionadas dependências nem strings de namespace externo no algoritmo.
 - Limites: as flags de debug globais de minério ainda não existem; a regra normal não depende delas. A rule foi registrada e pode ser serializada/compilada, mas ainda não foi inserida automaticamente numa configuração Overworld construída pelo runtime: o bootstrap dos NoiseGeneratorSettings/dados do Overworld e o carregamento de mundo continuam pendentes.
 - Referência: https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/levelgen/material/rule/oreveinrule/
+
+## Incremento — registry completo de material rules do Overworld 26.3 (24/11/2026)
+
+- O bootstrap do registry `worldgen/material_rule` deixou de ser vazio e agora carrega os 37 recursos nomeados do conjunto Overworld 26.3: bedrock_floor, overworld root, ore veins, superfície, ramificações de superfície por bioma, under-biome surface e regras subterrâneas.
+- Os JSONs foram empacotados em três catálogos embutidos sem alterar os objetos das regras ou os seus resource keys. A inicialização reserva primeiro todos os holders; em seguida faz decode com `RegistryOps` sobre os registries built-in; por fim registra os valores, permitindo referências forward e verificando chaves ausentes no freeze.
+- A ordem de bootstrap dos codecs foi ajustada para que MaterialRuleType e MaterialConditionType estejam registradas antes de decodificar os valores do registry material_rule. A registry de blocos, biomas, noises e density functions permanece anterior ao carregamento das regras.
+- Testes verificam os 37 valores vinculados, as definições de Copper/Iron e a sequência raiz do Overworld, incluindo a ordem e identidade dos quatro holders nomeados e o ramo de superfície.
+- Delimitação: `bedrock_roof`/`overworld_caves` não fazem parte deste catálogo; a árvore de material Overworld está disponível, mas o `NoiseGeneratorSettings`/NoiseRouter de produção e o carregamento de mundo ainda precisam consumi-la. A registry `noise_generator_settings` continua sem valores built-in.
+- Fonte dos dados: `mj41/mc26-data`, branch `mc-26.3`, `data/minecraft/worldgen/material_rule/` e seu subdiretório `overworld/`.
