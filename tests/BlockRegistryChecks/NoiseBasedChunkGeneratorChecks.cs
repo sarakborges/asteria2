@@ -311,26 +311,94 @@ internal static class NoiseBasedChunkGeneratorChecks
     private static void CheckFrozenOceanExtension()
     {
         const int seaLevel = 63;
+        const long seed = 132456789L;
         DensityFunction terrainDensity =
             DensityFunctions.YClampedGradient(40, 41, 1.0F, -1.0F);
         NoiseGeneratorSettings settings = CreateSettings(
             terrainDensity,
             seaLevel,
             noiseHeight: 256);
-        var generator = new NoiseBasedChunkGenerator(settings, CreateRandomState(settings));
-        ProtoChunk chunk = CreateChunk(new ChunkPos(0, 0), -64, 256);
+        RandomState randomState = CreateRandomState(settings);
 
+        var icebergSurface = randomState.GetOrCreateNoise(Noises.ICEBERG_SURFACE);
+        var icebergPillar = randomState.GetOrCreateNoise(Noises.ICEBERG_PILLAR);
+        var icebergRoof = randomState.GetOrCreateNoise(Noises.ICEBERG_PILLAR_ROOF);
+        PositionalRandomFactory positionalRandom = new XoroshiroRandomSource(seed).ForkPositional();
+
+        int snowX = -1;
+        int snowZ = -1;
+        int snowY = int.MinValue;
+
+        for (int x = 0; x < 256 && snowX < 0; x++)
+        {
+            for (int z = 0; z < 256; z++)
+            {
+                double iceberg = Math.Min(
+                    Math.Abs(icebergSurface.Get(x, 0.0, z) * 8.25),
+                    icebergPillar.Get(x * 1.28, 0.0, z * 1.28) * 15.0);
+                if (iceberg <= 1.8)
+                    continue;
+
+                double roof = Math.Abs(icebergRoof.Get(x * 1.17, 0.0, z * 1.17) * 1.5);
+                double top = Math.Min(
+                    iceberg * iceberg * 1.2,
+                    Math.Ceiling(roof * 40.0) + 14.0);
+                if (Biomes.FROZEN_OCEAN.ShouldMeltFrozenOceanIcebergSlightly(
+                        new BlockPos(x, seaLevel, z),
+                        seaLevel))
+                {
+                    top -= 2.0;
+                }
+
+                if (top <= 2.0)
+                    continue;
+
+                int topY = (int)(seaLevel + top);
+                var columnRandom = positionalRandom.At(x, 0, z);
+                _ = columnRandom.NextInt(4);
+                int minSnowHeight = seaLevel + 18 + columnRandom.NextInt(10);
+
+                for (int y = topY - 1; y > minSnowHeight; y--)
+                {
+                    if (columnRandom.NextDouble() <= 0.01)
+                        continue;
+
+                    snowX = x;
+                    snowZ = z;
+                    snowY = y;
+                    break;
+                }
+
+                if (snowX >= 0)
+                    break;
+            }
+        }
+
+        Require(snowX >= 0,
+            "The fixed seed must contain at least one Frozen Ocean column whose vanilla iceberg random stream produces a snow cap.");
+
+        ChunkPos chunkPos = new(snowX >> 4, snowZ >> 4);
+        var generator = new NoiseBasedChunkGenerator(settings, randomState);
+        ProtoChunk chunk = CreateChunk(chunkPos, -64, 256);
         generator.BuildTerrain(
             chunk,
             _ => Holder<Biome>.Direct(Biomes.FROZEN_OCEAN));
 
+        Require(
+            ReferenceEquals(
+                chunk.GetBlockState(new BlockPos(snowX, snowY, snowZ)).Block,
+                Blocks.SNOW_BLOCK),
+            "Frozen Ocean must place a snow block at the first seeded eligible snow-cap position.");
+
         int packedIceAboveSea = 0;
         int snowBlocksAboveSea = 0;
+        int minBlockX = chunkPos.GetMinBlockX();
+        int minBlockZ = chunkPos.GetMinBlockZ();
         for (int y = seaLevel + 1; y <= chunk.GetMaxY(); y++)
         for (int x = 0; x < 16; x++)
         for (int z = 0; z < 16; z++)
         {
-            BlockState state = chunk.GetBlockState(new BlockPos(x, y, z));
+            BlockState state = chunk.GetBlockState(new BlockPos(minBlockX + x, y, minBlockZ + z));
             if (ReferenceEquals(state.Block, Blocks.PACKED_ICE))
                 packedIceAboveSea++;
             else if (ReferenceEquals(state.Block, Blocks.SNOW_BLOCK))
