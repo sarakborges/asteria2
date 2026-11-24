@@ -5,6 +5,7 @@ using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Serialization;
 using Asteria.Util.Random;
+using Asteria.World;
 using Asteria.World.Level;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.Features.StateProviders;
