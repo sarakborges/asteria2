@@ -13,8 +13,8 @@ using Asteria.World.LevelGen.Materials.Rules;
 namespace Asteria.World.LevelGen;
 
 /// <summary>
-/// Minecraft Java 26.3 density, aquifer and generic surface-rule stages for a ProtoChunk.
-/// Carvers and biome-specific surface extensions remain later pipeline work.
+/// Minecraft Java 26.3 density, aquifer, generic material-rule and carver stages for a ProtoChunk.
+/// Biome-specific surface extensions and placed-feature generation remain later pipeline work.
 /// </summary>
 public sealed class NoiseBasedChunkGenerator
 {
