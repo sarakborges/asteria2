@@ -6,6 +6,8 @@ using Asteria.World.LevelGen.Materials.Rules;
 using Asteria.World.LevelGen.Materials.Conditions;
 using Asteria.World.LevelGen;
 using Asteria.Content.Biomes;
+using Asteria.World.LevelGen.Features;
+using Asteria.World.LevelGen.Placement;
 
 namespace Asteria.Content.Registries;
 
@@ -14,6 +16,22 @@ namespace Asteria.Content.Registries;
 /// </summary>
 public static class Registries
 {
+    public static RegistryKey<Registry<Feature>> FEATURE { get; } =
+        RegistryKey<Feature>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/feature"));
+
+    public static RegistryKey<Registry<PlacedFeature>> PLACED_FEATURE { get; } =
+        RegistryKey<PlacedFeature>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/placed_feature"));
+
+    public static RegistryKey<Registry<MapCodec<Feature>>> FEATURE_TYPE { get; } =
+        RegistryKey<MapCodec<Feature>>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/feature_type"));
+
+    public static RegistryKey<Registry<MapCodec<PlacementModifier>>> PLACEMENT_MODIFIER_TYPE { get; } =
+        RegistryKey<MapCodec<PlacementModifier>>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/placement_modifier_type"));
+
     public static RegistryKey<Registry<Biome>> BIOME { get; } =
         RegistryKey<Biome>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "biome"));
