@@ -442,9 +442,47 @@ internal static class NoiseBasedChunkGeneratorChecks
             aquifers: aquiferConfig);
         var randomState = CreateRandomState(settings);
         var generator = new NoiseBasedChunkGenerator(settings, randomState);
+        ProtoChunk chunk = CreateChunk(ChunkPos.Zero, minY, height);
+        var generationContext = new WorldGenerationContext(generator, chunk);
+        ChunkPos targetChunk = chunk.GetPos();
+        var carvingMask = new CarvingMask(
+            generationContext.GetMinGenY() + 1,
+            generationContext.GetMinGenY() + generationContext.GetGenDepth() - 1 - 7);
+        var carverRandom = new WorldgenRandom(new LegacyRandomSource(0L));
+
+        for (int offsetX = -8; offsetX <= 8; offsetX++)
+        for (int offsetZ = -8; offsetZ <= 8; offsetZ++)
+        {
+            var sourceChunk = new ChunkPos(
+                unchecked(targetChunk.X + offsetX),
+                unchecked(targetChunk.Z + offsetZ));
+            int carverIndex = 0;
+            foreach (Holder<WorldCarver> carverHolder in Biomes.PLAINS.GenerationSettings.GetCarvers())
+            {
+                carverRandom.SetLargeFeatureSeed(
+                    unchecked(randomState.Seed + carverIndex),
+                    sourceChunk.X,
+                    sourceChunk.Z);
+                WorldCarver carver = carverHolder.Value;
+                if (carver.IsStartChunk(carverRandom))
+                {
+                    carver.Carve(
+                        generationContext,
+                        carverRandom,
+                        targetChunk,
+                        sourceChunk,
+                        carvingMask);
+                }
+
+                carverIndex++;
+            }
+        }
+
+        Require(!carvingMask.IsEmpty(), "The fixed-seed Overworld fixture must produce a non-empty carver mask.");
+
+        (int X, int Y, int Z)? nullResultPosition = null;
+        (int X, int Y, int Z, BlockState State)? nonNullResultPosition = null;
         var volume = new DensityVolume(16, height, 16, 0, minY, 0);
-        bool aquiferReturnedNull = false;
-        bool aquiferProducedFluid = false;
         using (var aquiferProbe = new NoiseChunk(
             randomState,
             null,
@@ -453,53 +491,64 @@ internal static class NoiseBasedChunkGeneratorChecks
             IChunkBlender.Empty,
             volume))
         {
-            for (int y = minY; y < minY + height && !(aquiferReturnedNull && aquiferProducedFluid); y++)
-            for (int x = 0; x < 16 && !(aquiferReturnedNull && aquiferProducedFluid); x++)
-            for (int z = 0; z < 16; z++)
+            carvingMask.Visit((localX, localZ, bottomY, topY) =>
             {
-                BlockState? state = aquiferProbe.Aquifer.ComputeSubstance(x, y, z, density: 0.0);
-                aquiferReturnedNull |= state is null;
-                aquiferProducedFluid |= state is not null && !state.GetFluidState().IsEmpty();
-                if (aquiferReturnedNull && aquiferProducedFluid)
-                    break;
-            }
+                int worldX = targetChunk.GetBlockX(localX);
+                int worldZ = targetChunk.GetBlockZ(localZ);
+                for (int worldY = topY; worldY >= bottomY; worldY--)
+                {
+                    BlockState? aquiferState = aquiferProbe.Aquifer.ComputeSubstance(
+                        worldX,
+                        worldY,
+                        worldZ,
+                        density: 0.0);
+                    if (aquiferState is null && nullResultPosition is null)
+                        nullResultPosition = (worldX, worldY, worldZ);
+                    else if (aquiferState is not null && nonNullResultPosition is null &&
+                        !aquiferState.GetFluidState().IsEmpty())
+                    {
+                        nonNullResultPosition = (worldX, worldY, worldZ, aquiferState);
+                    }
+                }
+            });
         }
 
         Require(
-            aquiferReturnedNull && aquiferProducedFluid,
-            "The active aquifer fixture must expose both pressure-null carving positions and fluid-bearing carving positions.");
-
-        ProtoChunk chunk = CreateChunk(ChunkPos.Zero, minY, height);
+            nullResultPosition.HasValue && nonNullResultPosition.HasValue,
+            "The masked aquifer fixture must contain both null results and fluid states.");
 
         generator.BuildTerrain(
             chunk,
             _ => Holder<Biome>.Direct(Biomes.PLAINS));
 
-        int changedTerrainCount = 0;
+        var nullPosition = nullResultPosition.Value;
+        Require(
+            ReferenceEquals(
+                chunk.GetBlockState(new BlockPos(nullPosition.X, nullPosition.Y, nullPosition.Z)),
+                Blocks.STONE.DefaultState),
+            "A null aquifer result must preserve the existing block at a marked carving position.");
+
+        var nonNullPosition = nonNullResultPosition.Value;
+        Require(
+            ReferenceEquals(
+                chunk.GetBlockState(new BlockPos(nonNullPosition.X, nonNullPosition.Y, nonNullPosition.Z)),
+                nonNullPosition.State),
+            "A non-null aquifer result must be written at a marked carving position.");
+
         for (int y = minY; y <= chunk.GetMaxY(); y++)
         for (int x = 0; x < 16; x++)
         for (int z = 0; z < 16; z++)
         {
-            BlockState state = chunk.GetBlockState(new BlockPos(x, y, z));
-            if (!ReferenceEquals(state, Blocks.STONE.DefaultState))
-            {
-                Require(
-                    y >= minY + 2 && y <= protectedMaxY,
-                    "Carving must remain inside the vanilla vertical mask bounds and ellipsoid lower-exclusive edge.");
-                changedTerrainCount++;
-            }
-
             if (y <= minY + 1 || y > protectedMaxY)
             {
                 Require(
-                    ReferenceEquals(state, Blocks.STONE.DefaultState),
+                    ReferenceEquals(
+                        chunk.GetBlockState(new BlockPos(x, y, z)),
+                        Blocks.STONE.DefaultState),
                     "Carving must preserve the lower mask boundary and the seven protected top blocks.");
             }
         }
 
-        Require(
-            changedTerrainCount > 0,
-            "BuildTerrain must run biome carvers and apply non-null aquifer states to marked positions.");
         Require(
             ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.TERRAIN),
             "The chunk may reach TERRAIN only after the carving pass and mask application complete.");
