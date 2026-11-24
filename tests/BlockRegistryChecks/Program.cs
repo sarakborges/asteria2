@@ -424,7 +424,7 @@ internal static class Program
             "The root registry must use the Asteria namespace.");
         Require(
             BuiltInRegistries.Root.Count == 28 && !BuiltInRegistries.Root.IsFrozen,
-            "The root registry must register all twenty-seven built-in registries before bootstrap freezes it.");
+            "The root registry must register all twenty-eight built-in registries before bootstrap freezes it.");
 
         RegistryKey<IRegistry> blockRegistryKey =
             RegistryKey<IRegistry>.Create(BuiltInRegistries.Root.Key, BuiltInRegistries.Block.Location);
