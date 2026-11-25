@@ -153,7 +153,7 @@ internal static class BeardifierChecks
     private static void CheckJunctionSampling()
     {
         BoundingBox affectedBox = new(-24, -24, -24, 24, 24, 24);
-        var junction = new JigsawJunction(0, 0, 0, 0, StructureTemplatePool.Projection.RIGID);
+        var junction = new JigsawJunction(40, 0, 40, 0, StructureTemplatePool.Projection.RIGID);
         var beardifier = new Beardifier(
             Array.Empty<Beardifier.Rigid>(),
             [junction],
