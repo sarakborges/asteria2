@@ -1,4 +1,5 @@
 using Asteria.Core;
+using Asteria.World.LevelGen;
 
 namespace Asteria.Content.Chunks.Status;
 
@@ -18,7 +19,9 @@ public sealed class ChunkPyramid
                 static builder => builder.AddRequirement(ChunkStatus.STRUCTURE_STARTS, 8))
             .Step(
                 ChunkStatus.BIOMES,
-                static builder => builder.AddRequirement(ChunkStatus.STRUCTURE_STARTS, 8))
+                static builder => builder
+                    .AddRequirement(ChunkStatus.STRUCTURE_STARTS, 8)
+                    .SetTask(ChunkStatusTasks.GenerateBiomes))
             .Step(
                 ChunkStatus.TERRAIN,
                 static builder => builder
