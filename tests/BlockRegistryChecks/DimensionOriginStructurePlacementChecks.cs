@@ -55,8 +55,10 @@ internal static class DimensionOriginStructurePlacementChecks
             registeredKey.HasValue &&
             registeredKey.Value.Location.Equals(
                 ResourceLocation.FromNamespaceAndPath("minecraft", "dimension_origin")) &&
-            registry.Count == 1,
-            "Only the fully ported minecraft:dimension_origin placement codec must be registered.");
+            registry.Count == 2 &&
+            registry.GetResourceKey(RandomSpreadStructurePlacement.PLACEMENT_CODEC)?.Location.Equals(
+                ResourceLocation.FromNamespaceAndPath("minecraft", "random_spread")) == true,
+            "Only the complete minecraft:dimension_origin and minecraft:random_spread placement codecs must be registered.");
 
         JsonElement encoded = StructurePlacementCodecs.CODEC
             .EncodeStart(ops, DimensionOriginStructurePlacement.INSTANCE)
@@ -70,15 +72,42 @@ internal static class DimensionOriginStructurePlacementChecks
                 DimensionOriginStructurePlacement.INSTANCE),
             "The registry-dispatched placement codec must round-trip dimension_origin using its registered type id.");
 
+        var spreadPlacement = new RandomSpreadStructurePlacement(
+            new Vec3i(2, 3, -4),
+            FrequencyReductionMethod.LEGACY_TYPE_3,
+            0.625F,
+            991,
+            null,
+            48,
+            12,
+            RandomSpreadType.TRIANGULAR);
+        JsonElement encodedSpread = StructurePlacementCodecs.CODEC
+            .EncodeStart(ops, spreadPlacement)
+            .GetOrThrow();
+        StructurePlacement decodedSpread = StructurePlacementCodecs.CODEC
+            .Parse(ops, encodedSpread)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encodedSpread, "type").GetOrThrow().GetString() == "minecraft:random_spread" &&
+            ops.Get(encodedSpread, "spacing").GetOrThrow().GetInt32() == 48 &&
+            ops.Get(encodedSpread, "separation").GetOrThrow().GetInt32() == 12 &&
+            decodedSpread is RandomSpreadStructurePlacement decodedRandomSpread &&
+            decodedRandomSpread.Spacing() == 48 &&
+            decodedRandomSpread.Separation() == 12 &&
+            ReferenceEquals(decodedRandomSpread.SpreadType(), RandomSpreadType.TRIANGULAR),
+            "The registry-dispatched codec must round-trip random_spread through its registered type id and subtype fields.");
+
+
         JsonElement unknownType = ops.CreateMap(new[]
         {
             new KeyValuePair<JsonElement, JsonElement>(
                 ops.CreateString("type"),
-                ops.CreateString("minecraft:random_spread"))
+                ops.CreateString("minecraft:concentric_rings"))
         });
         Require(
             StructurePlacementCodecs.CODEC.Parse(ops, unknownType).IsError,
-            "A placement type without a registered complete codec must fail decoding.");
+            "A concentric-rings placement without its biome-search algorithm and codec must remain unregistered.");
 
         Require(
             StructurePlacementCodecs.CODEC.EncodeStart(
