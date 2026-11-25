@@ -213,6 +213,7 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
                 position,
                 _heightAccessor,
                 _containerFactory);
+            _generator.CreateBiomes(chunk);
             _generator.BuildTerrain(chunk);
 
             if (!chunk.GetPersistedStatus().IsOrAfter(ChunkStatus.TERRAIN))
