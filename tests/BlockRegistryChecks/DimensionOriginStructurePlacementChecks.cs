@@ -14,6 +14,7 @@ internal static class DimensionOriginStructurePlacementChecks
     public static void Run()
     {
         CheckSingletonAndCodec();
+        CheckRegistryDispatchedCodec();
         CheckOnlyTheDimensionOriginIsSelected();
         CheckDefaultLocatePosition();
     }
@@ -37,6 +38,52 @@ internal static class DimensionOriginStructurePlacementChecks
                 DimensionOriginStructurePlacement.MAP_CODEC.Parse(ops, encoded).GetOrThrow(),
                 DimensionOriginStructurePlacement.INSTANCE),
             "The dimension-origin unit codec must encode an empty map and decode to the canonical singleton.");
+    }
+
+    private static void CheckRegistryDispatchedCodec()
+    {
+        _ = new OverworldWorld(0x5354525543545459L);
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+
+        Registry<MapCodec<StructurePlacement>> registry =
+            BuiltInRegistries.StructurePlacementType;
+        RegistryKey<MapCodec<StructurePlacement>>? registeredKey =
+            registry.GetResourceKey(DimensionOriginStructurePlacement.PLACEMENT_CODEC);
+
+        Require(
+            registeredKey.HasValue &&
+            registeredKey.Value.Location.Equals(
+                ResourceLocation.FromNamespaceAndPath("minecraft", "dimension_origin")) &&
+            registry.Count == 1,
+            "Only the fully ported minecraft:dimension_origin placement codec must be registered.");
+
+        JsonElement encoded = StructurePlacementCodecs.CODEC
+            .EncodeStart(ops, DimensionOriginStructurePlacement.INSTANCE)
+            .GetOrThrow();
+
+        Require(
+            encoded.ValueKind == JsonValueKind.Object &&
+            ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:dimension_origin" &&
+            ReferenceEquals(
+                StructurePlacementCodecs.CODEC.Parse(ops, encoded).GetOrThrow(),
+                DimensionOriginStructurePlacement.INSTANCE),
+            "The registry-dispatched placement codec must round-trip dimension_origin using its registered type id.");
+
+        JsonElement unknownType = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("type"),
+                ops.CreateString("minecraft:random_spread"))
+        });
+        Require(
+            StructurePlacementCodecs.CODEC.Parse(ops, unknownType).IsError,
+            "A placement type without a registered complete codec must fail decoding.");
+
+        Require(
+            StructurePlacementCodecs.CODEC.EncodeStart(
+                ops,
+                new UnsupportedPlacement()).IsError,
+            "A placement implementation without a codec must fail encoding instead of being serialized under a false type id.");
     }
 
     private static void CheckOnlyTheDimensionOriginIsSelected()
@@ -74,6 +121,15 @@ internal static class DimensionOriginStructurePlacementChecks
             locate.GetZ() == 80 &&
             DimensionOriginStructurePlacement.INSTANCE.LocateOffset().Equals(Vec3i.Zero),
             "Dimension-origin placement must retain the default zero locate offset and chunk-corner position.");
+    }
+
+    private sealed class UnsupportedPlacement : StructurePlacement
+    {
+        public bool IsStructureChunk(
+            IStructurePlacementState state,
+            int sourceX,
+            int sourceZ) =>
+            true;
     }
 
     private static IStructurePlacementState CreateState(long seed, ChunkPos origin)
