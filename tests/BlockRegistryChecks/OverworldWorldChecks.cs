@@ -62,7 +62,7 @@ internal static class OverworldWorldChecks
         Require(
             world.UnloadChunk(position) &&
             !world.TryGetChunk(position, out _),
-            "Unloading a feature-ready chunk must remove it from both public and generation caches.");
+            "Unloading a light-ready chunk must remove it from both public and generation caches.");
 
         ProtoChunk regenerated = world.GetChunk(position);
         Require(
@@ -98,12 +98,12 @@ internal static class OverworldWorldChecks
             world.CachedGenerationChunkCount == 23 * 23 &&
             world.TryGetChunk(adjacentPosition, out ProtoChunk? cachedAdjacent) &&
             ReferenceEquals(cachedAdjacent, adjacent),
-            "Unloading one chunk must retain exactly the 21-by-21 dependency window still required by its loaded neighbor.");
+            "Unloading one chunk must retain exactly the 23-by-23 dependency window still required by its loaded neighbor.");
 
         Require(
             ReferenceEquals(world.GetChunk(firstPosition), first) &&
             world.LoadedChunkCount == 2,
-            "A feature-ready chunk retained as a loaded neighbor's dependency must be safely reusable.");
+            "A light-ready chunk retained as a loaded neighbor's dependency must be safely reusable.");
 
         Require(
             world.UnloadChunk(firstPosition) &&

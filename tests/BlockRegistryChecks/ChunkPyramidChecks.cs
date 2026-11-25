@@ -69,6 +69,30 @@ internal static class ChunkPyramidChecks
             features.GetAccumulatedRadiusOf(ChunkStatus.TERRAIN) == 1,
             "FEATURES must accumulate start dependencies to radius ten, references and biomes to radius two, and terrain to radius one.");
 
+        ChunkStep initializeLight = pyramid.GetStepTo(ChunkStatus.INITIALIZE_LIGHT);
+        Require(
+            initializeLight.Task == ChunkStatusTasks.GenerateInitializeLight &&
+            initializeLight.DirectDependencies.Size() == 1 &&
+            ReferenceEquals(initializeLight.DirectDependencies.Get(0), ChunkStatus.FEATURES),
+            "INITIALIZE_LIGHT must execute only after the center chunk reaches FEATURES.");
+
+        ChunkStep light = pyramid.GetStepTo(ChunkStatus.LIGHT);
+        Require(
+            light.Task == ChunkStatusTasks.GenerateLight &&
+            light.DirectDependencies.Size() == 2 &&
+            light.DirectDependencies.AsList().All(status =>
+                ReferenceEquals(status, ChunkStatus.INITIALIZE_LIGHT)),
+            "LIGHT must execute only after its complete radius-one neighborhood reaches INITIALIZE_LIGHT.");
+        Require(
+            light.GetAccumulatedRadiusOf(ChunkStatus.STRUCTURE_STARTS) == 11 &&
+            light.GetAccumulatedRadiusOf(ChunkStatus.STRUCTURE_REFERENCES) == 3 &&
+            light.GetAccumulatedRadiusOf(ChunkStatus.BIOMES) == 3 &&
+            light.GetAccumulatedRadiusOf(ChunkStatus.TERRAIN) == 2 &&
+            light.GetAccumulatedRadiusOf(ChunkStatus.FEATURES) == 1 &&
+            light.GetAccumulatedRadiusOf(ChunkStatus.INITIALIZE_LIGHT) == 1 &&
+            light.GetAccumulatedRadiusOf(ChunkStatus.LIGHT) == 0,
+            "LIGHT must accumulate the exact dependency windows: starts 11, references/biomes 3, terrain 2, features/initialization 1.");
+        
         ChunkStep full = pyramid.GetStepTo(ChunkStatus.FULL);
         ChunkStatus[] expectedFullDependencies =
         {

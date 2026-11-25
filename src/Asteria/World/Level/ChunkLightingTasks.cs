@@ -57,6 +57,58 @@ public static class ChunkLightingTasks
     }
 
     /// <summary>
+    /// Removes one or more no-longer-retained chunk columns from the lighting engine.
+    /// This mirrors ThreadedLevelLightEngine.updateChunkStatus: stop retaining data,
+    /// disable the column, clear queued section layers including vertical padding, and
+    /// remove the world's section states before publishing one final update batch.
+    /// </summary>
+    public static void UnloadLight(
+        IEnumerable<ProtoChunk> chunks,
+        LevelLightEngine lightEngine)
+    {
+        ArgumentNullException.ThrowIfNull(chunks);
+        ArgumentNullException.ThrowIfNull(lightEngine);
+
+        ProtoChunk[] snapshot = chunks.ToArray();
+        if (Array.Exists(snapshot, static chunk => chunk is null))
+            throw new ArgumentException("Chunk collections cannot contain null entries.", nameof(chunks));
+
+        bool queuedAny = false;
+        foreach (ProtoChunk chunk in snapshot)
+        {
+            if (!chunk.GetPersistedStatus().IsOrAfter(ChunkStatus.INITIALIZE_LIGHT))
+                continue;
+
+            ChunkPos position = chunk.GetPos();
+            lightEngine.RetainData(position, retain: false);
+            lightEngine.SetLightEnabled(position, enabled: false);
+
+            for (int sectionY = lightEngine.GetMinLightSection();
+                 sectionY < lightEngine.GetMaxLightSection();
+                 sectionY++)
+            {
+                SectionPos sectionPosition = SectionPos.Of(position, sectionY);
+                lightEngine.QueueSectionData(LightLayer.BLOCK, sectionPosition, data: null);
+                lightEngine.QueueSectionData(LightLayer.SKY, sectionPosition, data: null);
+            }
+
+            for (int sectionY = chunk.GetMinSectionY();
+                 sectionY <= chunk.GetMaxSectionY();
+                 sectionY++)
+            {
+                lightEngine.UpdateSectionStatus(
+                    SectionPos.Of(position, sectionY),
+                    sectionEmpty: true);
+            }
+
+            queuedAny = true;
+        }
+
+        if (queuedAny)
+            lightEngine.RunLightUpdates();
+    }
+
+    /// <summary>
     /// Seeds and computes both available light channels for a chunk. The chunk's
     /// one-chunk neighbour ring must already have reached INITIALIZE_LIGHT, as
     /// required by ChunkPyramid's LIGHT step. Status promotion remains the scheduler's job.

@@ -458,6 +458,7 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
     {
         if (_chunks.Count == 0)
         {
+            ChunkLightingTasks.UnloadLight(_generationChunks.Values, _lightEngine);
             _generationChunks.Clear();
             return;
         }
@@ -470,11 +471,18 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
                 requiredChunks.Add(dependencyPosition);
         }
 
-        foreach (ChunkPos cachedPosition in _generationChunks.Keys.ToArray())
+        var chunksToUnload = new List<ProtoChunk>();
+        foreach (KeyValuePair<ChunkPos, ProtoChunk> entry in _generationChunks)
         {
-            if (!requiredChunks.Contains(cachedPosition))
-                _generationChunks.Remove(cachedPosition);
+            if (!requiredChunks.Contains(entry.Key))
+                chunksToUnload.Add(entry.Value);
         }
+
+        // Keep removed chunks discoverable by LightChunkGetter until the engine has
+        // processed all queued decreases and removed their section data.
+        ChunkLightingTasks.UnloadLight(chunksToUnload, _lightEngine);
+        foreach (ProtoChunk chunk in chunksToUnload)
+            _generationChunks.Remove(chunk.GetPos());
     }
 
     private static void ApplyGenerationStep(

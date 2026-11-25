@@ -44,6 +44,7 @@ internal static class ChunkLightingTasksChecks
         CheckLightingRequiresPreviousChunkStages();
         CheckInitializeAndLightLifecycle();
         CheckPyramidLightingTasks();
+        CheckUnloadLightLifecycle();
     }
 
     private static void CheckLightingRequiresPreviousChunkStages()
@@ -213,6 +214,56 @@ internal static class ChunkLightingTasksChecks
             ReferenceEquals(incompleteCenter.GetPersistedStatus(), ChunkStatus.INITIALIZE_LIGHT) &&
             !incompleteCenter.IsLightCorrect(),
             "A LIGHT task with missing neighbors must not propagate or promote its center chunk.");
+    }
+
+    private static void CheckUnloadLightLifecycle()
+    {
+        var chunks = new Dictionary<long, ProtoChunk>();
+        foreach (ChunkPos position in ChunkPos.RangeClosed(ChunkPos.Zero, 1))
+        {
+            ProtoChunk chunk = CreateChunk(position.X, position.Z);
+            chunk.SetPersistedStatus(ChunkStatus.FEATURES);
+            chunks.Add(position.Pack(), chunk);
+        }
+
+        ProtoChunk center = chunks[ChunkPos.Zero.Pack()];
+        BlockPos sourcePosition = new(8, 8, 8);
+        center.GetSection(center.GetSectionIndex(sourcePosition.GetY()))
+            .SetBlockState(8, 8, 8, new EmissiveBlock().DefaultState);
+
+        var engine = new LevelLightEngine(
+            new TestChunkGetter(chunks),
+            hasBlockLight: true,
+            hasSkyLight: true);
+        foreach (ProtoChunk chunk in chunks.Values)
+        {
+            ChunkLightingTasks.InitializeLight(chunk, engine, lighted: false);
+            chunk.SetPersistedStatus(ChunkStatus.INITIALIZE_LIGHT);
+        }
+
+        ChunkLightingTasks.LightChunk(center, engine, lighted: false);
+        SectionPos sourceSection = SectionPos.Of(sourcePosition);
+        long centerColumn = SectionPos.GetZeroNode(center.GetPos().X, center.GetPos().Z);
+        Require(
+            engine.LightOnInColumn(centerColumn) &&
+            engine.GetDebugSectionType(LightLayer.BLOCK, sourceSection) == LightSectionType.LightAndData &&
+            engine.GetLayerListener(LightLayer.BLOCK).GetLightValue(sourcePosition) == 14,
+            "The unload fixture must begin with an enabled, populated light column.");
+
+        ChunkLightingTasks.UnloadLight(new[] { center }, engine);
+
+        Require(
+            !engine.LightOnInColumn(centerColumn) &&
+            engine.GetLayerListener(LightLayer.BLOCK).GetLightValue(sourcePosition) == 0 &&
+            engine.GetDebugSectionType(LightLayer.BLOCK, sourceSection) == LightSectionType.Empty &&
+            engine.GetDebugSectionType(LightLayer.SKY, sourceSection) == LightSectionType.Empty,
+            "Unloading a chunk must disable its light column and remove both stored section layers.");
+        Require(
+            !engine.HasLightWork(),
+            "Unloading a chunk must finish the queued section removals before returning.");
+        Require(
+            ReferenceEquals(center.GetPersistedStatus(), ChunkStatus.INITIALIZE_LIGHT),
+            "Unloading light data must not rewrite the chunk's persisted generation status.");
     }
 
     private static ProtoChunk CreateChunk(int chunkX, int chunkZ) =>
