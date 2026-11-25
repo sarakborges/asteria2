@@ -311,7 +311,6 @@ public sealed class NoiseBasedChunkGenerator
             return;
 
         DensityVolume volume = CreateVolume(chunk, noiseSettings);
-        Heightmap.PrimeHeightmaps(chunk, ChunkStatus.BIOMES.GetHeightmapsAfter().ToHashSet());
 
         using var noiseChunk = new NoiseChunk(
             _randomState,
