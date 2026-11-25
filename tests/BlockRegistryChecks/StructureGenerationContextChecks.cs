@@ -595,95 +595,9 @@ internal static class StructureGenerationContextChecks
     }
 
     private sealed class CenterProbeStructure : Structure
-    {
-        public CenterProbeStructure() : base(StructureSettings.DEFAULT)
-        {
-        }
-
-        public Structure.GenerationStub? BuildOnTopOfChunkCenter(
-            Structure.GenerationContext context,
-            Heightmap.Types heightmapType,
-            Action<StructurePiecesBuilder> pieceGenerator) =>
-            OnTopOfChunkCenter(context, heightmapType, pieceGenerator);
-
-        public Structure.GenerationStub BuildOnTopOfChunkCenterWithoutBiomeCheck(
-            Structure.GenerationContext context,
-            Heightmap.Types heightmapType,
-            Action<StructurePiecesBuilder> pieceGenerator) =>
-            OnTopOfChunkCenterWithoutBiomeCheck(context, heightmapType, pieceGenerator);
-
-        protected override Structure.GenerationStub? FindGenerationPoint(
-            Structure.GenerationContext context) => null;
-    }
-
-    private sealed class HeightProbeStructure : Structure
-    {
-        public HeightProbeStructure() : base(StructureSettings.DEFAULT)
-        {
-        }
-
-        public int GetLowestYForChunkFootprint(
-            Structure.GenerationContext context,
-            int sizeX,
-            int sizeZ) =>
-            GetLowestY(context, sizeX, sizeZ);
-
-        public int GetLowestYForFootprint(
-            Structure.GenerationContext context,
-            int minX,
-            int minZ,
-            int sizeX,
-            int sizeZ) =>
-            GetLowestY(context, minX, minZ, sizeX, sizeZ);
-
-        protected override Structure.GenerationStub? FindGenerationPoint(
-            Structure.GenerationContext context) => null;
-    }
-    {
-        public CenterProbeStructure() : base(StructureSettings.DEFAULT)
-        {
-        }
-
-        public Structure.GenerationStub? BuildOnTopOfChunkCenter(
-            Structure.GenerationContext context,
-            Heightmap.Types heightmapType,
-            Action<StructurePiecesBuilder> pieceGenerator) =>
-            OnTopOfChunkCenter(context, heightmapType, pieceGenerator);
-
-        public Structure.GenerationStub BuildOnTopOfChunkCenterWithoutBiomeCheck(
-            Structure.GenerationContext context,
-            Heightmap.Types heightmapType,
-            Action<StructurePiecesBuilder> pieceGenerator) =>
-            OnTopOfChunkCenterWithoutBiomeCheck(context, heightmapType, pieceGenerator);
-
-        protected override Structure.GenerationStub? FindGenerationPoint(
-            Structure.GenerationContext context) => null;
-    }
     private sealed class TestPiece(BoundingBox boundingBox)
         : StructurePiece(0, boundingBox);
-    private sealed class HeightProbeStructure : Structure
-    {
-        public HeightProbeStructure() : base(StructureSettings.DEFAULT)
-        {
-        }
 
-        public int GetLowestYForChunkFootprint(
-            Structure.GenerationContext context,
-            int sizeX,
-            int sizeZ) =>
-            GetLowestY(context, sizeX, sizeZ);
-
-        public int GetLowestYForFootprint(
-            Structure.GenerationContext context,
-            int minX,
-            int minZ,
-            int sizeX,
-            int sizeZ) =>
-            GetLowestY(context, minX, minZ, sizeX, sizeZ);
-
-        protected override Structure.GenerationStub? FindGenerationPoint(
-            Structure.GenerationContext context) => null;
-    }
     private static void Require(bool condition, string message)
     {
         if (!condition)
