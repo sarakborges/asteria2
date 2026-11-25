@@ -21,8 +21,9 @@ internal static class OverworldWorldChecks
 
         ProtoChunk generated = world.GetChunk(position);
         Require(
-            ReferenceEquals(generated.GetPersistedStatus(), ChunkStatus.FEATURES),
-            "OverworldWorld.GetChunk must promote its center chunk through the FEATURES status task.");
+            ReferenceEquals(generated.GetPersistedStatus(), ChunkStatus.LIGHT) &&
+            generated.IsLightCorrect(),
+            "OverworldWorld.GetChunk must execute INITIALIZE_LIGHT and LIGHT before publishing a light-correct chunk.");
 
         int biomeCells = 0;
         foreach (ChunkSection section in generated.GetSections())
@@ -36,18 +37,27 @@ internal static class OverworldWorldChecks
             world.GetLoadedChunks().Count == 1 &&
             world.TryGetChunk(position, out ProtoChunk? cached) &&
             ReferenceEquals(cached, generated),
-            "Only the feature-ready center chunk may be published through the world's loaded-chunk cache.");
+            "Only the light-ready center chunk may be published through the world's loaded-chunk cache.");
+
+        ChunkPos initializedNeighborPosition = new(position.X + 1, position.Z);
+        ProtoChunk? initializedNeighbor =
+            world.GetChunkForLighting(initializedNeighborPosition.X, initializedNeighborPosition.Z) as ProtoChunk;
+        Require(
+            !world.TryGetChunk(initializedNeighborPosition, out _) &&
+            initializedNeighbor is not null &&
+            ReferenceEquals(initializedNeighbor.GetPersistedStatus(), ChunkStatus.INITIALIZE_LIGHT),
+            "The light engine must see already generated staging neighbors after FEATURES/INITIALIZE_LIGHT without publishing them to world reads.");
 
         ChunkPos dependencyPosition = new(position.X + 2, position.Z);
         Require(
             !world.TryGetChunk(dependencyPosition, out _) &&
             world.GetChunkForLighting(dependencyPosition.X, dependencyPosition.Z) is null,
-            "Intermediate dependency chunks must remain hidden from world reads and lighting until FEATURES is generated.");
+            "The light engine must not see terrain-only staging chunks or trigger their generation.");
 
         Require(
             ReferenceEquals(world.GetChunk(position), generated) &&
             world.LoadedChunkCount == 1,
-            "A repeated feature-ready chunk request must return the cached instance without republishing dependencies.");
+            "A repeated light-ready chunk request must return the cached instance without republishing dependencies.");
 
         Require(
             world.UnloadChunk(position) &&
@@ -57,9 +67,10 @@ internal static class OverworldWorldChecks
         ProtoChunk regenerated = world.GetChunk(position);
         Require(
             !ReferenceEquals(regenerated, generated) &&
-            ReferenceEquals(regenerated.GetPersistedStatus(), ChunkStatus.FEATURES) &&
+            ReferenceEquals(regenerated.GetPersistedStatus(), ChunkStatus.LIGHT) &&
+            regenerated.IsLightCorrect() &&
             world.LoadedChunkCount == 1,
-            "An unloaded center chunk must be regenerated through FEATURES before it becomes visible again.");
+            "An unloaded center chunk must be regenerated through LIGHT before it becomes visible again.");
     }
 
     private static void CheckGenerationCachePruning()
@@ -72,19 +83,19 @@ internal static class OverworldWorldChecks
 
         ProtoChunk first = world.GetChunk(firstPosition);
         Require(
-            world.CachedGenerationChunkCount == 21 * 21,
-            "One loaded feature chunk must retain exactly its 21-by-21 generation dependency window.");
+            world.CachedGenerationChunkCount == 23 * 23,
+            "One loaded light-ready chunk must retain exactly its 23-by-23 generation and lighting dependency window.");
 
         ProtoChunk adjacent = world.GetChunk(adjacentPosition);
         Require(
             world.LoadedChunkCount == 2 &&
-            world.CachedGenerationChunkCount == 22 * 21,
-            "Adjacent loaded chunks must share their overlapping 21-by-21 generation dependency windows.");
+            world.CachedGenerationChunkCount == 24 * 23,
+            "Adjacent loaded chunks must share their overlapping 23-by-23 generation and lighting dependency windows.");
 
         Require(
             world.UnloadChunk(firstPosition) &&
             world.LoadedChunkCount == 1 &&
-            world.CachedGenerationChunkCount == 21 * 21 &&
+            world.CachedGenerationChunkCount == 23 * 23 &&
             world.TryGetChunk(adjacentPosition, out ProtoChunk? cachedAdjacent) &&
             ReferenceEquals(cachedAdjacent, adjacent),
             "Unloading one chunk must retain exactly the 21-by-21 dependency window still required by its loaded neighbor.");
@@ -104,7 +115,9 @@ internal static class OverworldWorldChecks
         ProtoChunk regenerated = world.GetChunk(firstPosition);
         Require(
             !ReferenceEquals(regenerated, first) &&
-            world.CachedGenerationChunkCount == 21 * 21,
+            ReferenceEquals(regenerated.GetPersistedStatus(), ChunkStatus.LIGHT) &&
+            regenerated.IsLightCorrect() &&
+            world.CachedGenerationChunkCount == 23 * 23,
             "A chunk requested after its entire dependency window was released must be regenerated.");
     }
 
