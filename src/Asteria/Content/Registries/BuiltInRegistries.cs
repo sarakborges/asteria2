@@ -27,6 +27,7 @@ using Asteria.World.LevelGen.Materials.Conditions;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.Features;
 using Asteria.World.LevelGen.Placement;
+using Asteria.World.LevelGen.Structure.Placement;
 using BlockStateProviderValue = Asteria.World.LevelGen.Features.StateProviders.BlockStateProvider;
 using Asteria.World.LevelGen.Features.StateProviders;
 
@@ -111,6 +112,11 @@ public static class BuiltInRegistries
         RegisterSimple<MapCodec<PlacementModifier>>(
             Registries.PLACEMENT_MODIFIER_TYPE.Location,
             static () => PlacementModifierCodecBootstrap.RegisterAll(PlacementModifierType));
+
+    public static Registry<MapCodec<StructurePlacement>> StructurePlacementType { get; } =
+        RegisterSimple<MapCodec<StructurePlacement>>(
+            Registries.STRUCTURE_PLACEMENT_TYPE.Location,
+            static () => StructurePlacementCodecBootstrap.RegisterAll(StructurePlacementType));
 
     public static Registry<PlacedFeature> PlacedFeature { get; } =
         RegisterSimple<PlacedFeature>(
