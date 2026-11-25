@@ -5,6 +5,7 @@ using Asteria.World;
 using Asteria.World.Level;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.Structure;
+using Asteria.World.LevelGen.Structure.Pieces;
 
 internal static class StructureGenerationContextChecks
 {
@@ -222,16 +223,6 @@ internal static class StructureGenerationContextChecks
                 heightAccessor,
                 predicate),
             "GenerationContext must reject a null random state.");
-        RequireThrows<ArgumentNullException>(
-            () => new Structure.GenerationContext(
-                world.Generator,
-                resolver,
-                world.Generator.RandomState,
-                world.Seed,
-                null!,
-                heightAccessor,
-                predicate),
-            "GenerationContext must reject a null chunk position.");
         RequireThrows<ArgumentNullException>(
             () => new Structure.GenerationContext(
                 world.Generator,

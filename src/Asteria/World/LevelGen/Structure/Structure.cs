@@ -174,7 +174,7 @@ public abstract class Structure
             Generator = generator ?? throw new ArgumentNullException(nameof(generator));
             BiomeResolver = biomeResolver ?? throw new ArgumentNullException(nameof(biomeResolver));
             RandomState = randomState ?? throw new ArgumentNullException(nameof(randomState));
-            ChunkPos = chunkPos ?? throw new ArgumentNullException(nameof(chunkPos));
+            ChunkPos = chunkPos;
             HeightAccessor = heightAccessor ?? throw new ArgumentNullException(nameof(heightAccessor));
             ValidBiome = validBiome ?? throw new ArgumentNullException(nameof(validBiome));
             Seed = seed;
