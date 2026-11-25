@@ -134,10 +134,12 @@ public abstract class LightEngine<TMap, TStorage> : LightEngine, LayerLightEngin
         _blockNodesToCheck.Clear();
 
         int count = PropagateDecreases();
+        count += PropagateIncreases();
+
         ClearChunkCache();
         Storage.MarkNewInconsistencies();
         Storage.SwapSectionMap();
-        return count + PropagateIncreases();
+        return count;
     }
 
     private int PropagateIncreases()
