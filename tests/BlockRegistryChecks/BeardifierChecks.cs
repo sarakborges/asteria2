@@ -281,11 +281,35 @@ internal static class BeardifierChecks
 
         IReadOnlyList<ProtoChunk> availableChunks = chunks.Values.ToArray();
         WorldGenRegion region = world.CreateWorldGenRegion(terrainStep, center, availableChunks);
+        ChunkAccess recoveredRigidChunk = region.GetChunk(
+            rigidSource.X, rigidSource.Z, ChunkStatus.STRUCTURE_STARTS);
+        StructureStart? recoveredRigidStart =
+            recoveredRigidChunk.GetStartForStructure(rigidStructure);
+        float recoveredRigidContribution = rigidPiece.IsRigidForTerrain
+            ? CreateSingleRigid(
+                rigidStructure.TerrainAdaptation(),
+                rigidPiece.GetBoundingBox(),
+                rigidStructure.AdjustBoundingBox(rigidPiece.GetBoundingBox()))
+                .SampleValue(SamplerContext.EmptyUncached, 0, 2, 0)
+            : float.NaN;
         Beardifier beardifier = Beardifier.CreateForChunk(region, center);
+        float collectedRigidContribution =
+            beardifier.SampleValue(SamplerContext.EmptyUncached, 0, 2, 0);
 
         Require(
-            Math.Abs(beardifier.SampleValue(SamplerContext.EmptyUncached, 0, 2, 0) - 1.0F) < 1.0E-6F,
-            "Hand-built rigid pieces must contribute with their ground-level delta to the terrain beardifier.");
+            center.GetReferencesForStructure(rigidStructure).Contains(rigidSource.Pack()) &&
+            recoveredRigidStart is not null &&
+            recoveredRigidStart.IsValid() &&
+            ReferenceEquals(recoveredRigidStart.GetPieces()[0], rigidPiece),
+            "The Beardifier fixture must resolve the referenced source chunk and its exact valid rigid start.");
+        Require(
+            rigidPiece.IsRigidForTerrain &&
+            rigidPiece.GetGroundLevelDelta() == 2 &&
+            Math.Abs(recoveredRigidContribution - 1.0F) < 1.0E-6F,
+            "The hand-built test piece must expose its expected rigid projection and ground-level delta.");
+        Require(
+            Math.Abs(collectedRigidContribution - 1.0F) < 1.0E-6F,
+            $"Hand-built rigid pieces must contribute with their ground-level delta; collected density was {collectedRigidContribution}.");
         Require(
             Math.Abs(beardifier.SampleValue(SamplerContext.EmptyUncached, 40, 0, 40) -
                      -0.2783878743648529F) < 1.0E-6F,
