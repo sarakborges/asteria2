@@ -100,7 +100,7 @@ internal static class SimpleBlockFeatureChecks
     private static void CheckSimplePlacementAndSurvival()
     {
         const long seed = 0x53494D504C45424CL;
-        LevelHeightAccessor heightAccessor = LevelHeightAccessor.Create(-64, 96);
+        LevelHeightAccessor heightAccessor = LevelHeightAccessor.Create(-64, 128);
         var world = new OverworldWorld(seed, heightAccessor);
         NoiseBasedChunkGenerator generator = NoiseBasedChunkGenerator.CreateOverworld(seed);
         (WorldGenRegion region, ProtoChunk center) = CreateRegion(world, generator, heightAccessor);
@@ -134,7 +134,7 @@ internal static class SimpleBlockFeatureChecks
     private static void CheckScheduledTickUsesWorldTimeAndRegionOrder()
     {
         const long seed = 0x5449434B53494D50L;
-        LevelHeightAccessor heightAccessor = LevelHeightAccessor.Create(-64, 96);
+        LevelHeightAccessor heightAccessor = LevelHeightAccessor.Create(-64, 128);
         var world = new OverworldWorld(seed, heightAccessor);
         world.SetGameTime(500L);
         NoiseBasedChunkGenerator generator = NoiseBasedChunkGenerator.CreateOverworld(seed);
