@@ -10,6 +10,7 @@ using Asteria.World.LevelGen.Features;
 using Asteria.World.LevelGen.Placement;
 using Asteria.World.LevelGen.Features.StateProviders;
 using Asteria.World.LevelGen.Structure.Placement;
+using Asteria.World.LevelGen.Structure;
 
 namespace Asteria.Content.Registries;
 
@@ -45,6 +46,10 @@ public static class Registries
     public static RegistryKey<Registry<MapCodec<StructurePlacement>>> STRUCTURE_PLACEMENT_TYPE { get; } =
         RegistryKey<MapCodec<StructurePlacement>>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/structure_placement_type"));
+
+    public static RegistryKey<Registry<StructureSet>> STRUCTURE_SET { get; } =
+        RegistryKey<StructureSet>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/structure_set"));
 
     public static RegistryKey<Registry<Biome>> BIOME { get; } =
         RegistryKey<Biome>.CreateRegistryKey(
