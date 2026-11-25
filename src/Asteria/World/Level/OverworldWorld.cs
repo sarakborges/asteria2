@@ -10,6 +10,7 @@ using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.Structure;
 using Asteria.World.Ticks;
 using Asteria.World.Lighting;
+using Asteria.Util;
 
 namespace Asteria.World.Level;
 
@@ -25,6 +26,7 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
     private readonly LevelHeightAccessor _heightAccessor;
     private readonly PalettedContainerFactory _containerFactory;
     private readonly Dictionary<ChunkPos, ProtoChunk> _chunks = new();
+    private readonly Dictionary<ChunkPos, ProtoChunk> _generationChunks = new();
     private readonly BiomeManager _biomeManager;
     private readonly LevelLightEngine _lightEngine;
     private long _gameTime;
@@ -184,8 +186,9 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
     }
 
     /// <summary>
-    /// Gets a cached chunk or generates its BIOMES and TERRAIN stages on first access.
-    /// A failed generation is not inserted into the world's chunk cache.
+    /// Gets a terrain-ready chunk. Generation runs through the status dependency pyramid;
+    /// intermediate dependency chunks remain private until they reach TERRAIN themselves.
+    /// A failed center generation is not exposed as a loaded world chunk.
     /// </summary>
     public LightChunk? GetChunkForLighting(int chunkX, int chunkZ) =>
         TryGetChunk(new ChunkPos(chunkX, chunkZ), out ProtoChunk? chunk)
@@ -222,20 +225,128 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
             if (_chunks.TryGetValue(position, out ProtoChunk? existing))
                 return existing;
 
-            var chunk = new ProtoChunk(
-                position,
-                _heightAccessor,
-                _containerFactory);
-            _generator.CreateBiomes(chunk);
-            _generator.BuildTerrain(chunk);
+            ProtoChunk chunk = GetOrCreateGenerationChunk(position);
+            if (!chunk.GetPersistedStatus().IsOrAfter(ChunkStatus.TERRAIN))
+                GenerateThroughTerrain(position);
 
             if (!chunk.GetPersistedStatus().IsOrAfter(ChunkStatus.TERRAIN))
                 throw new InvalidOperationException(
-                    $"Chunk {position} did not reach TERRAIN during Overworld generation.");
+                    $"Chunk {position} did not reach TERRAIN through the generation pyramid.");
 
             _chunks.Add(position, chunk);
             return chunk;
         }
+    }
+
+    private ProtoChunk GetOrCreateGenerationChunk(ChunkPos position)
+    {
+        if (_generationChunks.TryGetValue(position, out ProtoChunk? existing))
+            return existing;
+
+        var chunk = new ProtoChunk(position, _heightAccessor, _containerFactory);
+        _generationChunks.Add(position, chunk);
+        return chunk;
+    }
+
+    private void GenerateThroughTerrain(ChunkPos centerPosition)
+    {
+        ChunkPyramid pyramid = ChunkPyramid.GenerationPyramid;
+        ChunkStep structureStartsStep = pyramid.GetStepTo(ChunkStatus.STRUCTURE_STARTS);
+        ChunkStep structureReferencesStep = pyramid.GetStepTo(ChunkStatus.STRUCTURE_REFERENCES);
+        ChunkStep biomesStep = pyramid.GetStepTo(ChunkStatus.BIOMES);
+        ChunkStep terrainStep = pyramid.GetStepTo(ChunkStatus.TERRAIN);
+
+        int biomeRadius = terrainStep.DirectDependencies.GetRadiusOf(ChunkStatus.BIOMES);
+        int structureStartsRadius = Math.Max(
+            terrainStep.DirectDependencies.GetRadiusOf(ChunkStatus.STRUCTURE_STARTS),
+            checked(
+                biomeRadius +
+                Math.Max(
+                    biomesStep.DirectDependencies.GetRadiusOf(ChunkStatus.STRUCTURE_STARTS),
+                    structureReferencesStep.DirectDependencies.GetRadiusOf(ChunkStatus.STRUCTURE_STARTS))));
+
+        if (biomeRadius < 0 || structureStartsRadius < 0)
+            throw new InvalidOperationException(
+                "The TERRAIN dependency pyramid does not describe its required biome and structure-start windows.");
+
+        StaticCache2D<ChunkAccess?> chunks = StaticCache2D<ChunkAccess?>.Create(
+            centerPosition.X,
+            centerPosition.Z,
+            structureStartsRadius,
+            (chunkX, chunkZ) =>
+                GetOrCreateGenerationChunk(new ChunkPos(chunkX, chunkZ)));
+
+        var context = new WorldGenContext(
+            this,
+            _generator,
+            _lightEngine,
+            StructureState);
+
+        foreach (ChunkPos dependencyPosition in
+                 ChunkPos.RangeClosed(centerPosition, structureStartsRadius))
+        {
+            ProtoChunk dependencyChunk = (ProtoChunk)chunks.Get(
+                dependencyPosition.X,
+                dependencyPosition.Z);
+            ApplyGenerationStep(
+                structureStartsStep,
+                context,
+                chunks,
+                dependencyChunk);
+        }
+
+        foreach (ChunkPos dependencyPosition in
+                 ChunkPos.RangeClosed(centerPosition, biomeRadius))
+        {
+            ProtoChunk dependencyChunk = (ProtoChunk)chunks.Get(
+                dependencyPosition.X,
+                dependencyPosition.Z);
+            ApplyGenerationStep(
+                structureReferencesStep,
+                context,
+                chunks,
+                dependencyChunk);
+        }
+
+        foreach (ChunkPos dependencyPosition in
+                 ChunkPos.RangeClosed(centerPosition, biomeRadius))
+        {
+            ProtoChunk dependencyChunk = (ProtoChunk)chunks.Get(
+                dependencyPosition.X,
+                dependencyPosition.Z);
+            ApplyGenerationStep(
+                biomesStep,
+                context,
+                chunks,
+                dependencyChunk);
+        }
+
+        ProtoChunk centerChunk = (ProtoChunk)chunks.Get(
+            centerPosition.X,
+            centerPosition.Z);
+        ApplyGenerationStep(
+            terrainStep,
+            context,
+            chunks,
+            centerChunk);
+    }
+
+    private static void ApplyGenerationStep(
+        ChunkStep step,
+        WorldGenContext context,
+        StaticCache2D<ChunkAccess?> chunks,
+        ProtoChunk chunk)
+    {
+        if (chunk.GetPersistedStatus().IsOrAfter(step.TargetStatus))
+            return;
+
+        ChunkAccess generatedChunk = step.Apply(context, chunks, chunk)
+            .AsTask()
+            .GetAwaiter()
+            .GetResult();
+        if (!ReferenceEquals(generatedChunk, chunk))
+            throw new InvalidOperationException(
+                $"The {step.TargetStatus} task returned a different chunk instance for {chunk.GetPos()}.");
     }
 
     public bool TryGetChunk(ChunkPos position, out ProtoChunk? chunk)
@@ -251,7 +362,13 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
     public bool UnloadChunk(ChunkPos position)
     {
         lock (_sync)
-            return _chunks.Remove(position);
+        {
+            if (!_chunks.Remove(position))
+                return false;
+
+            _generationChunks.Remove(position);
+            return true;
+        }
     }
 
     private static void EnsureValidPosition(ChunkPos position)
