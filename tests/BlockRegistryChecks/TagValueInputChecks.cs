@@ -117,8 +117,8 @@ internal static class TagValueInputChecks
             input.ChildOrEmpty("empty").Read("anything", Codecs.INT) is null,
             "ChildOrEmpty must return an unreadable empty input for absent and present-but-empty children.");
         Require(
-            input.RawChildOrEmpty("empty").Read(RecordCodecBuilder.MapCodec<EmptyRecord>(_ =>
-                RecordCodecBuilder.MapCodec<EmptyRecord>.Unit(new EmptyRecord()))) is not null,
+            input.RawChildOrEmpty("empty").Read(
+                MapCodec<EmptyRecord>.Unit(new EmptyRecord())) is not null,
             "RawChildOrEmpty must preserve a present empty compound for map codecs.");
         Require(
             input.RawChildOrEmpty("missing").Read(Codecs.INT.FieldOf("value")) is null,
