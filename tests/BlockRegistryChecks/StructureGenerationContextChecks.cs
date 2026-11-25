@@ -15,6 +15,7 @@ internal static class StructureGenerationContextChecks
         CheckStubBiomeValidationAtQuartCoordinates();
         CheckColumnQuartRangeIsInclusiveAndShortCircuits();
         CheckTerrainColumnUsesBuildHeightBounds();
+        CheckChunkCenterBiomeValidationUsesMiddleColumn();
         CheckConstructorRejectsMissingDependencies();
     }
 
@@ -182,6 +183,33 @@ internal static class StructureGenerationContextChecks
             resolver.Queries.SequenceEqual(
                 Enumerable.Range(-5, 17).Select(quartY => (0, quartY, -2))),
             "Terrain-column validation must start at minY - 1 and continue through maxY, both converted to quart coordinates.");
+    }
+
+    private static void CheckChunkCenterBiomeValidationUsesMiddleColumn()
+    {
+        OverworldWorld world = CreateWorld(0x43454E5445524249L);
+        Holder<Biome> plains = Biomes.PLAINS.BuiltInRegistryHolder;
+        Holder<Biome> desert = Biomes.DESERT.BuiltInRegistryHolder;
+        var resolver = new RecordingBiomeResolver((quartX, quartY, quartZ) =>
+            quartX == -2 && quartY == 11 && quartZ == 10 ? desert : plains);
+
+        var context = new Structure.GenerationContext(
+            world.Generator,
+            resolver,
+            world.Generator.RandomState,
+            world.Seed,
+            new ChunkPos(-1, 2),
+            LevelHeightAccessor.Create(-16, 64),
+            biome => ReferenceEquals(biome, desert));
+
+        Require(
+            context.CouldValidBiomeExistOnTopOfChunkCenter(),
+            "Chunk-center validation must inspect the full terrain column at the chunk's middle block coordinates.");
+
+        Require(
+            resolver.Queries.SequenceEqual(
+                Enumerable.Range(-5, 17).Select(quartY => (-2, quartY, 10))),
+            "Chunk-center validation must use the middle column, convert negative block coordinates to quart coordinates, and include the full build-height interval.");
     }
 
     private static void CheckConstructorRejectsMissingDependencies()

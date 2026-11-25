@@ -236,6 +236,15 @@ public abstract class Structure
                 unchecked(HeightAccessor.GetMinY() - 1),
                 HeightAccessor.GetMaxY());
 
+        /// <summary>
+        /// Checks the complete terrain column at the chunk center for any biome
+        /// accepted by this generation context, matching Minecraft Java 26.3.
+        /// </summary>
+        public bool CouldValidBiomeExistOnTopOfChunkCenter() =>
+            CouldValidBiomeExistInTerrainColumn(
+                ChunkPos.GetMiddleBlockX(),
+                ChunkPos.GetMiddleBlockZ());
+
         private static WorldgenRandom MakeRandom(long seed, ChunkPos chunkPos)
         {
             var random = new WorldgenRandom(new LegacyRandomSource(0L));
