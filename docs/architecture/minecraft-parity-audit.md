@@ -1670,3 +1670,14 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Validação GitHub Actions: execução `45534719317` no commit `5cb3f90c6fd6ae286ccc38f17a4eeca09a704b5d` concluída com sucesso; `BlockRegistryChecks` e build Godot passaram.
 - Limite atual: geração de posições de `ConcentricRingsStructurePlacement` não foi implementada. A fonte usa busca horizontal de bioma com random forked por posição e executor de background; Asteria ainda não tem `findBiomeHorizontal` equivalente. O estado de estruturas ainda não tem o registry de `StructureSet`, e por isso não foi conectado ao gerador nem às tasks `STRUCTURE_STARTS`/`STRUCTURE_REFERENCES`.
 - Referência: Minecraft Java 26.3 `ChunkGeneratorStructureState.java`, métodos `createForNormal`, `createForFlat`, `hasBiomesForStructureSet`, `generatePositions`, `getPlacementsForStructure` e `hasStructureChunkInRange`.
+
+## Incremento — registry e dispatch de StructurePlacement (24/11/2026)
+
+- Adicionada a chave de registry `STRUCTURE_PLACEMENT_TYPE` e o child registry `BuiltInRegistries.StructurePlacementType`, com bootstrap próprio.
+- Adicionada a superfície `Codec()` ao contrato `StructurePlacement`. Implementações sem codec completo falham explicitamente com `NotSupportedException`; não recebem identificador genérico nem pass-through.
+- `DimensionOriginStructurePlacement` mantém seu `MAP_CODEC` unitário e expõe um adapter para o tipo base `StructurePlacement`. O codec de tipo registra `minecraft:dimension_origin`.
+- Adicionado `StructurePlacementCodecs`, que faz dispatch pelo campo `type` consultando a chave do map codec no registry. IDs desconhecidos, codecs não registrados e implementações sem codec retornam erro. O dispatch não assume que um placement implementado em código já tenha serialização pronta.
+- Testes verificam o registro de `minecraft:dimension_origin`, round-trip do codec base, rejeição de `minecraft:random_spread` enquanto não registrado e erro ao tentar codificar uma implementação sem codec.
+- O root registry passou de 30 para 31 registries; todas as assertions pré e pós-bootstrap e a verificação de `ChunkStatusChecks` foram atualizadas para incluir `structure-placement-type`.
+- Validação GitHub Actions: execução `45537411357` no commit `17a9bff1ea2636b1aacc408da7e769568e3b67fa` concluída com sucesso; `BlockRegistryChecks` e build Godot passaram.
+- Limite atual: somente `minecraft:dimension_origin` tem codec registrado. `random_spread` ainda exige o codec compartilhado de `AbstractSpreadingStructurePlacement`, validação de spacing/separation e codec de exclusão que referencia `StructureSet`. `concentric_rings` segue fora até o algoritmo de busca de biomas e o cálculo de posições serem portados.
