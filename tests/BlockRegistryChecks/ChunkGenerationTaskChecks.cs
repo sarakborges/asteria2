@@ -3,6 +3,7 @@ using Asteria.Content.Chunks.Status;
 using Asteria.Content.Registries;
 using Asteria.World;
 using Asteria.World.Level;
+using Asteria.Util;
 
 internal static class ChunkGenerationTaskChecks
 {
