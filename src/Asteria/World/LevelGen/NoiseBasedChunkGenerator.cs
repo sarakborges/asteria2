@@ -107,10 +107,6 @@ public sealed class NoiseBasedChunkGenerator
             "Feature order validation requires the configured Overworld biome source.");
 
     /// <summary>
-    /// Tries the weighted entries of one structure set in vanilla order. A failed or
-    /// biome-rejected start is removed from the remaining pool before the next roll.
-    /// </summary>
-    /// <summary>
     /// Creates the seed- and biome-aware structure placement state for one dimension.
     /// The state snapshots the supplied registry entries in their registration order.
     /// </summary>
@@ -133,6 +129,10 @@ public sealed class NoiseBasedChunkGenerator
             structureSets);
     }
 
+    /// <summary>
+    /// Tries the weighted entries of one structure set in vanilla order. A failed or
+    /// biome-rejected start is removed from the remaining pool before the next roll.
+    /// </summary>
     public StructureStart? TryGenerateStructure(
         StructureSet structureSet,
         StructureType.GenerationContext context,

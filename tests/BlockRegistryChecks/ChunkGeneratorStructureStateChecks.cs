@@ -211,12 +211,22 @@ internal static class ChunkGeneratorStructureStateChecks
             state.PossibleStructureSets().SequenceEqual(registeredSets),
             "The Overworld structure state must preserve all currently registered StructureSet holders in registry order.");
 
-        RequireThrows<InvalidOperationException>(
-            () => new NoiseBasedChunkGenerator(
+        bool missingBiomeSourceRejected = false;
+        try
+        {
+            _ = new NoiseBasedChunkGenerator(
                 world.Generator.Settings,
                 world.Generator.RandomState).CreateStructureState(
                     ChunkPos.Zero,
-                    Array.Empty<Holder<StructureSet>>()),
+                    Array.Empty<Holder<StructureSet>>());
+        }
+        catch (InvalidOperationException)
+        {
+            missingBiomeSourceRejected = true;
+        }
+
+        Require(
+            missingBiomeSourceRejected,
             "A generator without the configured Overworld biome source must not create an Overworld structure state.");
     }
     private static MultiNoiseBiomeSource CreateBiomeSource(
