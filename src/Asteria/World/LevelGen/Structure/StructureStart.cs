@@ -1,5 +1,6 @@
 using System.Threading;
 using Asteria.World.LevelGen.Structure.Pieces;
+using Asteria.World.LevelGen;
 
 namespace Asteria.World.LevelGen.Structure;
 
@@ -101,4 +102,42 @@ public sealed class StructureStart
 
     public IReadOnlyList<StructurePiece> GetPieces() =>
         _pieceContainer.Pieces;
+
+    /// <summary>
+    /// Dispatches this start's pieces whose bounds intersect the requested chunk box.
+    /// The local port passes the services currently available in Asteria; vanilla's
+    /// StructureManager/template-manager parameter remains unavailable until template
+    /// loading is implemented.
+    /// </summary>
+    public void PlaceInChunk(
+        WorldGenLevel level,
+        NoiseBasedChunkGenerator generator,
+        IRandomSource random,
+        BoundingBox chunkBoundingBox,
+        ChunkPos chunkPos)
+    {
+        ArgumentNullException.ThrowIfNull(level);
+        ArgumentNullException.ThrowIfNull(generator);
+        ArgumentNullException.ThrowIfNull(random);
+        ArgumentNullException.ThrowIfNull(chunkBoundingBox);
+        ArgumentNullException.ThrowIfNull(chunkPos);
+
+        if (!IsValid() || !GetBoundingBox().Intersects(chunkBoundingBox))
+            return;
+
+        BlockPos referencePosition = chunkPos.GetMiddleBlockPosition(0);
+        foreach (StructurePiece piece in _pieceContainer.Pieces)
+        {
+            if (piece.GetBoundingBox().Intersects(chunkBoundingBox))
+            {
+                piece.PostProcess(
+                    level,
+                    generator,
+                    random,
+                    chunkBoundingBox,
+                    chunkPos,
+                    referencePosition);
+            }
+        }
+    }
 }

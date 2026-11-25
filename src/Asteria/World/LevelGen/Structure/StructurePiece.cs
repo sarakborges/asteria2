@@ -46,6 +46,30 @@ public abstract class StructurePiece
     public virtual IReadOnlyList<JigsawJunction> GetJunctions() =>
         Array.Empty<JigsawJunction>();
 
+    /// <summary>
+    /// Places this piece's portion inside one chunk box. Concrete structure-piece
+    /// types must override this before they can be used for generation; the base
+    /// implementation fails closed rather than silently skipping the piece.
+    /// </summary>
+    public virtual void PostProcess(
+        WorldGenLevel level,
+        NoiseBasedChunkGenerator generator,
+        IRandomSource random,
+        BoundingBox chunkBoundingBox,
+        ChunkPos chunkPos,
+        BlockPos referencePosition)
+    {
+        ArgumentNullException.ThrowIfNull(level);
+        ArgumentNullException.ThrowIfNull(generator);
+        ArgumentNullException.ThrowIfNull(random);
+        ArgumentNullException.ThrowIfNull(chunkBoundingBox);
+        ArgumentNullException.ThrowIfNull(chunkPos);
+        ArgumentNullException.ThrowIfNull(referencePosition);
+
+        throw new NotSupportedException(
+            $"Structure piece type {GetType().FullName} has no PostProcess implementation.");
+    }
+
     public void SetGenDepth(int genDepth) =>
         _genDepth = genDepth;
 
