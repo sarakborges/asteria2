@@ -18,9 +18,19 @@ public interface StructurePlacement
     bool ApplyAdditionalChunkRestrictions(
         int sourceX,
         int sourceZ,
-        long levelSeed);
+        long levelSeed) =>
+        true;
 
-    BlockPos GetLocatePos(ChunkPos chunkPos);
+    BlockPos GetLocatePos(ChunkPos chunkPos)
+    {
+        BlockPos origin = new(
+            chunkPos.GetMinBlockX(),
+            0,
+            chunkPos.GetMinBlockZ());
 
-    Vec3i LocateOffset();
+        return origin.Offset(LocateOffset());
+    }
+
+    Vec3i LocateOffset() =>
+        Vec3i.Zero;
 }
