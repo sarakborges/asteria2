@@ -207,12 +207,16 @@ internal static class ChunkStatusTasksChecks
         const int radius = ChunkStatus.MAX_STRUCTURE_DISTANCE;
         var world = new OverworldWorld(seed, LevelHeightAccessor.Create(-16, 64));
         var context = new WorldGenContext(world, world.Generator, world.LightEngine);
+        LevelHeightAccessor heightAccessor = LevelHeightAccessor.Create(-16, 64);
+        ProtoChunk CreateReferenceChunk(ChunkPos position) =>
+            new(position, heightAccessor, PalettedContainerFactory.CreateBuiltIn());
+
         ChunkPos centerPosition = new(-2, 3);
         var chunks = new Dictionary<ChunkPos, ProtoChunk>();
 
         foreach (ChunkPos position in ChunkPos.RangeClosed(centerPosition, radius))
         {
-            ProtoChunk created = CreateChunk(world, position);
+            ProtoChunk created = CreateReferenceChunk(position);
             created.SetPersistedStatus(ChunkStatus.STRUCTURE_STARTS);
             chunks.Add(position, created);
         }
@@ -223,15 +227,21 @@ internal static class ChunkStatusTasksChecks
         var secondStructure = new StartProbeStructure(
             HolderSet<Biome>.Direct(Biomes.DESERT.BuiltInRegistryHolder));
         var outsideStructure = new StartProbeStructure(
-            HolderSet<Biome>.Direct(Biomes.FOREST.BuiltInRegistryHolder));
+            HolderSet<Biome>.Direct(Biomes.PLAINS.BuiltInRegistryHolder));
         var invalidStructure = new StartProbeStructure(
-            HolderSet<Biome>.Direct(Biomes.SNOWY_PLAINS.BuiltInRegistryHolder));
+            HolderSet<Biome>.Direct(Biomes.DESERT.BuiltInRegistryHolder));
 
         ChunkPos eastEdgeSource = new(centerPosition.X + radius, centerPosition.Z);
         chunks[eastEdgeSource].SetStartForStructure(
             firstStructure,
             CreateStart(firstStructure, eastEdgeSource,
-                new BoundingBox(centerPosition.GetMaxBlockX(), 200, 4, 150, 210, 9)));
+                new BoundingBox(
+                    centerPosition.GetMaxBlockX(),
+                    200,
+                    centerPosition.GetMinBlockZ() + 4,
+                    150,
+                    210,
+                    centerPosition.GetMinBlockZ() + 9)));
 
         ChunkPos northEdgeSource = new(centerPosition.X - radius, centerPosition.Z + radius);
         chunks[northEdgeSource].SetStartForStructure(
@@ -295,7 +305,7 @@ internal static class ChunkStatusTasksChecks
             firstReferences.Count == 2 && secondReferences.Count == 1,
             "Repeating reference generation must leave the center chunk's reference sets deduplicated.");
 
-        var missingCenter = CreateChunk(world, centerPosition);
+        var missingCenter = CreateReferenceChunk(centerPosition);
         missingCenter.SetPersistedStatus(ChunkStatus.STRUCTURE_STARTS);
         StaticCache2D<ChunkAccess?> undersizedCache = StaticCache2D<ChunkAccess?>.Create(
             centerPosition.X, centerPosition.Z, radius - 1,
@@ -310,8 +320,6 @@ internal static class ChunkStatusTasksChecks
                 missingCenter),
             "Structure-reference generation must fail when its radius-eight dependency window is incomplete.");
 
-        var staleChunks = new Dictionary<ChunkPos, ChunkAccess?>(cache.Map(
-            static (value, _, _) => value).ForEachToDictionary());
     }
     private static ProtoChunk CreateChunk(OverworldWorld world, ChunkPos position) =>
         new(
