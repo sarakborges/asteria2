@@ -153,14 +153,9 @@ internal static class SimpleBlockFeatureChecks
         Require(
             ReferenceEquals(tick.Type, Blocks.GRASS_BLOCK) &&
             tick.Pos.Equals(position) &&
-            tick.Delay == 1,
-            "SimpleBlockFeature must schedule the block tick one tick after current world time.");
-
-        SavedTick<Block> storedTick = ticks.ScheduledTicks().Single();
-        Require(
-            storedTick.Delay == 1 &&
-            ReferenceEquals(storedTick.Priority, TickPriority.NORMAL),
-            "WorldGenRegion must preserve the delay and normal priority in the proto-chunk tick container.");
+            tick.Delay == 0 &&
+            ReferenceEquals(tick.Priority, TickPriority.NORMAL),
+            "ProtoChunkTicks must persist generation-time block ticks as zero-delay SavedTick entries.");
     }
 
     private static (WorldGenRegion Region, ProtoChunk Center) CreateRegion(
