@@ -54,7 +54,7 @@ public sealed record StructureSet(
         public static Codec<StructureSelectionEntry> CODEC { get; } =
             RecordCodecBuilder.Create<StructureSelectionEntry>(instance =>
                 instance.Group(
-                    Structure.CODEC
+                    global::Asteria.World.LevelGen.Structure.Structure.CODEC
                         .FieldOf("structure")
                         .ForGetter<StructureSelectionEntry>(static entry => entry.Structure),
                     Codecs.IntRange(1, int.MaxValue)
