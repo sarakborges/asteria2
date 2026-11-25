@@ -1,5 +1,13 @@
 using System.Text.Json;
 using Asteria.Core;
+using Asteria.Content.Biomes;
+using Asteria.Content.Chunks;
+using Asteria.Content.Chunks.Status;
+using Asteria.Content.Registries;
+using Asteria.Util;
+using Asteria.World;
+using Asteria.World.Level;
+using Asteria.World.LevelGen.Structure.Pieces;
 using Asteria.Serialization;
 using Asteria.Util.Context;
 using Asteria.World.LevelGen;
@@ -19,6 +27,7 @@ internal static class BeardifierChecks
         CheckJunctionSampling();
         CheckKernelBounds();
         CheckVolumeSampling();
+        CheckStructureMetadataCollection();
     }
 
     private static void CheckContextBinding()
@@ -202,6 +211,97 @@ internal static class BeardifierChecks
         }
     }
 
+    private static void CheckStructureMetadataCollection()
+    {
+        const long seed = 0x4245415244464945L;
+        LevelHeightAccessor heightAccessor = LevelHeightAccessor.Create(-16, 64);
+        var world = new OverworldWorld(seed, heightAccessor);
+        var context = new WorldGenContext(world, world.Generator, world.LightEngine);
+        ChunkPos centerPosition = ChunkPos.Zero;
+        ChunkStep terrainStep = ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.TERRAIN);
+        var chunks = new Dictionary<ChunkPos, ProtoChunk>();
+
+        foreach (ChunkPos position in ChunkPos.RangeClosed(centerPosition, ChunkStatus.MAX_STRUCTURE_DISTANCE))
+        {
+            var chunk = new ProtoChunk(position, heightAccessor, PalettedContainerFactory.CreateBuiltIn());
+            ChunkStatus requiredStatus = terrainStep.DirectDependencies.Get(
+                centerPosition.GetChessboardDistance(position));
+            chunk.SetPersistedStatus(requiredStatus);
+            chunks.Add(position, chunk);
+        }
+
+        ProtoChunk center = chunks[centerPosition];
+        ChunkPos rigidSource = new(2, -3);
+        var rigidStructure = new TerrainProbeStructure(TerrainAdjustment.BURY);
+        var rigidPiece = new TerrainProbePiece(
+            new BoundingBox(0, 0, 0, 0, 0, 0),
+            isRigid: true,
+            groundLevelDelta: 2);
+        chunks[rigidSource].SetStartForStructure(
+            rigidStructure,
+            new StructureStart(
+                rigidStructure,
+                rigidSource,
+                0,
+                new PiecesContainer(new[] { rigidPiece })));
+        center.AddReferenceForStructure(rigidStructure, rigidSource.Pack());
+
+        ChunkPos junctionSource = new(-4, 5);
+        var junctionStructure = new TerrainProbeStructure(TerrainAdjustment.BURY);
+        var junctionPiece = new TerrainProbePiece(
+            new BoundingBox(0, 0, 0, 0, 0, 0),
+            isRigid: false,
+            junctions: new[]
+            {
+                new JigsawJunction(0, 0, 0, 0, StructureTemplatePool.Projection.RIGID)
+            });
+        chunks[junctionSource].SetStartForStructure(
+            junctionStructure,
+            new StructureStart(
+                junctionStructure,
+                junctionSource,
+                0,
+                new PiecesContainer(new[] { junctionPiece })));
+        center.AddReferenceForStructure(junctionStructure, junctionSource.Pack());
+
+        ChunkPos ignoredSource = new(1, 1);
+        var ignoredStructure = new TerrainProbeStructure(TerrainAdjustment.NONE);
+        chunks[ignoredSource].SetStartForStructure(
+            ignoredStructure,
+            new StructureStart(
+                ignoredStructure,
+                ignoredSource,
+                0,
+                new PiecesContainer(new[]
+                {
+                    new TerrainProbePiece(new BoundingBox(0, 0, 0, 0, 0, 0), isRigid: true, groundLevelDelta: 0)
+                })));
+        center.AddReferenceForStructure(ignoredStructure, ignoredSource.Pack());
+
+        IReadOnlyList<ProtoChunk> availableChunks = chunks.Values.ToArray();
+        WorldGenRegion region = world.CreateWorldGenRegion(terrainStep, center, availableChunks);
+        Beardifier beardifier = Beardifier.CreateForChunk(region, center);
+
+        Require(
+            Math.Abs(beardifier.SampleValue(SamplerContext.EmptyUncached, 0, 2, 0) - 1.0F) < 1.0E-6F,
+            "Hand-built rigid pieces must contribute with their ground-level delta to the terrain beardifier.");
+        Require(
+            Math.Abs(beardifier.SampleValue(SamplerContext.EmptyUncached, 0, 0, 0) -
+                     (1.0F - 0.2783878743648529F)) < 1.0E-6F,
+            "Jigsaw junctions must contribute independently when their source piece is not rigid.");
+        Require(
+            beardifier.SampleValue(SamplerContext.EmptyUncached, 1_000, 1_000, 1_000) == 0.0F,
+            "Structure starts with TerrainAdjustment.NONE must not expand the beardifier's affected bounds or contribute density.");
+
+        var emptyCenter = new ProtoChunk(
+            centerPosition, heightAccessor, PalettedContainerFactory.CreateBuiltIn());
+        emptyCenter.SetPersistedStatus(ChunkStatus.BIOMES);
+        WorldGenRegion emptyRegion = world.CreateWorldGenRegion(
+            terrainStep, emptyCenter, new[] { emptyCenter });
+        Require(
+            ReferenceEquals(Beardifier.CreateForChunk(emptyRegion, emptyCenter), Beardifier.EMPTY),
+            "Chunks without structure references must reuse Beardifier.EMPTY.");
+    }
     private static Beardifier CreateSingleRigid(
         TerrainAdjustment adjustment,
         BoundingBox pieceBox,
@@ -211,6 +311,38 @@ internal static class BeardifierChecks
             Array.Empty<JigsawJunction>(),
             affectedBox);
 
+    private sealed class TerrainProbeStructure(TerrainAdjustment adjustment)
+        : Structure(new StructureSettings(
+            HolderSet<Biome>.Direct(Biomes.PLAINS.BuiltInRegistryHolder),
+            GenerationStep.Decoration.SURFACE_STRUCTURES,
+            adjustment))
+    {
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context) => null;
+    }
+
+    private sealed class TerrainProbePiece : StructurePiece
+    {
+        private readonly bool _isRigid;
+        private readonly int _groundLevelDelta;
+        private readonly IReadOnlyList<JigsawJunction> _junctions;
+
+        public TerrainProbePiece(
+            BoundingBox box,
+            bool isRigid,
+            int groundLevelDelta = 0,
+            IReadOnlyList<JigsawJunction>? junctions = null)
+            : base(0, box)
+        {
+            _isRigid = isRigid;
+            _groundLevelDelta = groundLevelDelta;
+            _junctions = junctions ?? Array.Empty<JigsawJunction>();
+        }
+
+        public override bool IsRigidForTerrain => _isRigid;
+        public override int GetGroundLevelDelta() => _groundLevelDelta;
+        public override IReadOnlyList<JigsawJunction> GetJunctions() => _junctions;
+    }
     private static void Require(bool condition, string message)
     {
         if (!condition)

@@ -2,6 +2,7 @@ using Asteria.Content.Blocks;
 using Asteria.World.LevelGen;
 using Asteria.Core;
 using Asteria.World;
+using Asteria.World.LevelGen.Structure.Pools;
 
 namespace Asteria.World.LevelGen.Structure;
 
@@ -31,6 +32,19 @@ public abstract class StructurePiece
 
     public int GetGenDepth() =>
         _genDepth;
+
+    /// <summary>
+    /// Hand-built pieces contribute rigid terrain by default. Jigsaw pool pieces override
+    /// this according to their StructureTemplatePool.Projection.
+    /// </summary>
+    public virtual bool IsRigidForTerrain => true;
+
+    /// <summary>Vertical placement offset used by the terrain density sampler.</summary>
+    public virtual int GetGroundLevelDelta() => 0;
+
+    /// <summary>Jigsaw connector junctions contributed independently of rigid projection.</summary>
+    public virtual IReadOnlyList<JigsawJunction> GetJunctions() =>
+        Array.Empty<JigsawJunction>();
 
     public void SetGenDepth(int genDepth) =>
         _genDepth = genDepth;

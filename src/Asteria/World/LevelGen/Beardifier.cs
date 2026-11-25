@@ -51,6 +51,78 @@ public sealed class Beardifier : DensitySampler
         _affectedBox = affectedBox;
     }
 
+    /// <summary>
+    /// Builds the density contribution from starts referenced by the target chunk.
+    /// Structure references are the authoritative source list; each source chunk must
+    /// already satisfy the TERRAIN step's STRUCTURE_STARTS dependency.
+    /// </summary>
+    public static Beardifier CreateForChunk(
+        WorldGenRegion region,
+        ChunkAccess chunk)
+    {
+        ArgumentNullException.ThrowIfNull(region);
+        ArgumentNullException.ThrowIfNull(chunk);
+
+        if (region.GetCenter() != chunk.GetPos())
+        {
+            throw new ArgumentException(
+                "The Beardifier region must be centered on the supplied chunk.",
+                nameof(region));
+        }
+
+        var rigidPieces = new List<Rigid>();
+        var junctions = new List<JigsawJunction>();
+        BoundingBox? affectedBox = null;
+
+        foreach (KeyValuePair<Structure, HashSet<long>> entry in chunk.GetAllReferences())
+        {
+            Structure structure = entry.Key;
+            TerrainAdjustment terrainAdjustment = structure.TerrainAdaptation();
+            if (ReferenceEquals(terrainAdjustment, TerrainAdjustment.NONE))
+                continue;
+
+            foreach (long packedSourcePosition in entry.Value)
+            {
+                ChunkPos sourcePosition = ChunkPos.Unpack(packedSourcePosition);
+                ChunkAccess sourceChunk = region.GetChunk(
+                    sourcePosition.X,
+                    sourcePosition.Z,
+                    ChunkStatus.STRUCTURE_STARTS);
+                StructureStart? start = sourceChunk.GetStartForStructure(structure);
+                if (start is null || !start.IsValid())
+                    continue;
+
+                BoundingBox startBox = start.GetBoundingBox();
+                affectedBox = affectedBox is null
+                    ? new BoundingBox(
+                        startBox.MinX(), startBox.MinY(), startBox.MinZ(),
+                        startBox.MaxX(), startBox.MaxY(), startBox.MaxZ())
+                    : BoundingBox.Encapsulating(affectedBox, startBox);
+
+                foreach (StructurePiece piece in start.GetPieces())
+                {
+                    if (piece.IsRigidForTerrain)
+                    {
+                        rigidPieces.Add(new Rigid(
+                            piece.GetBoundingBox(),
+                            terrainAdjustment,
+                            piece.GetGroundLevelDelta()));
+                    }
+
+                    junctions.AddRange(piece.GetJunctions());
+                }
+            }
+        }
+
+        if (rigidPieces.Count == 0 && junctions.Count == 0)
+            return EMPTY;
+
+        return new Beardifier(
+            Array.AsReadOnly(rigidPieces.ToArray()),
+            Array.AsReadOnly(junctions.ToArray()),
+            affectedBox);
+    }
+
     public void SampleVolume(
         SamplerContext context,
         DensityBuffer outputBuffer,
