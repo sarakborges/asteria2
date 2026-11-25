@@ -129,8 +129,10 @@ internal static class NbtContainerTagChecks
         using var wrappedInput = new NbtDataInput(wrappedStream, leaveOpen: true);
         ListTag roundTrippedWrapper = ListTag.TYPE.LoadTyped(wrappedInput, new NbtAccounter(4096));
         Require(
-            roundTrippedWrapper.Get(0).Equals(ByteTag.ValueOf((sbyte)9)),
-            "A one-empty-name compound in a list must retain wrapper semantics across write/read normalization.");
+            roundTrippedWrapper.Get(0) is CompoundTag retainedWrapper &&
+            retainedWrapper.Size() == 1 &&
+            retainedWrapper.Get(string.Empty)!.Equals(ByteTag.ValueOf((sbyte)9)),
+            "A one-empty-name compound item must be restored after exactly one outer heterogeneous-list wrapper is removed.");
     }
 
     private static void CheckListMalformedDataAndDepth()
