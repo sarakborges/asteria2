@@ -77,7 +77,10 @@ public sealed class TagValueInput : ValueInput
             return null;
 
         DataResult<T> result = codec.Parse(_ops, tag);
-        ReportResult("decode field '" + name + "'", result);
+        ReportResult(
+            "decode field '" + name + "'",
+            result,
+            ProblemReporter.ForChild(name));
         return result;
     }
 
