@@ -16,6 +16,7 @@ internal static class StructureGenerationContextChecks
         CheckColumnQuartRangeIsInclusiveAndShortCircuits();
         CheckTerrainColumnUsesBuildHeightBounds();
         CheckChunkCenterBiomeValidationUsesMiddleColumn();
+        CheckFindValidGenerationPointFiltersByBiome();
         CheckConstructorRejectsMissingDependencies();
     }
 
@@ -212,6 +213,72 @@ internal static class StructureGenerationContextChecks
             "Chunk-center validation must use the middle column, convert negative block coordinates to quart coordinates, and include the full build-height interval.");
     }
 
+    private static void CheckFindValidGenerationPointFiltersByBiome()
+    {
+        OverworldWorld world = CreateWorld(0x5354554256414C49L);
+        Holder<Biome> plains = Biomes.PLAINS.BuiltInRegistryHolder;
+        Holder<Biome> desert = Biomes.DESERT.BuiltInRegistryHolder;
+        var start = new BlockPos(-12, -8, 16);
+        var stub = new Structure.GenerationStub(start, new StructurePiecesBuilder());
+
+        var validResolver = new RecordingBiomeResolver((quartX, quartY, quartZ) =>
+            quartX == -3 && quartY == -2 && quartZ == 4 ? desert : plains);
+        var validContext = new Structure.GenerationContext(
+            world.Generator,
+            validResolver,
+            world.Generator.RandomState,
+            world.Seed,
+            ChunkPos.Zero,
+            LevelHeightAccessor.Create(-16, 64),
+            biome => ReferenceEquals(biome, desert));
+        var validStructure = new ProbeStructure(stub);
+
+        Require(
+            ReferenceEquals(validStructure.FindValidGenerationPoint(validContext), stub) &&
+            validStructure.FindCalls == 1 &&
+            validResolver.Queries.SequenceEqual(new[] { (-3, -2, 4) }),
+            "FindValidGenerationPoint must retain a generated stub when its origin biome is accepted.");
+
+        var invalidResolver = new RecordingBiomeResolver((_, _, _) => plains);
+        var invalidContext = new Structure.GenerationContext(
+            world.Generator,
+            invalidResolver,
+            world.Generator.RandomState,
+            world.Seed,
+            ChunkPos.Zero,
+            LevelHeightAccessor.Create(-16, 64),
+            biome => ReferenceEquals(biome, desert));
+        var invalidStructure = new ProbeStructure(stub);
+
+        Require(
+            invalidStructure.FindValidGenerationPoint(invalidContext) is null &&
+            invalidStructure.FindCalls == 1 &&
+            invalidResolver.Queries.SequenceEqual(new[] { (-3, -2, 4) }),
+            "FindValidGenerationPoint must reject a generated stub when its origin biome is invalid.");
+
+        var noStubResolver = new RecordingBiomeResolver((_, _, _) =>
+            throw new InvalidOperationException("Biome lookup must not run when no stub is generated."));
+        var noStubContext = new Structure.GenerationContext(
+            world.Generator,
+            noStubResolver,
+            world.Generator.RandomState,
+            world.Seed,
+            ChunkPos.Zero,
+            LevelHeightAccessor.Create(-16, 64),
+            static _ => true);
+        var noStubStructure = new ProbeStructure(null);
+
+        Require(
+            noStubStructure.FindValidGenerationPoint(noStubContext) is null &&
+            noStubStructure.FindCalls == 1 &&
+            noStubResolver.Queries.Count == 0,
+            "FindValidGenerationPoint must preserve an empty generation result without querying a biome.");
+
+        RequireThrows<ArgumentNullException>(
+            () => validStructure.FindValidGenerationPoint(null!),
+            "FindValidGenerationPoint must reject a null context.");
+    }
+
     private static void CheckConstructorRejectsMissingDependencies()
     {
         OverworldWorld world = CreateWorld(0x4E554C4C434F4E54L);
@@ -285,6 +352,19 @@ internal static class StructureGenerationContextChecks
         {
             Queries.Add((quartX, quartY, quartZ));
             return resolve(quartX, quartY, quartZ);
+        }
+    }
+
+    private sealed class ProbeStructure(Structure.GenerationStub? stub)
+        : Structure(StructureSettings.DEFAULT)
+    {
+        public int FindCalls { get; private set; }
+
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context)
+        {
+            FindCalls++;
+            return stub;
         }
     }
 

@@ -223,6 +223,9 @@ internal static class StructureCodecChecks
         {
         }
 
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context) => null;
+
         public override MapCodec<Structure> Codec() =>
             AdaptedTestCodec;
     }
@@ -232,6 +235,9 @@ internal static class StructureCodecChecks
         public UnsupportedStructure(StructureSettings settings) : base(settings)
         {
         }
+
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context) => null;
     }
 
     private static JsonElement ParseJson(string json) =>

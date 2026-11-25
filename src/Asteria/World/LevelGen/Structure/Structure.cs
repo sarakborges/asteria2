@@ -142,6 +142,23 @@ public abstract class Structure
     }
 
     /// <summary>
+    /// Determines whether this structure can start in the supplied chunk and, if so,
+    /// returns the generation stub.
+    /// </summary>
+    protected abstract GenerationStub? FindGenerationPoint(GenerationContext context);
+
+    /// <summary>
+    /// Applies the generation-context biome predicate to the stub returned by the
+    /// concrete structure, matching Minecraft Java 26.3 findValidGenerationPoint.
+    /// </summary>
+    public GenerationStub? FindValidGenerationPoint(GenerationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        GenerationStub? stub = FindGenerationPoint(context);
+        return stub is not null && context.IsValidBiome(stub) ? stub : null;
+    }
+
+    /// <summary>
     /// Position where the structure starts and the deferred/prebuilt piece builder.
     /// A deferred generator creates a fresh builder on every GetPiecesBuilder call;
     /// a prebuilt builder is returned by identity, matching Minecraft Java 26.3.
