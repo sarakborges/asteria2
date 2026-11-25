@@ -1,8 +1,11 @@
 using System.Text.Json;
+using Asteria.Content.Identifiers;
+using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Serialization;
 using Asteria.World;
 using Asteria.World.LevelGen;
+using Asteria.World.LevelGen.Structure;
 using Asteria.World.LevelGen.Structure.Placement;
 
 internal static class RandomSpreadStructurePlacementChecks
@@ -14,6 +17,7 @@ internal static class RandomSpreadStructurePlacementChecks
         CheckCandidateIsStableForSeedAndCell();
         CheckInvalidParametersFailAtUseTime();
         CheckCodecFieldsDefaultsAndValidation();
+        CheckExclusionZoneRegistryCodec();
     }
 
     private static void CheckPotentialChunkMatchesTheReferenceFormula()
@@ -227,6 +231,90 @@ internal static class RandomSpreadStructurePlacementChecks
                 ops,
                 ParseJson("""{"spacing":32,"separation":8,"salt":1,"spread_type":"unknown"}""")).IsError,
             "Unknown random spread distributions must be rejected by their codec.");
+    }
+
+    private static void CheckExclusionZoneRegistryCodec()
+    {
+        var structure = new TestStructure();
+        var set = new StructureSet(
+            Holder<Structure>.Direct(structure),
+            DimensionOriginStructurePlacement.INSTANCE);
+
+        var structureSets = new Registry<StructureSet>(
+            Registries.STRUCTURE_SET.Location);
+        RegistryKey<StructureSet> setKey = RegistryKey<StructureSet>.Create(
+            structureSets.Key,
+            ResourceLocation.FromNamespaceAndPath("asteria", "test_structure_set"));
+        Holder<StructureSet>.Reference registeredSet = structureSets.Register(
+            setKey,
+            set,
+            RegistrationInfo.BuiltIn);
+        structureSets.Freeze();
+
+        HolderLookupProvider lookup = HolderLookupProvider.Create(
+            new IRegistryLookup[] { structureSets });
+        RegistryOps<JsonElement> ops = RegistryOps<JsonElement>.Create(
+            JsonOps.INSTANCE,
+            lookup);
+
+        var expected = new AbstractSpreadingStructurePlacement.ExclusionZone(
+            registeredSet,
+            5);
+
+        JsonElement encoded = AbstractSpreadingStructurePlacement.ExclusionZone.CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "other_set").GetOrThrow().GetString() ==
+                "asteria:test_structure_set" &&
+            ops.Get(encoded, "chunk_count").GetOrThrow().GetInt32() == 5,
+            "Exclusion zones must serialize the registered structure-set key and chunk count, not inline structure-set data.");
+
+        AbstractSpreadingStructurePlacement.ExclusionZone decoded =
+            AbstractSpreadingStructurePlacement.ExclusionZone.CODEC
+                .Parse(ops, encoded)
+                .GetOrThrow();
+
+        Require(
+            ReferenceEquals(decoded.OtherSet.Value, set) &&
+            decoded.ChunkCount == 5,
+            "Exclusion-zone decoding must resolve the registered structure-set holder and preserve its range.");
+
+        JsonElement invalidCount = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("other_set"),
+                ops.CreateString("asteria:test_structure_set")),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("chunk_count"),
+                ops.CreateNumber(0))
+        });
+        Require(
+            AbstractSpreadingStructurePlacement.ExclusionZone.CODEC
+                .Parse(ops, invalidCount).IsError,
+            "Exclusion-zone chunk_count must reject values below one.");
+
+        JsonElement inlineSet = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("other_set"),
+                ops.CreateMap(Array.Empty<KeyValuePair<JsonElement, JsonElement>>())),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("chunk_count"),
+                ops.CreateNumber(5))
+        });
+        Require(
+            AbstractSpreadingStructurePlacement.ExclusionZone.CODEC
+                .Parse(ops, inlineSet).IsError,
+            "Exclusion-zone other_set must be a registered holder reference, not an inline set.");
+    }
+
+    private sealed class TestStructure : Structure
+    {
+        public TestStructure() : base(StructureSettings.DEFAULT)
+        {
+        }
     }
 
     private static JsonElement ParseJson(string json) =>
