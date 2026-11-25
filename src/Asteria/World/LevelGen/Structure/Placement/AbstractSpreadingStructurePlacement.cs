@@ -29,9 +29,16 @@ public abstract class AbstractSpreadingStructurePlacement : StructurePlacement
     private sealed record OptionalExclusionZone(ExclusionZone? Value);
 
     private static Codec<Vec3i> LocateOffsetCodec { get; } =
-        Codecs.IntRange(-16, 16).ListOf(3, 3).XMap(
-            static values => new Vec3i(values[0], values[1], values[2]),
-            static value => new[] { value.GetX(), value.GetY(), value.GetZ() });
+        Vec3i.CODEC.Validate(static value =>
+            JavaAbs(value.GetX()) <= 16 &&
+            JavaAbs(value.GetY()) <= 16 &&
+            JavaAbs(value.GetZ()) <= 16
+                ? DataResult<Vec3i>.Success(value)
+                : DataResult<Vec3i>.Error(
+                    () => $"Position out of range, expected at most 16: {value}"));
+
+    private static int JavaAbs(int value) =>
+        value == int.MinValue ? int.MinValue : Math.Abs(value);
 
     private static MapCodec<PlacementCoreSettings> PlacementCoreCodec { get; } =
         RecordCodecBuilder.MapCodec<PlacementCoreSettings>(instance =>
