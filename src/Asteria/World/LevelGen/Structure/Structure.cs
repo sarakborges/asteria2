@@ -159,6 +159,23 @@ public abstract class Structure
     }
 
     /// <summary>
+    /// Executes this structure's deferred generation stub and creates its in-memory start.
+    /// Registry access, dimension/template services and piece serialization are supplied
+    /// by later world-generation stages; this overload ports the shared 26.3 core.
+    /// </summary>
+    public StructureStart Generate(GenerationContext context, int references)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        GenerationStub? generation = FindValidGenerationPoint(context);
+        if (generation is null)
+            return StructureStart.INVALID_START;
+
+        StructurePiecesBuilder builder = generation.GetPiecesBuilder();
+        var start = new StructureStart(this, context.ChunkPos, references, builder.Build());
+        return start.IsValid() ? start : StructureStart.INVALID_START;
+    }
+    /// <summary>
     /// Creates a center-column start only when a valid structure biome can exist there.
     /// </summary>
     protected static GenerationStub? OnTopOfChunkCenter(

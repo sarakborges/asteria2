@@ -18,6 +18,7 @@ internal static class StructureGenerationContextChecks
         CheckChunkCenterBiomeValidationUsesMiddleColumn();
         CheckFindValidGenerationPointFiltersByBiome();
         CheckOnTopOfChunkCenterHelpers();
+        CheckStructureStartGenerationFromStub();
         CheckConstructorRejectsMissingDependencies();
     }
 
@@ -362,6 +363,85 @@ internal static class StructureGenerationContextChecks
             () => structure.BuildOnTopOfChunkCenter(acceptedContext, Heightmap.Types.WORLD_SURFACE_WG, null!),
             "OnTopOfChunkCenter must reject a null piece generator.");
     }
+    private static void CheckStructureStartGenerationFromStub()
+    {
+        const long seed = 0x5354525543545354L;
+        OverworldWorld world = CreateWorld(seed);
+        ChunkPos chunkPosition = new(-4, 7);
+        LevelHeightAccessor heightAccessor = LevelHeightAccessor.Create(-16, 64);
+        Holder<Biome> plains = Biomes.PLAINS.BuiltInRegistryHolder;
+        Holder<Biome> desert = Biomes.DESERT.BuiltInRegistryHolder;
+        var validResolver = new RecordingBiomeResolver((_, _, _) => plains);
+        var validContext = new Structure.GenerationContext(
+            world.Generator,
+            validResolver,
+            world.Generator.RandomState,
+            seed,
+            chunkPosition,
+            heightAccessor,
+            biome => ReferenceEquals(biome, plains));
+
+        var piece = new TestPiece(new BoundingBox(-64, 20, 112, -55, 29, 121));
+        int builderCalls = 0;
+        var stub = new Structure.GenerationStub(
+            new BlockPos(-56, 30, 120),
+            builder =>
+            {
+                builderCalls++;
+                builder.AddPiece(piece);
+            });
+        var structure = new ProbeStructure(stub);
+        const int references = 3;
+
+        StructureStart start = structure.Generate(validContext, references);
+        Require(
+            start.IsValid() &&
+            ReferenceEquals(start.GetStructure(), structure) &&
+            start.GetChunkPos() == chunkPosition &&
+            start.GetReferences() == references &&
+            start.GetPieces().Count == 1 &&
+            ReferenceEquals(start.GetPieces()[0], piece) &&
+            start.GetBoundingBox().Equals(piece.GetBoundingBox()) &&
+            structure.FindCalls == 1 &&
+            builderCalls == 1,
+            "Generate must validate one stub, execute its deferred builder once and retain the resulting pieces in a valid StructureStart.");
+
+        var rejectedContext = new Structure.GenerationContext(
+            world.Generator,
+            new RecordingBiomeResolver((_, _, _) => plains),
+            world.Generator.RandomState,
+            seed,
+            chunkPosition,
+            heightAccessor,
+            biome => ReferenceEquals(biome, desert));
+        var rejectedStructure = new ProbeStructure(stub);
+        Require(
+            ReferenceEquals(rejectedStructure.Generate(rejectedContext, references), StructureStart.INVALID_START) &&
+            rejectedStructure.FindCalls == 1 &&
+            builderCalls == 1,
+            "Generate must return the invalid sentinel without executing a stub rejected by its biome predicate.");
+
+        var noStubStructure = new ProbeStructure(null);
+        Require(
+            ReferenceEquals(noStubStructure.Generate(validContext, references), StructureStart.INVALID_START) &&
+            noStubStructure.FindCalls == 1 &&
+            builderCalls == 1,
+            "Generate must return the invalid sentinel when no generation stub is available.");
+
+        int emptyBuilderCalls = 0;
+        var emptyStub = new Structure.GenerationStub(
+            new BlockPos(0, 0, 0),
+            _ => emptyBuilderCalls++);
+        var emptyStructure = new ProbeStructure(emptyStub);
+        Require(
+            ReferenceEquals(emptyStructure.Generate(validContext, references), StructureStart.INVALID_START) &&
+            emptyBuilderCalls == 1,
+            "Generate must discard a builder that produces no pieces and return the invalid sentinel.");
+
+        RequireThrows<ArgumentNullException>(
+            () => structure.Generate(null!, references),
+            "Generate must reject a null generation context.");
+    }
     private static void CheckConstructorRejectsMissingDependencies()
     {
         OverworldWorld world = CreateWorld(0x4E554C4C434F4E54L);
@@ -472,6 +552,8 @@ internal static class StructureGenerationContextChecks
         protected override Structure.GenerationStub? FindGenerationPoint(
             Structure.GenerationContext context) => null;
     }
+    private sealed class TestPiece(BoundingBox boundingBox)
+        : StructurePiece(0, boundingBox);
     private static void Require(bool condition, string message)
     {
         if (!condition)
