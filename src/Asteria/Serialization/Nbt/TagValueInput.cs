@@ -14,6 +14,8 @@ public sealed class TagValueInput : ValueInput
 
     public NbtProblemReporter ProblemReporter { get; }
 
+    internal DynamicOps<Tag> Ops => _ops;
+
     public IReadOnlySet<string> KeySet =>
         _canRead
             ? new HashSet<string>(_input.Keys, StringComparer.Ordinal)
