@@ -182,6 +182,7 @@ internal static class Program
         _ = TestBlocks.TEST_BLOCK;
         StateHolderChecks.Run();
         SerializationChecks.Run();
+        NbtBinaryIOChecks.Run();
         DynamicOpsChecks.Run();
         CodecChecks.Run();
         CoordinatePositionChecks.Run();
