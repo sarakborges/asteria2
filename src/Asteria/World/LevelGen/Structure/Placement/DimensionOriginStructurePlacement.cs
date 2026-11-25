@@ -30,6 +30,19 @@ public sealed class DimensionOriginStructurePlacement : StructurePlacement
         return origin.X == sourceX && origin.Z == sourceZ;
     }
 
+    public Vec3i LocateOffset() =>
+        Vec3i.Zero;
+
+    public BlockPos GetLocatePos(ChunkPos chunkPos)
+    {
+        BlockPos origin = new(
+            chunkPos.GetMinBlockX(),
+            0,
+            chunkPos.GetMinBlockZ());
+
+        return origin.Offset(LocateOffset());
+    }
+
     public MapCodec<DimensionOriginStructurePlacement> Codec() =>
         MAP_CODEC;
 }
