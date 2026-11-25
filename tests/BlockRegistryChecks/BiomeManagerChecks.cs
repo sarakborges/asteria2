@@ -65,13 +65,16 @@ internal static class BiomeManagerChecks
             resolver.LastPosition == (-1, 15, -2),
             "BiomeManager.getNoiseBiomeAtPosition(BlockPos) must use direct quart conversion without fuzzy zoom.");
 
+        _ = manager.GetBiome(new BlockPos(5, 40, 7));
+        (int X, int Y, int Z)? originalZoomPosition = resolver.LastPosition;
+
         var replacementResolver = new CapturingBiomeResolver();
         BiomeManager replacement = manager.WithDifferentSource(replacementResolver);
         _ = replacement.GetBiome(new BlockPos(5, 40, 7));
 
         Require(
-            replacementResolver.LastPosition == (0, 9, 2),
-            "BiomeManager.withDifferentSource must retain the obfuscated biome zoom seed.");
+            replacementResolver.LastPosition == originalZoomPosition,
+            "BiomeManager.withDifferentSource must retain the exact biome zoom seed.");
     }
 
     private static void Require(bool condition, string message)
