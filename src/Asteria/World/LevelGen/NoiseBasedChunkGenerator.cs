@@ -37,6 +37,8 @@ public sealed class NoiseBasedChunkGenerator
 
     public long Seed => _randomState.Seed;
 
+    public RandomState RandomState => _randomState;
+
     public NoiseBasedChunkGenerator(
         NoiseGeneratorSettings settings,
         RandomState randomState,
