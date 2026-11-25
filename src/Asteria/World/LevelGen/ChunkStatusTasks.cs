@@ -437,7 +437,18 @@ public static class ChunkStatusTasks
             ChunkStatus.INITIALIZE_LIGHT,
             "LIGHT");
 
-        _ = context.CreateWorldGenRegion(step, protoChunk, chunks);
+        WorldGenRegion region = context.CreateWorldGenRegion(step, protoChunk, chunks);
+        ChunkPos centerPosition = protoChunk.GetPos();
+        int dependencyRadius = step.DirectDependencies.Size() - 1;
+        foreach (ChunkPos dependencyPosition in
+                 ChunkPos.RangeClosed(centerPosition, dependencyRadius))
+        {
+            region.GetChunk(
+                dependencyPosition.X,
+                dependencyPosition.Z,
+                ChunkStatus.INITIALIZE_LIGHT);
+        }
+
         ChunkLightingTasks.LightChunk(
             protoChunk,
             context.LightEngine,

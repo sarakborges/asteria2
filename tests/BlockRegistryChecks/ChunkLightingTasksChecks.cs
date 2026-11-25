@@ -194,6 +194,25 @@ internal static class ChunkLightingTasksChecks
         Require(
             engine.GetLayerListener(LightLayer.BLOCK).GetLightValue(sourcePosition) == 14,
             "The pyramid LIGHT task must propagate block emission in the center chunk.");
+
+        ProtoChunk incompleteCenter = CreateChunk(32, 32);
+        incompleteCenter.SetPersistedStatus(ChunkStatus.INITIALIZE_LIGHT);
+        StaticCache2D<ChunkAccess?> incompleteCache = StaticCache2D<ChunkAccess?>.Create(
+            incompleteCenter.GetPos().X,
+            incompleteCenter.GetPos().Z,
+            0,
+            (_, _) => incompleteCenter);
+        RequireThrows<InvalidOperationException>(
+            () => ChunkStatusTasks.GenerateLight(
+                context,
+                ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.LIGHT),
+                incompleteCache,
+                incompleteCenter),
+            "The LIGHT task must reject a cache without its complete INITIALIZE_LIGHT radius-one neighborhood.");
+        Require(
+            ReferenceEquals(incompleteCenter.GetPersistedStatus(), ChunkStatus.INITIALIZE_LIGHT) &&
+            !incompleteCenter.IsLightCorrect(),
+            "A LIGHT task with missing neighbors must not propagate or promote its center chunk.");
     }
 
     private static ProtoChunk CreateChunk(int chunkX, int chunkZ) =>
