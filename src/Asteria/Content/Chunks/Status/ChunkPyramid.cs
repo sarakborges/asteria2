@@ -18,7 +18,9 @@ public sealed class ChunkPyramid
                 static builder => builder.SetTask(ChunkStatusTasks.GenerateStructureStarts))
             .Step(
                 ChunkStatus.STRUCTURE_REFERENCES,
-                static builder => builder.AddRequirement(ChunkStatus.STRUCTURE_STARTS, 8))
+                static builder => builder
+                    .AddRequirement(ChunkStatus.STRUCTURE_STARTS, ChunkStatus.MAX_STRUCTURE_DISTANCE)
+                    .SetTask(ChunkStatusTasks.GenerateStructureReferences))
             .Step(
                 ChunkStatus.BIOMES,
                 static builder => builder

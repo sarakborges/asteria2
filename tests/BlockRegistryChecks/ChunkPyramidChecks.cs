@@ -268,7 +268,7 @@ internal static class ChunkPyramidChecks
         try
         {
             _ = ChunkPyramid.GenerationPyramid
-                .GetStepTo(ChunkStatus.STRUCTURE_REFERENCES)
+                .GetStepTo(ChunkStatus.TERRAIN)
                 .Apply(context, unassignedCache, unassignedChunk)
                 .AsTask()
                 .GetAwaiter()

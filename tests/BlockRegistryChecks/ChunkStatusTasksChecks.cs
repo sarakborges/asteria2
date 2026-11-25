@@ -19,6 +19,7 @@ internal static class ChunkStatusTasksChecks
         CheckBiomeTaskPopulatesTheCenterChunk();
         CheckBiomeTaskRejectsAnUnrelatedCache();
         CheckStructureStartsTaskGeneratesAndStoresStart();
+        CheckStructureReferencesTaskCollectsIntersectingStarts();
     }
 
     private static void CheckBiomeTaskIsOnlyWiredForGeneration()
@@ -36,6 +37,13 @@ internal static class ChunkStatusTasksChecks
             "The loading BIOMES step must remain unassigned until its persisted-chunk loading task is ported.");
 
         Require(
+            ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.STRUCTURE_REFERENCES).Task ==
+                ChunkStatusTasks.GenerateStructureReferences,
+            "The generation STRUCTURE_REFERENCES step must execute the ported reference-generation task.");
+        Require(
+            ChunkPyramid.LoadingPyramid.GetStepTo(ChunkStatus.STRUCTURE_REFERENCES).Task is null,
+            "The loading STRUCTURE_REFERENCES step must remain unassigned until persisted references can be loaded.");
+        Require(
             ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.STRUCTURE_STARTS).Task ==
                 ChunkStatusTasks.GenerateStructureStarts,
             "The generation STRUCTURE_STARTS step must execute the ported structure-start task.");
@@ -46,7 +54,8 @@ internal static class ChunkStatusTasksChecks
             ChunkPyramid.GenerationPyramid.Steps
                 .Where(step =>
                     step.TargetStatus != ChunkStatus.BIOMES &&
-                    step.TargetStatus != ChunkStatus.STRUCTURE_STARTS)
+                    step.TargetStatus != ChunkStatus.STRUCTURE_STARTS &&
+                    step.TargetStatus != ChunkStatus.STRUCTURE_REFERENCES)
                 .All(step => step.Task is null),
             "No other generation stage may be marked executable before its task is ported.");
     }
@@ -192,6 +201,118 @@ internal static class ChunkStatusTasksChecks
                 chunk),
             "The structure-start task must reject a cache that does not contain its exact center chunk.");
     }
+    private static void CheckStructureReferencesTaskCollectsIntersectingStarts()
+    {
+        const long seed = 0x5354525543545246L;
+        const int radius = ChunkStatus.MAX_STRUCTURE_DISTANCE;
+        var world = new OverworldWorld(seed, LevelHeightAccessor.Create(-16, 64));
+        var context = new WorldGenContext(world, world.Generator, world.LightEngine);
+        ChunkPos centerPosition = new(-2, 3);
+        var chunks = new Dictionary<ChunkPos, ProtoChunk>();
+
+        foreach (ChunkPos position in ChunkPos.RangeClosed(centerPosition, radius))
+        {
+            ProtoChunk created = CreateChunk(world, position);
+            created.SetPersistedStatus(ChunkStatus.STRUCTURE_STARTS);
+            chunks.Add(position, created);
+        }
+
+        ProtoChunk center = chunks[centerPosition];
+        var firstStructure = new StartProbeStructure(
+            HolderSet<Biome>.Direct(Biomes.PLAINS.BuiltInRegistryHolder));
+        var secondStructure = new StartProbeStructure(
+            HolderSet<Biome>.Direct(Biomes.DESERT.BuiltInRegistryHolder));
+        var outsideStructure = new StartProbeStructure(
+            HolderSet<Biome>.Direct(Biomes.FOREST.BuiltInRegistryHolder));
+        var invalidStructure = new StartProbeStructure(
+            HolderSet<Biome>.Direct(Biomes.SNOWY_PLAINS.BuiltInRegistryHolder));
+
+        ChunkPos eastEdgeSource = new(centerPosition.X + radius, centerPosition.Z);
+        chunks[eastEdgeSource].SetStartForStructure(
+            firstStructure,
+            CreateStart(firstStructure, eastEdgeSource,
+                new BoundingBox(centerPosition.GetMaxBlockX(), 200, 4, 150, 210, 9)));
+
+        ChunkPos northEdgeSource = new(centerPosition.X - radius, centerPosition.Z + radius);
+        chunks[northEdgeSource].SetStartForStructure(
+            firstStructure,
+            CreateStart(firstStructure, northEdgeSource,
+                new BoundingBox(-140, 200, centerPosition.GetMaxBlockZ(),
+                    centerPosition.GetMinBlockX(), 210, 140)));
+
+        chunks[centerPosition].SetStartForStructure(
+            secondStructure,
+            CreateStart(secondStructure, centerPosition,
+                new BoundingBox(centerPosition.GetMinBlockX() + 1, 200,
+                    centerPosition.GetMinBlockZ() + 1, centerPosition.GetMinBlockX() + 4,
+                    210, centerPosition.GetMinBlockZ() + 4)));
+
+        ChunkPos outsideSource = new(centerPosition.X + 4, centerPosition.Z - 4);
+        chunks[outsideSource].SetStartForStructure(
+            outsideStructure,
+            CreateStart(outsideStructure, outsideSource,
+                new BoundingBox(centerPosition.GetMaxBlockX() + 1, -16, 4,
+                    centerPosition.GetMaxBlockX() + 5, 16, 9)));
+        chunks[new ChunkPos(centerPosition.X, centerPosition.Z + 1)]
+            .SetStartForStructure(invalidStructure, StructureStart.INVALID_START);
+
+        StaticCache2D<ChunkAccess?> cache = StaticCache2D<ChunkAccess?>.Create(
+            centerPosition.X,
+            centerPosition.Z,
+            radius,
+            (x, z) => chunks[new ChunkPos(x, z)]);
+
+        ChunkAccess result = ChunkPyramid.GenerationPyramid
+            .GetStepTo(ChunkStatus.STRUCTURE_REFERENCES)
+            .Apply(context, cache, center)
+            .AsTask()
+            .GetAwaiter()
+            .GetResult();
+
+        ISet<long> firstReferences = center.GetReferencesForStructure(firstStructure);
+        ISet<long> secondReferences = center.GetReferencesForStructure(secondStructure);
+        Require(
+            ReferenceEquals(result, center) &&
+            ReferenceEquals(center.GetPersistedStatus(), ChunkStatus.STRUCTURE_REFERENCES),
+            "The STRUCTURE_REFERENCES task must complete and promote the center proto chunk.");
+        Require(
+            firstReferences.SetEquals(new[] { eastEdgeSource.Pack(), northEdgeSource.Pack() }) &&
+            secondReferences.SetEquals(new[] { centerPosition.Pack() }) &&
+            center.GetReferencesForStructure(outsideStructure).Count == 0 &&
+            center.GetReferencesForStructure(invalidStructure).Count == 0,
+            "Reference collection must include both radius-eight edge starts and the center start, while excluding non-intersecting and invalid starts.");
+        Require(
+            chunks[eastEdgeSource].GetStartForStructure(firstStructure)!.GetReferences() == 0 &&
+            chunks[northEdgeSource].GetStartForStructure(firstStructure)!.GetReferences() == 0,
+            "Creating chunk references must store source chunk positions without incrementing StructureStart's separate reference counter.");
+
+        _ = ChunkStatusTasks.GenerateStructureReferences(
+            context,
+            ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.STRUCTURE_REFERENCES),
+            cache,
+            center);
+        Require(
+            firstReferences.Count == 2 && secondReferences.Count == 1,
+            "Repeating reference generation must leave the center chunk's reference sets deduplicated.");
+
+        var missingCenter = CreateChunk(world, centerPosition);
+        missingCenter.SetPersistedStatus(ChunkStatus.STRUCTURE_STARTS);
+        StaticCache2D<ChunkAccess?> undersizedCache = StaticCache2D<ChunkAccess?>.Create(
+            centerPosition.X, centerPosition.Z, radius - 1,
+            (x, z) => x == centerPosition.X && z == centerPosition.Z
+                ? missingCenter
+                : chunks[new ChunkPos(x, z)]);
+        RequireThrows<InvalidOperationException>(
+            () => ChunkStatusTasks.GenerateStructureReferences(
+                context,
+                ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.STRUCTURE_REFERENCES),
+                undersizedCache,
+                missingCenter),
+            "Structure-reference generation must fail when its radius-eight dependency window is incomplete.");
+
+        var staleChunks = new Dictionary<ChunkPos, ChunkAccess?>(cache.Map(
+            static (value, _, _) => value).ForEachToDictionary());
+    }
     private static ProtoChunk CreateChunk(OverworldWorld world, ChunkPos position) =>
         new(
             position,
@@ -200,6 +321,15 @@ internal static class ChunkStatusTasksChecks
                 world.Generator.GetGenDepth()),
             PalettedContainerFactory.CreateBuiltIn());
 
+    private static StructureStart CreateStart(
+        Structure structure,
+        ChunkPos sourcePosition,
+        BoundingBox boundingBox) =>
+        new(
+            structure,
+            sourcePosition,
+            references: 0,
+            new PiecesContainer(new[] { new TestPiece(boundingBox) }));
     private sealed class StartProbeStructure : Structure
     {
         public int GenerationCallCount { get; private set; }
