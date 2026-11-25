@@ -19,7 +19,7 @@ internal static class SimpleBlockFeatureChecks
     private sealed class RejectingBlock : Block
     {
         public RejectingBlock()
-            : base(BlockProperties.Of())
+            : base(BlockProperties.Of(), createIntrusiveRegistryHolder: false)
         {
         }
 
