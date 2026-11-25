@@ -5,8 +5,8 @@ namespace Asteria.Content.Chunks.Status;
 
 /// <summary>
 /// Immutable loading or generation dependency pyramid for Asteria's mob-free chunk stages.
- /// The vanilla SPAWN stage is omitted because it performs mob spawning.
-/// Task delegates are intentionally not attached until the local world-generation tasks are ported.
+/// The vanilla SPAWN stage is omitted because it performs mob spawning.
+/// Only stages with implemented local task semantics have delegates; all others fail closed.
 /// </summary>
 public sealed class ChunkPyramid
 {
