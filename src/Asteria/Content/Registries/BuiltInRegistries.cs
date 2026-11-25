@@ -134,6 +134,11 @@ public static class BuiltInRegistries
             Registries.STRUCTURE_TYPE.Location,
             static () => { });
 
+    public static Registry<Structure> Structure { get; } =
+        RegisterSimple<Structure>(
+            Registries.STRUCTURE.Location,
+            static () => { });
+
     public static Registry<PlacedFeature> PlacedFeature { get; } =
         RegisterSimple<PlacedFeature>(
             Registries.PLACED_FEATURE.Location,
