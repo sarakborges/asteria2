@@ -85,6 +85,18 @@ public sealed class CompoundTag : Tag, IEquatable<CompoundTag>
         output.WriteByte(EndTag.INSTANCE.GetId());
     }
 
+    /// <summary>
+    /// Creates a new compound that shares its existing child tags but owns an independent
+    /// top-level name map. Used by DynamicOps merge operations to avoid deep-copying values.
+    /// </summary>
+    public CompoundTag ShallowCopy()
+    {
+        var copy = new Dictionary<string, Tag>(_values.Count, StringComparer.Ordinal);
+        foreach (KeyValuePair<string, Tag> entry in _values)
+            copy.Add(entry.Key, entry.Value);
+        return new CompoundTag(copy);
+    }
+
     public Tag Copy()
     {
         var copy = new Dictionary<string, Tag>(_values.Count, StringComparer.Ordinal);
