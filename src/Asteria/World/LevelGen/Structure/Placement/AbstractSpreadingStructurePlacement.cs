@@ -35,16 +35,16 @@ public abstract class AbstractSpreadingStructurePlacement : StructurePlacement
     public Vec3i LocateOffset() =>
         _locateOffset;
 
-    public FrequencyReductionMethod FrequencyReductionMethod() =>
+    protected FrequencyReductionMethod FrequencyReductionMethod() =>
         _frequencyReductionMethod;
 
-    public float Frequency() =>
+    protected float Frequency() =>
         _frequency;
 
-    public int Salt() =>
+    protected int Salt() =>
         _salt;
 
-    public ExclusionZone? ExclusionZoneValue() =>
+    protected ExclusionZone? ExclusionZoneValue() =>
         _exclusionZone;
 
     public bool IsStructureChunk(
