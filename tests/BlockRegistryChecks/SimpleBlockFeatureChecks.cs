@@ -141,7 +141,7 @@ internal static class SimpleBlockFeatureChecks
         (WorldGenRegion region, ProtoChunk center) = CreateRegion(world, generator, heightAccessor);
         var position = new BlockPos(9, 42, 11);
         var feature = new SimpleBlockFeature(
-            BlockStateProvider.Of(Blocks.GRASS_BLOCK),
+            Holder<BlockStateProvider>.Direct(BlockStateProvider.Of(Blocks.GRASS_BLOCK)),
             ScheduleTick: true);
 
         Require(
