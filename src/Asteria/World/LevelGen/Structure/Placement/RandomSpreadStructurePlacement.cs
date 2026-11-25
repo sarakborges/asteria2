@@ -19,7 +19,7 @@ public sealed class RandomSpreadStructurePlacement : AbstractSpreadingStructureP
         int salt)
         : this(
             Vec3i.Zero,
-            FrequencyReductionMethod.DEFAULT,
+            global::Asteria.World.LevelGen.Structure.Placement.FrequencyReductionMethod.DEFAULT,
             1.0F,
             salt,
             null,
