@@ -165,17 +165,48 @@ internal static class NoiseBasedChunkGeneratorChecks
 
 
         ProtoChunk chunk = CreateChunk(new ChunkPos(0, 0), -64, 96);
-        generator.BuildTerrain(chunk);
+        generator.CreateBiomes(chunk);
 
         Require(
-            ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.TERRAIN) &&
-            chunk.GetHighestGeneratedStatus().IsOrAfter(ChunkStatus.BIOMES),
-            "BuildTerrain must advance the proto chunk through BIOMES and TERRAIN after completing those stages.");
+            ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.BIOMES) &&
+            chunk.GetSections().All(static section => section.HasOnlyAir),
+            "CreateBiomes must fill the biome palettes and advance to BIOMES without generating terrain.");
+
+        var biomePaletteBeforeTerrain = new List<Holder<Biome>>();
+        foreach (ChunkSection section in chunk.GetSections())
+        for (int quartY = 0; quartY < ChunkSection.BiomeContainerWidth; quartY++)
+        for (int quartZ = 0; quartZ < ChunkSection.BiomeContainerWidth; quartZ++)
+        for (int quartX = 0; quartX < ChunkSection.BiomeContainerWidth; quartX++)
+        {
+            Holder<Biome> biome = section.GetNoiseBiome(quartX, quartY, quartZ);
+            Require(biome.IsBound,
+                "CreateBiomes must fill every quart cell with a registered holder.");
+            biomePaletteBeforeTerrain.Add(biome);
+        }
 
         Holder<Biome> generatedBiome = chunk.GetNoiseBiome(0, QuartPos.FromBlock(-64), 0);
         Require(
             generatedBiome.IsBound,
-            "ProtoChunk.GetNoiseBiome must become available after BuildTerrain completes the BIOMES stage.");
+            "ProtoChunk.GetNoiseBiome must become available immediately after the BIOMES stage.");
+
+        generator.BuildTerrain(chunk);
+
+        Require(
+            ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.TERRAIN),
+            "BuildTerrain must advance a chunk that has already reached BIOMES to TERRAIN.");
+
+        int biomePaletteIndex = 0;
+        foreach (ChunkSection section in chunk.GetSections())
+        for (int quartY = 0; quartY < ChunkSection.BiomeContainerWidth; quartY++)
+        for (int quartZ = 0; quartZ < ChunkSection.BiomeContainerWidth; quartZ++)
+        for (int quartX = 0; quartX < ChunkSection.BiomeContainerWidth; quartX++)
+        {
+            Require(
+                ReferenceEquals(
+                    section.GetNoiseBiome(quartX, quartY, quartZ),
+                    biomePaletteBeforeTerrain[biomePaletteIndex++]),
+                "BuildTerrain must preserve the biome palette produced by the preceding BIOMES stage.");
+        }
 
         int solidSamples = 0;
         for (int y = -64; y < 32; y += 4)
