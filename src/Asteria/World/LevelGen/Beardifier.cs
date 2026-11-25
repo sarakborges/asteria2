@@ -6,6 +6,7 @@ using Asteria.Util;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Structure;
 using Asteria.World.LevelGen.Structure.Pools;
+using StructureType = Asteria.World.LevelGen.Structure.Structure;
 using Asteria.Util.Context;
 
 namespace Asteria.World.LevelGen;
@@ -77,9 +78,9 @@ public sealed class Beardifier : DensitySampler
         var junctions = new List<JigsawJunction>();
         BoundingBox? affectedBox = null;
 
-        foreach (KeyValuePair<Structure, HashSet<long>> entry in chunk.GetAllReferences())
+        foreach (KeyValuePair<StructureType, HashSet<long>> entry in chunk.GetAllReferences())
         {
-            Structure structure = entry.Key;
+            StructureType structure = entry.Key;
             TerrainAdjustment terrainAdjustment = structure.TerrainAdaptation();
             if (ReferenceEquals(terrainAdjustment, TerrainAdjustment.NONE))
                 continue;

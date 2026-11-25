@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Asteria.Core;
 using Asteria.Content.Biomes;
+using BuiltInBiomes = Asteria.Content.Biomes.Biomes;
 using Asteria.Content.Chunks;
 using Asteria.Content.Chunks.Status;
 using Asteria.Content.Registries;
@@ -313,7 +314,7 @@ internal static class BeardifierChecks
 
     private sealed class TerrainProbeStructure(TerrainAdjustment adjustment)
         : Structure(new StructureSettings(
-            HolderSet<Biome>.Direct(Biomes.PLAINS.BuiltInRegistryHolder),
+            HolderSet<Biome>.Direct(BuiltInBiomes.PLAINS.BuiltInRegistryHolder),
             GenerationStep.Decoration.SURFACE_STRUCTURES,
             adjustment))
     {
