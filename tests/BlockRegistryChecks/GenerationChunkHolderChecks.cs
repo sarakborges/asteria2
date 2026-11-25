@@ -154,11 +154,17 @@ internal static class GenerationChunkHolderChecks
         Require(
             ReferenceEquals(holder.GetOrCreateFuture(ChunkStatus.BIOMES), biomes),
             "Statuses before the cleared interval must retain their existing future.");
+        Task<ChunkResult<ChunkAccess>> replacementTerrain =
+            holder.GetOrCreateFuture(ChunkStatus.TERRAIN);
+        Require(
+            !ReferenceEquals(replacementTerrain, terrain),
+            "A failed pending future must be replaced by a new future for the same status.");
+
         Require(
             ReferenceEquals(
                 holder.FindHighestStatusWithPendingFuture(ChunkStatus.LIGHT),
-                ChunkStatus.BIOMES),
-            "Finding the highest retained future must stop at BIOMES after the later pending futures are cleared.");
+                ChunkStatus.TERRAIN),
+            "The highest pending future must be the replacement TERRAIN future above the retained BIOMES future.");
 
         var pendingHolder = new TestHolder(ChunkPos.Zero);
         pendingHolder.AllowThrough(ChunkStatus.FULL);
