@@ -51,6 +51,14 @@ public static class Registries
         RegistryKey<StructureSet>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/structure_set"));
 
+    public static RegistryKey<Registry<Structure>> STRUCTURE { get; } =
+        RegistryKey<Structure>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/structure"));
+
+    public static RegistryKey<Registry<MapCodec<Structure>>> STRUCTURE_TYPE { get; } =
+        RegistryKey<MapCodec<Structure>>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/structure_type"));
+
     public static RegistryKey<Registry<Biome>> BIOME { get; } =
         RegistryKey<Biome>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "biome"));
