@@ -147,6 +147,19 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
     }
 
     /// <summary>
+    /// Number of proto chunks retained for generation dependencies, including terrain-ready
+    /// chunks that remain in a loaded neighbor's required dependency window.
+    /// </summary>
+    public int CachedGenerationChunkCount
+    {
+        get
+        {
+            lock (_sync)
+                return _generationChunks.Count;
+        }
+    }
+
+    /// <summary>
     /// Returns a stable, position-sorted snapshot. The returned collection does not
     /// hold the world's cache lock and is unaffected by subsequent loads or unloads.
     /// </summary>
@@ -227,7 +240,17 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
 
             ProtoChunk chunk = GetOrCreateGenerationChunk(position);
             if (!chunk.GetPersistedStatus().IsOrAfter(ChunkStatus.TERRAIN))
-                GenerateThroughTerrain(position);
+            {
+                try
+                {
+                    GenerateThroughTerrain(position);
+                }
+                catch
+                {
+                    PruneGenerationChunks();
+                    throw;
+                }
+            }
 
             if (!chunk.GetPersistedStatus().IsOrAfter(ChunkStatus.TERRAIN))
                 throw new InvalidOperationException(
@@ -240,6 +263,12 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
 
     private ProtoChunk GetOrCreateGenerationChunk(ChunkPos position)
     {
+        if (_chunks.TryGetValue(position, out ProtoChunk? loaded))
+        {
+            _generationChunks[position] = loaded;
+            return loaded;
+        }
+
         if (_generationChunks.TryGetValue(position, out ProtoChunk? existing))
             return existing;
 
@@ -256,18 +285,7 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
         ChunkStep biomesStep = pyramid.GetStepTo(ChunkStatus.BIOMES);
         ChunkStep terrainStep = pyramid.GetStepTo(ChunkStatus.TERRAIN);
 
-        int biomeRadius = terrainStep.DirectDependencies.GetRadiusOf(ChunkStatus.BIOMES);
-        int structureStartsRadius = Math.Max(
-            terrainStep.DirectDependencies.GetRadiusOf(ChunkStatus.STRUCTURE_STARTS),
-            checked(
-                biomeRadius +
-                Math.Max(
-                    biomesStep.DirectDependencies.GetRadiusOf(ChunkStatus.STRUCTURE_STARTS),
-                    structureReferencesStep.DirectDependencies.GetRadiusOf(ChunkStatus.STRUCTURE_STARTS))));
-
-        if (biomeRadius < 0 || structureStartsRadius < 0)
-            throw new InvalidOperationException(
-                "The TERRAIN dependency pyramid does not describe its required biome and structure-start windows.");
+        (int biomeRadius, int structureStartsRadius) = GetGenerationDependencyRadii();
 
         StaticCache2D<ChunkAccess?> chunks = StaticCache2D<ChunkAccess?>.Create(
             centerPosition.X,
@@ -331,6 +349,55 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
             centerChunk);
     }
 
+    private static (int BiomeRadius, int StructureStartsRadius)
+        GetGenerationDependencyRadii()
+    {
+        ChunkPyramid pyramid = ChunkPyramid.GenerationPyramid;
+        ChunkStep structureReferencesStep =
+            pyramid.GetStepTo(ChunkStatus.STRUCTURE_REFERENCES);
+        ChunkStep biomesStep = pyramid.GetStepTo(ChunkStatus.BIOMES);
+        ChunkStep terrainStep = pyramid.GetStepTo(ChunkStatus.TERRAIN);
+
+        int biomeRadius =
+            terrainStep.DirectDependencies.GetRadiusOf(ChunkStatus.BIOMES);
+        int structureStartsRadius = Math.Max(
+            terrainStep.DirectDependencies.GetRadiusOf(ChunkStatus.STRUCTURE_STARTS),
+            checked(
+                biomeRadius +
+                Math.Max(
+                    biomesStep.DirectDependencies.GetRadiusOf(ChunkStatus.STRUCTURE_STARTS),
+                    structureReferencesStep.DirectDependencies.GetRadiusOf(ChunkStatus.STRUCTURE_STARTS))));
+
+        if (biomeRadius < 0 || structureStartsRadius < 0)
+            throw new InvalidOperationException(
+                "The TERRAIN dependency pyramid does not describe its required biome and structure-start windows.");
+
+        return (biomeRadius, structureStartsRadius);
+    }
+
+    private void PruneGenerationChunks()
+    {
+        if (_chunks.Count == 0)
+        {
+            _generationChunks.Clear();
+            return;
+        }
+
+        int radius = GetGenerationDependencyRadii().StructureStartsRadius;
+        var requiredChunks = new HashSet<ChunkPos>();
+        foreach (ChunkPos loadedPosition in _chunks.Keys)
+        {
+            foreach (ChunkPos dependencyPosition in ChunkPos.RangeClosed(loadedPosition, radius))
+                requiredChunks.Add(dependencyPosition);
+        }
+
+        foreach (ChunkPos cachedPosition in _generationChunks.Keys.ToArray())
+        {
+            if (!requiredChunks.Contains(cachedPosition))
+                _generationChunks.Remove(cachedPosition);
+        }
+    }
+
     private static void ApplyGenerationStep(
         ChunkStep step,
         WorldGenContext context,
@@ -366,7 +433,7 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
             if (!_chunks.Remove(position))
                 return false;
 
-            _generationChunks.Remove(position);
+            PruneGenerationChunks();
             return true;
         }
     }

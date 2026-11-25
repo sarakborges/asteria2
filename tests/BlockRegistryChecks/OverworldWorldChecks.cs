@@ -9,6 +9,7 @@ internal static class OverworldWorldChecks
     public static void Run()
     {
         CheckGetChunkRunsTheGenerationPyramid();
+        CheckGenerationCachePruning();
     }
 
     private static void CheckGetChunkRunsTheGenerationPyramid()
@@ -59,6 +60,52 @@ internal static class OverworldWorldChecks
             ReferenceEquals(regenerated.GetPersistedStatus(), ChunkStatus.TERRAIN) &&
             world.LoadedChunkCount == 1,
             "An unloaded center chunk must be regenerated through TERRAIN before it becomes visible again.");
+    }
+
+    private static void CheckGenerationCachePruning()
+    {
+        const long seed = 0x4341434845505255L;
+        LevelHeightAccessor heightAccessor = LevelHeightAccessor.Create(-16, 48);
+        var world = new OverworldWorld(seed, heightAccessor);
+        ChunkPos firstPosition = new(-10, 4);
+        ChunkPos adjacentPosition = new(firstPosition.X + 1, firstPosition.Z);
+
+        ProtoChunk first = world.GetChunk(firstPosition);
+        Require(
+            world.CachedGenerationChunkCount == 19 * 19,
+            "One loaded terrain chunk must retain exactly its 19-by-19 generation dependency window.");
+
+        ProtoChunk adjacent = world.GetChunk(adjacentPosition);
+        Require(
+            world.LoadedChunkCount == 2 &&
+            world.CachedGenerationChunkCount == 20 * 19,
+            "Adjacent loaded chunks must share their overlapping generation dependency window.");
+
+        Require(
+            world.UnloadChunk(firstPosition) &&
+            world.LoadedChunkCount == 1 &&
+            world.CachedGenerationChunkCount == 19 * 19 &&
+            world.TryGetChunk(adjacentPosition, out ProtoChunk? cachedAdjacent) &&
+            ReferenceEquals(cachedAdjacent, adjacent),
+            "Unloading one chunk must retain exactly the dependency window still required by its loaded neighbor.");
+
+        Require(
+            ReferenceEquals(world.GetChunk(firstPosition), first) &&
+            world.LoadedChunkCount == 2,
+            "A terrain-ready chunk retained as a loaded neighbor's dependency must be safely reusable.");
+
+        Require(
+            world.UnloadChunk(firstPosition) &&
+            world.UnloadChunk(adjacentPosition) &&
+            world.LoadedChunkCount == 0 &&
+            world.CachedGenerationChunkCount == 0,
+            "Unloading the final public chunk must release every intermediate generation chunk.");
+
+        ProtoChunk regenerated = world.GetChunk(firstPosition);
+        Require(
+            !ReferenceEquals(regenerated, first) &&
+            world.CachedGenerationChunkCount == 19 * 19,
+            "A chunk requested after its entire dependency window was released must be regenerated.");
     }
 
     private static void Require(bool condition, string message)
