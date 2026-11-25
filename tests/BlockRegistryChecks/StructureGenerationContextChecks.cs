@@ -23,6 +23,7 @@ internal static class StructureGenerationContextChecks
         CheckOnTopOfChunkCenterHelpers();
         CheckStructureStartGenerationFromStub();
         CheckWeightedStructureSelectionRetriesCandidates();
+        CheckWeightedSelectionUsesCandidateBiomeSet();
         CheckStructureHeightSamplingHelpers();
         CheckLowestYIn5By5BoxRotationOffsets();
         CheckConstructorRejectsMissingDependencies();
@@ -549,6 +550,84 @@ internal static class StructureGenerationContextChecks
             () => world.Generator.TryGenerateStructure(set, null!, references),
             "Weighted structure selection must reject a null generation context.");
     }
+    private static void CheckWeightedSelectionUsesCandidateBiomeSet()
+    {
+        const long seed = 0x43414E4442494F4DL;
+        OverworldWorld world = CreateWorld(seed);
+        ChunkPos position = new(-21, 14);
+        Holder<Biome> plains = Biomes.PLAINS.BuiltInRegistryHolder;
+        Holder<Biome> desert = Biomes.DESERT.BuiltInRegistryHolder;
+        var resolver = new RecordingBiomeResolver((_, _, _) => plains);
+        var context = new Structure.GenerationContext(
+            world.Generator,
+            resolver,
+            world.Generator.RandomState,
+            seed,
+            position,
+            LevelHeightAccessor.Create(-16, 64),
+            static _ => false);
+
+        int desertFindCalls = 0;
+        int desertBuilderCalls = 0;
+        int plainsFindCalls = 0;
+        int plainsBuilderCalls = 0;
+        var desertCandidate = new GenerationCandidateStructure(
+            HolderSet<Biome>.Direct(desert),
+            _ =>
+            {
+                desertFindCalls++;
+                return new Structure.GenerationStub(
+                    new BlockPos(-336, 32, 224),
+                    builder =>
+                    {
+                        desertBuilderCalls++;
+                        builder.AddPiece(new TestPiece(new BoundingBox(-340, 28, 220, -332, 36, 228)));
+                    });
+            });
+        var plainsCandidate = new GenerationCandidateStructure(
+            HolderSet<Biome>.Direct(plains),
+            _ =>
+            {
+                plainsFindCalls++;
+                return new Structure.GenerationStub(
+                    new BlockPos(-320, 32, 224),
+                    builder =>
+                    {
+                        plainsBuilderCalls++;
+                        builder.AddPiece(new TestPiece(new BoundingBox(-324, 28, 220, -316, 36, 228)));
+                    });
+            });
+
+        var selectionRandom = new WorldgenRandom(new LegacyRandomSource(0L));
+        selectionRandom.SetLargeFeatureSeed(seed, position.X, position.Z);
+        int firstSelection = selectionRandom.NextInt(2);
+        StructureSet.StructureSelectionEntry desertEntry =
+            StructureSet.Entry(Holder<Structure>.Direct(desertCandidate), 1);
+        StructureSet.StructureSelectionEntry plainsEntry =
+            StructureSet.Entry(Holder<Structure>.Direct(plainsCandidate), 1);
+        IReadOnlyList<StructureSet.StructureSelectionEntry> entries = firstSelection == 0
+            ? new[] { desertEntry, plainsEntry }
+            : new[] { plainsEntry, desertEntry };
+        var set = new StructureSet(
+            entries,
+            new RandomSpreadStructurePlacement(20, 5, RandomSpreadType.LINEAR, salt: 123));
+
+        StructureStart? result = world.Generator.TryGenerateStructure(set, context, references: 0);
+        Require(
+            result is not null &&
+            result.IsValid() &&
+            ReferenceEquals(result.GetStructure(), plainsCandidate),
+            "Weighted structure selection must validate each candidate against its own biome set, rejecting desert in a plains-only resolver.");
+        Require(
+            desertFindCalls == 1 &&
+            desertBuilderCalls == 0 &&
+            plainsFindCalls == 1 &&
+            plainsBuilderCalls == 1,
+            "A biome-rejected candidate must not build pieces, and the next candidate must be attempted exactly once.");
+        Require(
+            resolver.Queries.Count == 2,
+            "Each candidate's generation stub must be checked against the biome resolver once.");
+    }
     private static void CheckStructureHeightSamplingHelpers()
     {
         const long seed = 0x4845494748545354L;
@@ -726,18 +805,28 @@ internal static class StructureGenerationContextChecks
         }
     }
 
-    private sealed class GenerationCandidateStructure(
-        Func<Structure.GenerationContext, Structure.GenerationStub?> findGenerationPoint)
-        : Structure(StructureSettings.DEFAULT)
+    private sealed class GenerationCandidateStructure : Structure
     {
-        public int FindCalls { get; private set; }
+        private readonly Func<Structure.GenerationContext, Structure.GenerationStub?> _findGenerationPoint;
+
+        public GenerationCandidateStructure(
+            Func<Structure.GenerationContext, Structure.GenerationStub?> findGenerationPoint)
+            : this(HolderSet<Biome>.Direct(Biomes.PLAINS.BuiltInRegistryHolder), findGenerationPoint)
+        {
+        }
+
+        public GenerationCandidateStructure(
+            HolderSet<Biome> biomes,
+            Func<Structure.GenerationContext, Structure.GenerationStub?> findGenerationPoint)
+            : base(new StructureSettings(biomes))
+        {
+            _findGenerationPoint = findGenerationPoint ??
+                throw new ArgumentNullException(nameof(findGenerationPoint));
+        }
 
         protected override Structure.GenerationStub? FindGenerationPoint(
-            Structure.GenerationContext context)
-        {
-            FindCalls++;
-            return findGenerationPoint(context);
-        }
+            Structure.GenerationContext context) =>
+            _findGenerationPoint(context);
     }
     private sealed class ProbeStructure(Structure.GenerationStub? stub)
         : Structure(StructureSettings.DEFAULT)

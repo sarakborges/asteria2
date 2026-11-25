@@ -367,6 +367,14 @@ public abstract class Structure
         /// Each candidate receives a fresh large-feature RNG at the same seed and chunk.
         /// </summary>
         public GenerationContext CreateFreshRandomContext() =>
+            CreateFreshRandomContext(ValidBiome);
+
+        /// <summary>
+        /// Recreates the context with a candidate-specific biome predicate while preserving
+        /// the same generator, resolver, random state, seed, chunk and build-height bounds.
+        /// </summary>
+        public GenerationContext CreateFreshRandomContext(
+            Predicate<Holder<Biome>> validBiome) =>
             new(
                 Generator,
                 BiomeResolver,
@@ -374,7 +382,7 @@ public abstract class Structure
                 Seed,
                 ChunkPos,
                 HeightAccessor,
-                ValidBiome);
+                validBiome ?? throw new ArgumentNullException(nameof(validBiome)));
         /// <summary>
         /// Matches Structure.GenerationContext.isValidBiome: sample the stub's block
         /// position at quart resolution, then apply the configured biome predicate.
