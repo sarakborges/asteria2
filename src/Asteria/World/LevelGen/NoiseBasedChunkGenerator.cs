@@ -138,7 +138,7 @@ public sealed class NoiseBasedChunkGenerator
                    out StructureSet.StructureSelectionEntry? selected) &&
                selected is not null)
         {
-            Structure candidateStructure = selected.Structure.Value;
+            StructureType candidateStructure = selected.Structure.Value;
             StructureStart start = candidateStructure.Generate(
                 context.CreateFreshRandomContext(candidateStructure.Biomes().Contains),
                 references);

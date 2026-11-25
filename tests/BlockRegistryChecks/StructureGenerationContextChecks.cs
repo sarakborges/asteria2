@@ -1,4 +1,5 @@
 using Asteria.Content.Biomes;
+using BuiltInBiomes = Asteria.Content.Biomes.Biomes;
 using Asteria.Content.Blocks;
 using Asteria.Content.Registries;
 using Asteria.Core;
@@ -811,7 +812,7 @@ internal static class StructureGenerationContextChecks
 
         public GenerationCandidateStructure(
             Func<Structure.GenerationContext, Structure.GenerationStub?> findGenerationPoint)
-            : this(HolderSet<Biome>.Direct(Biomes.PLAINS.BuiltInRegistryHolder), findGenerationPoint)
+            : this(HolderSet<Biome>.Direct(BuiltInBiomes.PLAINS.BuiltInRegistryHolder), findGenerationPoint)
         {
         }
 
