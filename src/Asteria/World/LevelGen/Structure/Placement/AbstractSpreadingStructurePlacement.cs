@@ -26,6 +26,8 @@ public abstract class AbstractSpreadingStructurePlacement : StructurePlacement
         float Frequency,
         int Salt);
 
+    private sealed record OptionalExclusionZone(ExclusionZone? Value);
+
     private static Codec<Vec3i> LocateOffsetCodec { get; } =
         Codecs.IntRange(-16, 16).ListOf(3, 3).XMap(
             static values => new Vec3i(values[0], values[1], values[2]),
@@ -52,30 +54,33 @@ public abstract class AbstractSpreadingStructurePlacement : StructurePlacement
                 static (locateOffset, reductionMethod, frequency, salt) =>
                     new PlacementCoreSettings(locateOffset, reductionMethod, frequency, salt)));
 
-    private sealed class OptionalExclusionZoneMapCodec : MapCodec<ExclusionZone?>
+    private sealed class OptionalExclusionZoneMapCodec : MapCodec<OptionalExclusionZone>
     {
         private const string FieldName = "exclusion_zone";
 
-        public override DataResult<ExclusionZone?> Decode<TData>(
+        public override DataResult<OptionalExclusionZone> Decode<TData>(
             DynamicOps<TData> ops,
             MapLike<TData> input)
         {
             if (!input.TryGet(FieldName, out TData encoded))
-                return DataResult<ExclusionZone?>.Success(null);
+                return DataResult<OptionalExclusionZone>.Success(
+                    new OptionalExclusionZone(null));
 
             return ExclusionZone.CODEC.Parse(ops, encoded)
-                .Map(static value => (ExclusionZone?)value);
+                .Map(static value => new OptionalExclusionZone(value));
         }
 
         public override DataResult<TData> Encode<TData>(
-            ExclusionZone? input,
+            OptionalExclusionZone input,
             DynamicOps<TData> ops,
             TData prefix)
         {
-            if (input is null)
+            ArgumentNullException.ThrowIfNull(input);
+
+            if (input.Value is null)
                 return DataResult<TData>.Success(prefix);
 
-            return ExclusionZone.CODEC.EncodeStart(ops, input).FlatMap(encoded =>
+            return ExclusionZone.CODEC.EncodeStart(ops, input.Value).FlatMap(encoded =>
                 ops.MergeToMap(prefix, ops.CreateString(FieldName), encoded));
         }
 
@@ -83,7 +88,7 @@ public abstract class AbstractSpreadingStructurePlacement : StructurePlacement
             new[] { ops.CreateString(FieldName) };
     }
 
-    private static MapCodec<ExclusionZone?> OptionalExclusionZoneCodec { get; } =
+    private static MapCodec<OptionalExclusionZone> OptionalExclusionZoneCodec { get; } =
         new OptionalExclusionZoneMapCodec();
 
     protected static MapCodec<PlacementSettings> PlacementCodec { get; } =
@@ -96,7 +101,7 @@ public abstract class AbstractSpreadingStructurePlacement : StructurePlacement
                         settings.Frequency,
                         settings.Salt)),
                 OptionalExclusionZoneCodec.ForGetter<PlacementSettings>(
-                    static settings => settings.ExclusionZone))
+                    static settings => new OptionalExclusionZone(settings.ExclusionZone)))
             .Apply(
                 instance,
                 static (core, exclusionZone) => new PlacementSettings(
@@ -104,7 +109,7 @@ public abstract class AbstractSpreadingStructurePlacement : StructurePlacement
                     core.FrequencyReductionMethod,
                     core.Frequency,
                     core.Salt,
-                    exclusionZone)));
+                    exclusionZone.Value)));
 
     private readonly Vec3i _locateOffset;
     private readonly FrequencyReductionMethod _frequencyReductionMethod;
