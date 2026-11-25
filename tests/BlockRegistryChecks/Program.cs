@@ -365,6 +365,7 @@ internal static class Program
         RandomSpreadStructurePlacementChecks.Run();
         FrequencyReductionMethodChecks.Run();
         SpreadingStructurePlacementChecks.Run();
+        ChunkGeneratorStructureStateChecks.Run();
         DataLayerChecks.Run();
         DataLayerStorageMapChecks.Run();
         LightChunkContractChecks.Run();
