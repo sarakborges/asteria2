@@ -167,7 +167,6 @@ internal static class StructureCodecChecks
             .GetOrThrow();
 
         Require(
-            decodedHolder is Holder<StructureSet>.DirectHolder ||
             decodedHolder.Kind == HolderKind.Direct,
             "An inline structure-set definition must decode as a direct holder.");
     }
