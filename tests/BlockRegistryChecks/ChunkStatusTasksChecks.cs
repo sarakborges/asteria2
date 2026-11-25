@@ -56,8 +56,8 @@ internal static class ChunkStatusTasksChecks
         var chunk = new ProtoChunk(
             position,
             LevelHeightAccessor.Create(
-                world.Generator.GetMinY(),
-                world.Generator.GetGenDepth()),
+                world.GetMinY(),
+                world.GetHeight()),
             PalettedContainerFactory.CreateBuiltIn());
         StaticCache2D<ChunkAccess?> cache =
             StaticCache2D<ChunkAccess?>.Create(
