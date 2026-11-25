@@ -254,7 +254,7 @@ internal static class BeardifierChecks
             isRigid: false,
             junctions: new[]
             {
-                new JigsawJunction(0, 0, 0, 0, StructureTemplatePool.Projection.RIGID)
+                new JigsawJunction(40, 0, 40, 0, StructureTemplatePool.Projection.RIGID)
             });
         chunks[junctionSource].SetStartForStructure(
             junctionStructure,
