@@ -382,26 +382,32 @@ internal static class BuiltInDensityFunctionChecks
         Require(
             finalDensity is BinaryFunction
             {
-                Operation: BinaryFunction.Type.MIN,
-                Left: UnaryFunction
+                Operation: BinaryFunction.Type.ADD,
+                Left: BinaryFunction
                 {
-                    Operation: UnaryFunction.Type.SQUEEZE,
-                    Input: InterpolatedFunction
+                    Operation: BinaryFunction.Type.MIN,
+                    Left: UnaryFunction
                     {
-                        CellSizeXz: 4,
-                        CellSizeY: 8,
-                        Input: BinaryFunction
+                        Operation: UnaryFunction.Type.SQUEEZE,
+                        Input: InterpolatedFunction
                         {
-                            Operation: BinaryFunction.Type.MUL,
-                            Left: BlendDensityFunction,
-                            Right: ConstantFunction { Value: 0.64f }
+                            CellSizeXz: 4,
+                            CellSizeY: 8,
+                            Input: BinaryFunction
+                            {
+                                Operation: BinaryFunction.Type.MUL,
+                                Left: BlendDensityFunction,
+                                Right: ConstantFunction { Value: 0.64f }
+                            }
                         }
-                    }
+                    },
+                    Right: DensityFunctions.HolderHolder { Function: var noodleHolder }
                 },
-                Right: DensityFunctions.HolderHolder { Function: var noodleHolder }
+                Right: var beardifier
             } &&
-            ReferenceEquals(noodleHolder, registry.GetHolder(DensityFunctionKeys.NOODLE)),
-            $"{keyPrefix} final_density must blend, scale, interpolate, squeeze and cap against noodles without implicitly adding the beardifier.");
+            ReferenceEquals(noodleHolder, registry.GetHolder(DensityFunctionKeys.NOODLE)) &&
+            ReferenceEquals(beardifier, SimpleDensityFunction.BEARDIFIER),
+            $"{keyPrefix} final_density must blend, scale, interpolate, squeeze, cap against noodles, then explicitly add the vanilla beardifier function.");
 
         if (amplified)
         {
