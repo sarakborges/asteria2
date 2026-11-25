@@ -14,9 +14,8 @@ internal static class ChunkGenerationTaskChecks
         CheckMaximumGenerationWindowAndCancellation();
     }
 
-    private static async Task CheckImmediateCenterCompletion()
+    private static Task CheckImmediateCenterCompletion()
     {
-        const long seed = 0x43485441534B0001L;
         ChunkPos position = ChunkPos.Zero;
         var chunk = CreateChunk(position);
         var map = new TestMap((_, step) =>
@@ -51,6 +50,7 @@ internal static class ChunkGenerationTaskChecks
             center.GenerationSaveSyncFuture.IsCompleted &&
             map.ReleaseCount == 1,
             "Completing the target must release the center holder's generation claim.");
+        return Task.CompletedTask;
     }
 
     private static async Task CheckWaitAndResume()
