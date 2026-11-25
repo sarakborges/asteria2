@@ -62,6 +62,12 @@ internal static class ChunkPyramidChecks
             features.DirectDependencies.AsList().Skip(2).All(status =>
                 ReferenceEquals(status, ChunkStatus.STRUCTURE_STARTS)),
             "Features must require terrain within radius one, structure starts within radius eight, and may write within radius one.");
+        Require(
+            features.GetAccumulatedRadiusOf(ChunkStatus.STRUCTURE_STARTS) == 10 &&
+            features.GetAccumulatedRadiusOf(ChunkStatus.STRUCTURE_REFERENCES) == 2 &&
+            features.GetAccumulatedRadiusOf(ChunkStatus.BIOMES) == 2 &&
+            features.GetAccumulatedRadiusOf(ChunkStatus.TERRAIN) == 1,
+            "FEATURES must accumulate start dependencies to radius ten, references and biomes to radius two, and terrain to radius one.");
 
         ChunkStep full = pyramid.GetStepTo(ChunkStatus.FULL);
         ChunkStatus[] expectedFullDependencies =
