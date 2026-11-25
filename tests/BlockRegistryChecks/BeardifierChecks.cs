@@ -286,9 +286,15 @@ internal static class BeardifierChecks
         StructureStart? recoveredRigidStart =
             recoveredRigidChunk.GetStartForStructure(rigidStructure);
         float recoveredRigidContribution = rigidPiece.IsRigidForTerrain
-            ? CreateSingleRigid(
-                rigidStructure.TerrainAdaptation(),
-                rigidPiece.GetBoundingBox(),
+            ? new Beardifier(
+                new[]
+                {
+                    new Beardifier.Rigid(
+                        rigidPiece.GetBoundingBox(),
+                        rigidStructure.TerrainAdaptation(),
+                        rigidPiece.GetGroundLevelDelta())
+                },
+                Array.Empty<JigsawJunction>(),
                 rigidStructure.AdjustBoundingBox(rigidPiece.GetBoundingBox()))
                 .SampleValue(SamplerContext.EmptyUncached, 0, 2, 0)
             : float.NaN;
