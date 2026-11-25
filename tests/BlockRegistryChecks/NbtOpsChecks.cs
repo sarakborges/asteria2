@@ -132,12 +132,13 @@ internal static class NbtOpsChecks
             mixedCompound.GetIntOr("valid", -1) == 3,
             "A batch map merge must retain valid string-keyed entries while reporting invalid keys.");
 
+        Tag createdMap = ops.CreateMap(new[]
+        {
+            new KeyValuePair<Tag, Tag>(StringTag.ValueOf("a"), IntTag.ValueOf(1)),
+            new KeyValuePair<Tag, Tag>(StringTag.ValueOf("b"), IntTag.ValueOf(2))
+        });
         Require(
-            ops.CreateMap(new[]
-            {
-                new KeyValuePair<Tag, Tag>(StringTag.ValueOf("a"), IntTag.ValueOf(1)),
-                new KeyValuePair<Tag, Tag>(StringTag.ValueOf("b"), IntTag.ValueOf(2))
-            }) is CompoundTag { Size: 2 },
+            createdMap is CompoundTag createdCompound && createdCompound.Size() == 2,
             "NBT map creation must create a compound from string-keyed entries.");
         Capture<NotSupportedException>(
             () => ops.CreateMap(new[]
@@ -167,7 +168,7 @@ internal static class NbtOpsChecks
 
         Tag emptyMerged = ops.MergeToList(ops.Empty, Array.Empty<Tag>()).GetOrThrow();
         Require(
-            emptyMerged is ListTag { Size: 0 },
+            emptyMerged is ListTag emptyList && emptyList.Size() == 0,
             "Merging an empty value sequence into TAG_End must produce an empty list tag.");
 
         Tag merged = ops.MergeToList(ops.EmptyList, IntTag.ValueOf(3)).GetOrThrow();
