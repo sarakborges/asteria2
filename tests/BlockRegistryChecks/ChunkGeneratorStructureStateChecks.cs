@@ -210,7 +210,9 @@ internal static class ChunkGeneratorStructureStateChecks
         public TestStructure(HolderSet<Biome> biomes)
             : base(new StructureSettings(biomes))
         {
-        }
+        } 
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context) => null;
     }
 
     private sealed class RecordingPlacement : StructurePlacement

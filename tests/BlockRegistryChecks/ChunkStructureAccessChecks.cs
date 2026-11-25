@@ -166,7 +166,9 @@ internal static class ChunkStructureAccessChecks
     {
         public TestStructure() : base(StructureSettings.DEFAULT)
         {
-        }
+        } 
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context) => null;
     }
 
     private sealed class TestPiece : StructurePiece

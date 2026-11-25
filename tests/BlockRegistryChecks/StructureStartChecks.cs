@@ -114,7 +114,9 @@ internal static class StructureStartChecks
     {
         public TestStructure(StructureSettings settings) : base(settings)
         {
-        }
+        } 
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context) => null;
     }
 
     private sealed class TestPiece : StructurePiece

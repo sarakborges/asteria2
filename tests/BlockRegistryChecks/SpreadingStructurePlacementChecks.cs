@@ -205,7 +205,9 @@ internal static class SpreadingStructurePlacementChecks
     {
         public TestStructure() : base(StructureSettings.DEFAULT)
         {
-        }
+        } 
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context) => null;
     }
 
     private sealed class TestPlacement : AbstractSpreadingStructurePlacement

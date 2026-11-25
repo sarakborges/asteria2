@@ -323,7 +323,9 @@ internal static class RandomSpreadStructurePlacementChecks
     {
         public TestStructure() : base(StructureSettings.DEFAULT)
         {
-        }
+        } 
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context) => null;
     }
 
     private static JsonElement ParseJson(string json) =>
