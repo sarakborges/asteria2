@@ -198,6 +198,7 @@ internal static class Program
             Block.BlockStateRegistry.Count == 44 &&
             !BuiltInRegistries.AreFrozen,
             "Block states must receive IDs during block construction, before registry bootstrap.");
+        StructureCodecChecks.RegisterTestContent();
         CheckBuiltInRegistryRoot();
         RegistryBootstrap.Initialize();
         BlockStateCacheChecks.Run(TestBlocks.TEST_BLOCK.DefaultState);
@@ -324,6 +325,7 @@ internal static class Program
         StructurePiecesBuilderChecks.Run();
         HolderSetCodecChecks.Run();
         StructureSettingsChecks.Run();
+        StructureCodecChecks.Run();
         WeightedListChecks.Run();
         StructureEnumChecks.Run();
         JigsawJunctionChecks.Run();
