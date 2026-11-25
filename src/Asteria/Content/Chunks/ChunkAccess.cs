@@ -18,7 +18,7 @@ namespace Asteria.Content.Chunks;
 /// <summary>
 /// Shared chunk storage and heightmap state.
 /// </summary>
-public abstract class ChunkAccess : LightChunk
+public abstract class ChunkAccess : LightChunk, StructureAccess
 {
     public const int NoFilledSection = -1;
 
@@ -36,7 +36,7 @@ public abstract class ChunkAccess : LightChunk
     private readonly Dictionary<Structure, HashSet<long>> _structureReferences = new();
     private readonly IReadOnlyDictionary<Structure, HashSet<long>> _structureReferencesView;
     private readonly ChunkSkyLightSources _skyLightSources;
-    private static readonly IReadOnlySet<long> EmptyStructureReferences =
+    private static readonly ISet<long> EmptyStructureReferences =
         new HashSet<long>();
 
     public ChunkAccess(
@@ -263,7 +263,7 @@ public abstract class ChunkAccess : LightChunk
         MarkUnsaved();
     }
 
-    public IReadOnlySet<long> GetReferencesForStructure(Structure structure)
+    public ISet<long> GetReferencesForStructure(Structure structure)
     {
         ArgumentNullException.ThrowIfNull(structure);
         return _structureReferences.TryGetValue(structure, out HashSet<long>? references)
