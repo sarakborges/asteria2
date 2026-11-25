@@ -23,8 +23,3 @@ public interface Tag
     float? AsFloat() => null;
     double? AsDouble() => null;
 }
-
-/// <summary>Marker contract for NBT values whose payload is a primitive scalar.</summary>
-public interface PrimitiveTag : Tag
-{
-}
