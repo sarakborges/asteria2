@@ -155,8 +155,10 @@ internal static class GenerationChunkHolderChecks
             ReferenceEquals(holder.GetOrCreateFuture(ChunkStatus.BIOMES), biomes),
             "Statuses before the cleared interval must retain their existing future.");
         Require(
-            holder.FindHighestStatusWithPendingFuture(ChunkStatus.LIGHT) is null,
-            "A cleared interval must not leave a pending future registered at those statuses.");
+            ReferenceEquals(
+                holder.FindHighestStatusWithPendingFuture(ChunkStatus.LIGHT),
+                ChunkStatus.BIOMES),
+            "Finding the highest retained future must stop at BIOMES after the later pending futures are cleared.");
 
         var pendingHolder = new TestHolder(ChunkPos.Zero);
         pendingHolder.AllowThrough(ChunkStatus.FULL);
