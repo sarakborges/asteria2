@@ -98,8 +98,10 @@ internal static class LevelLightEngineChecks
 
         Require(!engine.HasLightWork(),
             "Both light engines must finish their queued work for an isolated open-sky chunk.");
-        Require(engine.GetLayerListener(LightLayer.BLOCK).GetLightValue(position) == 14,
-            "The block channel listener must expose the registered block emission.");
+        int blockLight = engine.GetLayerListener(LightLayer.BLOCK).GetLightValue(position);
+        Require(
+            blockLight == 14,
+            $"The block channel listener must expose the registered block emission (actual {blockLight}, raw {engine.GetRawBrightness(position, 0)}, debug {engine.GetDebugData(LightLayer.BLOCK, section)}, type {engine.GetDebugSectionType(LightLayer.BLOCK, section)}).");
         Require(engine.GetLayerListener(LightLayer.SKY).GetLightValue(position) == 15,
             "The sky channel listener must expose full skylight in an unobstructed column.");
         Require(engine.GetRawBrightness(position, 0) == 15,
