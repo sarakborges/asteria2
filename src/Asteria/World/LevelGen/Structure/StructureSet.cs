@@ -9,7 +9,7 @@ namespace Asteria.World.LevelGen.Structure;
 /// Codec registration and registry dispatch are implemented with the structure registries.
 /// </summary>
 public sealed record StructureSet(
-    IReadOnlyList<StructureSelectionEntry> Structures,
+    IReadOnlyList<StructureSet.StructureSelectionEntry> Structures,
     StructurePlacement Placement)
 {
     public StructureSet(
