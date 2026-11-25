@@ -5,6 +5,8 @@ using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.World;
 using Asteria.World.Level;
+using Asteria.World.LevelGen;
+using Asteria.Util;
 using Asteria.World.Lighting;
 
 internal static class ChunkLightingTasksChecks
@@ -41,6 +43,7 @@ internal static class ChunkLightingTasksChecks
         RegistryBootstrap.Initialize();
         CheckLightingRequiresPreviousChunkStages();
         CheckInitializeAndLightLifecycle();
+        CheckPyramidLightingTasks();
     }
 
     private static void CheckLightingRequiresPreviousChunkStages()
@@ -122,6 +125,75 @@ internal static class ChunkLightingTasksChecks
             "The lifecycle must seed and propagate block emission through the registered light engine.");
         Require(engine.GetLayerListener(LightLayer.SKY).GetLightValue(sourcePosition) == 15,
             "The lifecycle must seed maximum skylight in an unobstructed column.");
+    }
+
+    private static void CheckPyramidLightingTasks()
+    {
+        var chunks = new Dictionary<long, ProtoChunk>();
+        foreach (ChunkPos position in ChunkPos.RangeClosed(ChunkPos.Zero, 1))
+        {
+            ProtoChunk chunk = CreateChunk(position.X, position.Z);
+            chunk.SetPersistedStatus(ChunkStatus.FEATURES);
+            chunks.Add(position.Pack(), chunk);
+        }
+
+        ProtoChunk center = chunks[ChunkPos.Zero.Pack()];
+        BlockPos sourcePosition = new(8, 8, 8);
+        BlockState emitter = new EmissiveBlock().DefaultState;
+        center.GetSection(center.GetSectionIndex(sourcePosition.GetY()))
+            .SetBlockState(8, 8, 8, emitter);
+
+        var getter = new TestChunkGetter(chunks);
+        var engine = new LevelLightEngine(getter, hasBlockLight: true, hasSkyLight: true);
+        var world = new OverworldWorld(
+            0x4C49474854535447L,
+            LevelHeightAccessor.Create(-16, 48));
+        var context = new WorldGenContext(world, world.Generator, engine);
+        ChunkStep initializeStep = ChunkPyramid.GenerationPyramid
+            .GetStepTo(ChunkStatus.INITIALIZE_LIGHT);
+
+        foreach (ProtoChunk chunk in chunks.Values)
+        {
+            StaticCache2D<ChunkAccess?> centerCache = StaticCache2D<ChunkAccess?>.Create(
+                chunk.GetPos().X,
+                chunk.GetPos().Z,
+                0,
+                (_, _) => chunk);
+            ChunkAccess initialized = initializeStep.Apply(
+                    context,
+                    centerCache,
+                    chunk)
+                .AsTask()
+                .GetAwaiter()
+                .GetResult();
+
+            Require(
+                ReferenceEquals(initialized, chunk) &&
+                ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.INITIALIZE_LIGHT) &&
+                !chunk.IsLightCorrect(),
+                "The INITIALIZE_LIGHT pyramid task must initialize storage and promote only after registration.");
+        }
+
+        StaticCache2D<ChunkAccess?> lightCache = StaticCache2D<ChunkAccess?>.Create(
+            center.GetPos().X,
+            center.GetPos().Z,
+            1,
+            (chunkX, chunkZ) => chunks[ChunkPos.Pack(chunkX, chunkZ)]);
+        ChunkAccess lit = ChunkPyramid.GenerationPyramid
+            .GetStepTo(ChunkStatus.LIGHT)
+            .Apply(context, lightCache, center)
+            .AsTask()
+            .GetAwaiter()
+            .GetResult();
+
+        Require(
+            ReferenceEquals(lit, center) &&
+            ReferenceEquals(center.GetPersistedStatus(), ChunkStatus.LIGHT) &&
+            center.IsLightCorrect(),
+            "The LIGHT pyramid task must validate its initialized radius-one neighborhood, propagate light, and promote its center.");
+        Require(
+            engine.GetLayerListener(LightLayer.BLOCK).GetLightValue(sourcePosition) == 14,
+            "The pyramid LIGHT task must propagate block emission in the center chunk.");
     }
 
     private static ProtoChunk CreateChunk(int chunkX, int chunkZ) =>

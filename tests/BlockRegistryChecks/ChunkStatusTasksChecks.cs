@@ -57,6 +57,20 @@ internal static class ChunkStatusTasksChecks
             ChunkPyramid.LoadingPyramid.GetStepTo(ChunkStatus.FEATURES).Task is null,
             "The loading FEATURES step must remain unassigned until persisted feature chunks can be loaded.");
         Require(
+            ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.INITIALIZE_LIGHT).Task ==
+                ChunkStatusTasks.GenerateInitializeLight,
+            "The generation INITIALIZE_LIGHT step must register the light-storage initialization task.");
+        Require(
+            ChunkPyramid.LoadingPyramid.GetStepTo(ChunkStatus.INITIALIZE_LIGHT).Task is null,
+            "The loading INITIALIZE_LIGHT step must remain unassigned until persisted light data can be loaded.");
+        Require(
+            ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.LIGHT).Task ==
+                ChunkStatusTasks.GenerateLight,
+            "The generation LIGHT step must register light propagation.");
+        Require(
+            ChunkPyramid.LoadingPyramid.GetStepTo(ChunkStatus.LIGHT).Task is null,
+            "The loading LIGHT step must remain unassigned until persisted light data can be loaded.");
+        Require(
             ChunkPyramid.LoadingPyramid.GetStepTo(ChunkStatus.TERRAIN).Task is null,
             "The loading TERRAIN step must remain unassigned until persisted terrain chunks can be loaded.");
         Require(
@@ -73,7 +87,9 @@ internal static class ChunkStatusTasksChecks
                     step.TargetStatus != ChunkStatus.STRUCTURE_STARTS &&
                     step.TargetStatus != ChunkStatus.STRUCTURE_REFERENCES &&
                     step.TargetStatus != ChunkStatus.TERRAIN &&
-                    step.TargetStatus != ChunkStatus.FEATURES)
+                    step.TargetStatus != ChunkStatus.FEATURES &&
+                    step.TargetStatus != ChunkStatus.INITIALIZE_LIGHT &&
+                    step.TargetStatus != ChunkStatus.LIGHT)
                 .All(step => step.Task is null),
             "No other generation stage may be marked executable before its task is ported.");
     }

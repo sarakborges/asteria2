@@ -40,10 +40,14 @@ public sealed class ChunkPyramid
                     .AddRequirement(ChunkStatus.TERRAIN, 1)
                     .BlockStateWriteRadius(1)
                     .SetTask(ChunkStatusTasks.GenerateFeatures))
-            .Step(ChunkStatus.INITIALIZE_LIGHT, static builder => builder)
+            .Step(
+                ChunkStatus.INITIALIZE_LIGHT,
+                static builder => builder.SetTask(ChunkStatusTasks.GenerateInitializeLight))
             .Step(
                 ChunkStatus.LIGHT,
-                static builder => builder.AddRequirement(ChunkStatus.INITIALIZE_LIGHT, 1))
+                static builder => builder
+                    .AddRequirement(ChunkStatus.INITIALIZE_LIGHT, 1)
+                    .SetTask(ChunkStatusTasks.GenerateLight))
             .Step(ChunkStatus.FULL, static builder => builder)
             .Build();
 

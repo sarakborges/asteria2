@@ -391,6 +391,104 @@ public static class ChunkStatusTasks
     }
 
     /// <summary>
+    /// Initializes section light storage after the FEATURES stage. The pyramid promotes
+    /// the chunk only after the light engine has processed the registration batch.
+    /// </summary>
+    public static ValueTask<ChunkAccess> GenerateInitializeLight(
+        WorldGenContext context,
+        ChunkStep step,
+        StaticCache2D<ChunkAccess?> chunks,
+        ChunkAccess chunk)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ProtoChunk protoChunk = RequireCenterProtoChunk(
+            step,
+            chunks,
+            chunk,
+            ChunkStatus.INITIALIZE_LIGHT,
+            ChunkStatus.FEATURES,
+            "INITIALIZE_LIGHT");
+
+        _ = context.CreateWorldGenRegion(step, protoChunk, chunks);
+        ChunkLightingTasks.InitializeLight(
+            protoChunk,
+            context.LightEngine,
+            lighted: false);
+
+        return ValueTask.FromResult<ChunkAccess>(protoChunk);
+    }
+
+    /// <summary>
+    /// Propagates both light channels after the LIGHT step's one-chunk neighborhood has
+    /// completed INITIALIZE_LIGHT. Only the center chunk is promoted by this task.
+    /// </summary>
+    public static ValueTask<ChunkAccess> GenerateLight(
+        WorldGenContext context,
+        ChunkStep step,
+        StaticCache2D<ChunkAccess?> chunks,
+        ChunkAccess chunk)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ProtoChunk protoChunk = RequireCenterProtoChunk(
+            step,
+            chunks,
+            chunk,
+            ChunkStatus.LIGHT,
+            ChunkStatus.INITIALIZE_LIGHT,
+            "LIGHT");
+
+        _ = context.CreateWorldGenRegion(step, protoChunk, chunks);
+        ChunkLightingTasks.LightChunk(
+            protoChunk,
+            context.LightEngine,
+            lighted: false);
+
+        return ValueTask.FromResult<ChunkAccess>(protoChunk);
+    }
+
+    private static ProtoChunk RequireCenterProtoChunk(
+        ChunkStep step,
+        StaticCache2D<ChunkAccess?> chunks,
+        ChunkAccess chunk,
+        ChunkStatus targetStatus,
+        ChunkStatus requiredStatus,
+        string stageName)
+    {
+        ArgumentNullException.ThrowIfNull(step);
+        ArgumentNullException.ThrowIfNull(chunks);
+        ArgumentNullException.ThrowIfNull(chunk);
+
+        if (!ReferenceEquals(step.TargetStatus, targetStatus))
+        {
+            throw new ArgumentException(
+                $"The {stageName} task cannot execute status {step.TargetStatus}.",
+                nameof(step));
+        }
+
+        ChunkPos position = chunk.GetPos();
+        if (!chunks.Contains(position.X, position.Z) ||
+            !ReferenceEquals(chunks.Get(position.X, position.Z), chunk))
+        {
+            throw new InvalidOperationException(
+                $"The {stageName} task cache does not contain its exact center chunk {position}.");
+        }
+
+        if (chunk is not ProtoChunk protoChunk)
+        {
+            throw new InvalidOperationException(
+                $"{stageName} generation requires a ProtoChunk, received {chunk.GetType().Name}.");
+        }
+
+        if (!protoChunk.GetPersistedStatus().IsOrAfter(requiredStatus))
+        {
+            throw new InvalidOperationException(
+                $"Chunk {position} must reach {requiredStatus} before {stageName}.");
+        }
+
+        return protoChunk;
+    }
+
+    /// <summary>
     /// Builds center-chunk terrain using the Beardifier assembled from its generated
     /// structure references and the required STRUCTURE_STARTS neighborhood.
     /// </summary>
