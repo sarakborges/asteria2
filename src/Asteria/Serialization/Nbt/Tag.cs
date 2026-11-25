@@ -16,6 +16,9 @@ public interface Tag
 
     string? AsString() => null;
     NumberValue? AsNumber() => null;
+    byte[]? AsByteArray() => null;
+    int[]? AsIntArray() => null;
+    long[]? AsLongArray() => null;
     sbyte? AsByte() => null;
     short? AsShort() => null;
     int? AsInt() => null;

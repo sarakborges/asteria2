@@ -184,6 +184,7 @@ internal static class Program
         SerializationChecks.Run();
         NbtBinaryIOChecks.Run();
         NbtScalarTagChecks.Run();
+        NbtArrayTagChecks.Run();
         DynamicOpsChecks.Run();
         CodecChecks.Run();
         CoordinatePositionChecks.Run();
