@@ -104,8 +104,8 @@ internal static class SpreadingStructurePlacementChecks
             !placement.IsStructureChunk(state, candidate.X + 1, candidate.Z),
             "RandomSpreadStructurePlacement must reject another chunk in the same spacing cell.");
         Require(
-            state.ExclusionQueries == 1,
-            "Only the exact candidate may proceed to the final exclusion-zone interaction stage.");
+            state.ExclusionQueries == 0,
+            "A placement without an exclusion zone must not query the structure-placement state.");
     }
 
     private static void CheckPlacementCheckOrdering()
