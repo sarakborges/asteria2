@@ -264,7 +264,7 @@ internal static class NoiseBasedChunkGeneratorChecks
         var beardifier = new Beardifier(
             new[]
             {
-                new Beardifier.Rigid(rigidBounds, TerrainAdjustment.BURY, groundLevelDelta: 0)
+                new Beardifier.Rigid(rigidBounds, TerrainAdjustment.BURY, 0)
             },
             Array.Empty<Asteria.World.LevelGen.Structure.Pools.JigsawJunction>(),
             rigidBounds.InflatedBy(6));
