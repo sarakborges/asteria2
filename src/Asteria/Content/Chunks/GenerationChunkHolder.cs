@@ -157,12 +157,11 @@ public abstract class GenerationChunkHolder
         GeneratingChunkMap chunkMap,
         StaticCache2D<GenerationChunkHolder> cache)
     {
+        ChunkAccess chunk;
         try
         {
-            ChunkAccess chunk = await chunkMap.ApplyStep(this, step, cache)
+            chunk = await chunkMap.ApplyStep(this, step, cache)
                 .ConfigureAwait(false);
-            CompleteFuture(step.TargetStatus, chunk);
-            return ChunkResult<ChunkAccess>.Of(chunk);
         }
         catch (Exception exception)
         {
@@ -174,10 +173,14 @@ public abstract class GenerationChunkHolder
                     () => exception.ToString());
                 Volatile.Read(ref _futures[step.TargetStatus.GetIndex()])
                     ?.TrySetResult(failure);
+                return failure;
             }
 
-            throw;
+            return UnloadedChunk;
         }
+
+        CompleteFuture(step.TargetStatus, chunk);
+        return ChunkResult<ChunkAccess>.Of(chunk);
     }
 
     /// <summary>
