@@ -288,7 +288,7 @@ internal static class RandomSpreadStructurePlacementChecks
                 ops.CreateString("asteria:test_structure_set")),
             new KeyValuePair<JsonElement, JsonElement>(
                 ops.CreateString("chunk_count"),
-                ops.CreateNumber(0))
+                JsonOps.INSTANCE.CreateNumber(0))
         });
         Require(
             AbstractSpreadingStructurePlacement.ExclusionZone.CODEC
@@ -302,7 +302,7 @@ internal static class RandomSpreadStructurePlacementChecks
                 ops.CreateMap(Array.Empty<KeyValuePair<JsonElement, JsonElement>>())),
             new KeyValuePair<JsonElement, JsonElement>(
                 ops.CreateString("chunk_count"),
-                ops.CreateNumber(5))
+                JsonOps.INSTANCE.CreateNumber(5))
         });
         Require(
             AbstractSpreadingStructurePlacement.ExclusionZone.CODEC
