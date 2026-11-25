@@ -356,6 +356,7 @@ internal static class Program
         BlockBehaviorChecks.Run();
         ProtoChunkChecks.Run();
         ChunkResultChecks.Run();
+        GenerationChunkHolderChecks.Run();
         DataLayerChecks.Run();
         DataLayerStorageMapChecks.Run();
         LightChunkContractChecks.Run();
