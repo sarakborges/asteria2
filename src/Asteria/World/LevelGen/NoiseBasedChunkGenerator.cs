@@ -17,8 +17,9 @@ using StructureType = Asteria.World.LevelGen.Structure.Structure;
 namespace Asteria.World.LevelGen;
 
 /// <summary>
-/// Minecraft Java 26.3 density, aquifer, generic material-rule and carver stages for a ProtoChunk.
-/// Biome-specific surface extensions and placed-feature generation remain later pipeline work.
+/// Minecraft Java 26.3 noise, aquifer, material-rule, carver and biome-decoration
+/// generation for ProtoChunks. Structure pieces must provide their concrete PostProcess
+/// implementation before their starts can be placed by the FEATURES task.
 /// </summary>
 public sealed class NoiseBasedChunkGenerator
 {
@@ -237,7 +238,14 @@ public sealed class NoiseBasedChunkGenerator
     internal void ApplyBiomeDecoration(
         WorldGenLevel level,
         ChunkAccess chunk,
-        long randomSourceSeed)
+        long randomSourceSeed) =>
+        ApplyBiomeDecoration(level, chunk, randomSourceSeed, placeStructures: null);
+
+    internal void ApplyBiomeDecoration(
+        WorldGenLevel level,
+        ChunkAccess chunk,
+        long randomSourceSeed,
+        Action<int, long, WorldgenRandom>? placeStructures)
     {
         ArgumentNullException.ThrowIfNull(level);
         ArgumentNullException.ThrowIfNull(chunk);
@@ -282,6 +290,9 @@ public sealed class NoiseBasedChunkGenerator
         {
             for (int stepIndex = 0; stepIndex < generationSteps; stepIndex++)
             {
+                if (stepIndex < GenerationStep.Decoration.Values.Count)
+                    placeStructures?.Invoke(stepIndex, decorationSeed, random);
+
                 if (stepIndex >= featuresPerStep.Count)
                     continue;
 

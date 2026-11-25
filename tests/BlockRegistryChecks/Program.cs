@@ -362,6 +362,7 @@ internal static class Program
         GenerationChunkHolderChecks.Run();
         ChunkGenerationTaskChecks.Run().GetAwaiter().GetResult();
         ChunkStatusTasksChecks.Run();
+        ChunkFeatureGenerationChecks.Run();
         OverworldWorldChecks.Run();
         StructureStartChecks.Run();
         ChunkStructureAccessChecks.Run();

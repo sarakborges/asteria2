@@ -6,6 +6,7 @@ using Asteria.Util;
 using Asteria.World.Level;
 using Asteria.World.LevelGen.Structure;
 using Asteria.World.LevelGen.Structure.Pieces;
+using Asteria.Util.Random;
 using StructureType = Asteria.World.LevelGen.Structure.Structure;
 
 namespace Asteria.World.LevelGen;
@@ -208,6 +209,185 @@ public static class ChunkStatusTasks
         }
 
         return ValueTask.FromResult(chunk);
+    }
+
+    /// <summary>
+    /// Runs Java 26.3 chunk decoration: referenced structure starts first within each
+    /// decoration step, followed by the ordered placed features for that same step.
+    /// Unported structure pieces fail the task before FEATURES can be promoted.
+    /// </summary>
+    public static ValueTask<ChunkAccess> GenerateFeatures(
+        WorldGenContext context,
+        ChunkStep step,
+        StaticCache2D<ChunkAccess?> chunks,
+        ChunkAccess chunk)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(step);
+        ArgumentNullException.ThrowIfNull(chunks);
+        ArgumentNullException.ThrowIfNull(chunk);
+
+        if (!ReferenceEquals(step.TargetStatus, ChunkStatus.FEATURES))
+        {
+            throw new ArgumentException(
+                $"The feature task cannot execute status {step.TargetStatus}.",
+                nameof(step));
+        }
+
+        ChunkPos centerPosition = chunk.GetPos();
+        if (!chunks.Contains(centerPosition.X, centerPosition.Z) ||
+            !ReferenceEquals(chunks.Get(centerPosition.X, centerPosition.Z), chunk))
+        {
+            throw new InvalidOperationException(
+                $"The FEATURES task cache does not contain its exact center chunk {centerPosition}.");
+        }
+
+        if (chunk is not ProtoChunk protoChunk)
+        {
+            throw new InvalidOperationException(
+                $"FEATURES generation requires a ProtoChunk, received {chunk.GetType().Name}.");
+        }
+
+        if (!protoChunk.GetPersistedStatus().IsOrAfter(ChunkStatus.TERRAIN))
+        {
+            throw new InvalidOperationException(
+                $"The center chunk {centerPosition} has not reached TERRAIN.");
+        }
+
+        IReadOnlyList<StructureType> structures =
+            GetOrderedStructuresForDecoration(context.StructureState);
+        var availableStructures = new HashSet<StructureType>(
+            structures,
+            ReferenceEqualityComparer.Instance);
+        foreach (StructureType referencedStructure in protoChunk.GetAllReferences().Keys)
+        {
+            if (!availableStructures.Contains(referencedStructure))
+            {
+                throw new InvalidOperationException(
+                    $"Chunk {centerPosition} references structure {referencedStructure}, " +
+                    "but it is not present in this dimension's active StructureSets.");
+            }
+        }
+
+        WorldGenRegion region = context.CreateWorldGenRegion(step, protoChunk, chunks);
+        BoundingBox writableArea = new(
+            centerPosition.GetMinBlockX(),
+            protoChunk.GetMinY(),
+            centerPosition.GetMinBlockZ(),
+            centerPosition.GetMaxBlockX(),
+            protoChunk.GetMaxY(),
+            centerPosition.GetMaxBlockZ());
+
+        context.Generator.ApplyBiomeDecoration(
+            region,
+            protoChunk,
+            RandomSupport.GenerateUniqueSeed(),
+            (stepIndex, decorationSeed, random) =>
+                PlaceStructureStartsForDecorationStep(
+                    context,
+                    region,
+                    protoChunk,
+                    structures,
+                    writableArea,
+                    stepIndex,
+                    decorationSeed,
+                    random));
+
+        return ValueTask.FromResult<ChunkAccess>(protoChunk);
+    }
+
+    private static IReadOnlyList<StructureType> GetOrderedStructuresForDecoration(
+        ChunkGeneratorStructureState structureState)
+    {
+        var orderedStructures = new List<StructureType>();
+        var seenStructures = new HashSet<StructureType>(ReferenceEqualityComparer.Instance);
+
+        foreach (Holder<StructureSet> structureSetHolder in
+                 structureState.PossibleStructureSets())
+        {
+            foreach (StructureSet.StructureSelectionEntry entry in
+                     structureSetHolder.Value.Structures)
+            {
+                StructureType structure = entry.Structure.Value;
+                if (seenStructures.Add(structure))
+                    orderedStructures.Add(structure);
+            }
+        }
+
+        return orderedStructures;
+    }
+
+    private static void PlaceStructureStartsForDecorationStep(
+        WorldGenContext context,
+        WorldGenRegion region,
+        ChunkAccess centerChunk,
+        IReadOnlyList<StructureType> orderedStructures,
+        BoundingBox writableArea,
+        int stepIndex,
+        long decorationSeed,
+        WorldgenRandom random)
+    {
+        if (stepIndex >= GenerationStep.Decoration.Values.Count)
+            return;
+
+        GenerationStep.Decoration decorationStep =
+            GenerationStep.Decoration.Values[stepIndex];
+        ChunkPos centerPosition = centerChunk.GetPos();
+        int structureIndex = 0;
+
+        foreach (StructureType structure in orderedStructures)
+        {
+            if (!ReferenceEquals(structure.Step(), decorationStep))
+                continue;
+
+            random.SetFeatureSeed(decorationSeed, structureIndex, stepIndex);
+            structureIndex++;
+
+            ISet<long> references = centerChunk.GetReferencesForStructure(structure);
+            if (references.Count == 0)
+                continue;
+
+            string description =
+                BuiltInRegistries.Structure.GetKey(structure)?.ToString() ??
+                structure.ToString();
+            region.SetCurrentlyGenerating(description);
+
+            foreach (ChunkPos sourcePosition in
+                     ChunkPos.RangeClosed(centerPosition, ChunkStatus.MAX_STRUCTURE_DISTANCE))
+            {
+                if (!references.Contains(sourcePosition.Pack()))
+                    continue;
+
+                ChunkAccess sourceChunk = region.GetChunk(
+                    sourcePosition.X,
+                    sourcePosition.Z,
+                    ChunkStatus.STRUCTURE_STARTS);
+                StructureStart? start = sourceChunk.GetStartForStructure(structure);
+                if (start is null)
+                {
+                    throw new InvalidOperationException(
+                        $"Chunk {centerPosition} has a reference to {structure} at {sourcePosition}, " +
+                        "but the source chunk does not contain its StructureStart.");
+                }
+
+                if (!start.IsValid())
+                    continue;
+
+                if (start.GetChunkPos() != sourcePosition)
+                {
+                    throw new InvalidOperationException(
+                        $"StructureStart for {structure} stored at {sourcePosition} " +
+                        $"reports origin {start.GetChunkPos()}.");
+                }
+
+                start.PlaceInChunk(
+                    region,
+                    context.Generator,
+                    random,
+                    writableArea,
+                    centerPosition);
+            }
+        }
     }
 
     /// <summary>

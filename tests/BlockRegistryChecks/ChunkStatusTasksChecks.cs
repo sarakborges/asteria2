@@ -50,6 +50,13 @@ internal static class ChunkStatusTasksChecks
                 ChunkStatusTasks.GenerateTerrain,
             "The generation TERRAIN step must execute the ported structure-aware terrain task.");
         Require(
+            ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.FEATURES).Task ==
+                ChunkStatusTasks.GenerateFeatures,
+            "The generation FEATURES step must run reference-aware structure placement and biome decoration.");
+        Require(
+            ChunkPyramid.LoadingPyramid.GetStepTo(ChunkStatus.FEATURES).Task is null,
+            "The loading FEATURES step must remain unassigned until persisted feature chunks can be loaded.");
+        Require(
             ChunkPyramid.LoadingPyramid.GetStepTo(ChunkStatus.TERRAIN).Task is null,
             "The loading TERRAIN step must remain unassigned until persisted terrain chunks can be loaded.");
         Require(
@@ -65,7 +72,8 @@ internal static class ChunkStatusTasksChecks
                     step.TargetStatus != ChunkStatus.BIOMES &&
                     step.TargetStatus != ChunkStatus.STRUCTURE_STARTS &&
                     step.TargetStatus != ChunkStatus.STRUCTURE_REFERENCES &&
-                    step.TargetStatus != ChunkStatus.TERRAIN)
+                    step.TargetStatus != ChunkStatus.TERRAIN &&
+                    step.TargetStatus != ChunkStatus.FEATURES)
                 .All(step => step.Task is null),
             "No other generation stage may be marked executable before its task is ported.");
     }
