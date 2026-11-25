@@ -8,6 +8,7 @@ using Asteria.Core;
 using Asteria.World;
 using Asteria.World.LevelGen;
 using Asteria.World.Ticks;
+using Asteria.World.Lighting;
 
 namespace Asteria.World.Level;
 
@@ -24,10 +25,15 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
     private readonly PalettedContainerFactory _containerFactory;
     private readonly Dictionary<ChunkPos, ProtoChunk> _chunks = new();
     private readonly BiomeManager _biomeManager;
+    private readonly LevelLightEngine _lightEngine;
     private long _gameTime;
     private long _nextSubTickOrder;
 
     public long Seed => _generator.Seed;
+
+    public NoiseBasedChunkGenerator Generator => _generator;
+
+    public LevelLightEngine LightEngine => _lightEngine;
 
     public long GetGameTime() => Interlocked.Read(ref _gameTime);
 
@@ -168,6 +174,7 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
                 "World height must be positive.");
 
         _containerFactory = PalettedContainerFactory.CreateBuiltIn();
+        _lightEngine = new LevelLightEngine(this, hasBlockLight: true, hasSkyLight: true);
     }
 
     /// <summary>
