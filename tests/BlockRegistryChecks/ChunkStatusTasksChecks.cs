@@ -7,6 +7,7 @@ using Asteria.Util;
 using Asteria.World;
 using Asteria.World.Level;
 using Asteria.World.LevelGen;
+using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Structure;
 using Asteria.World.LevelGen.Structure.Pieces;
 using Asteria.World.LevelGen.Structure.Placement;
