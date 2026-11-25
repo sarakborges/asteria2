@@ -159,6 +159,50 @@ public abstract class Structure
     }
 
     /// <summary>
+    /// Creates a center-column start only when a valid structure biome can exist there.
+    /// </summary>
+    protected static GenerationStub? OnTopOfChunkCenter(
+        GenerationContext context,
+        Heightmap.Types heightmapType,
+        Action<StructurePiecesBuilder> pieceGenerator)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(heightmapType);
+        ArgumentNullException.ThrowIfNull(pieceGenerator);
+
+        return context.CouldValidBiomeExistOnTopOfChunkCenter()
+            ? OnTopOfChunkCenterWithoutBiomeCheck(context, heightmapType, pieceGenerator)
+            : null;
+    }
+
+    /// <summary>
+    /// Creates a center-column start at the first occupied height without checking biomes.
+    /// The caller is responsible for validating the candidate column beforehand.
+    /// </summary>
+    protected static GenerationStub OnTopOfChunkCenterWithoutBiomeCheck(
+        GenerationContext context,
+        Heightmap.Types heightmapType,
+        Action<StructurePiecesBuilder> pieceGenerator)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(heightmapType);
+        ArgumentNullException.ThrowIfNull(pieceGenerator);
+
+        ChunkPos chunkPosition = context.ChunkPos;
+        int blockX = chunkPosition.GetMiddleBlockX();
+        int blockZ = chunkPosition.GetMiddleBlockZ();
+        int blockY = context.Generator.GetFirstOccupiedHeight(
+            blockX,
+            blockZ,
+            heightmapType,
+            context.HeightAccessor,
+            context.RandomState);
+
+        return new GenerationStub(
+            new BlockPos(blockX, blockY, blockZ),
+            pieceGenerator);
+    }
+    /// <summary>
     /// Position where the structure starts and the deferred/prebuilt piece builder.
     /// A deferred generator creates a fresh builder on every GetPiecesBuilder call;
     /// a prebuilt builder is returned by identity, matching Minecraft Java 26.3.

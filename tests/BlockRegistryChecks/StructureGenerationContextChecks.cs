@@ -17,6 +17,7 @@ internal static class StructureGenerationContextChecks
         CheckTerrainColumnUsesBuildHeightBounds();
         CheckChunkCenterBiomeValidationUsesMiddleColumn();
         CheckFindValidGenerationPointFiltersByBiome();
+        CheckOnTopOfChunkCenterHelpers();
         CheckConstructorRejectsMissingDependencies();
     }
 
@@ -279,6 +280,88 @@ internal static class StructureGenerationContextChecks
             "FindValidGenerationPoint must reject a null context.");
     }
 
+    private static void CheckOnTopOfChunkCenterHelpers()
+    {
+        const long seed = 0x43454E5445525354L;
+        OverworldWorld world = CreateWorld(seed);
+        ChunkPos chunkPosition = new(-1, 2);
+        LevelHeightAccessor heightAccessor = LevelHeightAccessor.Create(-16, 64);
+        int centerX = chunkPosition.GetMiddleBlockX();
+        int centerZ = chunkPosition.GetMiddleBlockZ();
+        var pieceGenerator = new Action<StructurePiecesBuilder>(static _ => { });
+
+        Holder<Biome> plains = Biomes.PLAINS.BuiltInRegistryHolder;
+        Holder<Biome> desert = Biomes.DESERT.BuiltInRegistryHolder;
+        var acceptedResolver = new RecordingBiomeResolver((quartX, quartY, quartZ) =>
+            quartX == -2 && quartZ == 10 && quartY == 0 ? desert : plains);
+        var acceptedContext = new Structure.GenerationContext(
+            world.Generator,
+            acceptedResolver,
+            world.Generator.RandomState,
+            seed,
+            chunkPosition,
+            heightAccessor,
+            biome => ReferenceEquals(biome, desert));
+        var structure = new CenterProbeStructure();
+
+        int expectedY = world.Generator.GetFirstOccupiedHeight(
+            centerX,
+            centerZ,
+            Heightmap.Types.WORLD_SURFACE_WG,
+            heightAccessor,
+            world.Generator.RandomState);
+        Structure.GenerationStub? accepted = structure.BuildOnTopOfChunkCenter(
+            acceptedContext, Heightmap.Types.WORLD_SURFACE_WG, pieceGenerator);
+
+        Require(
+            accepted is not null &&
+            accepted.Position.Equals(new BlockPos(centerX, expectedY, centerZ)) &&
+            acceptedResolver.Queries.SequenceEqual(Enumerable.Range(-5, 6).Select(y => (-2, y, 10))),
+            "OnTopOfChunkCenter must validate the inclusive quart column, then use the generator's first occupied height at the chunk center.");
+
+        var rejectedResolver = new RecordingBiomeResolver((_, _, _) => plains);
+        var rejectedContext = new Structure.GenerationContext(
+            world.Generator,
+            rejectedResolver,
+            world.Generator.RandomState,
+            seed,
+            chunkPosition,
+            heightAccessor,
+            biome => ReferenceEquals(biome, desert));
+        Require(
+            structure.BuildOnTopOfChunkCenter(
+                rejectedContext, Heightmap.Types.WORLD_SURFACE_WG, pieceGenerator) is null &&
+            rejectedResolver.Queries.Count == 17,
+            "OnTopOfChunkCenter must return no stub when the center column contains no valid biome.");
+
+        var uncheckedResolver = new RecordingBiomeResolver((_, _, _) =>
+            throw new InvalidOperationException("Biome lookup must not run in the unchecked helper."));
+        var uncheckedContext = new Structure.GenerationContext(
+            world.Generator,
+            uncheckedResolver,
+            world.Generator.RandomState,
+            seed,
+            chunkPosition,
+            heightAccessor,
+            static _ => false);
+        Structure.GenerationStub uncheckedStub = structure.BuildOnTopOfChunkCenterWithoutBiomeCheck(
+            uncheckedContext, Heightmap.Types.WORLD_SURFACE_WG, pieceGenerator);
+
+        Require(
+            uncheckedStub.Position.Equals(new BlockPos(centerX, expectedY, centerZ)) &&
+            uncheckedResolver.Queries.Count == 0,
+            "The unchecked helper must compute the same center-column height without querying the biome resolver.");
+
+        RequireThrows<ArgumentNullException>(
+            () => structure.BuildOnTopOfChunkCenter(null!, Heightmap.Types.WORLD_SURFACE_WG, pieceGenerator),
+            "OnTopOfChunkCenter must reject a null generation context.");
+        RequireThrows<ArgumentNullException>(
+            () => structure.BuildOnTopOfChunkCenter(acceptedContext, null!, pieceGenerator),
+            "OnTopOfChunkCenter must reject a null heightmap type.");
+        RequireThrows<ArgumentNullException>(
+            () => structure.BuildOnTopOfChunkCenter(acceptedContext, Heightmap.Types.WORLD_SURFACE_WG, null!),
+            "OnTopOfChunkCenter must reject a null piece generator.");
+    }
     private static void CheckConstructorRejectsMissingDependencies()
     {
         OverworldWorld world = CreateWorld(0x4E554C4C434F4E54L);
@@ -368,6 +451,27 @@ internal static class StructureGenerationContextChecks
         }
     }
 
+    private sealed class CenterProbeStructure : Structure
+    {
+        public CenterProbeStructure() : base(StructureSettings.DEFAULT)
+        {
+        }
+
+        public Structure.GenerationStub? BuildOnTopOfChunkCenter(
+            Structure.GenerationContext context,
+            Heightmap.Types heightmapType,
+            Action<StructurePiecesBuilder> pieceGenerator) =>
+            OnTopOfChunkCenter(context, heightmapType, pieceGenerator);
+
+        public Structure.GenerationStub BuildOnTopOfChunkCenterWithoutBiomeCheck(
+            Structure.GenerationContext context,
+            Heightmap.Types heightmapType,
+            Action<StructurePiecesBuilder> pieceGenerator) =>
+            OnTopOfChunkCenterWithoutBiomeCheck(context, heightmapType, pieceGenerator);
+
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context) => null;
+    }
     private static void Require(bool condition, string message)
     {
         if (!condition)
