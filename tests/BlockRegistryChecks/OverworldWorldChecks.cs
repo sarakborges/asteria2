@@ -1,4 +1,5 @@
 using Asteria.Content.Chunks;
+using Asteria.World;
 using Asteria.Content.Chunks.Status;
 using Asteria.Core;
 using Asteria.World.Level;
