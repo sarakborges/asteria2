@@ -7,6 +7,7 @@ using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.World;
 using Asteria.World.LevelGen;
+using Asteria.World.LevelGen.Structure;
 using Asteria.World.Ticks;
 using Asteria.World.Lighting;
 
@@ -32,6 +33,8 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
     public long Seed => _generator.Seed;
 
     public NoiseBasedChunkGenerator Generator => _generator;
+
+    public ChunkGeneratorStructureState StructureState { get; }
 
     public LevelLightEngine LightEngine => _lightEngine;
 
@@ -162,6 +165,9 @@ public sealed class OverworldWorld : BlockGetter, LightChunkGetter, WorldGenLeve
         RegistryBootstrap.Initialize();
 
         _generator = NoiseBasedChunkGenerator.CreateOverworld(seed);
+        StructureState = _generator.CreateStructureState(
+            ChunkPos.Zero,
+            BuiltInRegistries.StructureSet.ListElements());
         _biomeManager = new BiomeManager(
             _generator.CreateUncachedBiomeResolver(),
             BiomeManager.ObfuscateSeed(seed));

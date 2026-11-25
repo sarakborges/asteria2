@@ -15,6 +15,7 @@ internal static class ChunkGeneratorStructureStateChecks
         CheckBiomeFilteringAndPlacementIndex();
         CheckFlatAndNormalStateSeeds();
         CheckExclusionRangeScanOrderAndShortCircuit();
+        CheckOverworldOwnsStructureState();
     }
 
     private static void CheckBiomeFilteringAndPlacementIndex()
@@ -186,6 +187,38 @@ internal static class ChunkGeneratorStructureStateChecks
             "The exclusion scan must stop immediately when the placement accepts a queried chunk.");
     }
 
+    private static void CheckOverworldOwnsStructureState()
+    {
+        const long seed = 0x4F56525753545255L;
+        var world = new OverworldWorld(seed);
+        var context = new WorldGenContext(world, world.Generator, world.LightEngine);
+        ChunkGeneratorStructureState state = world.StructureState;
+        Holder<StructureSet>[] registeredSets = BuiltInRegistries.StructureSet
+            .ListElements()
+            .Cast<Holder<StructureSet>>()
+            .ToArray();
+
+        Require(
+            state.LevelSeed == seed &&
+            state.GetDimensionOrigin() == ChunkPos.Zero &&
+            ReferenceEquals(state.RandomState(), world.Generator.RandomState),
+            "The Overworld must own a structure state initialized from its world seed, dimension origin and generator RandomState.");
+        Require(
+            context.StructureState is not null &&
+            ReferenceEquals(context.StructureState, state),
+            "WorldGenContext must expose the exact structure state owned by its Overworld.");
+        Require(
+            state.PossibleStructureSets().SequenceEqual(registeredSets),
+            "The Overworld structure state must preserve all currently registered StructureSet holders in registry order.");
+
+        RequireThrows<InvalidOperationException>(
+            () => new NoiseBasedChunkGenerator(
+                world.Generator.Settings,
+                world.Generator.RandomState).CreateStructureState(
+                    ChunkPos.Zero,
+                    Array.Empty<Holder<StructureSet>>()),
+            "A generator without the configured Overworld biome source must not create an Overworld structure state.");
+    }
     private static MultiNoiseBiomeSource CreateBiomeSource(
         params Holder<Biome>[] biomes)
     {

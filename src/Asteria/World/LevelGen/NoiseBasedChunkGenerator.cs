@@ -110,6 +110,29 @@ public sealed class NoiseBasedChunkGenerator
     /// Tries the weighted entries of one structure set in vanilla order. A failed or
     /// biome-rejected start is removed from the remaining pool before the next roll.
     /// </summary>
+    /// <summary>
+    /// Creates the seed- and biome-aware structure placement state for one dimension.
+    /// The state snapshots the supplied registry entries in their registration order.
+    /// </summary>
+    public ChunkGeneratorStructureState CreateStructureState(
+        ChunkPos dimensionOrigin,
+        IEnumerable<Holder<StructureSet>> structureSets)
+    {
+        ArgumentNullException.ThrowIfNull(dimensionOrigin);
+        ArgumentNullException.ThrowIfNull(structureSets);
+
+        MultiNoiseBiomeSource biomeSource = _overworldBiomeSource ??
+            throw new InvalidOperationException(
+                "Structure state requires the configured Overworld biome source.");
+
+        return ChunkGeneratorStructureState.CreateForNormal(
+            _randomState,
+            Seed,
+            dimensionOrigin,
+            biomeSource,
+            structureSets);
+    }
+
     public StructureStart? TryGenerateStructure(
         StructureSet structureSet,
         StructureType.GenerationContext context,

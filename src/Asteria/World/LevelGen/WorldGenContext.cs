@@ -3,6 +3,7 @@ using Asteria.Content.Chunks.Status;
 using Asteria.Util;
 using Asteria.World.Level;
 using Asteria.World.Lighting;
+using Asteria.World.LevelGen.Structure;
 
 namespace Asteria.World.LevelGen;
 
@@ -16,6 +17,7 @@ public sealed class WorldGenContext
     public OverworldWorld Level { get; }
     public NoiseBasedChunkGenerator Generator { get; }
     public LevelLightEngine LightEngine { get; }
+    public ChunkGeneratorStructureState StructureState => Level.StructureState;
 
     public WorldGenContext(
         OverworldWorld level,
