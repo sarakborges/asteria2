@@ -31,7 +31,6 @@ internal static class ChunkStatusTasksChecks
 
         Require(
             ChunkPyramid.GenerationPyramid.Steps
-                .Where(step => step.TargetStatus is not null)
                 .Where(step => step.TargetStatus != ChunkStatus.BIOMES)
                 .All(step => step.Task is null),
             "No other generation stage may be marked executable before its task is ported.");
@@ -66,14 +65,13 @@ internal static class ChunkStatusTasksChecks
             ReferenceEquals(result, chunk) &&
             ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.BIOMES),
             "The BIOMES task must return the center proto chunk after populating its BIOMES stage.");
+        int biomeCells = 0;
+        foreach (ChunkSection section in chunk.GetSections())
+            section.GetBiomes().GetAll(_ => biomeCells++);
+
         Require(
-            chunk.GetSections().All(section => section.GetBiomes()
-                .GetAll(_ => { })),
-            "Biome palette inspection must complete for every chunk section.");
-        Require(
-            chunk.GetSections().Any(section => section.GetBiomes()
-                .GetAll(_ => { }) is not null),
-            "The generated chunk must retain its biome containers.");
+            biomeCells > 0,
+            "The generated chunk must contain populated quart biome palette entries.");
     }
 
     private static void CheckBiomeTaskRejectsAnUnrelatedCache()
