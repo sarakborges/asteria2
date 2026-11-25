@@ -56,25 +56,25 @@ public sealed class NbtOps : DynamicOps<Tag>
         ByteTag.ValueOf(value);
 
     public Tag CreateUnsignedByte(byte value) =>
-        ByteTag.ValueOf(unchecked((sbyte)value));
+        CreateNumeric(NumberValue.Of(value));
 
     public Tag CreateShort(short value) =>
         ShortTag.ValueOf(value);
 
     public Tag CreateUnsignedShort(ushort value) =>
-        ShortTag.ValueOf(unchecked((short)value));
+        CreateNumeric(NumberValue.Of(value));
 
     public Tag CreateInt(int value) =>
         IntTag.ValueOf(value);
 
     public Tag CreateUnsignedInt(uint value) =>
-        IntTag.ValueOf(unchecked((int)value));
+        CreateNumeric(NumberValue.Of(value));
 
     public Tag CreateLong(long value) =>
         LongTag.ValueOf(value);
 
     public Tag CreateUnsignedLong(ulong value) =>
-        LongTag.ValueOf(unchecked((long)value));
+        CreateNumeric(NumberValue.Of(value));
 
     public Tag CreateFloat(float value) =>
         FloatTag.ValueOf(value);

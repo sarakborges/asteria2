@@ -62,11 +62,11 @@ internal static class NbtOpsChecks
             "NBT boolean lookup must interpret any non-zero numeric value as true.");
 
         Require(
-            ops.CreateUnsignedByte(255) is ByteTag { Value: -1 } &&
-            ops.CreateUnsignedShort(65535) is ShortTag { Value: -1 } &&
-            ops.CreateUnsignedInt(uint.MaxValue) is IntTag { Value: -1 } &&
-            ops.CreateUnsignedLong(ulong.MaxValue) is LongTag { Value: -1 },
-            "Unsigned numeric helpers must preserve their low bits in NBT signed scalar payloads.");
+            ops.CreateUnsignedByte(255) is DoubleTag { Value: 255.0 } &&
+            ops.CreateUnsignedShort(65535) is DoubleTag { Value: 65535.0 } &&
+            ops.CreateUnsignedInt(uint.MaxValue) is DoubleTag { Value: 4294967295.0 } &&
+            ops.CreateUnsignedLong(ulong.MaxValue) is DoubleTag { Value: 18446744073709551616.0 },
+            "Unsigned numeric helpers without a signed NBT equivalent must follow createNumeric and use a double tag.");
     }
 
     private static void CheckMapOperations()
