@@ -10,6 +10,8 @@ using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Materials;
 using Asteria.World.LevelGen.Materials.Rules;
 using Asteria.World.LevelGen.Placement;
+using Asteria.World.LevelGen.Structure;
+using Asteria.Util.Random;
 
 namespace Asteria.World.LevelGen;
 
@@ -103,6 +105,56 @@ public sealed class NoiseBasedChunkGenerator
         throw new InvalidOperationException(
             "Feature order validation requires the configured Overworld biome source.");
 
+    /// <summary>
+    /// Tries the weighted entries of one structure set in vanilla order. A failed or
+    /// biome-rejected start is removed from the remaining pool before the next roll.
+    /// </summary>
+    public StructureStart? TryGenerateStructure(
+        StructureSet structureSet,
+        Structure.GenerationContext context,
+        int references)
+    {
+        ArgumentNullException.ThrowIfNull(structureSet);
+        ArgumentNullException.ThrowIfNull(context);
+
+        List<StructureSet.StructureSelectionEntry> remaining =
+            structureSet.Structures.ToList();
+        int totalWeight = WeightedRandom.GetTotalWeight(
+            remaining,
+            static entry => entry.Weight);
+
+        var selectionRandom = new WorldgenRandom(new LegacyRandomSource(0L));
+        selectionRandom.SetLargeFeatureSeed(
+            context.Seed,
+            context.ChunkPos.X,
+            context.ChunkPos.Z);
+
+        while (WeightedRandom.TryGetRandomItem(
+                   selectionRandom,
+                   remaining,
+                   totalWeight,
+                   static entry => entry.Weight,
+                   out StructureSet.StructureSelectionEntry? selected) &&
+               selected is not null)
+        {
+            StructureStart start = selected.Structure.Value.Generate(
+                context.CreateFreshRandomContext(),
+                references);
+            if (start.IsValid())
+                return start;
+
+            int selectedIndex = remaining.FindIndex(
+                entry => ReferenceEquals(entry, selected));
+            if (selectedIndex < 0)
+                throw new InvalidOperationException(
+                    "The weighted structure selector returned an entry outside its candidate list.");
+
+            remaining.RemoveAt(selectedIndex);
+            totalWeight = unchecked(totalWeight - selected.Weight);
+        }
+
+        return null;
+    }
     /// <summary>
     /// Creates the uncached biome resolver used by WorldGenRegion. Unlike chunk biome
     /// lookup, this samples the configured climate source at any quart coordinate.

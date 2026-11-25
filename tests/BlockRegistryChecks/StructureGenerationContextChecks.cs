@@ -7,6 +7,8 @@ using Asteria.World.Level;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.Structure;
 using Asteria.World.LevelGen.Structure.Pieces;
+using Asteria.World.LevelGen.Structure.Placement;
+using Asteria.Util.Random;
 
 internal static class StructureGenerationContextChecks
 {
@@ -20,6 +22,7 @@ internal static class StructureGenerationContextChecks
         CheckFindValidGenerationPointFiltersByBiome();
         CheckOnTopOfChunkCenterHelpers();
         CheckStructureStartGenerationFromStub();
+        CheckWeightedStructureSelectionRetriesCandidates();
         CheckStructureHeightSamplingHelpers();
         CheckLowestYIn5By5BoxRotationOffsets();
         CheckConstructorRejectsMissingDependencies();
@@ -445,6 +448,107 @@ internal static class StructureGenerationContextChecks
             () => structure.Generate(null!, references),
             "Generate must reject a null generation context.");
     }
+    private static void CheckWeightedStructureSelectionRetriesCandidates()
+    {
+        const long seed = 0x5354525543545345L;
+        const int references = 7;
+        OverworldWorld world = CreateWorld(seed);
+        ChunkPos chunkPosition = new(-9, 13);
+        var resolver = new RecordingBiomeResolver((_, _, _) =>
+            Biomes.PLAINS.BuiltInRegistryHolder);
+        var context = new Structure.GenerationContext(
+            world.Generator,
+            resolver,
+            world.Generator.RandomState,
+            seed,
+            chunkPosition,
+            LevelHeightAccessor.Create(-16, 64),
+            static _ => true);
+
+        var expectedSelectionRandom = new WorldgenRandom(new LegacyRandomSource(0L));
+        expectedSelectionRandom.SetLargeFeatureSeed(seed, chunkPosition.X, chunkPosition.Z);
+        int firstSelectedIndex = expectedSelectionRandom.NextInt(2);
+
+        int failedCandidateCalls = 0;
+        int successfulCandidateCalls = 0;
+        int builderCalls = 0;
+        int successfulCandidateRandomValue = -1;
+        var failedCandidate = new GenerationCandidateStructure(candidateContext =>
+        {
+            failedCandidateCalls++;
+            _ = candidateContext.Random.NextInt(100_000);
+            return null;
+        });
+        var validCandidate = new GenerationCandidateStructure(candidateContext =>
+        {
+            successfulCandidateCalls++;
+            successfulCandidateRandomValue = candidateContext.Random.NextInt(100_000);
+            return new Structure.GenerationStub(
+                new BlockPos(-140, 24, 216),
+                builder =>
+                {
+                    builderCalls++;
+                    builder.AddPiece(new TestPiece(new BoundingBox(-144, 20, 212, -136, 28, 220)));
+                });
+        });
+
+        Holder<Structure> failedHolder = Holder<Structure>.Direct(failedCandidate);
+        Holder<Structure> validHolder = Holder<Structure>.Direct(validCandidate);
+        var failedEntry = StructureSet.Entry(failedHolder, 1);
+        var validEntry = StructureSet.Entry(validHolder, 1);
+        IReadOnlyList<StructureSet.StructureSelectionEntry> entries = firstSelectedIndex == 0
+            ? new[] { failedEntry, validEntry }
+            : new[] { validEntry, failedEntry };
+        var set = new StructureSet(
+            entries,
+            new RandomSpreadStructurePlacement(16, 4, RandomSpreadType.LINEAR, salt: 37));
+
+        StructureStart? start = world.Generator.TryGenerateStructure(set, context, references);
+        var expectedStructureRandom = new WorldgenRandom(new LegacyRandomSource(0L));
+        expectedStructureRandom.SetLargeFeatureSeed(seed, chunkPosition.X, chunkPosition.Z);
+        int expectedFreshRandomValue = expectedStructureRandom.NextInt(100_000);
+
+        Require(
+            start is not null &&
+            start.IsValid() &&
+            ReferenceEquals(start.GetStructure(), validCandidate) &&
+            start.GetChunkPos() == chunkPosition &&
+            start.GetReferences() == references,
+            "Weighted structure selection must discard the failed candidate and return the valid start from the next roll.");
+        Require(
+            failedCandidateCalls == 1 &&
+            successfulCandidateCalls == 1 &&
+            builderCalls == 1,
+            "Each weighted candidate must be attempted once and the successful deferred builder must run once.");
+        Require(
+            successfulCandidateRandomValue == expectedFreshRandomValue,
+            "Every candidate must receive a fresh large-feature random source even when a prior candidate consumed its random stream.");
+
+        var emptySet = new StructureSet(
+            Array.Empty<StructureSet.StructureSelectionEntry>(),
+            new RandomSpreadStructurePlacement(16, 4, RandomSpreadType.LINEAR, salt: 37));
+        Require(
+            world.Generator.TryGenerateStructure(emptySet, context, references) is null,
+            "A structure set with no entries must not create a start.");
+
+        var allRejectedSet = new StructureSet(
+            new[] {
+                StructureSet.Entry(Holder<Structure>.Direct(failedCandidate), 2),
+                StructureSet.Entry(Holder<Structure>.Direct(new GenerationCandidateStructure(_ => null)), 3)
+            },
+            new RandomSpreadStructurePlacement(16, 4, RandomSpreadType.LINEAR, salt: 37));
+        StructureStart? rejected = world.Generator.TryGenerateStructure(allRejectedSet, context, references);
+        Require(
+            rejected is null && failedCandidateCalls == 2,
+            "When every entry fails, the structure set must return no start after exhausting the weighted candidate pool.");
+
+        RequireThrows<ArgumentNullException>(
+            () => world.Generator.TryGenerateStructure(null!, context, references),
+            "Weighted structure selection must reject a null set.");
+        RequireThrows<ArgumentNullException>(
+            () => world.Generator.TryGenerateStructure(set, null!, references),
+            "Weighted structure selection must reject a null generation context.");
+    }
     private static void CheckStructureHeightSamplingHelpers()
     {
         const long seed = 0x4845494748545354L;
@@ -622,6 +726,19 @@ internal static class StructureGenerationContextChecks
         }
     }
 
+    private sealed class GenerationCandidateStructure(
+        Func<Structure.GenerationContext, Structure.GenerationStub?> findGenerationPoint)
+        : Structure(StructureSettings.DEFAULT)
+    {
+        public int FindCalls { get; private set; }
+
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context)
+        {
+            FindCalls++;
+            return findGenerationPoint(context);
+        }
+    }
     private sealed class ProbeStructure(Structure.GenerationStub? stub)
         : Structure(StructureSettings.DEFAULT)
     {

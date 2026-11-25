@@ -363,6 +363,19 @@ public abstract class Structure
         }
 
         /// <summary>
+        /// Recreates the vanilla generation context for another structure candidate.
+        /// Each candidate receives a fresh large-feature RNG at the same seed and chunk.
+        /// </summary>
+        public GenerationContext CreateFreshRandomContext() =>
+            new(
+                Generator,
+                BiomeResolver,
+                RandomState,
+                Seed,
+                ChunkPos,
+                HeightAccessor,
+                ValidBiome);
+        /// <summary>
         /// Matches Structure.GenerationContext.isValidBiome: sample the stub's block
         /// position at quart resolution, then apply the configured biome predicate.
         /// </summary>
