@@ -8,10 +8,30 @@ internal static class SpreadingStructurePlacementChecks
 {
     public static void Run()
     {
+        CheckStructurePlacementDefaults();
         CheckStructureSetSelectionEntries();
         CheckLocatePositionOffset();
         CheckPlacementCheckOrdering();
         CheckFrequencyReductionAndExclusionZone();
+    }
+
+    private static void CheckStructurePlacementDefaults()
+    {
+        StructurePlacement placement = new DefaultPlacement();
+        ChunkPos chunk = new(-4, 9);
+        BlockPos located = placement.GetLocatePos(chunk);
+
+        Require(
+            placement.ApplyAdditionalChunkRestrictions(12, -7, 987654321L),
+            "The base StructurePlacement restriction must allow a candidate by default.");
+        Require(
+            placement.LocateOffset().Equals(Vec3i.Zero),
+            "The base StructurePlacement locate offset must default to Vec3i.ZERO.");
+        Require(
+            located.GetX() == chunk.GetMinBlockX() &&
+            located.GetY() == 0 &&
+            located.GetZ() == chunk.GetMinBlockZ(),
+            "The default locate position must use the chunk minimum block corner at Y=0.");
     }
 
     private static void CheckStructureSetSelectionEntries()
@@ -147,6 +167,15 @@ internal static class SpreadingStructurePlacementChecks
             !zeroFrequency.IsStructureChunk(zeroFrequencyState, 3, 9) &&
             zeroFrequencyState.ExclusionQueries == 0,
             "A zero frequency must reject the candidate before querying exclusion-zone interactions.");
+    }
+
+    private sealed class DefaultPlacement : StructurePlacement
+    {
+        public bool IsStructureChunk(
+            IStructurePlacementState state,
+            int sourceX,
+            int sourceZ) =>
+            true;
     }
 
     private sealed class TestStructure : Structure
