@@ -13,6 +13,7 @@ internal static class ChunkGenerationTaskChecks
         await CheckWaitAndResume();
         await CheckFailureCancelsAndReleasesClaims();
         CheckMaximumGenerationWindowAndCancellation();
+        CheckTaskExtensionAndStatusCeilingDrop();
     }
 
     private static Task CheckImmediateCenterCompletion()
@@ -147,6 +148,60 @@ internal static class ChunkGenerationTaskChecks
             "Cancellation must release every acquired generation claim and complete each save dependency.");
     }
 
+
+    private static void CheckTaskExtensionAndStatusCeilingDrop()
+    {
+        ChunkPos position = new(29, -41);
+        var map = new TestMap(static (_, _) =>
+            throw new InvalidOperationException("Cancelled tasks must not begin another layer."));
+        TestHolder holder = map.CreateHolder(position);
+
+        Task<ChunkResult<ChunkAccess>> structureStarts =
+            holder.Request(ChunkStatus.STRUCTURE_STARTS, map);
+        ChunkGenerationTask firstTask = map.ScheduledTasks.Single();
+        Require(
+            ReferenceEquals(firstTask.TargetStatus, ChunkStatus.STRUCTURE_STARTS),
+            "The first requested status must be the active task target.");
+
+        Task<ChunkResult<ChunkAccess>> biomes =
+            holder.Request(ChunkStatus.BIOMES, map);
+        ChunkGenerationTask extendedTask = map.ScheduledTasks[1];
+        Require(
+            ReferenceEquals(extendedTask.TargetStatus, ChunkStatus.BIOMES),
+            "A request beyond the active target must replace it with a task for the higher status.");
+        Require(
+            firstTask.RunUntilWait() is null && map.ApplyStepCount == 0,
+            "Extending the task must cancel the previous task before it schedules another layer.");
+
+        holder.UpdateAllowedStatus(ChunkStatus.STRUCTURE_STARTS, map);
+
+        Require(
+            biomes.IsCompleted &&
+            !biomes.GetAwaiter().GetResult().IsSuccess() &&
+            biomes.GetAwaiter().GetResult().GetError() == "Unloaded chunk",
+            "Lowering the allowed status must fail and clear futures above the new ceiling.");
+        Require(
+            !structureStarts.IsCompleted,
+            "Lowering the ceiling must retain a pending future at the newly allowed status.");
+
+        ChunkGenerationTask replacementTask = map.ScheduledTasks[2];
+        Require(
+            ReferenceEquals(replacementTask.TargetStatus, ChunkStatus.STRUCTURE_STARTS),
+            "The holder must reschedule its highest remaining pending status after a ceiling drop.");
+        Require(
+            extendedTask.RunUntilWait() is null,
+            "The task superseded by the ceiling drop must be cancelled and release its claims.");
+
+        replacementTask.MarkForCancellation();
+        Require(
+            replacementTask.RunUntilWait() is null,
+            "The replacement task must release its claims when explicitly cancelled.");
+        Require(
+            map.ReleaseCount == map.AcquisitionOrder.Count &&
+            map.Holders.Values.All(value => value.GetGenerationRefCount() == 0),
+            "All claims from the superseded, extended and replacement tasks must be released exactly once.");
+    }
+
     private static ProtoChunk CreateChunk(ChunkPos position) =>
         new(
             position,
@@ -159,7 +214,9 @@ internal static class ChunkGenerationTaskChecks
 
         public Dictionary<long, TestHolder> Holders { get; } = new();
         public List<ChunkPos> AcquisitionOrder { get; } = new();
+        public List<ChunkGenerationTask> ScheduledTasks { get; } = new();
         public int ReleaseCount { get; private set; }
+        public int ApplyStepCount { get; private set; }
 
         public TestMap(Func<GenerationChunkHolder, ChunkStep, Task<ChunkAccess>> applyStep)
         {
@@ -169,20 +226,33 @@ internal static class ChunkGenerationTaskChecks
         public GenerationChunkHolder AcquireGeneration(long chunkNode)
         {
             ChunkPos position = ChunkPos.Unpack(chunkNode);
-            var holder = new TestHolder(position);
-            holder.AllowThrough(ChunkStatus.FULL);
+            TestHolder holder = CreateHolder(position);
             holder.IncreaseGenerationRefCount();
 
-            Holders.Add(chunkNode, holder);
             AcquisitionOrder.Add(position);
+            return holder;
+        }
+
+        public TestHolder CreateHolder(ChunkPos position)
+        {
+            long key = ChunkPos.Pack(position.X, position.Z);
+            if (Holders.TryGetValue(key, out TestHolder? existing))
+                return existing;
+
+            var holder = new TestHolder(position);
+            holder.AllowThrough(ChunkStatus.FULL);
+            Holders.Add(key, holder);
             return holder;
         }
 
         public Task<ChunkAccess> ApplyStep(
             GenerationChunkHolder chunkHolder,
             ChunkStep step,
-            StaticCache2D<GenerationChunkHolder> cache) =>
-            _applyStep(chunkHolder, step);
+            StaticCache2D<GenerationChunkHolder> cache)
+        {
+            ApplyStepCount++;
+            return _applyStep(chunkHolder, step);
+        }
 
         public void ReleaseGeneration(GenerationChunkHolder chunkHolder)
         {
@@ -192,9 +262,15 @@ internal static class ChunkGenerationTaskChecks
 
         public ChunkGenerationTask ScheduleGenerationTask(
             ChunkStatus targetStatus,
-            ChunkPos position) =>
-            throw new NotSupportedException(
-                "The test map does not implement task dispatch.");
+            ChunkPos position)
+        {
+            ChunkGenerationTask task = ChunkGenerationTask.Create(
+                this,
+                targetStatus,
+                position);
+            ScheduledTasks.Add(task);
+            return task;
+        }
 
         public void RunGenerationTasks()
         {
@@ -212,6 +288,16 @@ internal static class ChunkGenerationTaskChecks
 
         public void AllowThrough(ChunkStatus status) =>
             SetHighestAllowedStatus(status);
+
+        public Task<ChunkResult<ChunkAccess>> Request(
+            ChunkStatus status,
+            GeneratingChunkMap scheduler) =>
+            ScheduleChunkGenerationTask(status, scheduler);
+
+        public void UpdateAllowedStatus(
+            ChunkStatus? status,
+            GeneratingChunkMap scheduler) =>
+            UpdateHighestAllowedStatus(status, scheduler);
 
         public ChunkResult<ChunkAccess> GetOrCreateFutureForTest(ChunkStatus status) =>
             GetOrCreateFuture(status).GetAwaiter().GetResult();
