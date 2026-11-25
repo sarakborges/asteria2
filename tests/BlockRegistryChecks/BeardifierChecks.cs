@@ -303,10 +303,14 @@ internal static class BeardifierChecks
             ReferenceEquals(recoveredRigidStart.GetPieces()[0], rigidPiece),
             "The Beardifier fixture must resolve the referenced source chunk and its exact valid rigid start.");
         Require(
-            rigidPiece.IsRigidForTerrain &&
-            rigidPiece.GetGroundLevelDelta() == 2 &&
+            rigidPiece.IsRigidForTerrain,
+            "The hand-built terrain fixture must default to rigid projection.");
+        Require(
+            rigidPiece.GetGroundLevelDelta() == 2,
+            $"The hand-built terrain fixture must preserve its ground-level delta; actual value: {rigidPiece.GetGroundLevelDelta()}.");
+        Require(
             Math.Abs(recoveredRigidContribution - 1.0F) < 1.0E-6F,
-            "The hand-built test piece must expose its expected rigid projection and ground-level delta.");
+            $"The isolated rigid-piece density must equal 1.0; actual value: {recoveredRigidContribution}, terrain adjustment: {rigidStructure.TerrainAdaptation().GetSerializedName()}.");
         Require(
             Math.Abs(collectedRigidContribution - 1.0F) < 1.0E-6F,
             $"Hand-built rigid pieces must contribute with their ground-level delta; collected density was {collectedRigidContribution}.");
