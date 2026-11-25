@@ -144,7 +144,7 @@ internal static class StructureStartChecks
             ReferenceEquals(westPiece.Generator, world.Generator) &&
             ReferenceEquals(westPiece.Random, random) &&
             ReferenceEquals(westPiece.ChunkBox, westBox) &&
-            ReferenceEquals(westPiece.ChunkPosition, origin) &&
+            westPiece.ChunkPosition.HasValue && westPiece.ChunkPosition.Value.Equals(origin) &&
             westPiece.ReferencePosition!.Equals(origin.GetMiddleBlockPosition(0)),
             "Piece post-processing must receive the exact world services, random source, chunk bounds and vanilla chunk-center reference position.");
 

@@ -1,4 +1,5 @@
 using System.Threading;
+using Asteria.Core;
 using Asteria.World.LevelGen.Structure.Pieces;
 using Asteria.World.LevelGen;
 
