@@ -12,6 +12,7 @@ using Asteria.World.LevelGen.Materials.Rules;
 using Asteria.World.LevelGen.Placement;
 using Asteria.World.LevelGen.Structure;
 using Asteria.Util.Random;
+using StructureType = Asteria.World.LevelGen.Structure.Structure;
 
 namespace Asteria.World.LevelGen;
 
@@ -111,7 +112,7 @@ public sealed class NoiseBasedChunkGenerator
     /// </summary>
     public StructureStart? TryGenerateStructure(
         StructureSet structureSet,
-        Structure.GenerationContext context,
+        StructureType.GenerationContext context,
         int references)
     {
         ArgumentNullException.ThrowIfNull(structureSet);
@@ -155,6 +156,7 @@ public sealed class NoiseBasedChunkGenerator
 
         return null;
     }
+
     /// <summary>
     /// Creates the uncached biome resolver used by WorldGenRegion. Unlike chunk biome
     /// lookup, this samples the configured climate source at any quart coordinate.
