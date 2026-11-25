@@ -358,6 +358,7 @@ internal static class Program
         ChunkResultChecks.Run();
         GenerationChunkHolderChecks.Run();
         ChunkGenerationTaskChecks.Run().GetAwaiter().GetResult();
+        ChunkStatusTasksChecks.Run();
         DataLayerChecks.Run();
         DataLayerStorageMapChecks.Run();
         LightChunkContractChecks.Run();
