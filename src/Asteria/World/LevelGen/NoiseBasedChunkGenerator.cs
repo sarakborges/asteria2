@@ -288,6 +288,77 @@ public sealed class NoiseBasedChunkGenerator
         chunk.SetPersistedStatus(ChunkStatus.BIOMES);
     }
 
+    /// <summary>
+    /// Samples one noise column and returns the first Y above the highest state
+    /// matching the requested vanilla heightmap predicate.
+    /// </summary>
+    public int GetBaseHeight(
+        int blockX,
+        int blockZ,
+        Heightmap.Types heightmapType,
+        LevelHeightAccessor heightAccessor,
+        RandomState randomState)
+    {
+        ArgumentNullException.ThrowIfNull(heightmapType);
+        ArgumentNullException.ThrowIfNull(heightAccessor);
+        ArgumentNullException.ThrowIfNull(randomState);
+
+        NoiseSettings noiseSettings = _settings.NoiseSettings.ClampToHeightAccessor(heightAccessor);
+        if (noiseSettings.Height <= 0)
+            return heightAccessor.GetMinY();
+
+        var volume = new DensityVolume(
+            1,
+            noiseSettings.Height,
+            1,
+            blockX,
+            noiseSettings.MinY,
+            blockZ);
+
+        using var noiseChunk = new NoiseChunk(
+            randomState,
+            beardifier: null,
+            _settings,
+            _globalFluidPicker,
+            IChunkBlender.Empty,
+            volume);
+        using ScopedDensityBuffer densities =
+            noiseChunk.GetSampler(_settings.NoiseRouter.FinalDensity).SampleVolume(volume);
+
+        Func<BlockState, bool> isOpaque = heightmapType.IsOpaque();
+        for (int y = volume.SizeY - 1; y >= 0; y--)
+        {
+            int blockY = volume.BlockY(y);
+            BlockState? selectedState = noiseChunk.Aquifer.ComputeSubstance(
+                blockX,
+                blockY,
+                blockZ,
+                densities.Get(volume.IndexUnchecked(0, y, 0)));
+            BlockState state = selectedState ?? _settings.DefaultBlock;
+            if (isOpaque(state))
+                return unchecked(blockY + 1);
+        }
+
+        return heightAccessor.GetMinY();
+    }
+
+    /// <summary>Equivalent to the vanilla generator's getFirstFreeHeight.</summary>
+    public int GetFirstFreeHeight(
+        int blockX,
+        int blockZ,
+        Heightmap.Types heightmapType,
+        LevelHeightAccessor heightAccessor,
+        RandomState randomState) =>
+        GetBaseHeight(blockX, blockZ, heightmapType, heightAccessor, randomState);
+
+    /// <summary>Returns one below the first free Y, matching getFirstOccupiedHeight.</summary>
+    public int GetFirstOccupiedHeight(
+        int blockX,
+        int blockZ,
+        Heightmap.Types heightmapType,
+        LevelHeightAccessor heightAccessor,
+        RandomState randomState) =>
+        unchecked(GetBaseHeight(blockX, blockZ, heightmapType, heightAccessor, randomState) - 1);
     public static Aquifer.FluidPicker CreateFluidPicker(NoiseGeneratorSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);

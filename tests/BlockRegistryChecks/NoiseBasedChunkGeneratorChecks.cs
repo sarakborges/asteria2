@@ -34,6 +34,7 @@ internal static class NoiseBasedChunkGeneratorChecks
         CheckBuiltInOverworldGeneratorFactory();
         CheckOverworldWorldChunkCache();
         CheckDefaultOverworldBuildHeight();
+        CheckNoiseColumnHeightQueries();
         CheckPreliminarySurfaceCondition();
     }
 
@@ -430,6 +431,44 @@ internal static class NoiseBasedChunkGeneratorChecks
             "The full-height smoke test must retain exactly its one generated chunk.");
     }
 
+    private static void CheckNoiseColumnHeightQueries()
+    {
+        LevelHeightAccessor bounds = LevelHeightAccessor.Create(-16, 48);
+        NoiseGeneratorSettings solidSettings = CreateSettings(new ConstantFunction(0.25f), seaLevel: 0);
+        var solidGenerator = new NoiseBasedChunkGenerator(
+            solidSettings,
+            CreateRandomState(solidSettings));
+
+        int solidBaseHeight = solidGenerator.GetBaseHeight(
+            -17, 33, Heightmap.Types.WORLD_SURFACE_WG, bounds, solidGenerator.RandomState);
+        Require(
+            solidBaseHeight == bounds.GetMaxY() + 1 &&
+            solidGenerator.GetFirstFreeHeight(
+                -17, 33, Heightmap.Types.WORLD_SURFACE_WG, bounds, solidGenerator.RandomState) == solidBaseHeight &&
+            solidGenerator.GetFirstOccupiedHeight(
+                -17, 33, Heightmap.Types.WORLD_SURFACE_WG, bounds, solidGenerator.RandomState) == bounds.GetMaxY(),
+            "A fully solid noise column must report maxY + 1 as first-free and maxY as first-occupied.");
+
+        NoiseGeneratorSettings fluidSettings = CreateSettings(new ConstantFunction(-1.0f), seaLevel: 0);
+        var fluidGenerator = new NoiseBasedChunkGenerator(
+            fluidSettings,
+            CreateRandomState(fluidSettings));
+        int worldSurface = fluidGenerator.GetBaseHeight(
+            -17, 33, Heightmap.Types.WORLD_SURFACE_WG, bounds, fluidGenerator.RandomState);
+        int oceanFloor = fluidGenerator.GetBaseHeight(
+            -17, 33, Heightmap.Types.OCEAN_FLOOR_WG, bounds, fluidGenerator.RandomState);
+        int motionBlocking = fluidGenerator.GetBaseHeight(
+            -17, 33, Heightmap.Types.MOTION_BLOCKING, bounds, fluidGenerator.RandomState);
+        Require(
+            worldSurface == 0 && oceanFloor == bounds.GetMinY() && motionBlocking == 0,
+            "Column height queries must apply each vanilla heightmap predicate to fluid-filled terrain.");
+
+        LevelHeightAccessor disjointBounds = LevelHeightAccessor.Create(64, 16);
+        Require(
+            solidGenerator.GetBaseHeight(
+                -17, 33, Heightmap.Types.WORLD_SURFACE_WG, disjointBounds, solidGenerator.RandomState) == 64,
+            "A noise-height interval with no overlap must return the world's minimum build height without sampling.");
+    }
     private static void CheckPreliminarySurfaceCondition()
     {
         MaterialRule rule = new ConditionRule(
