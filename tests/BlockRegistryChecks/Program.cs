@@ -16,6 +16,7 @@ using Asteria.Content.Storage;
 using Asteria.World.Clocks;
 using Asteria.World.Ticks;
 using Asteria.World.LevelGen;
+using Asteria.World.Level;
 
 internal static class Program
 {
@@ -354,6 +355,7 @@ internal static class Program
         BlockPositionTransformChecks.Run();
         BlockBehaviorChecks.Run();
         ProtoChunkChecks.Run();
+        ChunkResultChecks.Run();
         DataLayerChecks.Run();
         DataLayerStorageMapChecks.Run();
         LightChunkContractChecks.Run();
