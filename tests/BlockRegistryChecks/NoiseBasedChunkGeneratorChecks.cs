@@ -15,6 +15,7 @@ using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.DensityFunctions.Generator;
 using Asteria.World.LevelGen.Materials.Rules;
 using Asteria.World.LevelGen.Materials.Conditions;
+using Asteria.World.LevelGen.Structure;
 
 internal static class NoiseBasedChunkGeneratorChecks
 {
@@ -32,6 +33,7 @@ internal static class NoiseBasedChunkGeneratorChecks
         CheckFrozenOceanExtension();
         CheckMultiNoiseBiomeSourceFillsChunkPalettes();
         CheckBuiltInOverworldGeneratorFactory();
+        CheckOverworldTerrainBuildWithBeardifier();
         CheckOverworldWorldChunkCache();
         CheckDefaultOverworldBuildHeight();
         CheckNoiseColumnHeightQueries();
@@ -241,6 +243,64 @@ internal static class NoiseBasedChunkGeneratorChecks
             "The built-in Overworld generator must populate the complete quart-resolution biome palette for every generated section.");
     }
 
+    private static void CheckOverworldTerrainBuildWithBeardifier()
+    {
+        const long seed = 0x5445525241494E42L;
+        const int minY = -16;
+        const int height = 48;
+        var generator = NoiseBasedChunkGenerator.CreateOverworld(seed);
+        MultiNoiseBiomeSource biomeSource =
+            MultiNoiseBiomeSource.CreateVanillaOverworld(BuiltInRegistries.Biome);
+        ChunkPos position = new(2, -3);
+
+        ProtoChunk convenienceChunk = CreateChunk(position, minY, height);
+        ProtoChunk explicitChunk = CreateChunk(position, minY, height);
+        ProtoChunk baselineChunk = CreateChunk(position, minY, height);
+        generator.CreateBiomes(convenienceChunk);
+        generator.CreateBiomes(explicitChunk);
+        generator.CreateBiomes(baselineChunk);
+
+        BoundingBox rigidBounds = new(6, 0, 6, 10, 4, 10);
+        var beardifier = new Beardifier(
+            new[]
+            {
+                new Beardifier.Rigid(rigidBounds, TerrainAdjustment.BURY, groundLevelDelta: 0)
+            },
+            Array.Empty<Asteria.World.LevelGen.Structure.Pools.JigsawJunction>(),
+            rigidBounds.InflatedBy(6));
+
+        generator.BuildTerrain(convenienceChunk, beardifier);
+        generator.BuildTerrain(
+            explicitChunk,
+            biomeSource,
+            biomeSource.PossibleBiomes,
+            beardifier);
+        generator.BuildTerrain(baselineChunk);
+
+        int changedFromBaseline = 0;
+        for (int y = minY; y < minY + height; y++)
+        for (int z = 0; z < 16; z++)
+        for (int x = 0; x < 16; x++)
+        {
+            BlockState convenienceState = convenienceChunk.GetBlockState(new BlockPos(x, y, z));
+            BlockState explicitState = explicitChunk.GetBlockState(new BlockPos(x, y, z));
+            BlockState baselineState = baselineChunk.GetBlockState(new BlockPos(x, y, z));
+            Require(
+                ReferenceEquals(convenienceState, explicitState),
+                "The structure-aware Overworld overload must produce the same blocks as the explicit biome-source overload with the same Beardifier.");
+            if (!ReferenceEquals(convenienceState, baselineState))
+                changedFromBaseline++;
+        }
+
+        Require(
+            changedFromBaseline > 0,
+            "The supplied Beardifier must affect at least one generated block compared with the unadjusted Overworld terrain path.");
+        Require(
+            ReferenceEquals(convenienceChunk.GetPersistedStatus(), ChunkStatus.TERRAIN) &&
+            ReferenceEquals(explicitChunk.GetPersistedStatus(), ChunkStatus.TERRAIN) &&
+            ReferenceEquals(baselineChunk.GetPersistedStatus(), ChunkStatus.TERRAIN),
+            "All structure-aware and baseline terrain builds must complete the TERRAIN stage.");
+    }
     private static void CheckOverworldWorldChunkCache()
     {
         const long seed = 0x4F5652574F524C44L;

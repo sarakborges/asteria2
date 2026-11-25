@@ -206,6 +206,26 @@ public sealed class NoiseBasedChunkGenerator
         BuildTerrain(chunk, biomeSource);
     }
 
+    /// <summary>
+    /// Builds the configured Overworld terrain using structure density gathered for this chunk.
+    /// </summary>
+    public void BuildTerrain(ProtoChunk chunk, Beardifier beardifier)
+    {
+        ArgumentNullException.ThrowIfNull(chunk);
+        ArgumentNullException.ThrowIfNull(beardifier);
+
+        MultiNoiseBiomeSource biomeSource = _overworldBiomeSource ??
+            throw new InvalidOperationException(
+                "Structure-aware terrain generation requires the configured Overworld biome source.");
+
+        BuildTerrain(
+            chunk,
+            biomeSource,
+            biomeSource.PossibleBiomes,
+            beardifier,
+            blender: null);
+    }
+
     /// <summary>Returns lava below min(-54, sea level), then the configured fluid below sea level.</summary>
     /// <summary>
     /// Runs the placed-feature portion of Minecraft Java 26.3 biome decoration for one
