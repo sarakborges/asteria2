@@ -85,16 +85,6 @@ public abstract class AbstractSpreadingStructurePlacement : StructurePlacement
                    sourceZ);
     }
 
-    public BlockPos GetLocatePos(ChunkPos chunkPos)
-    {
-        BlockPos origin = new(
-            chunkPos.GetMinBlockX(),
-            0,
-            chunkPos.GetMinBlockZ());
-
-        return origin.Offset(_locateOffset);
-    }
-
     protected abstract bool IsPlacementChunk(
         IStructurePlacementState state,
         int sourceX,
