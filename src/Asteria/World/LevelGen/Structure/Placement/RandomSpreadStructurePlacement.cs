@@ -1,5 +1,6 @@
 using Asteria.Core;
 using Asteria.World;
+using Asteria.Serialization;
 
 namespace Asteria.World.LevelGen.Structure.Placement;
 
@@ -9,9 +10,50 @@ namespace Asteria.World.LevelGen.Structure.Placement;
 /// </summary>
 public sealed class RandomSpreadStructurePlacement : AbstractSpreadingStructurePlacement
 {
+    public static MapCodec<RandomSpreadStructurePlacement> MAP_CODEC { get; } =
+        CreateCodec().Validate(static placement =>
+            placement._spacing > placement._separation
+                ? DataResult<RandomSpreadStructurePlacement>.Success(placement)
+                : DataResult<RandomSpreadStructurePlacement>.Error(
+                    "Spacing has to be larger than separation"));
+
+    public static MapCodec<StructurePlacement> PLACEMENT_CODEC { get; } =
+        MAP_CODEC.XMap<StructurePlacement>(
+            static placement => placement,
+            static placement => placement as RandomSpreadStructurePlacement ??
+                throw new InvalidOperationException(
+                    $"Expected {nameof(RandomSpreadStructurePlacement)}, received {placement.GetType().Name}."));
+
     private readonly int _spacing;
     private readonly int _separation;
     private readonly RandomSpreadType _spreadType;
+
+    private static MapCodec<RandomSpreadStructurePlacement> CreateCodec() =>
+        RecordCodecBuilder.MapCodec<RandomSpreadStructurePlacement>(instance =>
+            instance.Group(
+                PlacementCodec.ForGetter<RandomSpreadStructurePlacement>(
+                    static placement => placement.GetPlacementSettings()),
+                Codecs.IntRange(0, 4096)
+                    .FieldOf("spacing")
+                    .ForGetter<RandomSpreadStructurePlacement>(static placement => placement._spacing),
+                Codecs.IntRange(0, 4096)
+                    .FieldOf("separation")
+                    .ForGetter<RandomSpreadStructurePlacement>(static placement => placement._separation),
+                RandomSpreadType.CODEC
+                    .OptionalFieldOf("spread_type", RandomSpreadType.LINEAR)
+                    .ForGetter<RandomSpreadStructurePlacement>(static placement => placement._spreadType))
+            .Apply(
+                instance,
+                static (settings, spacing, separation, spreadType) =>
+                    new RandomSpreadStructurePlacement(
+                        settings.LocateOffset,
+                        settings.FrequencyReductionMethod,
+                        settings.Frequency,
+                        settings.Salt,
+                        settings.ExclusionZone,
+                        spacing,
+                        separation,
+                        spreadType)));
     public RandomSpreadStructurePlacement(
         int spacing,
         int separation,
@@ -50,6 +92,9 @@ public sealed class RandomSpreadStructurePlacement : AbstractSpreadingStructureP
         _spreadType = spreadType ??
             throw new ArgumentNullException(nameof(spreadType));
     }
+
+    public override MapCodec<StructurePlacement> Codec() =>
+        PLACEMENT_CODEC;
 
     public int Spacing() =>
         _spacing;
