@@ -11,6 +11,7 @@ internal static class SpreadingStructurePlacementChecks
         CheckStructurePlacementDefaults();
         CheckStructureSetSelectionEntries();
         CheckLocatePositionOffset();
+        CheckRandomSpreadPlacementSelection();
         CheckPlacementCheckOrdering();
         CheckFrequencyReductionAndExclusionZone();
     }
@@ -83,6 +84,28 @@ internal static class SpreadingStructurePlacementChecks
             located.GetY() == -2 &&
             located.GetZ() == -41,
             "Locate positions must offset the chunk's minimum block corner at Y=0.");
+    }
+
+    private static void CheckRandomSpreadPlacementSelection()
+    {
+        const long seed = 20261124L;
+        var placement = new RandomSpreadStructurePlacement(
+            28,
+            6,
+            RandomSpreadType.TRIANGULAR,
+            10387320);
+        ChunkPos candidate = placement.GetPotentialStructureChunk(seed, -47, 83);
+        var state = new TestState(seed, hasNearbyStructure: false);
+
+        Require(
+            placement.IsStructureChunk(state, candidate.X, candidate.Z),
+            "RandomSpreadStructurePlacement must accept the exact seeded candidate when frequency and exclusion restrictions permit it.");
+        Require(
+            !placement.IsStructureChunk(state, candidate.X + 1, candidate.Z),
+            "RandomSpreadStructurePlacement must reject another chunk in the same spacing cell.");
+        Require(
+            state.ExclusionQueries == 1,
+            "Only the exact candidate may proceed to the final exclusion-zone interaction stage.");
     }
 
     private static void CheckPlacementCheckOrdering()
