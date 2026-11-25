@@ -71,7 +71,7 @@ public sealed record FloatTag(float Value) : NumericTag
         FormatFloating(Value.ToString("R", CultureInfo.InvariantCulture)) + "f";
 
     internal static string FormatFloating(string text) =>
-        text.Contains('.') || text.Contains('E', StringComparison.OrdinalIgnoreCase)
+        text.Contains('.') || text.Contains('E') || text.Contains('e')
             ? text
             : text + ".0";
 }

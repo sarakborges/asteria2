@@ -3,9 +3,14 @@ using System.Text;
 namespace Asteria.Serialization.Nbt;
 
 /// <summary>Modified-UTF string NBT scalar (tag ID 8).</summary>
-public sealed record StringTag(string Value) : PrimitiveTag
+public sealed record StringTag : PrimitiveTag
 {
     private const long SELF_SIZE_IN_BYTES = 36;
+
+    public string Value { get; }
+
+    public StringTag(string value) =>
+        Value = value ?? throw new ArgumentNullException(nameof(value));
 
     public static StringTag EMPTY { get; } = new(string.Empty);
 
@@ -29,10 +34,6 @@ public sealed record StringTag(string Value) : PrimitiveTag
                 }
             });
 
-    public StringTag
-    {
-        ArgumentNullException.ThrowIfNull(Value);
-    }
 
     public static StringTag ValueOf(string value)
     {

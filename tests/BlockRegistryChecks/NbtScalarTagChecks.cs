@@ -131,11 +131,13 @@ internal static class NbtScalarTagChecks
             negativeInfinity.LongValue() == long.MinValue,
             "Floating-to-integral numeric conversions must saturate at the Java target limits.");
 
+        Tag optionalViews = IntTag.ValueOf(-12);
         Require(
-            IntTag.ValueOf(-12).AsNumber() == NumberValue.Of(-12) &&
-            IntTag.ValueOf(-12).AsString() == "-12" &&
-            IntTag.ValueOf(-12).AsInt() == -12,
-            "Numeric tags must expose their boxed number and optional primitive views.");
+            optionalViews.AsNumber() is NumberValue boxedNumber &&
+            boxedNumber.Equals(NumberValue.Of(-12)) &&
+            optionalViews.AsString() == "-12" &&
+            optionalViews.AsInt() == -12,
+            "Numeric tags must expose their boxed number and optional primitive views through Tag.");
     }
 
     private static void CheckNumericBinaryRoundTrips()
