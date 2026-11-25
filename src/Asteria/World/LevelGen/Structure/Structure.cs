@@ -4,6 +4,8 @@ using Asteria.Content.Identifiers;
 using Asteria.Serialization;
 using Asteria.Core;
 using Asteria.World.LevelGen.Structure.Pieces;
+using Asteria.World;
+using Asteria.World.LevelGen;
 
 namespace Asteria.World.LevelGen.Structure;
 
@@ -144,6 +146,104 @@ public abstract class Structure
     /// A deferred generator creates a fresh builder on every GetPiecesBuilder call;
     /// a prebuilt builder is returned by identity, matching Minecraft Java 26.3.
     /// </summary>
+    /// <summary>
+    /// Seeded biome-validation context for one structure generation attempt.
+    /// Template management and registry access are omitted until their runtime services
+    /// are ported; the available biome and chunk-height checks retain the 26.3 coordinates.
+    /// </summary>
+    public sealed class GenerationContext
+    {
+        public NoiseBasedChunkGenerator Generator { get; }
+        public BiomeResolver BiomeResolver { get; }
+        public RandomState RandomState { get; }
+        public WorldgenRandom Random { get; }
+        public long Seed { get; }
+        public ChunkPos ChunkPos { get; }
+        public LevelHeightAccessor HeightAccessor { get; }
+        public Predicate<Holder<Biome>> ValidBiome { get; }
+
+        public GenerationContext(
+            NoiseBasedChunkGenerator generator,
+            BiomeResolver biomeResolver,
+            RandomState randomState,
+            long seed,
+            ChunkPos chunkPos,
+            LevelHeightAccessor heightAccessor,
+            Predicate<Holder<Biome>> validBiome)
+        {
+            Generator = generator ?? throw new ArgumentNullException(nameof(generator));
+            BiomeResolver = biomeResolver ?? throw new ArgumentNullException(nameof(biomeResolver));
+            RandomState = randomState ?? throw new ArgumentNullException(nameof(randomState));
+            ChunkPos = chunkPos ?? throw new ArgumentNullException(nameof(chunkPos));
+            HeightAccessor = heightAccessor ?? throw new ArgumentNullException(nameof(heightAccessor));
+            ValidBiome = validBiome ?? throw new ArgumentNullException(nameof(validBiome));
+            Seed = seed;
+            Random = MakeRandom(seed, chunkPos);
+        }
+
+        /// <summary>
+        /// Matches Structure.GenerationContext.isValidBiome: sample the stub's block
+        /// position at quart resolution, then apply the configured biome predicate.
+        /// </summary>
+        public bool IsValidBiome(GenerationStub stub)
+        {
+            ArgumentNullException.ThrowIfNull(stub);
+            BlockPos position = stub.Position;
+            Holder<Biome> biome = BiomeResolver.GetNoiseBiome(
+                QuartPos.FromBlock(position.GetX()),
+                QuartPos.FromBlock(position.GetY()),
+                QuartPos.FromBlock(position.GetZ()));
+            return ValidBiome(biome);
+        }
+
+        /// <summary>
+        /// Tests every quart-Y coordinate in the inclusive block-height interval,
+        /// using the source's block-to-quart truncation and preserving the first match.
+        /// </summary>
+        public bool CouldStructureExistInColumn(
+            int blockX,
+            int blockZ,
+            int minBlockY,
+            int maxBlockY)
+        {
+            int quartX = QuartPos.FromBlock(blockX);
+            int quartZ = QuartPos.FromBlock(blockZ);
+            int minQuartY = QuartPos.FromBlock(minBlockY);
+            int maxQuartY = QuartPos.FromBlock(maxBlockY);
+
+            for (int quartY = minQuartY; quartY <= maxQuartY; quartY++)
+            {
+                Holder<Biome> biome =
+                    BiomeResolver.GetNoiseBiome(quartX, quartY, quartZ);
+                if (ValidBiome(biome))
+                    return true;
+
+                if (quartY == int.MaxValue)
+                    break;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Tests the entire terrain column from one block below the build minimum
+        /// through the inclusive maximum build height.
+        /// </summary>
+        public bool CouldValidBiomeExistInTerrainColumn(int blockX, int blockZ) =>
+            CouldStructureExistInColumn(
+                blockX,
+                blockZ,
+                unchecked(HeightAccessor.GetMinY() - 1),
+                HeightAccessor.GetMaxY());
+
+        private static WorldgenRandom MakeRandom(long seed, ChunkPos chunkPos)
+        {
+            var random = new WorldgenRandom(new LegacyRandomSource(0L));
+            random.SetLargeFeatureSeed(seed, chunkPos.X, chunkPos.Z);
+            return random;
+        }
+    }
+
     public sealed class GenerationStub
     {
         private readonly Action<StructurePiecesBuilder>? _pieceGenerator;
