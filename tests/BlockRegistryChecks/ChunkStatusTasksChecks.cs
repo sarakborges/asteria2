@@ -1,6 +1,7 @@
 using Asteria.Content.Chunks;
 using Asteria.Content.Chunks.Status;
 using Asteria.Content.Biomes;
+using Asteria.Core;
 using Asteria.Content.Registries;
 using Asteria.Util;
 using Asteria.World;
@@ -43,7 +44,9 @@ internal static class ChunkStatusTasksChecks
             "The loading STRUCTURE_STARTS step must remain unassigned until persisted structure starts can be loaded.");
         Require(
             ChunkPyramid.GenerationPyramid.Steps
-                .Where(step => step.TargetStatus is not ChunkStatus.BIOMES and not ChunkStatus.STRUCTURE_STARTS)
+                .Where(step =>
+                    step.TargetStatus != ChunkStatus.BIOMES &&
+                    step.TargetStatus != ChunkStatus.STRUCTURE_STARTS)
                 .All(step => step.Task is null),
             "No other generation stage may be marked executable before its task is ported.");
     }
@@ -111,7 +114,7 @@ internal static class ChunkStatusTasksChecks
 
     private static void CheckStructureStartsTaskGeneratesAndStoresStart()
     {
-        const long seed = 0x535441525453544BUL;
+        const long seed = 0x535441525453544BL;
         var world = new OverworldWorld(seed, LevelHeightAccessor.Create(-16, 64));
         ChunkPos position = new(-6, 9);
         HolderSet<Biome> allBiomes = HolderSet<Biome>.Direct(
