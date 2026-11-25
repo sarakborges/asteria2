@@ -142,7 +142,7 @@ internal static class NbtArrayTagChecks
             "BYTE[] variable-size skipping must consume each length-prefixed payload.");
 
         using var intStream = new MemoryStream(Convert.FromHexString(
-            "00000002010203040000000500000001"));
+            "0000000201020304000000050000000100000001"));
         using var intInput = new NbtDataInput(intStream, leaveOpen: true);
         IntArrayTag.TYPE.Skip(intInput, 2, new NbtAccounter(0));
         Require(intStream.Position == intStream.Length,
