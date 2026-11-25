@@ -1,5 +1,11 @@
+using Asteria.Content.Chunks;
 using Asteria.Content.Chunks.Status;
+using Asteria.Content.Registries;
 using Asteria.Core;
+using Asteria.Util;
+using Asteria.World;
+using Asteria.World.Level;
+using Asteria.World.LevelGen;
 
 internal static class ChunkPyramidChecks
 {
@@ -8,6 +14,7 @@ internal static class ChunkPyramidChecks
         CheckGenerationPyramid();
         CheckLoadingPyramid();
         CheckBuilderValidation();
+        CheckChunkStepExecution();
         CheckMaximumChunkCoordinate();
     }
 
@@ -144,6 +151,140 @@ internal static class ChunkPyramidChecks
         RequireThrows<ArgumentNullException>(
             () => ChunkPyramid.GenerationPyramid.GetStepTo(null!),
             "A null status cannot select a chunk pyramid step.");
+    }
+
+    private static void CheckChunkStepExecution()
+    {
+        const long seed = 0x4348554E4B535445L;
+        var world = new OverworldWorld(
+            seed,
+            LevelHeightAccessor.Create(-16, 48));
+        var context = new WorldGenContext(
+            world,
+            world.Generator,
+            world.LightEngine);
+        var chunk = new ProtoChunk(
+            ChunkPos.Zero,
+            LevelHeightAccessor.Create(-16, 48),
+            PalettedContainerFactory.CreateBuiltIn());
+        StaticCache2D<ChunkAccess?> cache = StaticCache2D<ChunkAccess?>.Create(
+            centerX: 0,
+            centerZ: 0,
+            range: 0,
+            (_, _) => chunk);
+
+        int invocationCount = 0;
+        var builder = new ChunkStep.Builder(
+            ChunkStatus.STRUCTURE_STARTS,
+            ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.EMPTY));
+        builder.SetTask((taskContext, step, availableChunks, centerChunk) =>
+        {
+            invocationCount++;
+            Require(
+                ReferenceEquals(taskContext, context) &&
+                ReferenceEquals(availableChunks, cache) &&
+                ReferenceEquals(centerChunk, chunk),
+                "ChunkStep.Apply must pass the exact world-generation context and resolved dependency snapshot to its task.");
+
+            WorldGenRegion region = taskContext.CreateWorldGenRegion(
+                step,
+                centerChunk,
+                availableChunks);
+            Require(
+                ReferenceEquals(region.GetChunk(0, 0), centerChunk),
+                "WorldGenContext must build the task region from the supplied center chunk.");
+
+            return ValueTask.FromResult(centerChunk);
+        });
+
+        ChunkStep step = builder.Build();
+        ChunkAccess generated = step.Apply(context, cache, chunk)
+            .AsTask()
+            .GetAwaiter()
+            .GetResult();
+
+        Require(
+            invocationCount == 1 &&
+            ReferenceEquals(generated, chunk) &&
+            ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.STRUCTURE_STARTS),
+            "ChunkStep.Apply must promote a returned ProtoChunk to the target status after its task succeeds.");
+
+        _ = step.Apply(context, cache, chunk)
+            .AsTask()
+            .GetAwaiter()
+            .GetResult();
+        Require(
+            invocationCount == 2 &&
+            ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.STRUCTURE_STARTS),
+            "A step task must still execute for a chunk already at its target status without changing that status.");
+
+        var failedChunk = new ProtoChunk(
+            ChunkPos.Zero,
+            LevelHeightAccessor.Create(-16, 48),
+            PalettedContainerFactory.CreateBuiltIn());
+        failedChunk.SetPersistedStatus(ChunkStatus.STRUCTURE_STARTS);
+        StaticCache2D<ChunkAccess?> failedCache = StaticCache2D<ChunkAccess?>.Create(
+            centerX: 0,
+            centerZ: 0,
+            range: 0,
+            (_, _) => failedChunk);
+        var failingBuilder = new ChunkStep.Builder(
+            ChunkStatus.STRUCTURE_REFERENCES,
+            ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.STRUCTURE_STARTS));
+        failingBuilder.SetTask(static (_, _, _, _) =>
+            ValueTask.FromException<ChunkAccess>(
+                new InvalidOperationException("chunk-step-fixture-failure")));
+        ChunkStep failingStep = failingBuilder.Build();
+
+        bool taskFailureObserved = false;
+        try
+        {
+            _ = failingStep.Apply(context, failedCache, failedChunk)
+                .AsTask()
+                .GetAwaiter()
+                .GetResult();
+        }
+        catch (InvalidOperationException exception)
+        {
+            taskFailureObserved = exception.Message == "chunk-step-fixture-failure";
+        }
+
+        Require(
+            taskFailureObserved &&
+            ReferenceEquals(failedChunk.GetPersistedStatus(), ChunkStatus.STRUCTURE_STARTS),
+            "A failed ChunkStep task must preserve the original persisted status and propagate the task failure.");
+
+        var unassignedChunk = new ProtoChunk(
+            ChunkPos.Zero,
+            LevelHeightAccessor.Create(-16, 48),
+            PalettedContainerFactory.CreateBuiltIn());
+        StaticCache2D<ChunkAccess?> unassignedCache = StaticCache2D<ChunkAccess?>.Create(
+            centerX: 0,
+            centerZ: 0,
+            range: 0,
+            (_, _) => unassignedChunk);
+
+        bool unassignedTaskRejected = false;
+        try
+        {
+            _ = ChunkPyramid.GenerationPyramid
+                .GetStepTo(ChunkStatus.STRUCTURE_STARTS)
+                .Apply(context, unassignedCache, unassignedChunk)
+                .AsTask()
+                .GetAwaiter()
+                .GetResult();
+        }
+        catch (InvalidOperationException exception)
+        {
+            unassignedTaskRejected = exception.Message.Contains(
+                "No chunk-generation task is registered",
+                StringComparison.Ordinal);
+        }
+
+        Require(
+            unassignedTaskRejected &&
+            ReferenceEquals(unassignedChunk.GetPersistedStatus(), ChunkStatus.EMPTY),
+            "A pyramid step without a ported task must fail closed instead of falsely promoting a chunk.");
     }
 
     private static void CheckMaximumChunkCoordinate()
