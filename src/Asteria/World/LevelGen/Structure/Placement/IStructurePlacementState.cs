@@ -1,4 +1,5 @@
 using Asteria.Content.Registries;
+using Asteria.World;
 
 namespace Asteria.World.LevelGen.Structure.Placement;
 
