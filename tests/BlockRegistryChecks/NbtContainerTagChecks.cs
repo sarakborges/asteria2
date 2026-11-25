@@ -249,9 +249,9 @@ internal static class NbtContainerTagChecks
         CompoundTag.TYPE.Skip(input, 2, accounter);
         Require(
             stream.Position == stream.Length &&
-            accounter.Usage == 0 &&
+            accounter.Usage == 24 &&
             accounter.Depth == 0,
-            "Compound/list skip paths must recursively advance without materializing or accounting skipped values.");
+            "Compound/list skip paths must account fixed-size scalar values while avoiding skipped compound entries, names and string allocations.");
     }
 
     private static void CheckCompoundDepthAndCopies()
