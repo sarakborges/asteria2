@@ -6,8 +6,9 @@ namespace Asteria.Content.Chunks.Status;
 
 /// <summary>
 /// Describes one chunk-generation stage's direct and accumulated neighbor requirements.
-/// Mirrors the metadata and dependency builder of Minecraft Java 26.3 ChunkStep.
-/// Task execution is kept separate until the local world-generation context and holder scheduler exist.
+/// Mirrors Minecraft Java 26.3 ChunkStep. A task is optional only while the
+/// corresponding local pipeline stage has not yet been ported; applying such a
+/// step fails explicitly rather than silently advancing its status.
 /// </summary>
 public sealed class ChunkStep
 {
