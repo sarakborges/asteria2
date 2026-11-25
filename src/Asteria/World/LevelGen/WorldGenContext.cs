@@ -17,16 +17,18 @@ public sealed class WorldGenContext
     public OverworldWorld Level { get; }
     public NoiseBasedChunkGenerator Generator { get; }
     public LevelLightEngine LightEngine { get; }
-    public ChunkGeneratorStructureState StructureState => Level.StructureState;
+    public ChunkGeneratorStructureState StructureState { get; }
 
     public WorldGenContext(
         OverworldWorld level,
         NoiseBasedChunkGenerator generator,
-        LevelLightEngine lightEngine)
+        LevelLightEngine lightEngine,
+        ChunkGeneratorStructureState? structureState = null)
     {
         Level = level ?? throw new ArgumentNullException(nameof(level));
         Generator = generator ?? throw new ArgumentNullException(nameof(generator));
         LightEngine = lightEngine ?? throw new ArgumentNullException(nameof(lightEngine));
+        StructureState = structureState ?? Level.StructureState;
     }
 
     /// <summary>

@@ -13,7 +13,9 @@ public sealed class ChunkPyramid
     public static readonly ChunkPyramid GenerationPyramid =
         new Builder()
             .Step(ChunkStatus.EMPTY, static builder => builder)
-            .Step(ChunkStatus.STRUCTURE_STARTS, static builder => builder)
+            .Step(
+                ChunkStatus.STRUCTURE_STARTS,
+                static builder => builder.SetTask(ChunkStatusTasks.GenerateStructureStarts))
             .Step(
                 ChunkStatus.STRUCTURE_REFERENCES,
                 static builder => builder.AddRequirement(ChunkStatus.STRUCTURE_STARTS, 8))

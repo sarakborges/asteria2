@@ -1,10 +1,14 @@
 using Asteria.Content.Chunks;
 using Asteria.Content.Chunks.Status;
+using Asteria.Content.Biomes;
 using Asteria.Content.Registries;
 using Asteria.Util;
 using Asteria.World;
 using Asteria.World.Level;
 using Asteria.World.LevelGen;
+using Asteria.World.LevelGen.Structure;
+using Asteria.World.LevelGen.Structure.Pieces;
+using Asteria.World.LevelGen.Structure.Placement;
 
 internal static class ChunkStatusTasksChecks
 {
@@ -13,6 +17,7 @@ internal static class ChunkStatusTasksChecks
         CheckBiomeTaskIsOnlyWiredForGeneration();
         CheckBiomeTaskPopulatesTheCenterChunk();
         CheckBiomeTaskRejectsAnUnrelatedCache();
+        CheckStructureStartsTaskGeneratesAndStoresStart();
     }
 
     private static void CheckBiomeTaskIsOnlyWiredForGeneration()
@@ -30,8 +35,15 @@ internal static class ChunkStatusTasksChecks
             "The loading BIOMES step must remain unassigned until its persisted-chunk loading task is ported.");
 
         Require(
+            ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.STRUCTURE_STARTS).Task ==
+                ChunkStatusTasks.GenerateStructureStarts,
+            "The generation STRUCTURE_STARTS step must execute the ported structure-start task.");
+        Require(
+            ChunkPyramid.LoadingPyramid.GetStepTo(ChunkStatus.STRUCTURE_STARTS).Task is null,
+            "The loading STRUCTURE_STARTS step must remain unassigned until persisted structure starts can be loaded.");
+        Require(
             ChunkPyramid.GenerationPyramid.Steps
-                .Where(step => step.TargetStatus != ChunkStatus.BIOMES)
+                .Where(step => step.TargetStatus is not ChunkStatus.BIOMES and not ChunkStatus.STRUCTURE_STARTS)
                 .All(step => step.Task is null),
             "No other generation stage may be marked executable before its task is ported.");
     }
@@ -97,6 +109,86 @@ internal static class ChunkStatusTasksChecks
             "The biome task must reject a cache that does not contain the exact center chunk.");
     }
 
+    private static void CheckStructureStartsTaskGeneratesAndStoresStart()
+    {
+        const long seed = 0x535441525453544BUL;
+        var world = new OverworldWorld(seed, LevelHeightAccessor.Create(-16, 64));
+        ChunkPos position = new(-6, 9);
+        HolderSet<Biome> allBiomes = HolderSet<Biome>.Direct(
+            BuiltInRegistries.Biome.ListElements().Cast<Holder<Biome>>());
+        var structure = new StartProbeStructure(allBiomes);
+        var placement = new AlwaysStructurePlacement();
+        var structureSet = new StructureSet(
+            Holder<Structure>.Direct(structure),
+            placement);
+        Holder<StructureSet> structureSetHolder = Holder<StructureSet>.Direct(structureSet);
+        ChunkGeneratorStructureState structureState = world.Generator.CreateStructureState(
+            ChunkPos.Zero,
+            new[] { structureSetHolder });
+        var context = new WorldGenContext(
+            world,
+            world.Generator,
+            world.LightEngine,
+            structureState);
+        var chunk = CreateChunk(world, position);
+        StaticCache2D<ChunkAccess?> cache = StaticCache2D<ChunkAccess?>.Create(
+            position.X,
+            position.Z,
+            0,
+            (_, _) => chunk);
+
+        ChunkAccess result = ChunkPyramid.GenerationPyramid
+            .GetStepTo(ChunkStatus.STRUCTURE_STARTS)
+            .Apply(context, cache, chunk)
+            .AsTask()
+            .GetAwaiter()
+            .GetResult();
+        StructureStart? storedStart = chunk.GetStartForStructure(structure);
+
+        Require(
+            ReferenceEquals(result, chunk) &&
+            ReferenceEquals(chunk.GetPersistedStatus(), ChunkStatus.STRUCTURE_STARTS),
+            "The STRUCTURE_STARTS task must return and promote its center ProtoChunk.");
+        Require(
+            placement.QueryCount == 1 &&
+            structure.GenerationCallCount == 1 &&
+            storedStart is not null &&
+            storedStart.IsValid() &&
+            ReferenceEquals(storedStart.GetStructure(), structure) &&
+            storedStart.GetChunkPos() == position &&
+            storedStart.GetReferences() == 0 &&
+            storedStart.GetPieces().Count == 1,
+            "The task must evaluate the set placement, generate one valid structure start and store its pieces under the structure key.");
+
+        var emptyWorld = new OverworldWorld(seed + 1, LevelHeightAccessor.Create(-16, 64));
+        var emptyContext = new WorldGenContext(
+            emptyWorld, emptyWorld.Generator, emptyWorld.LightEngine);
+        var emptyChunk = CreateChunk(emptyWorld, position);
+        StaticCache2D<ChunkAccess?> emptyCache = StaticCache2D<ChunkAccess?>.Create(
+            position.X, position.Z, 0, (_, _) => emptyChunk);
+        ChunkAccess emptyResult = ChunkPyramid.GenerationPyramid
+            .GetStepTo(ChunkStatus.STRUCTURE_STARTS)
+            .Apply(emptyContext, emptyCache, emptyChunk)
+            .AsTask()
+            .GetAwaiter()
+            .GetResult();
+        Require(
+            ReferenceEquals(emptyResult, emptyChunk) &&
+            ReferenceEquals(emptyChunk.GetPersistedStatus(), ChunkStatus.STRUCTURE_STARTS) &&
+            emptyChunk.GetAllStarts().Count == 0,
+            "An Overworld with no registered StructureSets must complete the stage without fabricating structure starts.");
+
+        var unrelated = CreateChunk(world, ChunkPos.Zero);
+        StaticCache2D<ChunkAccess?> unrelatedCache = StaticCache2D<ChunkAccess?>.Create(
+            0, 0, 0, (_, _) => unrelated);
+        RequireThrows<InvalidOperationException>(
+            () => ChunkStatusTasks.GenerateStructureStarts(
+                context,
+                ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.STRUCTURE_STARTS),
+                unrelatedCache,
+                chunk),
+            "The structure-start task must reject a cache that does not contain its exact center chunk.");
+    }
     private static ProtoChunk CreateChunk(OverworldWorld world, ChunkPos position) =>
         new(
             position,
@@ -105,6 +197,44 @@ internal static class ChunkStatusTasksChecks
                 world.Generator.GetGenDepth()),
             PalettedContainerFactory.CreateBuiltIn());
 
+    private sealed class StartProbeStructure : Structure
+    {
+        public int GenerationCallCount { get; private set; }
+
+        public StartProbeStructure(HolderSet<Biome> biomes)
+            : base(new StructureSettings(biomes))
+        {
+        }
+
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context)
+        {
+            GenerationCallCount++;
+            int x = context.ChunkPos.GetMiddleBlockX();
+            int z = context.ChunkPos.GetMiddleBlockZ();
+            return new Structure.GenerationStub(
+                new BlockPos(x, 0, z),
+                builder => builder.AddPiece(new TestPiece(
+                    new BoundingBox(x - 2, -2, z - 2, x + 2, 2, z + 2))));
+        }
+    }
+
+    private sealed class TestPiece(BoundingBox boundingBox)
+        : StructurePiece(0, boundingBox);
+
+    private sealed class AlwaysStructurePlacement : StructurePlacement
+    {
+        public int QueryCount { get; private set; }
+
+        public bool IsStructureChunk(
+            IStructurePlacementState state,
+            int sourceX,
+            int sourceZ)
+        {
+            QueryCount++;
+            return true;
+        }
+    }
     private static void Require(bool condition, string message)
     {
         if (!condition)
