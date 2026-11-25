@@ -1746,3 +1746,12 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Validação GitHub Actions: CI #1721 (`45643554147`) aprovado com `BlockRegistryChecks` e build Godot.
 - Ciclo de estruturas agora executável na pirâmide de geração: `STRUCTURE_STARTS` seleciona os sets, valida o placement, escolhe a entrada ponderada, filtra o stub pelo conjunto de biomas da estrutura e salva o start; `STRUCTURE_REFERENCES` indexa as chunks de origem que cruzam cada chunk de destino. Não há estruturas vanilla concretas nos registries padrão ainda; os testes usam estruturas de fixture.
 - Referência de paridade: Minecraft Java 26.3 `ChunkStatusTasks.generateStructureReferences`, `ChunkGenerator.createReferences` e `ChunkAccess.addReferenceForStructure`. O scan vanilla é de raio 8 e registra as 289 possíveis chunks de origem cujos starts intersectam a coluna 16×16 de destino. <Cite ref="turn717161view0"/> <Cite ref="turn584555search5"/>
+
+## Retificação — Beardifier explícito no grafo vanilla de final_density (25/11/2026)
+
+- A mudança de 26.3 remove a injeção implícita do Beardifier pelo motor, mas não remove sua contribuição do Overworld vanilla: os dados `overworld/final_density` e `overworld_amplified/final_density` definem `add(min(post_processed, noodle), beardifier)` explicitamente.
+- O bootstrap anterior reproduzia apenas `min(post_processed, noodle)`. Isso estava incompleto para os dados vanilla, apesar de a remoção da soma automática estar correta.
+- `BuiltInDensityFunctions.RegisterTerrainNoises` agora acrescenta `SimpleDensityFunction.BEARDIFIER` como operando direito do ADD final para os perfis normal, large-biomes e amplified. O restante da expressão — blend, escala 0.64, interpolação 4×8, squeeze e limite pelo noodle — foi preservado.
+- `BuiltInDensityFunctionChecks` valida a forma completa do nó `ADD(MIN(...), BEARDIFIER)` nos três perfis. Em conjunto, `NoiseChunk` injeta a instância coletada no contexto e `ChunkStatusTasks.GenerateTerrain` cria o Beardifier a partir das referências de estruturas.
+- Commit de código: `c60ac2ce9e014504c4f16bcf96d2a97431ab6244`. GitHub Actions `45657268351`: `BlockRegistryChecks` e build Godot concluídos com sucesso.
+- Referências dos dados 26.3: [Overworld final_density](https://mcasset.cloud/26.3/data/minecraft/worldgen/density_function/overworld/final_density.json) e [amplified final_density](https://mcasset.cloud/26.3/data/minecraft/worldgen/density_function/overworld_amplified/final_density.json).
