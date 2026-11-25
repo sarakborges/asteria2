@@ -1,4 +1,5 @@
 using Asteria.Content.Registries;
+using Asteria.Serialization;
 using Asteria.World.LevelGen.Structure.Placement;
 
 namespace Asteria.World.LevelGen.Structure;
@@ -12,6 +13,25 @@ public sealed record StructureSet(
     IReadOnlyList<StructureSet.StructureSelectionEntry> Structures,
     StructurePlacement Placement)
 {
+    public static Codec<StructureSet> DIRECT_CODEC { get; } =
+        RecordCodecBuilder.Create<StructureSet>(instance =>
+            instance.Group(
+                StructureSelectionEntry.CODEC.ListOf()
+                    .FieldOf("structures")
+                    .ForGetter<StructureSet>(static set => set.Structures),
+                StructurePlacementCodecs.CODEC
+                    .FieldOf("placement")
+                    .ForGetter<StructureSet>(static set => set.Placement))
+            .Apply(
+                instance,
+                static (structures, placement) =>
+                    new StructureSet(structures, placement)));
+
+    public static Codec<Holder<StructureSet>> CODEC { get; } =
+        RegistryCodecs.Holder<StructureSet>(
+            BuiltInRegistries.StructureSet.Key,
+            DIRECT_CODEC);
+
     public StructureSet(
         Holder<Structure> singleEntry,
         StructurePlacement placement)
@@ -29,5 +49,20 @@ public sealed record StructureSet(
 
     public sealed record StructureSelectionEntry(
         Holder<Structure> Structure,
-        int Weight);
+        int Weight)
+    {
+        public static Codec<StructureSelectionEntry> CODEC { get; } =
+            RecordCodecBuilder.Create<StructureSelectionEntry>(instance =>
+                instance.Group(
+                    Structure.CODEC
+                        .FieldOf("structure")
+                        .ForGetter<StructureSelectionEntry>(static entry => entry.Structure),
+                    Codecs.IntRange(1, int.MaxValue)
+                        .FieldOf("weight")
+                        .ForGetter<StructureSelectionEntry>(static entry => entry.Weight))
+                .Apply(
+                    instance,
+                    static (structure, weight) =>
+                        new StructureSelectionEntry(structure, weight)));
+    }
 }
