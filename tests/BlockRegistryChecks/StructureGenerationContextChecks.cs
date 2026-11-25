@@ -1,4 +1,5 @@
 using Asteria.Content.Biomes;
+using Asteria.Content.Blocks;
 using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.World;
@@ -20,6 +21,7 @@ internal static class StructureGenerationContextChecks
         CheckOnTopOfChunkCenterHelpers();
         CheckStructureStartGenerationFromStub();
         CheckStructureHeightSamplingHelpers();
+        CheckLowestYIn5By5BoxRotationOffsets();
         CheckConstructorRejectsMissingDependencies();
     }
 
@@ -505,6 +507,45 @@ internal static class StructureGenerationContextChecks
             () => heightStructure.GetLowestYForFootprint(null!, minX, minZ, sizeX, sizeZ),
             "GetLowestY must reject a null context.");
     }
+    private static void CheckLowestYIn5By5BoxRotationOffsets()
+    {
+        const long seed = 0x35425935524F5441L;
+        OverworldWorld world = CreateWorld(seed);
+        var context = new Structure.GenerationContext(
+            world.Generator,
+            new RecordingBiomeResolver((_, _, _) => Biomes.PLAINS.BuiltInRegistryHolder),
+            world.Generator.RandomState,
+            seed,
+            new ChunkPos(-7, 4),
+            LevelHeightAccessor.Create(-16, 64),
+            static _ => true);
+        var structure = new HeightProbeStructure();
+        const int blockX = -103;
+        const int blockZ = 71;
+
+        foreach (Rotation rotation in Rotation.GetValues())
+        {
+            int offsetX = ReferenceEquals(rotation, Rotation.CLOCKWISE_90) ||
+                          ReferenceEquals(rotation, Rotation.CLOCKWISE_180) ? -5 : 5;
+            int offsetZ = ReferenceEquals(rotation, Rotation.CLOCKWISE_180) ||
+                          ReferenceEquals(rotation, Rotation.COUNTERCLOCKWISE_90) ? -5 : 5;
+            int expectedY = structure.GetLowestYForFootprint(
+                context, blockX, blockZ, offsetX, offsetZ);
+            BlockPos actual = structure.GetLowestYIn5by5BoxForRotation(
+                context, blockX, blockZ, rotation);
+
+            Require(
+                actual.Equals(new BlockPos(blockX, expectedY, blockZ)),
+                $"The 5-by-5 helper must use the vanilla corner offsets for {rotation}.");
+        }
+
+        RequireThrows<ArgumentNullException>(
+            () => structure.GetLowestYIn5by5BoxForRotation(null!, blockX, blockZ, Rotation.NONE),
+            "The 5-by-5 helper must reject a null generation context.");
+        RequireThrows<ArgumentNullException>(
+            () => structure.GetLowestYIn5by5BoxForRotation(context, blockX, blockZ, null!),
+            "The 5-by-5 helper must reject a null rotation.");
+    }
     private static void CheckConstructorRejectsMissingDependencies()
     {
         OverworldWorld world = CreateWorld(0x4E554C4C434F4E54L);
@@ -638,6 +679,13 @@ internal static class StructureGenerationContextChecks
 
         protected override Structure.GenerationStub? FindGenerationPoint(
             Structure.GenerationContext context) => null;
+
+        public BlockPos GetLowestYIn5by5BoxForRotation(
+            Structure.GenerationContext context,
+            int blockX,
+            int blockZ,
+            Rotation rotation) =>
+            GetLowestYIn5by5Box(context, blockX, blockZ, rotation);
     }
 
     private sealed class TestPiece(BoundingBox boundingBox)

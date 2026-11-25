@@ -1,4 +1,5 @@
 using Asteria.Content.Biomes;
+using Asteria.Content.Blocks;
 using Asteria.Content.Registries;
 using Asteria.Content.Identifiers;
 using Asteria.Serialization;
@@ -285,6 +286,41 @@ public abstract class Structure
     {
         int[] heights = GetCornerHeights(context, minX, sizeX, minZ, sizeZ);
         return Math.Min(Math.Min(heights[0], heights[1]), Math.Min(heights[2], heights[3]));
+    }
+    /// <summary>
+    /// Returns the lowest surface Y in a 5-by-5 corner sample oriented around a structure start.
+    /// Retained as a deprecated helper for source compatibility with older structures.
+    /// </summary>
+    [Obsolete("Legacy 5-by-5 surface sampling helper retained for source parity.")]
+    protected BlockPos GetLowestYIn5by5Box(
+        GenerationContext context,
+        int blockX,
+        int blockZ,
+        Rotation rotation)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(rotation);
+
+        int offsetX = 5;
+        int offsetZ = 5;
+        if (ReferenceEquals(rotation, Rotation.CLOCKWISE_90))
+        {
+            offsetX = -5;
+        }
+        else if (ReferenceEquals(rotation, Rotation.CLOCKWISE_180))
+        {
+            offsetX = -5;
+            offsetZ = -5;
+        }
+        else if (ReferenceEquals(rotation, Rotation.COUNTERCLOCKWISE_90))
+        {
+            offsetZ = -5;
+        }
+
+        return new BlockPos(
+            blockX,
+            GetLowestY(context, blockX, blockZ, offsetX, offsetZ),
+            blockZ);
     }
     /// <summary>
     /// Position where the structure starts and the deferred/prebuilt piece builder.
