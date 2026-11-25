@@ -1,7 +1,7 @@
 namespace Asteria.Serialization.Nbt;
 
 /// <summary>Mutable 32-bit integer array NBT collection (tag ID 11).</summary>
-public sealed class IntArrayTag : CollectionTag
+public sealed class IntArrayTag : CollectionTag, IEquatable<IntArrayTag>
 {
     private const long SELF_SIZE_IN_BYTES = 24;
     private int[] _data;
@@ -96,6 +96,20 @@ public sealed class IntArrayTag : CollectionTag
 
     public void Clear() =>
         _data = Array.Empty<int>();
+
+    public bool Equals(IntArrayTag? other) =>
+        other is not null && _data.AsSpan().SequenceEqual(other._data);
+
+    public override bool Equals(object? obj) =>
+        obj is IntArrayTag other && Equals(other);
+
+    public override int GetHashCode()
+    {
+        int result = 1;
+        foreach (int value in _data)
+            result = unchecked(31 * result + value);
+        return result;
+    }
 
     public override string ToString() =>
         "[I;" + string.Join(",", _data.Select(static value =>

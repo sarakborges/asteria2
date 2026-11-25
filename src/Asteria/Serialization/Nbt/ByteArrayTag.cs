@@ -1,7 +1,7 @@
 namespace Asteria.Serialization.Nbt;
 
 /// <summary>Mutable signed-byte array NBT collection (tag ID 7).</summary>
-public sealed class ByteArrayTag : CollectionTag
+public sealed class ByteArrayTag : CollectionTag, IEquatable<ByteArrayTag>
 {
     private const long SELF_SIZE_IN_BYTES = 24;
     private byte[] _data;
@@ -94,6 +94,20 @@ public sealed class ByteArrayTag : CollectionTag
 
     public void Clear() =>
         _data = Array.Empty<byte>();
+
+    public bool Equals(ByteArrayTag? other) =>
+        other is not null && _data.AsSpan().SequenceEqual(other._data);
+
+    public override bool Equals(object? obj) =>
+        obj is ByteArrayTag other && Equals(other);
+
+    public override int GetHashCode()
+    {
+        int result = 1;
+        foreach (byte value in _data)
+            result = unchecked(31 * result + (sbyte)value);
+        return result;
+    }
 
     public override string ToString() =>
         "[B;" + string.Join(",", _data.Select(value =>
