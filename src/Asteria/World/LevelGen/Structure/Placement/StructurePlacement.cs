@@ -1,5 +1,6 @@
 using Asteria.Core;
 using Asteria.World;
+using Asteria.Serialization;
 
 namespace Asteria.World.LevelGen.Structure.Placement;
 
@@ -33,4 +34,8 @@ public interface StructurePlacement
 
     Vec3i LocateOffset() =>
         Vec3i.Zero;
+
+    MapCodec<StructurePlacement> Codec() =>
+        throw new NotSupportedException(
+            $"No placement codec has been ported for {GetType().Name}.");
 }
