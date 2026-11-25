@@ -224,7 +224,6 @@ internal static class Program
         WorldGenRegionChecks.Run();
         BiomeDecorationChecks.Run();
         BlockStateProviderChecks.Run();
-        SimpleBlockFeatureChecks.Run();
         Require(
             ReferenceEquals(
                 BuiltInRegistries.Root.GetValue(
@@ -3312,6 +3311,7 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         }
 
         throw new InvalidOperationException(message);
+        SimpleBlockFeatureChecks.Run();
     }
 
     private static void RequireThrowsExact<TException>(Action action, string message) where TException : Exception
