@@ -219,6 +219,73 @@ public abstract class Structure
             new BlockPos(blockX, blockY, blockZ),
             pieceGenerator);
     }
+    private static int[] GetCornerHeights(
+        GenerationContext context,
+        int minX,
+        int sizeX,
+        int minZ,
+        int sizeZ)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        NoiseBasedChunkGenerator generator = context.Generator;
+        LevelHeightAccessor heightAccessor = context.HeightAccessor;
+        RandomState randomState = context.RandomState;
+
+        return
+        [
+            generator.GetFirstOccupiedHeight(
+                minX, minZ, Heightmap.Types.WORLD_SURFACE_WG, heightAccessor, randomState),
+            generator.GetFirstOccupiedHeight(
+                minX, unchecked(minZ + sizeZ), Heightmap.Types.WORLD_SURFACE_WG, heightAccessor, randomState),
+            generator.GetFirstOccupiedHeight(
+                unchecked(minX + sizeX), minZ, Heightmap.Types.WORLD_SURFACE_WG, heightAccessor, randomState),
+            generator.GetFirstOccupiedHeight(
+                unchecked(minX + sizeX), unchecked(minZ + sizeZ), Heightmap.Types.WORLD_SURFACE_WG, heightAccessor, randomState)
+        ];
+    }
+
+    /// <summary>
+    /// Returns the integer mean of the four WORLD_SURFACE_WG corner heights.
+    /// </summary>
+    public static int GetMeanFirstOccupiedHeight(
+        GenerationContext context,
+        int minX,
+        int sizeX,
+        int minZ,
+        int sizeZ)
+    {
+        int[] heights = GetCornerHeights(context, minX, sizeX, minZ, sizeZ);
+        return unchecked(heights[0] + heights[1] + heights[2] + heights[3]) / 4;
+    }
+
+    /// <summary>Returns the lowest WORLD_SURFACE_WG corner height across a chunk-sized footprint.</summary>
+    protected static int GetLowestY(
+        GenerationContext context,
+        int sizeX,
+        int sizeZ)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ChunkPos chunkPosition = context.ChunkPos;
+        return GetLowestY(
+            context,
+            chunkPosition.GetMinBlockX(),
+            chunkPosition.GetMinBlockZ(),
+            sizeX,
+            sizeZ);
+    }
+
+    /// <summary>Returns the lowest WORLD_SURFACE_WG height among four footprint corners.</summary>
+    protected static int GetLowestY(
+        GenerationContext context,
+        int minX,
+        int minZ,
+        int sizeX,
+        int sizeZ)
+    {
+        int[] heights = GetCornerHeights(context, minX, sizeX, minZ, sizeZ);
+        return Math.Min(Math.Min(heights[0], heights[1]), Math.Min(heights[2], heights[3]));
+    }
     /// <summary>
     /// Position where the structure starts and the deferred/prebuilt piece builder.
     /// A deferred generator creates a fresh builder on every GetPiecesBuilder call;

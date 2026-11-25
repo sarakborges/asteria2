@@ -19,6 +19,7 @@ internal static class StructureGenerationContextChecks
         CheckFindValidGenerationPointFiltersByBiome();
         CheckOnTopOfChunkCenterHelpers();
         CheckStructureStartGenerationFromStub();
+        CheckStructureHeightSamplingHelpers();
         CheckConstructorRejectsMissingDependencies();
     }
 
@@ -442,6 +443,68 @@ internal static class StructureGenerationContextChecks
             () => structure.Generate(null!, references),
             "Generate must reject a null generation context.");
     }
+    private static void CheckStructureHeightSamplingHelpers()
+    {
+        const long seed = 0x4845494748545354L;
+        OverworldWorld world = CreateWorld(seed);
+        ChunkPos chunkPosition = new(-3, -2);
+        LevelHeightAccessor heightAccessor = LevelHeightAccessor.Create(-16, 64);
+        var resolver = new RecordingBiomeResolver((_, _, _) => Biomes.PLAINS.BuiltInRegistryHolder);
+        var context = new Structure.GenerationContext(
+            world.Generator,
+            resolver,
+            world.Generator.RandomState,
+            seed,
+            chunkPosition,
+            heightAccessor,
+            static _ => true);
+        const int minX = -47;
+        const int minZ = -31;
+        const int sizeX = 7;
+        const int sizeZ = 11;
+
+        int[] expectedCorners =
+        [
+            world.Generator.GetFirstOccupiedHeight(minX, minZ, Heightmap.Types.WORLD_SURFACE_WG, heightAccessor, world.Generator.RandomState),
+            world.Generator.GetFirstOccupiedHeight(minX, minZ + sizeZ, Heightmap.Types.WORLD_SURFACE_WG, heightAccessor, world.Generator.RandomState),
+            world.Generator.GetFirstOccupiedHeight(minX + sizeX, minZ, Heightmap.Types.WORLD_SURFACE_WG, heightAccessor, world.Generator.RandomState),
+            world.Generator.GetFirstOccupiedHeight(minX + sizeX, minZ + sizeZ, Heightmap.Types.WORLD_SURFACE_WG, heightAccessor, world.Generator.RandomState)
+        ];
+        int expectedMean = unchecked(
+            expectedCorners[0] + expectedCorners[1] + expectedCorners[2] + expectedCorners[3]) / 4;
+        int expectedLowest = expectedCorners.Min();
+
+        Require(
+            Structure.GetMeanFirstOccupiedHeight(context, minX, sizeX, minZ, sizeZ) == expectedMean,
+            "GetMeanFirstOccupiedHeight must average the four WORLD_SURFACE_WG corner samples using integer division.");
+        var heightStructure = new HeightProbeStructure();
+        Require(
+            heightStructure.GetLowestYForFootprint(context, minX, minZ, sizeX, sizeZ) == expectedLowest,
+            "GetLowestY must return the minimum of the four explicitly positioned WORLD_SURFACE_WG corner samples.");
+
+        int chunkMinX = chunkPosition.GetMinBlockX();
+        int chunkMinZ = chunkPosition.GetMinBlockZ();
+        int expectedChunkLowest = new[]
+        {
+            world.Generator.GetFirstOccupiedHeight(chunkMinX, chunkMinZ, Heightmap.Types.WORLD_SURFACE_WG, heightAccessor, world.Generator.RandomState),
+            world.Generator.GetFirstOccupiedHeight(chunkMinX, chunkMinZ + sizeZ, Heightmap.Types.WORLD_SURFACE_WG, heightAccessor, world.Generator.RandomState),
+            world.Generator.GetFirstOccupiedHeight(chunkMinX + sizeX, chunkMinZ, Heightmap.Types.WORLD_SURFACE_WG, heightAccessor, world.Generator.RandomState),
+            world.Generator.GetFirstOccupiedHeight(chunkMinX + sizeX, chunkMinZ + sizeZ, Heightmap.Types.WORLD_SURFACE_WG, heightAccessor, world.Generator.RandomState)
+        }.Min();
+        Require(
+            heightStructure.GetLowestYForChunkFootprint(context, sizeX, sizeZ) == expectedChunkLowest,
+            "GetLowestY with a chunk footprint must begin at the chunk's minimum block X/Z coordinates.");
+        Require(
+            resolver.Queries.Count == 0,
+            "Structure height sampling must not query the biome resolver.");
+
+        RequireThrows<ArgumentNullException>(
+            () => Structure.GetMeanFirstOccupiedHeight(null!, minX, sizeX, minZ, sizeZ),
+            "GetMeanFirstOccupiedHeight must reject a null context.");
+        RequireThrows<ArgumentNullException>(
+            () => heightStructure.GetLowestYForFootprint(null!, minX, minZ, sizeX, sizeZ),
+            "GetLowestY must reject a null context.");
+    }
     private static void CheckConstructorRejectsMissingDependencies()
     {
         OverworldWorld world = CreateWorld(0x4E554C4C434F4E54L);
@@ -552,8 +615,75 @@ internal static class StructureGenerationContextChecks
         protected override Structure.GenerationStub? FindGenerationPoint(
             Structure.GenerationContext context) => null;
     }
+
+    private sealed class HeightProbeStructure : Structure
+    {
+        public HeightProbeStructure() : base(StructureSettings.DEFAULT)
+        {
+        }
+
+        public int GetLowestYForChunkFootprint(
+            Structure.GenerationContext context,
+            int sizeX,
+            int sizeZ) =>
+            GetLowestY(context, sizeX, sizeZ);
+
+        public int GetLowestYForFootprint(
+            Structure.GenerationContext context,
+            int minX,
+            int minZ,
+            int sizeX,
+            int sizeZ) =>
+            GetLowestY(context, minX, minZ, sizeX, sizeZ);
+
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context) => null;
+    }
+    {
+        public CenterProbeStructure() : base(StructureSettings.DEFAULT)
+        {
+        }
+
+        public Structure.GenerationStub? BuildOnTopOfChunkCenter(
+            Structure.GenerationContext context,
+            Heightmap.Types heightmapType,
+            Action<StructurePiecesBuilder> pieceGenerator) =>
+            OnTopOfChunkCenter(context, heightmapType, pieceGenerator);
+
+        public Structure.GenerationStub BuildOnTopOfChunkCenterWithoutBiomeCheck(
+            Structure.GenerationContext context,
+            Heightmap.Types heightmapType,
+            Action<StructurePiecesBuilder> pieceGenerator) =>
+            OnTopOfChunkCenterWithoutBiomeCheck(context, heightmapType, pieceGenerator);
+
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context) => null;
+    }
     private sealed class TestPiece(BoundingBox boundingBox)
         : StructurePiece(0, boundingBox);
+    private sealed class HeightProbeStructure : Structure
+    {
+        public HeightProbeStructure() : base(StructureSettings.DEFAULT)
+        {
+        }
+
+        public int GetLowestYForChunkFootprint(
+            Structure.GenerationContext context,
+            int sizeX,
+            int sizeZ) =>
+            GetLowestY(context, sizeX, sizeZ);
+
+        public int GetLowestYForFootprint(
+            Structure.GenerationContext context,
+            int minX,
+            int minZ,
+            int sizeX,
+            int sizeZ) =>
+            GetLowestY(context, minX, minZ, sizeX, sizeZ);
+
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context) => null;
+    }
     private static void Require(bool condition, string message)
     {
         if (!condition)
