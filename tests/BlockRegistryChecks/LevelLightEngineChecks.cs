@@ -93,11 +93,12 @@ internal static class LevelLightEngineChecks
         engine.SetLightEnabled(chunk.GetPos(), enabled: true);
         engine.PropagateLightSources(chunk.GetPos());
 
-        for (int i = 0; i < 8 && engine.HasLightWork(); i++)
-            engine.RunLightUpdates();
+        Require(engine.HasLightWork(),
+            "Queued block and sky light sources must report pending work.");
+        engine.RunLightUpdates();
 
         Require(!engine.HasLightWork(),
-            "Both light engines must finish their queued work for an isolated open-sky chunk.");
+            "Both light engines must finish their queued work in one update batch for an isolated open-sky chunk.");
         int blockLight = engine.GetLayerListener(LightLayer.BLOCK).GetLightValue(position);
         Require(
             blockLight == 14,
