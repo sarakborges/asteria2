@@ -25,13 +25,10 @@ public sealed record StringTag : PrimitiveTag
                 string value = accounter.ReadUTF(input.ReadUTF());
                 return ValueOf(value);
             },
-            static (input, count, accounter) =>
+            static (input, count, _) =>
             {
                 for (int index = 0; index < count; index++)
-                {
-                    accounter.AccountBytes(SELF_SIZE_IN_BYTES);
-                    _ = accounter.ReadUTF(input.ReadUTF());
-                }
+                    input.SkipUTF();
             });
 
 

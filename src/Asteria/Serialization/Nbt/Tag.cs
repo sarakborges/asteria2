@@ -25,4 +25,7 @@ public interface Tag
     long? AsLong() => null;
     float? AsFloat() => null;
     double? AsDouble() => null;
+    bool? AsBoolean() => AsByte() is sbyte value ? value != 0 : null;
+    CompoundTag? AsCompound() => null;
+    ListTag? AsList() => null;
 }

@@ -228,8 +228,8 @@ internal static class NbtScalarTagChecks
         StringTag.TYPE.Skip(stringInput, 2, stringAccounter);
         Require(
             strings.Position == strings.Length &&
-            stringAccounter.Usage == 36 * 2 + 2 * 4,
-            "Variable-size string tag skipping must account for each tag and each UTF-16 code unit.");
+            stringAccounter.Usage == 0,
+            "String tag skipping must consume modified UTF payloads without charging allocations for values that were not materialized.");
 
         TagType invalid = TagType.Invalid(99);
         Require(invalid.Name == "INVALID[99]" && invalid.PrettyName == "UNKNOWN_99",

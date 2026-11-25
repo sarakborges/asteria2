@@ -142,6 +142,18 @@ public sealed class NbtDataInput : IDisposable
         return new string(characters, 0, charIndex);
     }
 
+    /// <summary>
+    /// Skips one Java modified-UTF value without allocating or validating its character data.
+    /// This is used by NBT container skip paths, which must advance over names without charging
+    /// the allocation budget for objects that are not materialized.
+    /// </summary>
+    public void SkipUTF()
+    {
+        int byteLength = ReadUnsignedShort();
+        if (SkipBytes(byteLength) != byteLength)
+            throw new EndOfStreamException();
+    }
+
     /// <summary>Skips up to count bytes, returning the number actually skipped.</summary>
     public int SkipBytes(int count)
     {
