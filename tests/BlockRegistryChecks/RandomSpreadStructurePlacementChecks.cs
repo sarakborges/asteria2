@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Asteria.Core;
+using Asteria.Serialization;
 using Asteria.World;
 using Asteria.World.LevelGen;
 using Asteria.World.LevelGen.Structure.Placement;
@@ -11,6 +13,7 @@ internal static class RandomSpreadStructurePlacementChecks
         CheckNegativeCoordinatesUseFloorDivision();
         CheckCandidateIsStableForSeedAndCell();
         CheckInvalidParametersFailAtUseTime();
+        CheckCodecFieldsDefaultsAndValidation();
     }
 
     private static void CheckPotentialChunkMatchesTheReferenceFormula()
@@ -123,6 +126,111 @@ internal static class RandomSpreadStructurePlacementChecks
             () => zeroSpreadRange.GetPotentialStructureChunk(0L, 1, 1),
             "The direct constructor must preserve the random source's failure when spacing minus separation is zero.");
     }
+
+    private static void CheckCodecFieldsDefaultsAndValidation()
+    {
+        DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
+        var expected = new RandomSpreadStructurePlacement(
+            new Vec3i(4, -2, 7),
+            FrequencyReductionMethod.LEGACY_TYPE_2,
+            0.375F,
+            10387320,
+            null,
+            40,
+            9,
+            RandomSpreadType.TRIANGULAR);
+
+        JsonElement encoded = RandomSpreadStructurePlacement.MAP_CODEC
+            .EncodeStart(ops, expected)
+            .GetOrThrow();
+
+        Require(
+            ops.Get(encoded, "locate_offset").GetOrThrow().GetArrayLength() == 3 &&
+            ops.Get(encoded, "locate_offset").GetOrThrow()[0].GetInt32() == 4 &&
+            ops.Get(encoded, "locate_offset").GetOrThrow()[1].GetInt32() == -2 &&
+            ops.Get(encoded, "locate_offset").GetOrThrow()[2].GetInt32() == 7 &&
+            ops.Get(encoded, "frequency_reduction_method").GetOrThrow().GetString() == "legacy_type_2" &&
+            ops.Get(encoded, "frequency").GetOrThrow().GetSingle() == 0.375F &&
+            ops.Get(encoded, "salt").GetOrThrow().GetInt32() == 10387320 &&
+            ops.Get(encoded, "spacing").GetOrThrow().GetInt32() == 40 &&
+            ops.Get(encoded, "separation").GetOrThrow().GetInt32() == 9 &&
+            ops.Get(encoded, "spread_type").GetOrThrow().GetString() == "triangular",
+            "RandomSpreadStructurePlacement codec must preserve every shared and subtype field under its vanilla field name.");
+
+        RandomSpreadStructurePlacement decoded =
+            RandomSpreadStructurePlacement.MAP_CODEC.Parse(ops, encoded).GetOrThrow();
+
+        Require(
+            decoded.Spacing() == expected.Spacing() &&
+            decoded.Separation() == expected.Separation() &&
+            ReferenceEquals(decoded.SpreadType(), expected.SpreadType()) &&
+            decoded.LocateOffset().Equals(expected.LocateOffset()) &&
+            decoded.GetLocatePos(new ChunkPos(2, -3)).GetX() == 36 &&
+            decoded.GetLocatePos(new ChunkPos(2, -3)).GetY() == -2 &&
+            decoded.GetLocatePos(new ChunkPos(2, -3)).GetZ() == -41,
+            "RandomSpreadStructurePlacement codec must restore spacing, separation, spread type and locate offset.");
+
+        JsonElement defaultedInput = ParseJson(
+            """{"spacing":32,"separation":8,"salt":10387320,"frequency":0.25}""");
+        RandomSpreadStructurePlacement defaulted =
+            RandomSpreadStructurePlacement.MAP_CODEC.Parse(ops, defaultedInput).GetOrThrow();
+
+        Require(
+            ReferenceEquals(defaulted.SpreadType(), RandomSpreadType.LINEAR) &&
+            defaulted.LocateOffset().Equals(Vec3i.Zero) &&
+            !defaulted.ApplyAdditionalChunkRestrictions(-7, 19, 123456789L),
+            "Missing spread type, locate offset and frequency-reduction method must use their vanilla defaults.");
+
+        JsonElement omittedFrequencyInput = ParseJson(
+            """{"spacing":32,"separation":8,"salt":1}""");
+        RandomSpreadStructurePlacement omittedFrequency =
+            RandomSpreadStructurePlacement.MAP_CODEC.Parse(ops, omittedFrequencyInput).GetOrThrow();
+        Require(
+            omittedFrequency.ApplyAdditionalChunkRestrictions(0, 0, 0L),
+            "Missing frequency must default to 1.0 and skip probability reduction.");
+
+        Require(
+            RandomSpreadStructurePlacement.MAP_CODEC.Parse(
+                ops,
+                ParseJson("""{"spacing":32,"separation":32,"salt":1}""")).IsError,
+            "A random spread placement must reject spacing that is not larger than separation.");
+        Require(
+            RandomSpreadStructurePlacement.MAP_CODEC.Parse(
+                ops,
+                ParseJson("""{"spacing":4097,"separation":8,"salt":1}""")).IsError &&
+            RandomSpreadStructurePlacement.MAP_CODEC.Parse(
+                ops,
+                ParseJson("""{"spacing":32,"separation":-1,"salt":1}""")).IsError,
+            "Spacing and separation must each remain inside the inclusive 0..4096 codec range.");
+        Require(
+            RandomSpreadStructurePlacement.MAP_CODEC.Parse(
+                ops,
+                ParseJson("""{"spacing":32,"separation":8}""")).IsError,
+            "Salt is a required field in the random spread placement codec.");
+        Require(
+            RandomSpreadStructurePlacement.MAP_CODEC.Parse(
+                ops,
+                ParseJson("""{"spacing":32,"separation":8,"salt":-1}""")).IsError,
+            "Random spread placement must reject negative salts.");
+        Require(
+            RandomSpreadStructurePlacement.MAP_CODEC.Parse(
+                ops,
+                ParseJson("""{"spacing":32,"separation":8,"salt":1,"frequency":1.01}""")).IsError,
+            "Frequency must remain inside the inclusive 0..1 codec range.");
+        Require(
+            RandomSpreadStructurePlacement.MAP_CODEC.Parse(
+                ops,
+                ParseJson("""{"spacing":32,"separation":8,"salt":1,"locate_offset":[17,0,0]}""")).IsError,
+            "Locate offset components must remain inside the inclusive -16..16 range.");
+        Require(
+            RandomSpreadStructurePlacement.MAP_CODEC.Parse(
+                ops,
+                ParseJson("""{"spacing":32,"separation":8,"salt":1,"spread_type":"unknown"}""")).IsError,
+            "Unknown random spread distributions must be rejected by their codec.");
+    }
+
+    private static JsonElement ParseJson(string json) =>
+        JsonDocument.Parse(json).RootElement.Clone();
 
     private static ChunkPos CalculateReference(
         long seed,
