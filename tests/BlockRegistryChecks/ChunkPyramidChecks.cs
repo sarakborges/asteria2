@@ -43,6 +43,9 @@ internal static class ChunkPyramidChecks
 
         ChunkStep terrain = pyramid.GetStepTo(ChunkStatus.TERRAIN);
         Require(
+            terrain.Task == ChunkStatusTasks.GenerateTerrain,
+            "The generation TERRAIN step must execute the ported structure-aware terrain task.");
+        Require(
             terrain.BlockStateWriteRadius == 0 &&
             terrain.DirectDependencies.Size() == 9 &&
             ReferenceEquals(terrain.DirectDependencies.Get(0), ChunkStatus.BIOMES) &&
@@ -268,7 +271,7 @@ internal static class ChunkPyramidChecks
         try
         {
             _ = ChunkPyramid.GenerationPyramid
-                .GetStepTo(ChunkStatus.TERRAIN)
+                .GetStepTo(ChunkStatus.FEATURES)
                 .Apply(context, unassignedCache, unassignedChunk)
                 .AsTask()
                 .GetAwaiter()

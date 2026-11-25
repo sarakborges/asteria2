@@ -31,7 +31,8 @@ public sealed class ChunkPyramid
                 static builder => builder
                     .AddRequirement(ChunkStatus.STRUCTURE_STARTS, 8)
                     .AddRequirement(ChunkStatus.BIOMES, 1)
-                    .BlockStateWriteRadius(0))
+                    .BlockStateWriteRadius(0)
+                    .SetTask(ChunkStatusTasks.GenerateTerrain))
             .Step(
                 ChunkStatus.FEATURES,
                 static builder => builder

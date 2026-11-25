@@ -20,6 +20,7 @@ internal static class ChunkStatusTasksChecks
         CheckBiomeTaskRejectsAnUnrelatedCache();
         CheckStructureStartsTaskGeneratesAndStoresStart();
         CheckStructureReferencesTaskCollectsIntersectingStarts();
+        CheckTerrainTaskBuildsStructureAwareTerrain();
     }
 
     private static void CheckBiomeTaskIsOnlyWiredForGeneration()
@@ -44,6 +45,13 @@ internal static class ChunkStatusTasksChecks
             ChunkPyramid.LoadingPyramid.GetStepTo(ChunkStatus.STRUCTURE_REFERENCES).Task is null,
             "The loading STRUCTURE_REFERENCES step must remain unassigned until persisted references can be loaded.");
         Require(
+            ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.TERRAIN).Task ==
+                ChunkStatusTasks.GenerateTerrain,
+            "The generation TERRAIN step must execute the ported structure-aware terrain task.");
+        Require(
+            ChunkPyramid.LoadingPyramid.GetStepTo(ChunkStatus.TERRAIN).Task is null,
+            "The loading TERRAIN step must remain unassigned until persisted terrain chunks can be loaded.");
+        Require(
             ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.STRUCTURE_STARTS).Task ==
                 ChunkStatusTasks.GenerateStructureStarts,
             "The generation STRUCTURE_STARTS step must execute the ported structure-start task.");
@@ -55,7 +63,8 @@ internal static class ChunkStatusTasksChecks
                 .Where(step =>
                     step.TargetStatus != ChunkStatus.BIOMES &&
                     step.TargetStatus != ChunkStatus.STRUCTURE_STARTS &&
-                    step.TargetStatus != ChunkStatus.STRUCTURE_REFERENCES)
+                    step.TargetStatus != ChunkStatus.STRUCTURE_REFERENCES &&
+                    step.TargetStatus != ChunkStatus.TERRAIN)
                 .All(step => step.Task is null),
             "No other generation stage may be marked executable before its task is ported.");
     }
@@ -321,6 +330,86 @@ internal static class ChunkStatusTasksChecks
             "Structure-reference generation must fail when its radius-eight dependency window is incomplete.");
 
     }
+    private static void CheckTerrainTaskBuildsStructureAwareTerrain()
+    {
+        const long seed = 0x5445525241494E54L;
+        LevelHeightAccessor heightAccessor = LevelHeightAccessor.Create(-16, 48);
+        var world = new OverworldWorld(seed, heightAccessor);
+        var context = new WorldGenContext(world, world.Generator, world.LightEngine);
+        ChunkPos centerPosition = ChunkPos.Zero;
+        ChunkStep terrainStep = ChunkPyramid.GenerationPyramid.GetStepTo(ChunkStatus.TERRAIN);
+        var chunks = new Dictionary<ChunkPos, ProtoChunk>();
+
+        foreach (ChunkPos position in ChunkPos.RangeClosed(centerPosition, ChunkStatus.MAX_STRUCTURE_DISTANCE))
+        {
+            var created = new ProtoChunk(
+                position, heightAccessor, PalettedContainerFactory.CreateBuiltIn());
+            if (position == centerPosition)
+            {
+                world.Generator.CreateBiomes(created);
+            }
+            else
+            {
+                ChunkStatus requiredStatus = terrainStep.DirectDependencies.Get(
+                    centerPosition.GetChessboardDistance(position));
+                created.SetPersistedStatus(requiredStatus);
+            }
+
+            chunks.Add(position, created);
+        }
+
+        ProtoChunk center = chunks[centerPosition];
+        ChunkPos sourcePosition = new(2, 0);
+        var structure = new TerrainProbeStructure(
+            HolderSet<Biome>.Direct(Biomes.PLAINS.BuiltInRegistryHolder));
+        var structureStart = CreateStart(
+            structure,
+            sourcePosition,
+            new BoundingBox(6, 0, 6, 10, 4, 10));
+        chunks[sourcePosition].SetStartForStructure(structure, structureStart);
+        center.AddReferenceForStructure(structure, sourcePosition.Pack());
+
+        StaticCache2D<ChunkAccess?> cache = StaticCache2D<ChunkAccess?>.Create(
+            centerPosition.X, centerPosition.Z,
+            ChunkStatus.MAX_STRUCTURE_DISTANCE,
+            (x, z) => chunks[new ChunkPos(x, z)]);
+        WorldGenRegion region = context.CreateWorldGenRegion(terrainStep, center, cache);
+        Beardifier collectedBeardifier = Beardifier.CreateForChunk(region, center);
+        Require(
+            Math.Abs(collectedBeardifier.SampleValue(
+                SamplerContext.EmptyUncached, 8, 0, 8) - 1.0F) < 1.0E-6F,
+            "The TERRAIN task fixture must expose the referenced BURY piece through the Beardifier.");
+
+        ChunkAccess result = terrainStep.Apply(context, cache, center)
+            .AsTask()
+            .GetAwaiter()
+            .GetResult();
+
+        Require(
+            ReferenceEquals(result, center) &&
+            ReferenceEquals(center.GetPersistedStatus(), ChunkStatus.TERRAIN),
+            "The TERRAIN task must use the reference-aware Beardifier and complete the center chunk's terrain stage.");
+        Require(
+            Enumerable.Range(-16, 48)
+                .SelectMany(y => Enumerable.Range(0, 16)
+                    .SelectMany(z => Enumerable.Range(0, 16)
+                        .Select(x => center.GetBlockState(new BlockPos(x, y, z)))))
+                .Any(state => !state.IsAir),
+            "The structure-aware terrain task must materialize terrain blocks in the center chunk.");
+
+        var missingBiomeChunk = new ProtoChunk(
+            centerPosition, heightAccessor, PalettedContainerFactory.CreateBuiltIn());
+        StaticCache2D<ChunkAccess?> missingBiomeCache = StaticCache2D<ChunkAccess?>.Create(
+            centerPosition.X, centerPosition.Z,
+            ChunkStatus.MAX_STRUCTURE_DISTANCE,
+            (x, z) => x == centerPosition.X && z == centerPosition.Z
+                ? missingBiomeChunk
+                : chunks[new ChunkPos(x, z)]);
+        RequireThrows<InvalidOperationException>(
+            () => ChunkStatusTasks.GenerateTerrain(
+                context, terrainStep, missingBiomeCache, missingBiomeChunk),
+            "The TERRAIN task must reject a center chunk that has not reached BIOMES.");
+    }
     private static ProtoChunk CreateChunk(OverworldWorld world, ChunkPos position) =>
         new(
             position,
@@ -338,6 +427,16 @@ internal static class ChunkStatusTasksChecks
             sourcePosition,
             references: 0,
             new PiecesContainer(new[] { new TestPiece(boundingBox) }));
+    private sealed class TerrainProbeStructure(HolderSet<Biome> biomes)
+        : Structure(new StructureSettings(
+            biomes,
+            GenerationStep.Decoration.SURFACE_STRUCTURES,
+            TerrainAdjustment.BURY))
+    {
+        protected override Structure.GenerationStub? FindGenerationPoint(
+            Structure.GenerationContext context) => null;
+    }
+
     private sealed class StartProbeStructure : Structure
     {
         public int GenerationCallCount { get; private set; }

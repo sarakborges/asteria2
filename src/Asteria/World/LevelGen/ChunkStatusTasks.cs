@@ -209,4 +209,53 @@ public static class ChunkStatusTasks
 
         return ValueTask.FromResult(chunk);
     }
+
+    /// <summary>
+    /// Builds center-chunk terrain using the Beardifier assembled from its generated
+    /// structure references and the required STRUCTURE_STARTS neighborhood.
+    /// </summary>
+    public static ValueTask<ChunkAccess> GenerateTerrain(
+        WorldGenContext context,
+        ChunkStep step,
+        StaticCache2D<ChunkAccess?> chunks,
+        ChunkAccess chunk)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(step);
+        ArgumentNullException.ThrowIfNull(chunks);
+        ArgumentNullException.ThrowIfNull(chunk);
+
+        if (!ReferenceEquals(step.TargetStatus, ChunkStatus.TERRAIN))
+        {
+            throw new ArgumentException(
+                $"The terrain task cannot execute status {step.TargetStatus}.",
+                nameof(step));
+        }
+
+        ChunkPos position = chunk.GetPos();
+        if (!chunks.Contains(position.X, position.Z) ||
+            !ReferenceEquals(chunks.Get(position.X, position.Z), chunk))
+        {
+            throw new InvalidOperationException(
+                $"The TERRAIN task cache does not contain its exact center chunk {position}.");
+        }
+
+        if (chunk is not ProtoChunk protoChunk)
+        {
+            throw new InvalidOperationException(
+                $"TERRAIN generation requires a ProtoChunk, received {chunk.GetType().Name}.");
+        }
+
+        if (!protoChunk.GetPersistedStatus().IsOrAfter(ChunkStatus.BIOMES))
+        {
+            throw new InvalidOperationException(
+                $"The center chunk {position} has not reached BIOMES.");
+        }
+
+        WorldGenRegion region = context.CreateWorldGenRegion(step, protoChunk, chunks);
+        Beardifier beardifier = Beardifier.CreateForChunk(region, protoChunk);
+        context.Generator.BuildTerrain(protoChunk, beardifier);
+
+        return ValueTask.FromResult<ChunkAccess>(protoChunk);
+    }
 }
