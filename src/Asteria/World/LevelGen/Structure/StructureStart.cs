@@ -16,7 +16,8 @@ public sealed class StructureStart
         structure: null,
         ChunkPos.Zero,
         references: 0,
-        new PiecesContainer(Array.Empty<StructurePiece>()));
+        new PiecesContainer(Array.Empty<StructurePiece>()),
+        allowInvalid: true);
 
     private readonly Structure? _structure;
     private readonly PiecesContainer _pieceContainer;
