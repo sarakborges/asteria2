@@ -361,6 +361,7 @@ internal static class Program
         ChunkStatusTasksChecks.Run();
         StructureStartChecks.Run();
         ChunkStructureAccessChecks.Run();
+        RandomSpreadTypeChecks.Run();
         DataLayerChecks.Run();
         DataLayerStorageMapChecks.Run();
         LightChunkContractChecks.Run();
