@@ -1,6 +1,7 @@
 using Asteria.Content.Biomes;
 using Asteria.Content.Registries;
 using Asteria.Core;
+using Asteria.Serialization;
 using Asteria.World;
 using Asteria.World.Level;
 using Asteria.World.LevelGen;
