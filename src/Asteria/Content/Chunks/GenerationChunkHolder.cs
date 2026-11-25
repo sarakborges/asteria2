@@ -2,6 +2,7 @@ using System.Threading;
 using Asteria.Content.Chunks.Status;
 using Asteria.World;
 using Asteria.World.Level;
+using Asteria.Util;
 
 namespace Asteria.Content.Chunks;
 
@@ -27,6 +28,7 @@ public abstract class GenerationChunkHolder
     private ChunkStatus? _highestAllowedStatus;
     private ChunkStatus? _startedWork;
     private readonly TaskCompletionSource<ChunkResult<ChunkAccess>>?[] _futures;
+    private ChunkGenerationTask? _task;
     private int _generationRefCount;
     private TaskCompletionSource<bool>? _generationSaveSyncSource;
 
@@ -55,6 +57,128 @@ public abstract class GenerationChunkHolder
     /// </summary>
     internal void SetHighestAllowedStatus(ChunkStatus? status) =>
         Volatile.Write(ref _highestAllowedStatus, status);
+
+    /// <summary>
+    /// Updates an already-calculated status ceiling. Ticket-level calculation remains
+    /// the responsibility of the concrete chunk map.
+    /// </summary>
+    internal void UpdateHighestAllowedStatus(
+        ChunkStatus? newStatus,
+        GeneratingChunkMap scheduler)
+    {
+        ArgumentNullException.ThrowIfNull(scheduler);
+
+        ChunkStatus? oldStatus = Volatile.Read(ref _highestAllowedStatus);
+        Volatile.Write(ref _highestAllowedStatus, newStatus);
+
+        bool statusDropped = oldStatus is not null &&
+            (newStatus is null || newStatus.IsBefore(oldStatus));
+
+        if (!statusDropped)
+            return;
+
+        FailAndClearPendingFuturesBetween(newStatus, oldStatus);
+
+        if (Volatile.Read(ref _task) is not null)
+        {
+            RescheduleChunkTask(
+                scheduler,
+                FindHighestStatusWithPendingFuture(newStatus));
+        }
+    }
+
+    /// <summary>
+    /// Returns the request future and starts or extends the scheduled generation task
+    /// when the requested status is not already covered by the current task.
+    /// </summary>
+    internal Task<ChunkResult<ChunkAccess>> ScheduleChunkGenerationTask(
+        ChunkStatus status,
+        GeneratingChunkMap scheduler)
+    {
+        ArgumentNullException.ThrowIfNull(status);
+        ArgumentNullException.ThrowIfNull(scheduler);
+
+        if (IsStatusDisallowed(status))
+            return UnloadedChunkFuture;
+
+        Task<ChunkResult<ChunkAccess>> future = GetOrCreateFuture(status);
+        if (future.IsCompleted)
+            return future;
+
+        ChunkGenerationTask? task = Volatile.Read(ref _task);
+        if (task is null || status.IsAfter(task.TargetStatus))
+            RescheduleChunkTask(scheduler, status);
+
+        return future;
+    }
+
+    /// <summary>
+    /// Applies one step only after claiming its exact parent-to-target transition.
+    /// A concurrent caller receives the same per-status future instead of executing
+    /// the step a second time.
+    /// </summary>
+    internal Task<ChunkResult<ChunkAccess>> ApplyStep(
+        ChunkStep step,
+        GeneratingChunkMap chunkMap,
+        StaticCache2D<GenerationChunkHolder> cache)
+    {
+        ArgumentNullException.ThrowIfNull(step);
+        ArgumentNullException.ThrowIfNull(chunkMap);
+        ArgumentNullException.ThrowIfNull(cache);
+
+        if (IsStatusDisallowed(step.TargetStatus))
+            return UnloadedChunkFuture;
+
+        return AcquireStatusBump(step.TargetStatus)
+            ? ApplyStepCore(step, chunkMap, cache)
+            : GetOrCreateFuture(step.TargetStatus);
+    }
+
+    internal void RemoveTask(ChunkGenerationTask task)
+    {
+        ArgumentNullException.ThrowIfNull(task);
+        Interlocked.CompareExchange(ref _task, null, task);
+    }
+
+    private void RescheduleChunkTask(
+        GeneratingChunkMap scheduler,
+        ChunkStatus? status)
+    {
+        ChunkGenerationTask? newTask = status is null
+            ? null
+            : scheduler.ScheduleGenerationTask(status, _pos);
+
+        ChunkGenerationTask? oldTask = Interlocked.Exchange(ref _task, newTask);
+        oldTask?.MarkForCancellation();
+    }
+
+    private async Task<ChunkResult<ChunkAccess>> ApplyStepCore(
+        ChunkStep step,
+        GeneratingChunkMap chunkMap,
+        StaticCache2D<GenerationChunkHolder> cache)
+    {
+        try
+        {
+            ChunkAccess chunk = await chunkMap.ApplyStep(this, step, cache)
+                .ConfigureAwait(false);
+            CompleteFuture(step.TargetStatus, chunk);
+            return ChunkResult<ChunkAccess>.Of(chunk);
+        }
+        catch (Exception exception)
+        {
+            Task<ChunkResult<ChunkAccess>> future =
+                GetOrCreateFuture(step.TargetStatus);
+            if (!ReferenceEquals(future, UnloadedChunkFuture))
+            {
+                var failure = ChunkResult<ChunkAccess>.Error(
+                    () => exception.ToString());
+                Volatile.Read(ref _futures[step.TargetStatus.GetIndex()])
+                    ?.TrySetResult(failure);
+            }
+
+            throw;
+        }
+    }
 
     /// <summary>
     /// Gets the future for a status, atomically installing exactly one pending future.
