@@ -243,6 +243,49 @@ public sealed class NoiseBasedChunkGenerator
         }
     }
 
+    /// <summary>
+    /// Generates the quart-resolution biome palette for a chunk without filling its terrain.
+    /// This is the BIOMES stage of the chunk-generation pipeline.
+    /// </summary>
+    public void CreateBiomes(ProtoChunk chunk)
+    {
+        ArgumentNullException.ThrowIfNull(chunk);
+
+        if (_overworldBiomeSource is null)
+        {
+            throw new InvalidOperationException(
+                "Biome generation requires the configured Overworld biome source.");
+        }
+
+        CreateBiomes(
+            chunk,
+            _overworldBiomeSource.CreateResolver(
+                _randomState.CreateClimateSampler(SamplerContext.EmptyUncached)));
+    }
+
+    /// <summary>
+    /// Fills the chunk's biome palette from a quart-coordinate resolver and advances it
+    /// to BIOMES. The caller is responsible for satisfying the STRUCTURE_REFERENCES
+    /// dependency window before invoking this stage.
+    /// </summary>
+    public void CreateBiomes(ProtoChunk chunk, BiomeResolver biomeResolver)
+    {
+        ArgumentNullException.ThrowIfNull(chunk);
+        ArgumentNullException.ThrowIfNull(biomeResolver);
+
+        if (chunk.GetPersistedStatus().IsOrAfter(ChunkStatus.BIOMES))
+        {
+            throw new InvalidOperationException(
+                $"Chunk {chunk.GetPos()} has already reached {chunk.GetPersistedStatus()}.");
+        }
+
+        Heightmap.PrimeHeightmaps(
+            chunk,
+            ChunkStatus.BIOMES.GetHeightmapsAfter().ToHashSet());
+        chunk.FillBiomesFromNoise(biomeResolver);
+        chunk.SetPersistedStatus(ChunkStatus.BIOMES);
+    }
+
     public static Aquifer.FluidPicker CreateFluidPicker(NoiseGeneratorSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -363,8 +406,14 @@ public sealed class NoiseBasedChunkGenerator
             volume);
 
         BiomeResolver biomeResolver = biomeResolverFactory(noiseChunk.CachingSamplers);
-        chunk.FillBiomesFromNoise(biomeResolver);
-        chunk.SetPersistedStatus(ChunkStatus.BIOMES);
+        if (!chunk.GetPersistedStatus().IsOrAfter(ChunkStatus.BIOMES))
+        {
+            Heightmap.PrimeHeightmaps(
+                chunk,
+                ChunkStatus.BIOMES.GetHeightmapsAfter().ToHashSet());
+            chunk.FillBiomesFromNoise(biomeResolver);
+            chunk.SetPersistedStatus(ChunkStatus.BIOMES);
+        }
 
         FillFromNoise(chunk, noiseChunk, volume);
         Heightmap.PrimeHeightmaps(chunk, ChunkStatus.TERRAIN.GetHeightmapsAfter().ToHashSet());
