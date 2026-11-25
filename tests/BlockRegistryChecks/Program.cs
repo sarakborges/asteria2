@@ -420,7 +420,8 @@ internal static class Program
             TestBlocks.TEST_BLOCK,
             TestBlocks.TEST_POWERED,
             TestBlocks.TEST_STAGE);
-    }
+            SimpleBlockFeatureChecks.Run();
+}
 
     private static void CheckBuiltInRegistryRoot()
     {
@@ -3311,7 +3312,6 @@ IIdMap<Holder<Block>> holderIdMap = registry.AsHolderIdMap();
         }
 
         throw new InvalidOperationException(message);
-        SimpleBlockFeatureChecks.Run();
     }
 
     private static void RequireThrowsExact<TException>(Action action, string message) where TException : Exception
