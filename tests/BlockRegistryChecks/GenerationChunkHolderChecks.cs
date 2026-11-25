@@ -18,7 +18,7 @@ internal static class GenerationChunkHolderChecks
 
     private static void CheckPositionAndInitialStatusCeiling()
     {
-        ChunkPos invalidPosition = ChunkPos.Unpack(ChunkPos.InvalidChunkPos);
+        ChunkPos invalidPosition = new(ChunkPyramid.MaxChunkCoordinateValue + 1, 0);
         RequireThrows<InvalidOperationException>(
             () => _ = new TestHolder(invalidPosition),
             "A generation holder must reject a chunk position outside the supported world border.");
