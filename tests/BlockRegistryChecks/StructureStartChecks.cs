@@ -1,5 +1,6 @@
 using Asteria.World.LevelGen.Structure;
 using Asteria.World.LevelGen.Structure.Pieces;
+using Asteria.World;
 
 internal static class StructureStartChecks
 {
@@ -23,7 +24,7 @@ internal static class StructureStartChecks
             "The invalid start must be an empty, structure-less sentinel at chunk origin.");
 
         RequireThrows<InvalidOperationException>(
-            invalid.GetBoundingBox,
+            () => _ = invalid.GetBoundingBox(),
             "The invalid start must not produce a bounding box from an empty piece container.");
     }
 
