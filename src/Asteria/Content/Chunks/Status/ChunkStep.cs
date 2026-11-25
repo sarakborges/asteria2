@@ -1,3 +1,7 @@
+using Asteria.Content.Chunks;
+using Asteria.Util;
+using Asteria.World.LevelGen;
+
 namespace Asteria.Content.Chunks.Status;
 
 /// <summary>
@@ -11,18 +15,57 @@ public sealed class ChunkStep
     public ChunkDependencies DirectDependencies { get; }
     public ChunkDependencies AccumulatedDependencies { get; }
     public int BlockStateWriteRadius { get; }
+    public ChunkStatusTask? Task { get; }
 
     private ChunkStep(
         ChunkStatus targetStatus,
         ChunkDependencies directDependencies,
         ChunkDependencies accumulatedDependencies,
-        int blockStateWriteRadius)
+        int blockStateWriteRadius,
+        ChunkStatusTask? task)
     {
         TargetStatus = targetStatus ?? throw new ArgumentNullException(nameof(targetStatus));
         DirectDependencies = directDependencies ?? throw new ArgumentNullException(nameof(directDependencies));
         AccumulatedDependencies = accumulatedDependencies ??
             throw new ArgumentNullException(nameof(accumulatedDependencies));
         BlockStateWriteRadius = blockStateWriteRadius;
+        Task = task;
+    }
+
+    /// <summary>
+    /// Runs this step's task and promotes the returned proto chunk only after successful
+    /// completion. A chunk that already reached the target still runs the task, but is
+    /// not promoted again, matching Minecraft Java 26.3 ChunkStep.apply.
+    /// </summary>
+    public async ValueTask<ChunkAccess> Apply(
+        WorldGenContext context,
+        StaticCache2D<ChunkAccess?> chunks,
+        ChunkAccess chunk)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(chunks);
+        ArgumentNullException.ThrowIfNull(chunk);
+
+        ChunkStatusTask task = Task ??
+            throw new InvalidOperationException(
+                $"No chunk-generation task is registered for status {TargetStatus}.");
+
+        bool shouldPromote = chunk.GetPersistedStatus().IsBefore(TargetStatus);
+        ChunkAccess generatedChunk = await task(context, this, chunks, chunk)
+            .ConfigureAwait(false);
+
+        if (generatedChunk is null)
+            throw new InvalidOperationException(
+                $"The chunk-generation task for {TargetStatus} returned null.");
+
+        if (shouldPromote &&
+            generatedChunk is ProtoChunk protoChunk &&
+            protoChunk.GetPersistedStatus().IsBefore(TargetStatus))
+        {
+            protoChunk.SetPersistedStatus(TargetStatus);
+        }
+
+        return generatedChunk;
     }
 
     public int GetAccumulatedRadiusOf(ChunkStatus status)
@@ -40,6 +83,7 @@ public sealed class ChunkStep
         private readonly ChunkStep? _parent;
         private ChunkStatus[] _directDependenciesByRadius;
         private int _blockStateWriteRadius = -1;
+        private ChunkStatusTask? _task;
 
         internal Builder(ChunkStatus status)
         {
@@ -100,6 +144,12 @@ public sealed class ChunkStep
             return this;
         }
 
+        public Builder SetTask(ChunkStatusTask task)
+        {
+            _task = task ?? throw new ArgumentNullException(nameof(task));
+            return this;
+        }
+
         public ChunkStep Build()
         {
             ChunkStatus[] direct = (ChunkStatus[])_directDependenciesByRadius.Clone();
@@ -111,7 +161,8 @@ public sealed class ChunkStep
                 _status,
                 directDependencies,
                 accumulatedDependencies,
-                _blockStateWriteRadius);
+                _blockStateWriteRadius,
+                _task);
         }
 
         private ChunkStatus[] BuildAccumulatedDependencies(ChunkStatus[] direct)
