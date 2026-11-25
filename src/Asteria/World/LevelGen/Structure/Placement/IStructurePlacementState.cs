@@ -11,6 +11,8 @@ public interface IStructurePlacementState
 {
     long LevelSeed { get; }
 
+    ChunkPos GetDimensionOrigin();
+
     bool HasStructureChunkInRange(
         Holder<StructureSet> otherSet,
         int sourceX,
