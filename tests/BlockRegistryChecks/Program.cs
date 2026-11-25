@@ -183,6 +183,7 @@ internal static class Program
         StateHolderChecks.Run();
         SerializationChecks.Run();
         NbtBinaryIOChecks.Run();
+        NbtScalarTagChecks.Run();
         DynamicOpsChecks.Run();
         CodecChecks.Run();
         CoordinatePositionChecks.Run();
