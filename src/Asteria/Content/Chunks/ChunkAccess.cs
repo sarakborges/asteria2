@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Collections.ObjectModel;
 using Asteria.Content.Biomes;
 using Asteria.Content.Blocks;
 using Asteria.Content.Fluids;
@@ -10,6 +11,7 @@ using Asteria.World.Lighting;
 using Asteria.World.BlockScan;
 using Asteria.Util;
 using Asteria.World.Ticks;
+using Asteria.World.LevelGen.Structure;
 
 namespace Asteria.Content.Chunks;
 
@@ -29,7 +31,13 @@ public abstract class ChunkAccess : LightChunk
     private long _inhabitedTime;
     private readonly Dictionary<Heightmap.Types, Heightmap> _heightmaps = new();
     private readonly IReadOnlyCollection<KeyValuePair<Heightmap.Types, Heightmap>> _heightmapEntries;
+    private readonly Dictionary<Structure, StructureStart> _structureStarts = new();
+    private readonly IReadOnlyDictionary<Structure, StructureStart> _structureStartsView;
+    private readonly Dictionary<Structure, HashSet<long>> _structureReferences = new();
+    private readonly IReadOnlyDictionary<Structure, HashSet<long>> _structureReferencesView;
     private readonly ChunkSkyLightSources _skyLightSources;
+    private static readonly IReadOnlySet<long> EmptyStructureReferences =
+        new HashSet<long>();
 
     public ChunkAccess(
         ChunkPos chunkPos,
@@ -47,6 +55,10 @@ public abstract class ChunkAccess : LightChunk
         _sections = new ChunkSection[levelHeightAccessor.GetSectionsCount()];
         _postProcessing = new List<short>?[_sections.Length];
         _heightmapEntries = new HeightmapEntries(_heightmaps);
+        _structureStartsView =
+            new ReadOnlyDictionary<Structure, StructureStart>(_structureStarts);
+        _structureReferencesView =
+            new ReadOnlyDictionary<Structure, HashSet<long>>(_structureReferences);
         _skyLightSources = new ChunkSkyLightSources(levelHeightAccessor);
 
         if (sections is not null)
@@ -220,6 +232,72 @@ public abstract class ChunkAccess : LightChunk
         }
 
         return true;
+    }
+
+    public StructureStart? GetStartForStructure(Structure structure)
+    {
+        ArgumentNullException.ThrowIfNull(structure);
+        return _structureStarts.GetValueOrDefault(structure);
+    }
+
+    public IReadOnlyDictionary<Structure, StructureStart> GetAllStarts() =>
+        _structureStartsView;
+
+    public void SetStartForStructure(Structure structure, StructureStart structureStart)
+    {
+        ArgumentNullException.ThrowIfNull(structure);
+        ArgumentNullException.ThrowIfNull(structureStart);
+        _structureStarts[structure] = structureStart;
+        MarkUnsaved();
+    }
+
+    public void SetAllStarts(
+        IReadOnlyDictionary<Structure, StructureStart> structureStarts)
+    {
+        ArgumentNullException.ThrowIfNull(structureStarts);
+        _structureStarts.Clear();
+
+        foreach (KeyValuePair<Structure, StructureStart> entry in structureStarts)
+            _structureStarts.Add(entry.Key, entry.Value);
+
+        MarkUnsaved();
+    }
+
+    public IReadOnlySet<long> GetReferencesForStructure(Structure structure)
+    {
+        ArgumentNullException.ThrowIfNull(structure);
+        return _structureReferences.TryGetValue(structure, out HashSet<long>? references)
+            ? references
+            : EmptyStructureReferences;
+    }
+
+    public IReadOnlyDictionary<Structure, HashSet<long>> GetAllReferences() =>
+        _structureReferencesView;
+
+    public void SetAllReferences(
+        IReadOnlyDictionary<Structure, HashSet<long>> structureReferences)
+    {
+        ArgumentNullException.ThrowIfNull(structureReferences);
+        _structureReferences.Clear();
+
+        foreach (KeyValuePair<Structure, HashSet<long>> entry in structureReferences)
+            _structureReferences.Add(entry.Key, entry.Value);
+
+        MarkUnsaved();
+    }
+
+    public void AddReferenceForStructure(Structure structure, long reference)
+    {
+        ArgumentNullException.ThrowIfNull(structure);
+
+        if (!_structureReferences.TryGetValue(structure, out HashSet<long>? references))
+        {
+            references = new HashSet<long>();
+            _structureReferences.Add(structure, references);
+        }
+
+        references.Add(reference);
+        MarkUnsaved();
     }
 
     public IReadOnlyCollection<KeyValuePair<Heightmap.Types, Heightmap>> GetHeightmaps() =>
