@@ -26,12 +26,7 @@ public sealed class DimensionOriginStructurePlacement : StructurePlacement
     {
         ArgumentNullException.ThrowIfNull(state);
 
-        ChunkPos origin = state is ChunkGeneratorStructureState structureState
-            ? structureState.GetDimensionOrigin()
-            : throw new ArgumentException(
-                "Dimension-origin placement requires ChunkGeneratorStructureState.",
-                nameof(state));
-
+        ChunkPos origin = state.GetDimensionOrigin();
         return origin.X == sourceX && origin.Z == sourceZ;
     }
 
