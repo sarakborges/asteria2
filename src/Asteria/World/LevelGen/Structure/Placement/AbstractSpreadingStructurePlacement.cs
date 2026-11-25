@@ -44,7 +44,7 @@ public abstract class AbstractSpreadingStructurePlacement : StructurePlacement
     public int Salt() =>
         _salt;
 
-    public ExclusionZone? ExclusionZone() =>
+    public ExclusionZone? ExclusionZoneValue() =>
         _exclusionZone;
 
     public bool IsStructureChunk(
