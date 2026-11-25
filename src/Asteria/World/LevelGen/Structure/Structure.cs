@@ -66,7 +66,7 @@ public abstract class Structure
     public static Codec<Holder<Structure>> CODEC { get; } =
         RegistryCodecs.Holder<Structure>(
             BuiltInRegistries.Structure.Key,
-            DIRECT_CODEC);
+            DIRECT_CODEC.Codec());
 
     protected readonly StructureSettings _settings;
 
