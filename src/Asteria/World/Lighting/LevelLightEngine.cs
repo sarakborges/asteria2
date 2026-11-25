@@ -91,7 +91,7 @@ public sealed class LevelLightEngine : LightEventListener
         ArgumentNullException.ThrowIfNull(layer);
         ArgumentNullException.ThrowIfNull(position);
 
-        if (ReferenceEquals(layer, LightLayer.BLOCK))
+        if (layer == LightLayer.BLOCK)
             return _blockEngine?.GetDebugData(position.AsLong()) ?? "n/a";
 
         return _skyEngine?.GetDebugData(position.AsLong()) ?? "n/a";
@@ -102,7 +102,7 @@ public sealed class LevelLightEngine : LightEventListener
         ArgumentNullException.ThrowIfNull(layer);
         ArgumentNullException.ThrowIfNull(position);
 
-        if (ReferenceEquals(layer, LightLayer.BLOCK))
+        if (layer == LightLayer.BLOCK)
             return _blockEngine?.GetDebugSectionType(position.AsLong()) ?? LightSectionType.Empty;
 
         return _skyEngine?.GetDebugSectionType(position.AsLong()) ?? LightSectionType.Empty;
@@ -113,7 +113,7 @@ public sealed class LevelLightEngine : LightEventListener
         ArgumentNullException.ThrowIfNull(layer);
         ArgumentNullException.ThrowIfNull(position);
 
-        if (ReferenceEquals(layer, LightLayer.BLOCK))
+        if (layer == LightLayer.BLOCK)
             _blockEngine?.QueueSectionData(position.AsLong(), data);
         else
             _skyEngine?.QueueSectionData(position.AsLong(), data);
