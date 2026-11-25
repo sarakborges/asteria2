@@ -226,6 +226,15 @@ internal static class RandomSpreadStructurePlacementChecks
                 ops,
                 ParseJson("""{"spacing":32,"separation":8,"salt":1,"locate_offset":[17,0,0]}""")).IsError,
             "Locate offset components must remain inside the inclusive -16..16 range.");
+
+        RandomSpreadStructurePlacement overflowOffset =
+            RandomSpreadStructurePlacement.MAP_CODEC.Parse(
+                ops,
+                ParseJson("""{"spacing":32,"separation":8,"salt":1,"locate_offset":[-2147483648,0,0]}"""))
+                .GetOrThrow();
+        Require(
+            overflowOffset.LocateOffset().GetX() == int.MinValue,
+            "Vec3i.offsetCodec must preserve Java Math.abs(Integer.MIN_VALUE) overflow during the range check.");
         Require(
             RandomSpreadStructurePlacement.MAP_CODEC.Parse(
                 ops,
