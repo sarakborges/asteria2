@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Asteria.Content.Biomes;
+using Asteria.Content.Identifiers;
 using Asteria.Content.Registries;
 using Asteria.Core;
 using Asteria.Serialization;
