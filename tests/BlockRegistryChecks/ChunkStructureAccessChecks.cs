@@ -78,7 +78,7 @@ internal static class ChunkStructureAccessChecks
         long secondReference = ChunkPos.Pack(-8, 11);
         chunk.AddReferenceForStructure(structure, firstReference);
 
-        IReadOnlySet<long> firstReferenceSet =
+        ISet<long> firstReferenceSet =
             chunk.GetReferencesForStructure(structure);
         Require(
             firstReferenceSet.Count == 1 &&
@@ -86,6 +86,17 @@ internal static class ChunkStructureAccessChecks
             ReferenceEquals(chunk.GetAllReferences()[structure], firstReferenceSet) &&
             chunk.IsUnsaved(),
             "Adding a reference must create the structure's set, publish it and mark the chunk unsaved.");
+
+        StructureAccess structureAccess = chunk;
+        chunk.TryMarkSaved();
+        long directMutationReference = ChunkPos.Pack(13, 14);
+        ISet<long> mutableReferenceSet =
+            structureAccess.GetReferencesForStructure(structure);
+        Require(
+            mutableReferenceSet.Add(directMutationReference) &&
+            firstReferenceSet.Contains(directMutationReference) &&
+            !chunk.IsUnsaved(),
+            "StructureAccess must expose the stored mutable reference set; direct set mutation does not mark the chunk unsaved.");
 
         chunk.TryMarkSaved();
         chunk.AddReferenceForStructure(structure, firstReference);
