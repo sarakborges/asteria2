@@ -16,6 +16,13 @@ public sealed class DimensionOriginStructurePlacement : StructurePlacement
     public static MapCodec<DimensionOriginStructurePlacement> MAP_CODEC { get; } =
         MapCodec<DimensionOriginStructurePlacement>.Unit(INSTANCE);
 
+    public static MapCodec<StructurePlacement> PLACEMENT_CODEC { get; } =
+        MAP_CODEC.XMap<StructurePlacement>(
+            static value => value,
+            static placement => placement as DimensionOriginStructurePlacement ??
+                throw new InvalidOperationException(
+                    $"Expected {nameof(DimensionOriginStructurePlacement)}, received {placement.GetType().Name}."));
+
     private DimensionOriginStructurePlacement()
     {
     }
@@ -44,6 +51,6 @@ public sealed class DimensionOriginStructurePlacement : StructurePlacement
         return origin.Offset(LocateOffset());
     }
 
-    public MapCodec<DimensionOriginStructurePlacement> Codec() =>
-        MAP_CODEC;
+    public MapCodec<StructurePlacement> Codec() =>
+        PLACEMENT_CODEC;
 }
