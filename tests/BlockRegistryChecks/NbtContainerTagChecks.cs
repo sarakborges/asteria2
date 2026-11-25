@@ -245,7 +245,7 @@ internal static class NbtContainerTagChecks
         }
         stream.Position = 0;
         using var input = new NbtDataInput(stream, leaveOpen: true);
-        var accounter = new NbtAccounter(0);
+        var accounter = new NbtAccounter(24);
         CompoundTag.TYPE.Skip(input, 2, accounter);
         Require(
             stream.Position == stream.Length &&
