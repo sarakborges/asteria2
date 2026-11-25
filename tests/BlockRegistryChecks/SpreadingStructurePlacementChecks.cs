@@ -241,6 +241,7 @@ internal static class SpreadingStructurePlacementChecks
         private readonly bool _hasNearbyStructure;
 
         public long LevelSeed { get; }
+        public ChunkPos GetDimensionOrigin() => ChunkPos.Zero;
         public int ExclusionQueries { get; private set; }
         public Holder<StructureSet>? LastSet { get; private set; }
         public int LastX { get; private set; }
