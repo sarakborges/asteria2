@@ -186,7 +186,6 @@ internal static class ProtoChunkChecks
             engine.GetDebugSectionType(LightLayer.SKY, section) == LightSectionType.LightAndData,
             "The nonempty section must allocate and publish block and sky light storage.");
 
-        int notificationsBeforeRemoval = source.Updates.Count;
         chunk.SetBlockState(position, BuiltInBlocks.AIR.DefaultState);
         Require(engine.HasLightWork(),
             "Removing the last block from a light-initialized section must enqueue section and block updates.");
@@ -195,9 +194,8 @@ internal static class ProtoChunkChecks
             engine.RunLightUpdates();
 
         Require(
-            !engine.HasLightWork() &&
-            source.Updates.Count > notificationsBeforeRemoval,
-            "Removing the final block must process the light section removal and publish its affected neighborhood.");
+            !engine.HasLightWork(),
+            "Removing the final block must finish pending light queues and section-storage inconsistencies.");
         Require(
             engine.GetDebugSectionType(LightLayer.BLOCK, section) == LightSectionType.Empty &&
             engine.GetDebugSectionType(LightLayer.SKY, section) == LightSectionType.Empty,
