@@ -2,6 +2,8 @@ using Asteria.Content.Biomes;
 using Asteria.Content.Registries;
 using Asteria.Content.Identifiers;
 using Asteria.Serialization;
+using Asteria.Core;
+using Asteria.World.LevelGen.Structure.Pieces;
 
 namespace Asteria.World.LevelGen.Structure;
 
@@ -135,5 +137,46 @@ public abstract class Structure
         return ReferenceEquals(TerrainAdaptation(), TerrainAdjustment.NONE)
             ? boundingBox
             : boundingBox.InflatedBy(12);
+    }
+
+    /// <summary>
+    /// Position where the structure starts and the deferred/prebuilt piece builder.
+    /// A deferred generator creates a fresh builder on every GetPiecesBuilder call;
+    /// a prebuilt builder is returned by identity, matching Minecraft Java 26.3.
+    /// </summary>
+    public sealed class GenerationStub
+    {
+        private readonly Action<StructurePiecesBuilder>? _pieceGenerator;
+        private readonly StructurePiecesBuilder? _prebuiltBuilder;
+
+        public BlockPos Position { get; }
+
+        public GenerationStub(
+            BlockPos position,
+            Action<StructurePiecesBuilder> pieceGenerator)
+        {
+            Position = position ?? throw new ArgumentNullException(nameof(position));
+            _pieceGenerator = pieceGenerator ??
+                throw new ArgumentNullException(nameof(pieceGenerator));
+        }
+
+        public GenerationStub(
+            BlockPos position,
+            StructurePiecesBuilder prebuiltBuilder)
+        {
+            Position = position ?? throw new ArgumentNullException(nameof(position));
+            _prebuiltBuilder = prebuiltBuilder ??
+                throw new ArgumentNullException(nameof(prebuiltBuilder));
+        }
+
+        public StructurePiecesBuilder GetPiecesBuilder()
+        {
+            if (_prebuiltBuilder is not null)
+                return _prebuiltBuilder;
+
+            var builder = new StructurePiecesBuilder();
+            _pieceGenerator!(builder);
+            return builder;
+        }
     }
 }
