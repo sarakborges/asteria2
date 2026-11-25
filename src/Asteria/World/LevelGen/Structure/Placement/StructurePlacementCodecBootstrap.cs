@@ -21,5 +21,12 @@ internal static class StructurePlacementCodecBootstrap
                 ResourceLocation.FromNamespaceAndPath("minecraft", "dimension_origin")),
             DimensionOriginStructurePlacement.PLACEMENT_CODEC,
             RegistrationInfo.BuiltIn);
+
+        registry.Register(
+            RegistryKey<MapCodec<StructurePlacement>>.Create(
+                registry.Key,
+                ResourceLocation.FromNamespaceAndPath("minecraft", "random_spread")),
+            RandomSpreadStructurePlacement.PLACEMENT_CODEC,
+            RegistrationInfo.BuiltIn);
     }
 }
