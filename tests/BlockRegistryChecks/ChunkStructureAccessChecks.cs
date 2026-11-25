@@ -101,13 +101,13 @@ internal static class ChunkStructureAccessChecks
         chunk.TryMarkSaved();
         chunk.AddReferenceForStructure(structure, firstReference);
         Require(
-            firstReferenceSet.Count == 1 && chunk.IsUnsaved(),
+            firstReferenceSet.Count == 2 && chunk.IsUnsaved(),
             "Duplicate references must remain deduplicated while the add operation still marks the chunk unsaved.");
 
         chunk.TryMarkSaved();
         chunk.AddReferenceForStructure(structure, secondReference);
         Require(
-            firstReferenceSet.Count == 2 &&
+            firstReferenceSet.Count == 3 &&
             firstReferenceSet.Contains(secondReference) &&
             chunk.IsUnsaved(),
             "Adding a distinct reference must extend the existing structure reference set.");
