@@ -249,7 +249,7 @@ internal static class BeardifierChecks
         ChunkPos junctionSource = new(-4, 5);
         var junctionStructure = new TerrainProbeStructure(TerrainAdjustment.BURY);
         var junctionPiece = new TerrainProbePiece(
-            new BoundingBox(0, 0, 0, 0, 0, 0),
+            new BoundingBox(40, 0, 40, 40, 0, 40),
             isRigid: false,
             junctions: new[]
             {
@@ -274,7 +274,7 @@ internal static class BeardifierChecks
                 0,
                 new PiecesContainer(new[]
                 {
-                    new TerrainProbePiece(new BoundingBox(0, 0, 0, 0, 0, 0), isRigid: true, groundLevelDelta: 0)
+                    new TerrainProbePiece(new BoundingBox(100, 0, 100, 100, 0, 100), isRigid: true, groundLevelDelta: 0)
                 })));
         center.AddReferenceForStructure(ignoredStructure, ignoredSource.Pack());
 
@@ -286,11 +286,11 @@ internal static class BeardifierChecks
             Math.Abs(beardifier.SampleValue(SamplerContext.EmptyUncached, 0, 2, 0) - 1.0F) < 1.0E-6F,
             "Hand-built rigid pieces must contribute with their ground-level delta to the terrain beardifier.");
         Require(
-            Math.Abs(beardifier.SampleValue(SamplerContext.EmptyUncached, 0, 0, 0) -
-                     (1.0F - 0.2783878743648529F)) < 1.0E-6F,
+            Math.Abs(beardifier.SampleValue(SamplerContext.EmptyUncached, 40, 0, 40) -
+                     -0.2783878743648529F) < 1.0E-6F,
             "Jigsaw junctions must contribute independently when their source piece is not rigid.");
         Require(
-            beardifier.SampleValue(SamplerContext.EmptyUncached, 1_000, 1_000, 1_000) == 0.0F,
+            beardifier.SampleValue(SamplerContext.EmptyUncached, 100, 0, 100) == 0.0F,
             "Structure starts with TerrainAdjustment.NONE must not expand the beardifier's affected bounds or contribute density.");
 
         var emptyCenter = new ProtoChunk(

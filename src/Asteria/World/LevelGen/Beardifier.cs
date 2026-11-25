@@ -1,4 +1,7 @@
 using Asteria.Core;
+using Asteria.Content.Chunks;
+using Asteria.Content.Chunks.Status;
+using Asteria.World;
 using Asteria.Util;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Structure;
