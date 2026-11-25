@@ -188,6 +188,7 @@ internal static class Program
         NbtContainerTagChecks.Run();
         NbtIoChecks.Run();
         NbtOpsChecks.Run();
+        TagValueInputChecks.Run();
         DynamicOpsChecks.Run();
         CodecChecks.Run();
         CoordinatePositionChecks.Run();
