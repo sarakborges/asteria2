@@ -55,6 +55,8 @@ public sealed class IntArrayTag : CollectionTag
 
     public int Size() => _data.Length;
 
+    public bool IsEmpty() => _data.Length == 0;
+
     public Tag Get(int index) =>
         IntTag.ValueOf(_data[index]);
 

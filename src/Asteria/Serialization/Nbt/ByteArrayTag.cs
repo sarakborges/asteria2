@@ -53,6 +53,8 @@ public sealed class ByteArrayTag : CollectionTag
 
     public int Size() => _data.Length;
 
+    public bool IsEmpty() => _data.Length == 0;
+
     public Tag Get(int index) =>
         ByteTag.ValueOf(unchecked((sbyte)_data[index]));
 

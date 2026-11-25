@@ -55,6 +55,8 @@ public sealed class LongArrayTag : CollectionTag
 
     public int Size() => _data.Length;
 
+    public bool IsEmpty() => _data.Length == 0;
+
     public Tag Get(int index) =>
         LongTag.ValueOf(_data[index]);
 
