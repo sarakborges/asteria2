@@ -523,9 +523,6 @@ internal static class NoiseBasedChunkGeneratorChecks
 
         (int X, int Y, int Z)? nullResultPosition = null;
         (int X, int Y, int Z, BlockState State)? nonNullResultPosition = null;
-        int nullResultCount = 0;
-        int fluidResultCount = 0;
-        int airResultCount = 0;
         var volume = new DensityVolume(16, height, 16, 0, minY, 0);
         using (var aquiferProbe = new NoiseChunk(
             randomState,
@@ -546,19 +543,15 @@ internal static class NoiseBasedChunkGeneratorChecks
                         worldY,
                         worldZ,
                         density: 0.0);
-                    if (aquiferState is null)
+                    if (aquiferState is null && nullResultPosition is null)
                     {
-                        nullResultCount++;
-                        nullResultPosition ??= (worldX, worldY, worldZ);
+                        nullResultPosition = (worldX, worldY, worldZ);
                     }
-                    else if (!aquiferState.GetFluidState().IsEmpty())
+                    else if (aquiferState is not null &&
+                             !aquiferState.GetFluidState().IsEmpty() &&
+                             nonNullResultPosition is null)
                     {
-                        fluidResultCount++;
-                        nonNullResultPosition ??= (worldX, worldY, worldZ, aquiferState);
-                    }
-                    else
-                    {
-                        airResultCount++;
+                        nonNullResultPosition = (worldX, worldY, worldZ, aquiferState);
                     }
                 }
             });
@@ -566,7 +559,7 @@ internal static class NoiseBasedChunkGeneratorChecks
 
         Require(
             nullResultPosition.HasValue && nonNullResultPosition.HasValue,
-            $"The masked aquifer fixture must contain both null results and fluid states (null: {nullResultCount}, fluid: {fluidResultCount}, air: {airResultCount}, first null: {nullResultPosition}, first fluid: {nonNullResultPosition}).");
+            "The masked aquifer fixture must contain both null results and fluid states.");
 
         generator.BuildTerrain(
             chunk,
