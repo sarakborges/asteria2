@@ -71,6 +71,20 @@ public abstract class AbstractSpreadingStructurePlacement : StructurePlacement
             sourceZ,
             _frequency);
 
+    /// <summary>
+    /// Exposes the interface's default locate-position operation as a class member.
+    /// C# default interface implementations are not inherited into the concrete class API.
+    /// </summary>
+    public BlockPos GetLocatePos(ChunkPos chunkPos)
+    {
+        BlockPos origin = new(
+            chunkPos.GetMinBlockX(),
+            0,
+            chunkPos.GetMinBlockZ());
+
+        return origin.Offset(_locateOffset);
+    }
+
     public bool ApplyInteractionsWithOtherStructures(
         IStructurePlacementState state,
         int sourceX,
