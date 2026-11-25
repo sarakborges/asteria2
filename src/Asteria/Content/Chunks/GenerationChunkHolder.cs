@@ -28,7 +28,7 @@ public abstract class GenerationChunkHolder
     private ChunkStatus? _startedWork;
     private readonly TaskCompletionSource<ChunkResult<ChunkAccess>>?[] _futures;
     private int _generationRefCount;
-    private TaskCompletionSource<bool> _generationSaveSyncSource = new();
+    private TaskCompletionSource<bool>? _generationSaveSyncSource;
 
     protected GenerationChunkHolder(ChunkPos pos)
     {
@@ -47,7 +47,7 @@ public abstract class GenerationChunkHolder
     public int GetGenerationRefCount() => Volatile.Read(ref _generationRefCount);
 
     public Task GenerationSaveSyncFuture =>
-        Volatile.Read(ref _generationSaveSyncSource).Task;
+        Volatile.Read(ref _generationSaveSyncSource)?.Task ?? Task.CompletedTask;
 
     /// <summary>
     /// Supplies the scheduler-derived status ceiling. The caller owns ticket-level
@@ -318,12 +318,12 @@ public abstract class GenerationChunkHolder
 
     public void DecreaseGenerationRefCount()
     {
-        TaskCompletionSource<bool> source =
+        TaskCompletionSource<bool>? source =
             Volatile.Read(ref _generationSaveSyncSource);
         int newValue = Interlocked.Decrement(ref _generationRefCount);
 
         if (newValue == 0)
-            source.TrySetResult(true);
+            source?.TrySetResult(true);
 
         if (newValue < 0)
         {
