@@ -195,6 +195,10 @@ internal static class FluidChecks
             $"The built-in {name} liquid block must expose the corresponding source FluidState.");
 
         Require(
+            blockState.GetRenderShape() == RenderShape.INVISIBLE,
+            $"The built-in {name} liquid block must use invisible block rendering so its surface is supplied by the fluid renderer.");
+
+        Require(
             blockState.GetShape(EmptyBlockGetter.Instance, BlockPos.Zero).IsEmpty() &&
             blockState.GetCollisionShape(EmptyBlockGetter.Instance, BlockPos.Zero).IsEmpty(),
             $"The built-in {name} liquid block must not have a collision or block shape.");

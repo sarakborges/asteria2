@@ -21,6 +21,9 @@ public sealed class LiquidBlock : Block
     public override FluidState GetFluidState(BlockState state) =>
         _fluid.DefaultFluidState;
 
+    public override RenderShape GetRenderShape(BlockState state) =>
+        RenderShape.INVISIBLE;
+
     public override VoxelShape GetShape(BlockState state, BlockGetter level, BlockPos position) =>
         Shapes.Empty();
 }
