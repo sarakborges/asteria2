@@ -203,6 +203,7 @@ internal static class Program
         VoxelShapeChecks.Run();
         RenderingLayerChecks.Run();
         NativeImageChecks.Run();
+        SpriteContentsChecks.Run();
 
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&

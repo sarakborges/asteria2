@@ -84,6 +84,20 @@ public sealed class NativeImage : IDisposable
             $"Cannot compute translucency out of bounds: [{x0}, {y0}, {x1}, {y1}] in {Width}x{Height} image");
     }
 
+    public int GetAlpha(int x, int y)
+    {
+        byte[] pixels = _pixels ??
+            throw new ObjectDisposedException(nameof(NativeImage));
+
+        if (x < 0 || x >= Width || y < 0 || y >= Height)
+            throw new ArgumentOutOfRangeException(nameof(x), $"Pixel ({x}, {y}) is outside {Width}x{Height} image.");
+
+        if (ImageFormat != Format.RGBA)
+            return 255;
+
+        return pixels[(x + y * Width) * 4 + 3];
+    }
+
     public void Dispose()
     {
         _pixels = null;
