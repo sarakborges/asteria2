@@ -22,6 +22,9 @@ internal static class TagValueInputChecks
         tag.PutLong("long", -456L);
         tag.PutFloat("float", 1.5f);
         tag.PutDouble("double", -2.25);
+        tag.PutDouble("fractionalPositive", 0.5);
+        tag.PutFloat("fractionalNegative", -0.5f);
+        tag.PutDouble("fractionalNonZero", 1.5);
         tag.PutBoolean("enabled", true);
         tag.PutString("name", "overworld");
         tag.PutIntArray("levels", new[] { 1, -2, 3 });
@@ -37,6 +40,9 @@ internal static class TagValueInputChecks
             input.GetFloatOr("float", 0) == 1.5f &&
             input.GetDoubleOr("double", 0) == -2.25 &&
             input.GetBooleanOr("enabled", false) &&
+            !input.GetBooleanOr("fractionalPositive", true) &&
+            !input.GetBooleanOr("fractionalNegative", true) &&
+            input.GetBooleanOr("fractionalNonZero", false) &&
             input.GetString("name") == "overworld" &&
             input.GetStringOr("missing", "fallback") == "fallback" &&
             input.GetIntArray("levels")!.SequenceEqual(new[] { 1, -2, 3 }),

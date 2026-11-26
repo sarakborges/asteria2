@@ -1844,3 +1844,10 @@ A separação segue o princípio de manter fixtures de teste fora do catálogo d
 - Commits do incremento: `d45cd5a599955e245a11e02b5cbf4a507fc05f55` (I/O e accounter), `3761d2952d50ef7445f6bc2abc90a80bae38e657` (contrato escalar compilável), `1cff1d9cfc47fff852e81472c3a309ff9c23eda6` (arrays), `b656cfdbdda8377820303095c6eddaebe724fd61` e correções de fixtures até `b4900251701448e9476cc1ef6605a80a8e863376` (containers recursivos), `8e9342050df4909c06cf27773295bb752690d700` (NbtIo).
 - Limite atual: a camada NBT ainda não implementa `BlockEntity`, `BlockEntityType`, armazenamento de entities por chunk, nem codecs/serialização de `LevelChunk`. `FULL` permanece sem task; o runtime continua publicando `ProtoChunk`. Não foi adicionada uma promoção artificial.
 - Referência: Minecraft Java 26.3 `NbtIo`, tipos/containers NBT e `NbtAccounter`. <Cite ref="turn355807view0"/> <Cite ref="turn333773search6"/>
+
+## Correção de paridade — conversão de `getBooleanOr` (26/11/2026)
+
+- `TagValueInput.GetBooleanOr` agora testa `NumericTag.ByteValue() != 0`, como `TagValueInput.getBooleanOr` no Minecraft Java 26.3. Testar o valor `double` diretamente divergia para números fracionários cujo byte convertido é zero.
+- As verificações de `ValueInput` cobrem frações positivas e negativas entre -1 e 1 (ambas devem resultar em `false`) e um valor fracionário cuja conversão para byte permanece diferente de zero.
+- Referência: Minecraft Java 26.3, `TagValueInput.getBooleanOr` (fonte decompilada, linhas 143–145); a conversão segue `NumericTag.byteValue()`.
+- Validação de execução: pendente nesta sessão; o ambiente local não dispõe do .NET SDK. O harness permanece `dotnet run --project tests/BlockRegistryChecks/BlockRegistryChecks.csproj`.

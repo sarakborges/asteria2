@@ -242,8 +242,8 @@ public sealed class TagValueInput : ValueInput
         List(name, codec) ?? new TypedInputList<T>(Array.Empty<T>());
 
     public bool GetBooleanOr(string name, bool defaultValue) =>
-        GetNumeric(name)?.DoubleValue() is double value
-            ? value != 0.0
+        GetNumeric(name) is NumericTag value
+            ? value.ByteValue() != 0
             : defaultValue;
 
     public sbyte GetByteOr(string name, sbyte defaultValue) =>
