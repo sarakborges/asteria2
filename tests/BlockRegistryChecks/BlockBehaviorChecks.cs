@@ -45,6 +45,7 @@ internal static class BlockBehaviorChecks
         CheckRedstoneConductorPredicate();
         CheckDefaultDestroyTime();
         CheckFaceSupportSemantics();
+        CheckCollisionShapeMetadata();
         CheckStateCacheReinitialization();
         CheckDefaultFluidStateBeforeCacheInitialization();
         CheckStateConstructorEvaluationOrder();
@@ -217,6 +218,54 @@ internal static class BlockBehaviorChecks
             "Fluid replacement must allow a non-solid state even when its replaceable property is false.");
     }
 
+
+    private static void CheckCollisionShapeMetadata()
+    {
+        Require(!Blocks.STONE.DefaultState.HasLargeCollisionShape,
+            "A cached full-cube collision shape must not be classified as extending outside its block cell.");
+        Require(!Blocks.AIR.DefaultState.HasLargeCollisionShape,
+            "A cached empty collision shape must not be classified as large.");
+
+        BlockState large = new LargeCollisionBlock().DefaultState;
+        Require(large.HasLargeCollisionShape,
+            "A cached collision shape extending beyond any block-cell boundary must be classified as large.");
+
+        BlockState dynamic = new DynamicSupportBlock().DefaultState;
+        Require(dynamic.HasLargeCollisionShape,
+            "A state without a static collision cache must conservatively report a large collision shape.");
+
+        BlockState offset = new OffsetMetadataBlock().DefaultState;
+        Require(offset.HasOffsetFunction,
+            "A state configured with a non-NONE offset type must expose its offset function.");
+
+        Require(!Blocks.STONE.DefaultState.IsLightPermeable,
+            "A solid-rendering block with non-zero light dampening must not be light permeable.");
+        Require(Blocks.AIR.DefaultState.IsLightPermeable,
+            "A non-solid-rendering block must be light permeable.");
+    }
+
+    private sealed class LargeCollisionBlock : Block
+    {
+        public LargeCollisionBlock()
+            : base(BlockProperties.Of(), createIntrusiveRegistryHolder: false)
+        {
+            InitializeStateCaches();
+        }
+
+        public override VoxelShape GetShape(BlockState state, BlockGetter level, BlockPos position) =>
+            Shapes.Box(-0.1, 0.0, 0.0, 1.1, 1.0, 1.0);
+    }
+
+    private sealed class OffsetMetadataBlock : Block
+    {
+        public OffsetMetadataBlock()
+            : base(
+                BlockProperties.Of().NoCollision().OffsetType(OffsetType.XZ),
+                createIntrusiveRegistryHolder: false)
+        {
+            InitializeStateCaches();
+        }
+    }
 
     private static void CheckStateCacheReinitialization()
     {
