@@ -1,5 +1,9 @@
 using Asteria.Content.Blocks;
 using Asteria.Content.Chunks;
+using Asteria.Content.Fluids;
+using Asteria.Core;
+using Asteria.Core.Shapes;
+using Asteria.World;
 using Asteria.Content.Storage;
 
 internal static class ChunkSectionFluidChecks
@@ -36,6 +40,58 @@ internal static class ChunkSectionFluidChecks
         section.RecalculateBlockCounts();
         Require(section.HasFluid, "RecalculateBlockCounts must rebuild the fluid count after direct palette writes.");
         Require(!section.IsRandomlyTickingFluids, "Recalculation must preserve the non-ticking status of still source fluids.");
+
+        var tickingFluid = new TickingFluid();
+        var tickingBlock = new TickingFluidBlock(tickingFluid);
+        section.SetBlockState(0, 0, 0, tickingBlock.DefaultState);
+        Require(section.HasFluid, "A block exposing a non-empty fluid state must increment the section fluid count.");
+        Require(section.IsRandomlyTickingFluids && section.IsRandomlyTicking,
+            "A randomly ticking fluid state must increment both fluid and aggregate ticking gates.");
+
+        ChunkSection tickingCopy = section.Copy();
+        Require(tickingCopy.IsRandomlyTickingFluids,
+            "Copying a section must preserve its randomly-ticking fluid count.");
+        tickingCopy.SetBlockState(0, 0, 0, Blocks.AIR.DefaultState);
+        Require(!tickingCopy.IsRandomlyTickingFluids && !tickingCopy.IsRandomlyTicking,
+            "Removing the final randomly ticking fluid state must clear both ticking gates.");
+        Require(section.IsRandomlyTickingFluids,
+            "Removing a ticking fluid from a copy must not mutate the original section.");
+
+        section.GetStates().Set(0, 0, 0, tickingBlock.DefaultState);
+        section.SetBlockState(0, 0, 0, Blocks.AIR.DefaultState);
+        Require(section.IsRandomlyTickingFluids,
+            "A direct palette write followed by SetBlockState must preserve vanilla cached-counter behavior.");
+        section.RecalculateBlockCounts();
+        Require(!section.IsRandomlyTickingFluids,
+            "RecalculateBlockCounts must rebuild the randomly-ticking fluid count after direct palette writes.");
+    }
+
+    private sealed class TickingFluid : Fluid
+    {
+        public TickingFluid() : base(createIntrusiveRegistryHolder: false)
+        {
+        }
+
+        public override bool IsRandomlyTicking => true;
+        public override bool IsSource(FluidState state) => true;
+        public override int GetAmount(FluidState state) => FluidState.AmountFull;
+        public override float GetHeight(FluidState state, BlockGetter level, BlockPos position) => 1.0f;
+        public override float GetOwnHeight(FluidState state) => 1.0f;
+        public override VoxelShape GetShape(FluidState state, BlockGetter level, BlockPos position) => Shapes.Block();
+    }
+
+    private sealed class TickingFluidBlock : Block
+    {
+        private readonly Fluid _fluid;
+
+        public TickingFluidBlock(Fluid fluid)
+            : base(BlockProperties.Of(), createIntrusiveRegistryHolder: false)
+        {
+            _fluid = fluid;
+            InitializeStateCaches();
+        }
+
+        public override FluidState GetFluidState(BlockState state) => _fluid.DefaultFluidState;
     }
 
     private static void Require(bool condition, string message)
