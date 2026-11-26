@@ -7,7 +7,7 @@ Asteria é um jogo exclusivamente single-player, offline e local. Não existe re
 ## Fora de escopo
 
 - **Redstone:** circuitos de redstone, níveis de potência, fios, repetidores, comparadores, sensores e propagação/atualização de sinais.
-- **Multiplayer/network play:** transporte de rede, protocolo de jogo, servidor/cliente autoritativo, replicação de estado, sincronização remota, matchmaking, lobbies e presença online.
+- **Multiplayer externo:** publicar o mundo para LAN/internet, escutar sockets externos, conectar a servidores remotos, matchmaking, lobbies e presença online. O canal interno local do Integrated Server, usado só entre o cliente e o servidor no mesmo processo, continua no escopo para manter o modelo da referência.
 - **Áudio:** música, sons ambientes e demais sistemas/atributos sonoros.
 - **Conteúdo exclusivo de um único item, bloco ou entidade:** registros, partículas, atributos e comportamentos cuja existência depende de um objeto individual. Exemplos: Geyser, Eyeblossom, Golden Dandelion (incluindo suas partículas `pause_mob_growth` e `reset_mob_growth`), partículas de blocos especiais, partículas de mobs específicos, ovos de tartaruga, âncoras de renascimento, piglins, abelhas, gatos, snow golems e creakings. Atributos associados a raids/illagers e spawn de slimes também ficam excluídos.
 - **Mobs:** categorias, spawn settings/tabelas, spawners, condições de spawn e IA/comportamentos exclusivos de mobs. Não implementar nem tratar como pendências futuras sem solicitação explícita.
@@ -31,11 +31,11 @@ A referência continua sendo Minecraft Java 26.3 para algoritmos e comportamento
 
 ## Arquitetura single-player local
 
-A ausência de multiplayer não elimina o lado servidor do jogo. O mundo deve manter a divisão arquitetural equivalente ao Integrated Server:
+A ausência de multiplayer externo não elimina o lado servidor nem o canal local do jogo. O runtime deve manter a arquitetura real do Integrated Server:
 
-- O processo local do jogo hospeda a simulação autoritativa e os níveis locais, com gerenciamento e lifecycle de chunks no lado servidor.
-- O cliente local mantém sua própria visão do nível e consome snapshots/estados apropriados para extração e renderização. Não há conexão remota nem transporte de rede entre essas partes.
-- O caminho de geração, loading, lighting, scheduler e save/load deve seguir os sistemas server-side equivalentes da referência. Não condensar esses papéis em um gerador próprio que sincroniza e publica chunks manualmente.
+- O processo local hospeda `IntegratedServer` e o cliente como componentes distintos. O servidor mantém a autoridade sobre o mundo e o lifecycle de chunks.
+- O `ClientLevel` mantém sua própria visão do nível e recebe atualizações pelo canal interno de pacotes locais da referência (`LocalConnection`/`Connection`). Esse canal não abre sockets externos nem publica o mundo para LAN/internet.
+- O caminho de geração, loading, lighting, scheduler e save/load segue os sistemas server-side equivalentes. Não condensar esses papéis em um gerador próprio que sincroniza e publica chunks manualmente.
 - A renderização segue o pipeline client-side da referência. Godot fornece o backend gráfico; não substitui visibilidade, compilação de seções, modelos, atlas, culling ou cálculo de geometria.
 
 ## Primeiro marco visual

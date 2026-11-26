@@ -2,18 +2,18 @@
 
 ## Objetivo
 
-Entregar primeiro um mundo local gerado e visualmente correto, mantendo a arquitetura equivalente ao Minecraft Java 26.3. O produto é single-player/offline. O runtime, porém, preserva o modelo de Integrated Server: um lado server-side local controla simulação e chunks; um lado client-side local extrai e renderiza o mundo. Nenhum transporte de rede é criado entre eles.
+Entregar primeiro um mundo local gerado e visualmente correto, mantendo a arquitetura real do Minecraft Java 26.3. O produto é single-player e não oferece conexões externas. O runtime preserva `IntegratedServer`, o `ClientLevel` e o canal interno de pacotes locais (`LocalConnection`/`Connection`) usado entre as duas metades, sem escutar sockets externos nem publicar o mundo para LAN/internet.
 
 ## Fronteira local, não multiplayer
 
 Asteria deve preservar estes papéis:
 
-- **Servidor integrado:** ciclo de vida local do jogo e níveis; autoridade sobre mundo, chunks, ticks, geração e iluminação server-side.
+- **Servidor integrado:** `IntegratedServer` local; mantém autoridade sobre mundo, chunks, ticks, geração e iluminação server-side.
 - **Gerenciamento de chunks:** caminho equivalente a `ServerChunkCache`, `ChunkMap`, `ChunkHolder`, `ChunkGenerationTask`, `GeneratingChunkMap` e `ChunkPyramid`. As tarefas devem obedecer aos estados e dependências da referência, sem um loop manual que força cada etapa de forma síncrona.
-- **Cliente local:** um `ClientLevel` separado do nível autoritativo. Ele não conecta a um servidor remoto; recebe o estado local necessário para renderização.
+- **Cliente local:** um `ClientLevel` separado do nível autoritativo, ligado ao Integrated Server pelo canal interno de pacotes locais. Não há listeners de socket externo nem publicação LAN.
 - **Backend gráfico Godot:** converte os dados extraídos em recursos do Godot e os apresenta. Não é dono da lógica de mundo, culling, seleção de faces, modelos, iluminação ou fluids.
 
-Não portar socket, protocolo, conexão remota, replicação, matchmaking, lobbies, presença ou servidor dedicado. Não remover os papéis server-side apenas porque não há rede.
+Não implementar sockets externos, publicação LAN, conexão a servidores remotos, matchmaking, lobbies, presença ou hospedagem multiplayer. Preservar o canal interno local e os pacotes do Integrated Server. Não remover os papéis server-side apenas porque o produto não oferece multiplayer externo.
 
 ## Implementações próprias a retirar/substituir
 
