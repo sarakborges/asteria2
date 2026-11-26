@@ -375,6 +375,7 @@ internal static class Program
         BlockTagChecks.Run();
         BlockPositionTransformChecks.Run();
         BlockBehaviorChecks.Run();
+        ChunkSectionFluidChecks.Run();
         ProtoChunkChecks.Run();
         ChunkResultChecks.Run();
         GenerationChunkHolderChecks.Run();
