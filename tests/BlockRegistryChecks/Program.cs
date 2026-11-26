@@ -308,6 +308,7 @@ internal static class Program
         Require(BuiltInRegistries.Biome.Count == 56, "The built-in biome registry must contain all 56 vanilla Overworld biomes.");
         Require(BuiltInRegistries.PositionSourceType.Count == 1, "The local position-source registry must contain only the block variant.");
         Require(BuiltInRegistries.Timeline.Count == 0, "No built-in timelines should be registered until their complete attribute content is in scope.");
+        FullChunkStatusChecks.Run();
         ChunkStatusChecks.Run();
         ChunkDependenciesChecks.Run();
         ChunkPyramidChecks.Run();
