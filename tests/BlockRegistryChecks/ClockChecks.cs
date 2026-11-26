@@ -46,7 +46,7 @@ internal static class ClockChecks
     {
         DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
         JsonElement encoded = ClockTimeMarker.KEY_CODEC.EncodeStart(ops, ClockTimeMarkers.DAY).GetOrThrow();
-        Require(encoded.GetString() == "asteria:day" &&
+        Require(encoded.GetString() == "minecraft:day" &&
                 ClockTimeMarker.KEY_CODEC.Parse(ops, encoded).GetOrThrow() == ClockTimeMarkers.DAY,
             "Clock time marker keys must round-trip as namespaced registry paths.");
 
