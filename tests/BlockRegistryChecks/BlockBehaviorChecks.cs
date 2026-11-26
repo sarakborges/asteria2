@@ -248,6 +248,12 @@ internal static class BlockBehaviorChecks
             "Explicit enum-property value lists must retain their serialized names.");
         Require(!FACING.TryParse("upside_down", out _),
             "EnumProperty must reject serialized values outside its explicit value list.");
+        Require(Direction.DOWN.CompareTo(Direction.UP) < 0 &&
+                Direction.WEST.CompareTo(Direction.EAST) < 0,
+            "Direction comparison must preserve the 26.3 declaration/data-value order.");
+        Require(Direction.Axis.X.CompareTo(Direction.Axis.Y) < 0 &&
+                Direction.Axis.Y.CompareTo(Direction.Axis.Z) < 0,
+            "Direction.Axis comparison must preserve the 26.3 X/Y/Z order.");
     }
 
     private sealed class DirectionPropertyBlock : Block
