@@ -1,4 +1,5 @@
 using Asteria.Content.Blocks;
+using Asteria.Content.Blocks.StateProperties;
 using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Content.Fluids;
 using Asteria.Core;
