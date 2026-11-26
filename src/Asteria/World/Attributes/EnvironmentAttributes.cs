@@ -80,7 +80,7 @@ public static class EnvironmentAttributes
 
     private static void Register<T>(string path, EnvironmentAttribute<T> attribute)
     {
-        ResourceLocation location = ResourceLocation.WithDefaultNamespace(path);
+        ResourceLocation location = ResourceLocation.FromNamespaceAndPath("asteria", path);
         RegistryKey<IEnvironmentAttribute> key =
             RegistryKey<IEnvironmentAttribute>.Create(BuiltInRegistries.EnvironmentAttribute.Key, location);
         BuiltInRegistries.EnvironmentAttribute.Register(key, attribute, RegistrationInfo.BuiltIn);

@@ -77,7 +77,7 @@ public static class AttributeTypes
 
     private static void Register(string path, IAttributeType type)
     {
-        ResourceLocation location = ResourceLocation.WithDefaultNamespace(path);
+        ResourceLocation location = ResourceLocation.FromNamespaceAndPath("asteria", path);
         RegistryKey<IAttributeType> key =
             RegistryKey<IAttributeType>.Create(BuiltInRegistries.AttributeType.Key, location);
         BuiltInRegistries.AttributeType.Register(key, type, RegistrationInfo.BuiltIn);
