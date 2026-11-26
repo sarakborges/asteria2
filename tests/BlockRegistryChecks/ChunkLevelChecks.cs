@@ -21,7 +21,6 @@ internal static class ChunkLevelChecks
 
         ChunkStatus[] expectedByDistance =
         [
-            ChunkStatus.LIGHT,
             ChunkStatus.INITIALIZE_LIGHT,
             ChunkStatus.TERRAIN,
             ChunkStatus.BIOMES,
