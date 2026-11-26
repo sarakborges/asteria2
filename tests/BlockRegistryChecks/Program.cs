@@ -1,6 +1,7 @@
 using Asteria.Serialization;
 using System.Text.Json;
 using Asteria.Core.Shapes;
+using Asteria.Client.Rendering;
 
 using System.Runtime.CompilerServices;
 using Asteria.Content.Blocks;
@@ -200,6 +201,7 @@ internal static class Program
         OctahedralGroupChecks.Run();
         IndexMergerChecks.Run();
         VoxelShapeChecks.Run();
+        RenderingLayerChecks.Run();
 
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&
