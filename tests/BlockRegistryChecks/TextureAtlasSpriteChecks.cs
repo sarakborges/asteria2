@@ -82,7 +82,7 @@ internal static class TextureAtlasSpriteChecks
             !transparentSprite.IsAnimated(),
             "TextureAtlasSprite animation state must be delegated to SpriteContents.");
 
-        byte[] animatedPixels = Enumerable.Repeat((byte)255, 4 * 2).ToArray();
+        byte[] animatedPixels = Enumerable.Repeat((byte)255, 2).ToArray();
         using var animatedContents = new SpriteContents(
             ResourceLocation.Parse("minecraft:block/animated"),
             new FrameSize(1, 1),
