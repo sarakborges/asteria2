@@ -18,7 +18,7 @@ public sealed class WorldOptions
                     .ForGetter<WorldOptions>(static options => options.GenerateStructures),
                 Codecs.BOOL.OptionalAlwaysPresentFieldOf("bonus_chest", false)
                     .ForGetter<WorldOptions>(static options => options.GenerateBonusChest),
-                Codecs.STRING.OptionalFieldOf("legacy_custom_options", null!)
+                Codecs.STRING.OptionalFieldOf("legacy_custom_options")
                     .ForGetter<WorldOptions>(static options => options._legacyCustomOptions))
             .Apply(instance, static (seed, generateStructures, generateBonusChest, legacyCustomOptions) =>
                 new WorldOptions(seed, generateStructures, generateBonusChest, legacyCustomOptions)));
@@ -26,14 +26,14 @@ public sealed class WorldOptions
     public static readonly WorldOptions DEMO_OPTIONS =
         new(JavaStringHashCode("North Carolina"), generateStructures: true, generateBonusChest: true);
 
-    private readonly string? _legacyCustomOptions;
+    private readonly OptionalValue<string> _legacyCustomOptions;
 
     public long Seed { get; }
     public bool GenerateStructures { get; }
     public bool GenerateBonusChest { get; }
 
     public WorldOptions(long seed, bool generateStructures, bool generateBonusChest)
-        : this(seed, generateStructures, generateBonusChest, legacyCustomOptions: null)
+        : this(seed, generateStructures, generateBonusChest, OptionalValue<string>.Empty)
     {
     }
 
@@ -41,7 +41,7 @@ public sealed class WorldOptions
         long seed,
         bool generateStructures,
         bool generateBonusChest,
-        string? legacyCustomOptions)
+        OptionalValue<string> legacyCustomOptions)
     {
         Seed = seed;
         GenerateStructures = generateStructures;
@@ -56,7 +56,7 @@ public sealed class WorldOptions
         new(RandomSeed(), generateStructures: false, generateBonusChest: false);
 
     public bool IsOldCustomizedWorld() =>
-        _legacyCustomOptions is not null;
+        _legacyCustomOptions.HasValue;
 
     public WorldOptions WithBonusChest(bool generateBonusChest) =>
         new(Seed, GenerateStructures, generateBonusChest, _legacyCustomOptions);

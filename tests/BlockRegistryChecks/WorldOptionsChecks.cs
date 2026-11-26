@@ -102,6 +102,19 @@ internal static class WorldOptionsChecks
             !decoded.IsOldCustomizedWorld(),
             "WorldOptions codec must preserve the generation options when round-tripped.");
 
+        JsonElement emptyLegacy = ops.CreateMap(new[]
+        {
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("seed"),
+                ops.CreateLong(89L)),
+            new KeyValuePair<JsonElement, JsonElement>(
+                ops.CreateString("legacy_custom_options"),
+                ops.CreateString(""))
+        });
+        Require(
+            WorldOptions.CODEC.Parse(ops, emptyLegacy).GetOrThrow().IsOldCustomizedWorld(),
+            "An explicitly present empty legacy custom-options string must remain distinct from an absent field.");
+
         JsonElement minimal = ops.CreateMap(new[]
         {
             new KeyValuePair<JsonElement, JsonElement>(
