@@ -1,4 +1,5 @@
 using Asteria.Content.Identifiers;
+using Asteria.Server.Level;
 using Asteria.Serialization;
 using Asteria.World.LevelGen.DensityFunctions;
 using Asteria.World.LevelGen.Synth;
@@ -19,6 +20,10 @@ namespace Asteria.Content.Registries;
 /// </summary>
 public static class Registries
 {
+    public static RegistryKey<Registry<TicketType>> TICKET_TYPE { get; } =
+        RegistryKey<TicketType>.CreateRegistryKey(
+            ResourceLocation.FromNamespaceAndPath("asteria", "ticket_type"));
+
     public static RegistryKey<Registry<BlockStateProvider>> BLOCK_STATE_PROVIDER { get; } =
         RegistryKey<BlockStateProvider>.CreateRegistryKey(
             ResourceLocation.FromNamespaceAndPath("asteria", "worldgen/block_state_provider"));

@@ -25,8 +25,8 @@ internal static class ChunkStatusChecks
             "The mob-free chunk lifecycle must expose exactly nine statuses.");
         Require(BuiltInRegistries.ChunkStatus.Count == expectedNames.Length,
             "All nine mob-free chunk statuses must be registered in the built-in registry.");
-        Require(BuiltInRegistries.Root.Count == 34,
-            "The built-in root registry must include block, fluid, item, biome, carver/provider, block-state-provider, feature, placed-feature, placement-modifier, structure-placement-type, structure-set, structure-type, structure, density, material-rule, noise-settings, chunk-status and gameplay registries.");
+        Require(BuiltInRegistries.Root.Count == 35,
+            "The built-in root registry must include block, fluid, item, biome, carver/provider, block-state-provider, feature, placed-feature, placement-modifier, structure-placement-type, structure-set, structure-type, structure, density, material-rule, noise-settings, chunk-status, ticket-type and gameplay registries.");
 
         for (int index = 0; index < expectedNames.Length; index++)
         {

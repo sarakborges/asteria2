@@ -12,6 +12,7 @@ using BuiltInEnvironmentAttributes = Asteria.World.Attributes.EnvironmentAttribu
 using Asteria.Content.Fluids;
 using BuiltInFluids = Asteria.Content.Fluids.Fluids;
 using Asteria.Content.Identifiers;
+using TicketTypeValue = Asteria.Server.Level.TicketType;
 using Asteria.World.Attributes;
 using Asteria.World.GameEvents;
 using Asteria.World.Clocks;
@@ -214,6 +215,11 @@ public static class BuiltInRegistries
         RegisterSimple<WorldClock>(
             ResourceLocation.FromNamespaceAndPath("asteria", "world_clock"),
             static () => WorldClocks.RegisterAll());
+
+    public static Registry<TicketTypeValue> TicketType { get; } =
+        RegisterSimple<TicketTypeValue>(
+            Registries.TICKET_TYPE.Location,
+            static () => TicketTypeValue.RegisterAll());
 
     public static Registry<Timeline> Timeline { get; } =
         RegisterSimple<Timeline>(
