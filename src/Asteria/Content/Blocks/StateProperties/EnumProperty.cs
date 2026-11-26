@@ -8,7 +8,7 @@ namespace Asteria.Content.Blocks.StateProperties;
 /// member name; a selector can override them.
 /// </summary>
 public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
-    where TEnum : struct, Enum
+    where TEnum : notnull, IComparable
 {
     private readonly IReadOnlyList<TEnum> _values;
     private readonly Dictionary<string, TEnum> _valuesByName;
@@ -71,6 +71,9 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
 
     public static EnumProperty<TEnum> Create(string name)
     {
+        if (!typeof(TEnum).IsEnum)
+            throw new InvalidOperationException("A non-enum property requires an explicit ordered value list.");
+
         TEnum[] values = typeof(TEnum)
             .GetFields(BindingFlags.Public | BindingFlags.Static)
             .OrderBy(field => field.MetadataToken)
@@ -79,7 +82,7 @@ public sealed class EnumProperty<TEnum> : StateProperty<TEnum>
         return new EnumProperty<TEnum>(
             name,
             values,
-            static value => value.ToString().ToLowerInvariant());
+            static value => value.ToString()!.ToLowerInvariant());
     }
 
     public static EnumProperty<TEnum> Create(
