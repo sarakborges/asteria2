@@ -8,9 +8,9 @@ namespace Asteria.Core;
 /// Six axis-aligned directions with the same ID tables, axis metadata and rotational
 /// relationships as the 26.3 core Direction enum.
 /// </summary>
-public sealed class Direction
+public sealed class Direction : IComparable
 {
-    public sealed class Axis
+    public sealed class Axis : IComparable
     {
         public static readonly Axis X = new("x");
         public static readonly Axis Y = new("y");
@@ -69,6 +69,13 @@ public sealed class Direction
 
         public bool Choose(bool x, bool y, bool z) =>
             ReferenceEquals(this, X) ? x : ReferenceEquals(this, Y) ? y : z;
+
+        public int CompareTo(object? obj)
+        {
+            if (obj is not Axis other)
+                throw new ArgumentException("Object must be an Axis.", nameof(obj));
+            return Array.IndexOf(VALUES, this).CompareTo(Array.IndexOf(VALUES, other));
+        }
 
         public override string ToString() => Name;
     }
@@ -512,6 +519,13 @@ public sealed class Direction
             DynamicOps<TData> ops,
             TData input) =>
             (ops.CompressMaps ? _compressed : _normal).Decode(ops, input);
+    }
+
+    public int CompareTo(object? obj)
+    {
+        if (obj is not Direction other)
+            throw new ArgumentException("Object must be a Direction.", nameof(obj));
+        return _data3d.CompareTo(other._data3d);
     }
 
     public override string ToString() => _name;
