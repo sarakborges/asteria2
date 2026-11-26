@@ -403,6 +403,7 @@ internal static class Program
         NoiseChunkChecks.Run();
         NoiseBasedChunkGeneratorChecks.Run();
         RandomStateChecks.Run();
+        WorldOptionsChecks.Run();
         EnvironmentAttributeChecks.Run();
         KeyframeTrackChecks.Run();
         ClockChecks.Run();

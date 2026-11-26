@@ -101,6 +101,16 @@ public abstract class Codec<TValue> : Encoder<TValue>, Decoder<TValue>
         return new DefaultedFieldMapCodec<TValue>(this, name, defaultValue);
     }
 
+    /// <summary>
+    /// Optional field with a decode default that is still emitted when encoding,
+    /// matching DataFixerUpper's optionalAlwaysPresentFieldOf contract.
+    /// </summary>
+    public MapCodec<TValue> OptionalAlwaysPresentFieldOf(string name, TValue defaultValue)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return new AlwaysPresentDefaultedFieldMapCodec<TValue>(this, name, defaultValue);
+    }
+
     public override string ToString() =>
         GetType().Name;
 
