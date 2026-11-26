@@ -120,7 +120,7 @@ internal static class TimelineChecks
             .Build();
         DataResult<JsonElement> markerResult = Timeline.DIRECT_CODEC.EncodeStart(ops, markerAtPeriod);
         Require(markerResult.IsError &&
-                markerResult.ErrorMessage == "Time Marker ResourceKey[asteria:clock_time_marker / minecraft:day] must be in range [0; 10)",
+                markerResult.ErrorMessage == "Time Marker ResourceKey[minecraft:clock_time_marker / minecraft:day] must be in range [0; 10)",
             "Timeline marker validation must reject the exclusive period endpoint.");
 
         Timeline zeroPeriod = Timeline.CreateBuilder(clock).SetPeriodTicks(0).Build();
