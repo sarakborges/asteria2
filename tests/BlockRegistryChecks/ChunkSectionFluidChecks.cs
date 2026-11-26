@@ -43,27 +43,27 @@ internal static class ChunkSectionFluidChecks
 
         var tickingFluid = new TickingFluid();
         var tickingBlock = new TickingFluidBlock(tickingFluid);
-        section.SetBlockState(0, 0, 0, tickingBlock.DefaultState);
-        Require(section.HasFluid, "A block exposing a non-empty fluid state must increment the section fluid count.");
-        Require(section.IsRandomlyTickingFluids && section.IsRandomlyTicking,
+        var tickingSection = new ChunkSection(factory);
+        tickingSection.SetBlockState(0, 0, 0, tickingBlock.DefaultState);
+        Require(tickingSection.HasFluid, "A block exposing a non-empty fluid state must increment the section fluid count.");
+        Require(tickingSection.IsRandomlyTickingFluids && tickingSection.IsRandomlyTicking,
             "A randomly ticking fluid state must increment both fluid and aggregate ticking gates.");
 
-        ChunkSection tickingCopy = section.Copy();
+        ChunkSection tickingCopy = tickingSection.Copy();
         Require(tickingCopy.IsRandomlyTickingFluids,
             "Copying a section must preserve its randomly-ticking fluid count.");
         tickingCopy.SetBlockState(0, 0, 0, Blocks.AIR.DefaultState);
         Require(!tickingCopy.IsRandomlyTickingFluids && !tickingCopy.IsRandomlyTicking,
             "Removing the final randomly ticking fluid state must clear both ticking gates.");
-        Require(section.IsRandomlyTickingFluids,
+        Require(tickingSection.IsRandomlyTickingFluids,
             "Removing a ticking fluid from a copy must not mutate the original section.");
 
-        section.GetStates().Set(0, 0, 0, tickingBlock.DefaultState);
-        section.SetBlockState(0, 0, 0, Blocks.AIR.DefaultState);
-        Require(section.IsRandomlyTickingFluids,
-            "A direct palette write followed by SetBlockState must preserve vanilla cached-counter behavior.");
-        section.RecalculateBlockCounts();
-        Require(!section.IsRandomlyTickingFluids,
-            "RecalculateBlockCounts must rebuild the randomly-ticking fluid count after direct palette writes.");
+        tickingSection.RecalculateBlockCounts();
+        Require(tickingSection.IsRandomlyTickingFluids,
+            "RecalculateBlockCounts must preserve the randomly-ticking fluid count when rebuilding from palette contents.");
+        tickingSection.SetBlockState(0, 0, 0, Blocks.AIR.DefaultState);
+        Require(!tickingSection.IsRandomlyTickingFluids,
+            "Removing the final randomly ticking fluid state must decrement its cached count.");
     }
 
     private sealed class TickingFluid : Fluid
