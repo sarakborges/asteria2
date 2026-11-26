@@ -28,3 +28,28 @@ Serialização de save não significa protocolo de rede: persistência local per
 ## Regra de paridade
 
 A referência continua sendo Minecraft Java 26.3 para algoritmos e comportamento equivalentes **dentro do escopo local**. A paridade não é um compromisso de reproduzir recursos excluídos (redstone e multiplayer/network play).
+
+## Arquitetura single-player local
+
+A ausência de multiplayer não elimina o lado servidor do jogo. O mundo deve manter a divisão arquitetural equivalente ao Integrated Server:
+
+- O processo local do jogo hospeda a simulação autoritativa e os níveis locais, com gerenciamento e lifecycle de chunks no lado servidor.
+- O cliente local mantém sua própria visão do nível e consome snapshots/estados apropriados para extração e renderização. Não há conexão remota nem transporte de rede entre essas partes.
+- O caminho de geração, loading, lighting, scheduler e save/load deve seguir os sistemas server-side equivalentes da referência. Não condensar esses papéis em um gerador próprio que sincroniza e publica chunks manualmente.
+- A renderização segue o pipeline client-side da referência. Godot fornece o backend gráfico; não substitui visibilidade, compilação de seções, modelos, atlas, culling ou cálculo de geometria.
+
+## Primeiro marco visual
+
+O primeiro marco verificável é um Overworld gerado com seed aleatória e terreno corretamente renderizado ao redor de uma câmera estática. Para esse marco, são prioridade:
+
+1. Port dos blocos/estados e dos modelos/texturas necessários para representar o terreno gerado.
+2. Atlas e pipeline de modelos, regiões de leitura, culling e compilação de meshes/seções.
+3. Renderização correta de blocos opacos, não opacos e variantes com forma parcial.
+4. Lighting e renderização de água/lava, incluindo a geometria das superfícies e laterais.
+5. Chunk loading/streaming e atualização das seções renderizadas conforme necessário.
+
+Features de decoração, estruturas, movimentação e interação do jogador ficam depois desse marco. Isso não autoriza simplificar os algoritmos dos sistemas prioritários.
+
+## Seeds e persistência
+
+A criação de um mundo novo usa uma seed aleatória por padrão. Seeds explícitas continuam disponíveis para testes de paridade e criação intencional de mundos específicos. Ao salvar e reabrir um mundo, a seed persistida deve ser reutilizada; randomizar novamente no carregamento mudaria o mundo e não é permitido.
