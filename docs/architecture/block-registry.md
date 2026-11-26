@@ -1,7 +1,6 @@
 # Block registry, block states, and chunk-section storage
 
 ## Reference and scope
-
 Minecraft Java Edition 26.3 is the reference for architecture, contracts, and behavior. Asteria keeps its own block content; this port follows vanilla systems rather than substituting project-specific designs.
 
 Block-color contracts are checked against the 26.3 sources for [MapColor](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/material/mapcolor/), [ARGB](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/util/argb/), [BlockBehaviour](https://mc-packet-reference.netlify.app/26.x/source/net/minecraft/world/level/block/state/blockbehaviour/) and the `Block` default-map-color accessor.
@@ -9,7 +8,6 @@ Block-color contracts are checked against the 26.3 sources for [MapColor](https:
 This stage covers only systems already introduced in Asteria: registries and holders, blocks and block states, block-state IDs, palette storage, and the block-state portion of chunk sections. Fluid, biome, data-component, network, and disk-persistence behavior are deferred until their corresponding domain systems are introduced.
 
 ## Registry and holder model
-
 - `BuiltInRegistries.Root` is the root registry of registries. It owns the `asteria:root` identity; each child registry is registered there under its own identifier.
 - Each built-in registry is registered with an ordered bootstrap loader. Bootstrap executes those loaders in declaration order before freezing the root and its child registries.
 - `Registry<T>` follows `MappedRegistry<T>`: location, registry-key, value-identity, numeric-ID, and holder indexes share stable `Holder.Reference<T>` instances.
@@ -28,12 +26,10 @@ This stage covers only systems already introduced in Asteria: registries and hol
 - `HolderGetterProvider` and `HolderLookupProvider` provide typed cross-registry lookup, global element/tag retrieval, registry enumeration, and lifecycle aggregation. The complete tag-loader pipeline and codec serialization context remain deferred.
 
 ## Identifiers and resource keys
-
 - `ResourceLocation` follows vanilla identifier parsing, custom separators, validation, ordering, path transformations, and language/debug naming helpers. Its project default namespace is `asteria` (not Minecraft's `minecraft` namespace). `ResolveAgainst` also normalizes and guards the resolved path against escaping its root.
 - `RegistryKey<T>` has a private constructor and exposes the vanilla `Create`/`CreateRegistryKey` factories, typed casts, and dependent resource-key creation. `IsFor` compares only the registry identifier, independent of the root key. Its value equality preserves the observable contract of vanilla's weakly interned keys. `TagKey<T>` is a record with a public deprecated canonical constructor and a preferred `Create` factory; it retains the full registry key, compares the entire key for registry membership, and supports typed casts.
 
 ## Blocks and block states
-
 - `BlockProperties` is a mutable fluent builder for the modeled `BlockBehaviour.Properties` values. `BlockProperties.OfFullCopy(block)` creates an independent builder and copies every currently modeled scalar, flag, delegate and offset function from the source block's retained properties; callback delegates themselves are retained by reference, matching a shallow copy of those immutable function objects. The legacy copy factory and properties outside Asteria's declared scope remain deferred. Properties include: destroy time, explosion resistance, friction, speed/jump factors, bounce restitution, fall-distance reduction, collision/occlusion, random ticking, dynamic shape, `forceSolidOn`, deprecated `forceSolidOff`, air/tool flags, lava ignition, the deprecated liquid compatibility flag, replaceability, terrain particles, map color, piston push reaction, light/emissive behavior, deterministic offset, suffocation, view blocking and post-process position. Map color accepts either one fixed palette entry or a state-dependent selector. Defaults and setter behavior follow the reference contract. Redstone signal and circuit properties remain outside this offline product. The generic `IsRedstoneConductor` state predicate is the explicit exception: its vanilla default is a full collision shape, and it does not implement signal propagation.
 - `Block` snapshots block-level values at construction: explosion resistance, friction, speed/jump factors, bounce restitution, fall-distance reduction, collision, random ticking, and dynamic-shape flags. `GetDefaultMapColor` evaluates the configured map-color selector against the block's current default state. `GetDefaultDestroyTime` reads the retained mutable `BlockProperties.DestroyTimeValue` each time, while each `BlockState.DestroySpeed` keeps the value captured when that state was constructed. It creates its intrusive holder before building states and calls the virtual `CreateBlockStateDefinition` extension point.
 - `StateProperty<T>` exposes a name, value type, ordered possible values, parsing, serialization, typed `Property.Value` wrappers, `GetAllValues`, and overridable public hash generation. `EnumProperty<T>` accepts any comparable value type with an explicit ordered value list and serialized-name selector, not only CLR enum types; this supports the 26.3 `EnumProperty<Direction>` and `EnumProperty<Direction.Axis>` forms after those value types implement declaration-order comparison. The parameterless-list factory remains restricted to CLR enums. Hashing follows the reference class-identity/string formula, including ordered integer/enum value-list hashing, and `hashCode` caches its generated result.
@@ -45,8 +41,7 @@ This stage covers only systems already introduced in Asteria: registries and hol
 - `BlockState.Is(tag, predicate)` combines holder tag membership with a caller predicate and evaluates the predicate only after membership succeeds, preserving the reference's short-circuit behavior.
 - `PathComputationType` preserves the 26.3 `LAND`, `WATER`, `AIR` order. `BlockState.IsPathfindable` delegates to the owning block: `LAND`/`AIR` require a non-full collision shape using `EmptyBlockGetter` at `BlockPos.Zero`, `WATER` checks the fluid state's `FluidTags.Water` membership, and unknown values return false. `BlockState.SkipRendering` delegates the neighboring state and face direction to the block's virtual hook; the base implementation returns false. `BlockState.CanBeReplaced(Fluid)` follows the separate fluid-placement rule: the state is replaceable when its replaceable flag is set or legacy `IsSolid` is false; the fluid argument does not alter that predicate. `BlockState.GetSeed(BlockPos)` delegates to the owning block, whose default uses the exact `Mth.GetSeed(x, y, z)` coordinate hash.
 - A newly constructed `BlockState` starts with `Fluids.EMPTY.DefaultFluidState` before `initCache`; `initCache` then replaces that initial value with the owning block's fluid state. Reads before cache initialization therefore return the empty fluid state rather than throwing.
-- Each `BlockState` snapshots the currently modeled state-level `BlockStateBase` values at construction: air, destroy speed, correct-tool requirement, occlusion, random ticking, lava ignition, liquid, replaceability, terrain-particle behavior, map color, piston reaction, light/emissive configuration, offset and the generic suffocation/view-blocking/post-process delegates. The default view-blocking delegate deliberately retains the vanilla closure over the mutable `BlockProperties` instance and therefore observes a later replacement of `IsSuffocatingValue`; an explicit `IsViewBlocking` override replaces that closure. The 62 populated entries of the 64-slot `MapColor` table, brightness values, ARGB calculation and packed-byte mapping follow 26.3; IDs 62 and 63 remain empty and resolve to `NONE`. The generic `IsRedstoneConductor` predicate is retained as a `BlockStateBase` contract; signal-source, analog-output, wire-connection and signal-level APIs remain outside Asteria's local gameplay contract.
-
+- Each `BlockState` snapshots the currently modeled state-level `BlockStateBase` values at construction: air, destroy speed, correct-tool requirement, occlusion, random ticking, lava ignition, liquid, replaceability, terrain-particle behavior, map color, piston reaction, light/emissive configuration, offset and the generic suffocation/view-blocking/post-process delegates. The 62 populated entries of the 64-slot `MapColor` table, brightness values, ARGB calculation and packed-byte mapping follow 26.3; IDs 62 and 63 remain empty and resolve to `NONE`. The generic `IsRedstoneConductor` predicate is retained as a `BlockStateBase` contract; signal-source, analog-output, wire-connection and signal-level APIs remain outside Asteria's local gameplay contract.
 - `BlockState.InitCache` follows `BlockStateBase.initCache`: every call refreshes fluid state, random-ticking status, the static collision/face-support cache, legacy solidity, occlusion, skylight propagation and light dampening. It is not guarded by an idempotence flag; reinitialization must recompute derived values.
 - Static state-cache construction follows `BlockStateBase.Cache`: after computing the collision shape, it rejects a non-empty shape combined with an offset function unless `dynamicShape` is enabled. The exception uses the block's registered key in its diagnostic; blocks without collision and blocks marked dynamic skip that rejection path. The cache also records whether the collision bounds extend beyond the unit block cell. `HasLargeCollisionShape` returns that cached value for static shapes and conservatively returns true when no static cache exists. `HasOffsetFunction` reflects the state-captured offset delegate, and `IsLightPermeable` follows `!IsSolidRender || LightDampening == 0`. `BlockBehaviorChecks` covers these metadata contracts alongside static, dynamic, empty and out-of-cell collision shapes.
 - `BlockState.IsSolid` preserves the deprecated legacy calculation from 26.3, distinct from `IsSolidRender`: `forceSolidOn` wins first, followed by `forceSolidOff`; otherwise a missing collision cache or empty shape is non-solid, a bounds average size of at least `0.7291666666666666` is solid, and a Y extent of at least one block is the final solid condition. The `SolidDebugger` port retains the seven source reasons, their ordinals/messages, first-reason-per-holder behavior keyed by the registered `Holder<Block>`, conflicting-state warning, and grouped dump using `getRegisteredName()` around block-state cache initialization. Test-only unregistered blocks use one stable direct holder. The .NET adaptations are explicit: Java `ScopedValue` is represented by `AsyncLocal`; the Java reason enum is represented by immutable singleton values retaining the same names, ordinals, flags and messages; diagnostic logger output uses `System.Diagnostics.Trace`; and Java system properties are read from `MC_DEBUG_ENABLED` and `MC_DEBUG_CALCULATE_SOLID` environment variables once when `SolidDebugger` is initialized.
@@ -54,7 +49,6 @@ This stage covers only systems already introduced in Asteria: registries and hol
 - `Block.BlockStateRegistry` is the global `IdMapper<BlockState>` equivalent. Each state receives its insertion-order ID in its constructor, as soon as `StateDefinition` materializes it; the expected-size hint preallocates both forward and reverse indexes. This map is independent of the built-in block registry and is not frozen with it. `Block.GetId` maps null or unknown states to the air ID (zero), and `Block.StateById` resolves missing IDs to the default air state.
 
 ## Paletted storage
-
 - `PalettedContainerStrategy<T>` follows the vanilla cubic dimensions and coordinate layout. Block-state containers use 16³ entries and 4–8 bit local palettes. The 4³ biome strategy exists as a sizing strategy only; biome values and biome storage are deferred.
 - Configuration selection follows vanilla single-value, linear, hash-map, and global modes, including distinct resident-memory and packed-storage bit widths for global mode.
 - `PalettedContainer<T>` exposes coordinate-based get, set, get-and-set, unchecked mutation, palette enumeration, counting, copying, and recreation.
@@ -66,68 +60,63 @@ This stage covers only systems already introduced in Asteria: registries and hol
 - Data codecs, network buffer read/write, NBT packing, and disk serialization are not yet introduced.
 
 ## Chunk sections
-
 - `ChunkSection` receives a prebuilt block-state `PalettedContainer` and recalculates its initial non-air count without imposing an additional size check on the supplied container.
 - Block-state access is coordinate-based. The flattening formula remains the vanilla `(y << 8) | (z << 4) | x` through the strategy.
 - The cached counters are non-air block count, non-empty fluid-state count, randomly-ticking block count, and randomly-ticking fluid count. All four counters are derived only from non-air block states. The ticking counters do not count an air state even if its modeled flags also mark it as randomly ticking. `HasFluid`, `IsRandomlyTickingBlocks`, `IsRandomlyTickingFluids`, and `IsRandomlyTicking` expose the corresponding section gates. The section exposes its state container, can recalculate all four counts, and copies its state container and cached counters. Fluid counter transitions and recalculation are covered by `ChunkSectionFluidChecks`.
 - Biome holder storage and resolution are implemented. Section serialization remains deferred until the matching data codecs and persistence systems exist.
 
 ## Parity gate
-
 This document records implemented scope; it does not certify total parity. The stage remains open until every behavior and structural contract within the systems above has been compared with Minecraft 26.3 and the relevant checks/build pass. Future systems remain deferred rather than being counted as current-stage defects. No later development stage may begin while a current-scope divergence remains.
 
-
 ## BlockStateBase constructor ordering
-
 The state constructor preserves Minecraft 26.3 callback evaluation order: light emission, shape-for-light-occlusion, then map color, followed by the remaining property snapshots and delegates. Each callback receives the partially initialized state. BlockBehaviorChecks verifies callback order and the values visible during those callbacks.
 
-
 ## IntegerProperty index and parse contracts
-
 `IntegerProperty.IndexOf` mirrors `getInternalIndex`: values above the maximum return -1; all others use unchecked 32-bit `value - minimum`, preserving Java integer overflow. Parsing intentionally does not use this index as a range predicate: Minecraft `getValue(String)` checks `minimum <= value <= maximum` directly, so out-of-range textual values remain rejected even when the index subtraction wraps.
 
-
 ## Block-state codec lifecycle
-
 The full block-state form applies Minecraft 26.3 `FULL_CODEC.stable()` semantics to both successful and failed encode/decode results. When the compact string form is enabled, that branch preserves the registry name codec lifecycle; object-form states retain the stable full-codec lifecycle.
 
-
 ## StateDefinition construction boundary
-
 The generic `StateDefinition` constructor is protected-internal rather than public. This matches Minecraft 26.3's protected constructor while retaining access for the in-assembly validated builder. External callers must create definitions through `StateDefinitionBuilder`, so property name, value-count, serialized-value, and duplicate-name validation cannot be bypassed accidentally.
 
-
 ## Redstone conductor predicate
-
 `BlockProperties.IsRedstoneConductor` and `BlockState.IsRedstoneConductor(level, position)` port the generic `BlockBehaviour.Properties.isRedstoneConductor` contract. The default predicate delegates to the state's full-collision-shape test; a configured predicate is retained by each state and evaluated with the query's level and position.
 
-
 ## Property.parseValue partial-result contract
-
 `StateProperty<T>.ParseValue` mirrors Minecraft 26.3 `Property.parseValue`: decode a serialized property value through `DynamicOps`, transition to the corresponding precomputed state on success, and attach the original state as the partial value on any parsing error. This keeps callers able to retain the original state while reporting invalid input.
 
-
 ## BlockProperties full-copy contract
-
 `BlockProperties.OfFullCopy` mirrors `BlockBehaviour.Properties.ofFullCopy` for the properties modeled in Asteria. It creates a separate mutable builder, copies every current scalar/flag and retains configured delegates without wrapping or altering them. It does not synthesize unsupported audio, feature-flag, loot-table or entity-type properties.
 
-
 ## BlockState type-holder contract
-
 `BlockState.TypeHolder` mirrors `BlockStateBase.typeHolder()`: it exposes the holder of the owning block, reusing the existing registry reference rather than constructing another holder. Test-only unregistered blocks expose the already-established direct holder used by the block-state diagnostics.
 
-
 ## BlockState property-copy contracts
-
 `BlockState.WithPropertiesOf` and `BlockState.CopyProperty` now mirror the corresponding `BlockStateBase` methods in Minecraft 26.3. Copying starts from the receiver state, not necessarily the target block's default state. Each property is copied with `TrySetValue`, retaining property-instance identity: properties absent from the target definition or represented by a distinct same-name instance do not alter the target. The existing `Block.WithPropertiesOf` API remains as a compatibility convenience wrapper over its default state.
 
 ## World-generation block content policy
-
-The following temporary content substitutions are deliberate and must be revisited in a later visual/content pass:
+The following temporary content substitutions and exclusions are deliberate and must be revisited only where explicitly marked for a later visual/content pass:
 
 - Color-specific blocks and colored variants are excluded from the initial world-generation block port. Where a placed feature or biome currently selects a color-specific block, use the corresponding original/base material instead. Do not port the color-specific block solely to satisfy that world-generation reference.
-- Ore blocks are also excluded from the initial block catalog. World generation must temporarily place the corresponding host stone material instead: stone-hosted ores become stone, and deepslate-hosted ores become deepslate.
-- Ore replacement must preserve the original vein-generation behavior: retain the configured vein size, distribution, placement rules, and spatial shape. Replace only the generated block state/material; do not remove the feature or flatten the vein into isolated host-rock placements.
-- Track these substitutions as deferred visual/content corrections. Restore the intended colored blocks and ore materials only when their separate implementation is authorized and ready.
+- Flowers whose distinct identity is primarily a color variant are included in the same exclusion policy as colored blocks. Do not port the colored flower variants for initial world generation; use the agreed base-material substitution instead of silently adding each color variant.
+- The eyeblossom (Pale Garden flower) is explicitly excluded from this port.
+- Sculk blocks and the sculk feature family are explicitly excluded from this port.
+- Ore blocks are excluded from the initial block catalog. World generation must temporarily place the corresponding host stone material instead: stone-hosted ores become stone, and deepslate-hosted ores become deepslate. Apply the same host-material substitution to Nether and End ore-like vein features if present, using their actual host material.
+- Ore replacement must preserve the original vein-generation behavior: retain configured vein size, distribution, placement rules, and spatial shape. Replace only the generated block state/material; do not remove the feature or flatten the vein into isolated host-rock placements.
+- Track all substitutions and exclusions as deferred content decisions. Do not treat them as permanent reference-data changes or reintroduce excluded blocks merely to satisfy a biome/feature reference.
 
-These substitutions are temporary compatibility decisions for the world-generation milestone, not changes to the reference data or permanent biome design.
+## World-generation dependency inventory (to be completed before content porting)
+The previous short list was not exhaustive and must not be used as the implementation checklist. Build a source-backed inventory from the 26.3 biome definitions, placed features, configured features, and their referenced block states. Include all three dimensions and distinguish biome decoration from structures, mobs, loot, and unrelated gameplay systems.
+
+At minimum, audit the following groups rather than assuming the earlier list covered them:
+
+- **Overworld terrain and geology:** stone, deepslate, bedrock, dirt, coarse dirt, rooted dirt, grass block, podzol, mycelium, mud, clay, gravel, sand, red sand, sandstone/red sandstone, terracotta base material, calcite, tuff, dripstone block, granite, diorite, andesite, moss block, pale moss block/carpet only if required and not covered by an explicit exclusion, and other configured surface/underground replacement materials.
+- **Overworld vegetation:** every tree family and its logs, stripped logs where feature data requires them, wood, leaves, saplings, propagules, roots, hanging roots, azalea, flowering azalea only if not excluded by color policy, moss, grasses, ferns, bushes, ground cover, flowers subject to the color exclusion, mushrooms, vines, cave vines, glow lichen, cactus, sugar cane, bamboo, pumpkins/melons, berries, and other feature-placed plants.
+- **Overworld aquatic and coastal features:** water plants, seagrass, kelp, lily pads, mangrove vegetation, coral blocks/fans/wall fans and coral decorations, sea pickles, ice/snow variants, packed ice/blue ice, and beach/ocean floor materials.
+- **Nether biomes:** netherrack, nether quartz/gold/ancient-debris host substitutions while preserving vein features, soul sand, soul soil, basalt, smooth basalt, blackstone, magma block, gravel, glowstone, nether gold ore host material, bone block, crimson and warped nylium, crimson and warped fungi, stems/hyphae, wart blocks, shroomlight, roots, sprouts, twisting/weeping vines, nether wart, fire and lava placements, and all biome-specific ground/ceiling decorations.
+- **End biomes and island generation:** end stone, chorus plant, chorus flower, end-stone island terrain and variation, obsidian only where an End biome feature explicitly requires it, and any other block states referenced by End biome/placed-feature data. Keep End structures (obsidian pillars, gateways, portal platform, city/ship blocks) separately classified unless they are explicitly in the agreed world-generation scope.
+- **Cave and underground biome features:** dripstone, pointed dripstone, amethyst geodes (budding amethyst and cluster/bud stages if feature data requires them), calcite, tuff, lush-cave vegetation and water plants, cave mushrooms, and non-sculk deep-dark content only if it is not part of the excluded sculk feature family.
+- **Special exclusions:** all ore materials, all color-specific block variants, color-variant flowers, eyeblossom, and the complete sculk family remain excluded according to the policy above. Preserve feature topology and distribution when substituting a host/base block.
+
+This inventory is an audit checklist, not an assertion that every named block is a direct biome dependency. Each final entry must be traced to a concrete 26.3 biome, placed-feature, configured-feature, or surface-rule reference, and each item must be labeled as required, substituted, excluded, or structure-only before implementation begins.
