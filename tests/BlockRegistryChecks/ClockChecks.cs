@@ -27,7 +27,7 @@ internal static class ClockChecks
 
         Holder<WorldClock> overworld = BuiltInRegistries.WorldClock.GetHolder(WorldClocks.OVERWORLD)!;
         JsonElement encoded = WorldClock.CODEC.EncodeStart(ops, overworld).GetOrThrow();
-        Require(encoded.GetString() == "asteria:overworld",
+        Require(encoded.GetString() == "minecraft:overworld",
             "A world-clock holder must encode as its namespaced registry key.");
         Holder<WorldClock> decoded = WorldClock.CODEC.Parse(ops, encoded).GetOrThrow();
         Require(decoded.Is(WorldClocks.OVERWORLD),
