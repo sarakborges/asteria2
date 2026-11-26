@@ -41,7 +41,7 @@ internal static class TimelineChecks
         Timeline empty = Timeline.CreateBuilder(clock).Build();
 
         JsonElement emptyEncoded = Timeline.DIRECT_CODEC.EncodeStart(ops, empty).GetOrThrow();
-        Require(ops.Get(emptyEncoded, "clock").GetOrThrow().GetString() == "asteria:overworld",
+        Require(ops.Get(emptyEncoded, "clock").GetOrThrow().GetString() == "minecraft:overworld",
             "A direct timeline must encode its registered clock holder.");
         Require(!ops.Get(emptyEncoded, "period_ticks").TryGetResult(out _) &&
                 !ops.Get(emptyEncoded, "tracks").TryGetResult(out _) &&
@@ -75,9 +75,9 @@ internal static class TimelineChecks
             "Timeline tracks must be keyed by registered environment-attribute identifiers.");
 
         JsonElement timeMarkers = ops.Get(encoded, "time_markers").GetOrThrow();
-        Require(ops.Get(timeMarkers, "asteria:day").GetOrThrow().GetInt32() == 0,
+        Require(ops.Get(timeMarkers, "minecraft:day").GetOrThrow().GetInt32() == 0,
             "A marker without show_in_commands must use the compact integer form.");
-        JsonElement expandedNoon = ops.Get(timeMarkers, "asteria:noon").GetOrThrow();
+        JsonElement expandedNoon = ops.Get(timeMarkers, "minecraft:noon").GetOrThrow();
         Require(ops.Get(expandedNoon, "ticks").GetOrThrow().GetInt32() == 10 &&
                 ops.Get(expandedNoon, "show_in_commands").GetOrThrow().GetBoolean(),
             "A marker shown in commands must use the expanded record form.");
@@ -120,7 +120,7 @@ internal static class TimelineChecks
             .Build();
         DataResult<JsonElement> markerResult = Timeline.DIRECT_CODEC.EncodeStart(ops, markerAtPeriod);
         Require(markerResult.IsError &&
-                markerResult.ErrorMessage == "Time Marker ResourceKey[asteria:clock_time_marker / asteria:day] must be in range [0; 10)",
+                markerResult.ErrorMessage == "Time Marker ResourceKey[asteria:clock_time_marker / minecraft:day] must be in range [0; 10)",
             "Timeline marker validation must reject the exclusive period endpoint.");
 
         Timeline zeroPeriod = Timeline.CreateBuilder(clock).SetPeriodTicks(0).Build();
