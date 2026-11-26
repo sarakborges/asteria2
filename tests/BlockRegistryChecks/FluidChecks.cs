@@ -66,7 +66,7 @@ internal static class FluidChecks
         Require(BuiltInRegistries.Fluid.Count == 3, "The built-in fluid registry must contain empty, water and lava.");
         Require(
             FluidTags.Water.Registry == BuiltInRegistries.Fluid.Key &&
-            FluidTags.Water.Location == ResourceLocation.Parse("asteria:water"),
+            FluidTags.Water.Location == ResourceLocation.Parse("minecraft:water"),
             "The water tag must target the built-in fluid registry using its canonical namespace and path.");
         Require(
             ReferenceEquals(BuiltInRegistries.Fluid.GetValue(FluidIds.EMPTY), Fluids.EMPTY),
