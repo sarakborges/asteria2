@@ -204,6 +204,7 @@ internal static class Program
         RenderingLayerChecks.Run();
         NativeImageChecks.Run();
         SpriteContentsChecks.Run();
+        TextureAtlasSpriteChecks.Run();
 
         Require(
             Block.BlockStateRegistry.GetId(Blocks.AIR.DefaultState) == 0 &&
