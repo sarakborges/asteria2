@@ -46,6 +46,7 @@ internal static class BlockBehaviorChecks
         CheckDefaultDestroyTime();
         CheckFaceSupportSemantics();
         CheckCollisionShapeMetadata();
+        CheckComparableEnumProperties();
         CheckStateCacheReinitialization();
         CheckDefaultFluidStateBeforeCacheInitialization();
         CheckStateConstructorEvaluationOrder();
@@ -218,6 +219,48 @@ internal static class BlockBehaviorChecks
             "Fluid replacement must allow a non-solid state even when its replaceable property is false.");
     }
 
+
+    private static readonly EnumProperty<Direction> FACING =
+        EnumProperty<Direction>.Create(
+            "facing",
+            Direction.GetValues(),
+            static direction => direction.GetSerializedName());
+
+    private static readonly EnumProperty<Direction.Axis> AXIS =
+        EnumProperty<Direction.Axis>.Create(
+            "axis",
+            Direction.Axis.GetValues(),
+            static axis => axis.GetSerializedName());
+
+    private static void CheckComparableEnumProperties()
+    {
+        var block = new DirectionPropertyBlock();
+        BlockState state = block.DefaultState
+            .SetValue(FACING, Direction.EAST)
+            .SetValue(AXIS, Direction.Axis.Z);
+
+        Require(ReferenceEquals(state.GetValue(FACING), Direction.EAST),
+            "EnumProperty must support Minecraft's comparable Direction values.");
+        Require(ReferenceEquals(state.GetValue(AXIS), Direction.Axis.Z),
+            "EnumProperty must support comparable Direction.Axis values.");
+        Require(FACING.TryParse("north", out Direction parsedDirection) &&
+                ReferenceEquals(parsedDirection, Direction.NORTH),
+            "Explicit enum-property value lists must retain their serialized names.");
+        Require(!FACING.TryParse("upside_down", out _),
+            "EnumProperty must reject serialized values outside its explicit value list.");
+    }
+
+    private sealed class DirectionPropertyBlock : Block
+    {
+        public DirectionPropertyBlock()
+            : base(
+                BlockProperties.Of(),
+                createIntrusiveRegistryHolder: false,
+                configureState: builder => builder.Add(FACING).Add(AXIS))
+        {
+            InitializeStateCaches();
+        }
+    }
 
     private static void CheckCollisionShapeMetadata()
     {
