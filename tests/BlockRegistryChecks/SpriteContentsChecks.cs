@@ -75,7 +75,7 @@ internal static class SpriteContentsChecks
             NativeImage.Format.RGBA,
             4,
             2,
-            Pixels(255, 255, 255, 255, 128, 255, 255, 255));
+            Pixels(255, 128, 255, 128, 255, 255, 255, 128));
         using var sprite = new SpriteContents(
             ResourceLocation.Parse("minecraft:block/animated_test"),
             new FrameSize(2, 2),
