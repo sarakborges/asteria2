@@ -54,7 +54,7 @@ internal static class ItemParticleChecks
         Require(ReferenceEquals(registry.GetValue(ResourceLocationKey("missing")), Items.AIR),
             "Defaulted item lookup must retain its fallback-to-air semantics.");
 
-        Require(Item.CODEC.Parse(ops, ops.CreateString("asteria:air")).IsError &&
+        Require(Item.CODEC.Parse(ops, ops.CreateString("minecraft:air")).IsError &&
                 Item.CODEC.Parse(ops, ops.CreateString("asteria:test_item")).IsError &&
                 Item.CODEC.Parse(ops, ops.CreateString("asteria:unknown_item")).IsError,
             "The production item codec must reject the empty sentinel and identifiers absent from production content.");
@@ -203,7 +203,7 @@ internal static class ItemParticleChecks
         });
 
     private static ResourceLocation ResourceLocationKey(string path) =>
-        ResourceLocation.WithDefaultNamespace(path);
+        ResourceLocation.FromNamespaceAndPath("asteria", path);
 
     private static void Require(bool condition, string message)
     {
