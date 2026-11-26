@@ -622,7 +622,7 @@ internal static class Program
             "Identifier.isAllowedInIdentifier must match command token characters.");
         Require(
             ResourceLocation.NamespaceSeparator == ':' &&
-            ResourceLocation.DefaultNamespace == "asteria" &&
+            ResourceLocation.DefaultNamespace == "minecraft" &&
             ResourceLocation.RealmsNamespace == "realms" &&
             ResourceLocation.AllowedNamespaceCharacters == "[a-z0-9_.-]",
             "Identifier public constants must match vanilla.");
@@ -630,11 +630,11 @@ internal static class Program
         Require(languageId.WithPrefix("double_").Path == "double_stone/slab", "Identifier.withPrefix must modify only the path.");
         Require(languageId.WithSuffix("_top").Path == "stone/slab_top", "Identifier.withSuffix must modify only the path.");
         Require(languageId.WithPath(path => $"blocks/{path}").Path == "blocks/stone/slab", "Identifier.withPath must apply a path modifier.");
-        Require(languageId.ToDebugFileName() == "asteria_stone_slab", "Identifier.toDebugFileName must replace slash and namespace separators.");
-        Require(languageId.ToLanguageKey() == "asteria.stone/slab", "Identifier.toLanguageKey must include namespace and path.");
+        Require(languageId.ToDebugFileName() == "minecraft_stone_slab", "Identifier.toDebugFileName must replace slash and namespace separators.");
+        Require(languageId.ToLanguageKey() == "minecraft.stone/slab", "Identifier.toLanguageKey must include namespace and path.");
         Require(languageId.ToShortLanguageKey() == "stone/slab", "Identifier.toShortLanguageKey must omit the default namespace.");
         Require(languageId.ToShortString() == "stone/slab", "Identifier.toShortString must omit the default namespace.");
-        Require(languageId.ToLanguageKey("block", "name") == "block.asteria.stone/slab.name", "Identifier language-key prefix and suffix overload must match vanilla.");
+        Require(languageId.ToLanguageKey("block", "name") == "block.minecraft.stone/slab.name", "Identifier language-key prefix and suffix overload must match vanilla.");
         Require(
             ResourceLocation.Parse("zeta:alpha").CompareTo(ResourceLocation.Parse("alpha:zeta")) < 0,
             "Identifier ordering must compare path before namespace.");
