@@ -27,7 +27,7 @@ internal static class VibrationParticleChecks
         Require(registry.IsFrozen && registry.Count == 1,
             "The local position-source registry must freeze with the block source registered.");
         Require(registry.GetId(PositionSourceTypes.BLOCK) == 0 &&
-                ReferenceEquals(registry.GetValue(ResourceLocation.Parse("asteria:block")), PositionSourceTypes.BLOCK),
+                ReferenceEquals(registry.GetValue(ResourceLocation.Parse("minecraft:block")), PositionSourceTypes.BLOCK),
             "The block position-source type must occupy registry ID zero and resolve by name.");
     }
 
@@ -70,7 +70,7 @@ internal static class VibrationParticleChecks
 
         var source = new BlockPositionSource(position);
         JsonElement encodedSource = PositionSourceCodecs.CODEC.EncodeStart(ops, source).GetOrThrow();
-        Require(ops.Get(encodedSource, "type").GetOrThrow().GetString() == "asteria:block",
+        Require(ops.Get(encodedSource, "type").GetOrThrow().GetString() == "minecraft:block",
             "Position-source dispatch must encode the registered block discriminator.");
         JsonElement encodedSourcePosition = ops.Get(encodedSource, "pos").GetOrThrow();
         BlockPositionSource decodedSource =
@@ -91,12 +91,12 @@ internal static class VibrationParticleChecks
         var source = new VibrationParticleOption(destination, 17);
 
         JsonElement encoded = ParticleTypes.CODEC.EncodeStart(ops, source).GetOrThrow();
-        Require(ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:vibration",
+        Require(ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:vibration",
             "The vibration particle must encode its registered discriminator.");
         Require(ops.Get(encoded, "arrival_in_ticks").GetOrThrow().GetInt32() == 17,
             "The vibration particle must encode arrival_in_ticks as an integer.");
         JsonElement encodedDestination = ops.Get(encoded, "destination").GetOrThrow();
-        Require(ops.Get(encodedDestination, "type").GetOrThrow().GetString() == "asteria:block",
+        Require(ops.Get(encodedDestination, "type").GetOrThrow().GetString() == "minecraft:block",
             "The vibration destination must use position-source dispatch.");
         IReadOnlyList<JsonElement> encodedCoordinates =
             ops.GetList(ops.Get(encodedDestination, "pos").GetOrThrow()).GetOrThrow();
@@ -124,14 +124,14 @@ internal static class VibrationParticleChecks
         JsonElement missingDestination = ops.CreateMap(new[]
         {
             new KeyValuePair<JsonElement, JsonElement>(
-                ops.CreateString("type"), ops.CreateString("asteria:vibration")),
+                ops.CreateString("type"), ops.CreateString("minecraft:vibration")),
             new KeyValuePair<JsonElement, JsonElement>(
                 ops.CreateString("arrival_in_ticks"), ops.CreateInt(5))
         });
         JsonElement missingArrival = ops.CreateMap(new[]
         {
             new KeyValuePair<JsonElement, JsonElement>(
-                ops.CreateString("type"), ops.CreateString("asteria:vibration")),
+                ops.CreateString("type"), ops.CreateString("minecraft:vibration")),
             new KeyValuePair<JsonElement, JsonElement>(
                 ops.CreateString("destination"),
                 ParticlePositionSource(ops, 1, 2, 3))
@@ -143,13 +143,13 @@ internal static class VibrationParticleChecks
         JsonElement invalidPosition = ops.CreateMap(new[]
         {
             new KeyValuePair<JsonElement, JsonElement>(
-                ops.CreateString("type"), ops.CreateString("asteria:vibration")),
+                ops.CreateString("type"), ops.CreateString("minecraft:vibration")),
             new KeyValuePair<JsonElement, JsonElement>(
                 ops.CreateString("destination"),
                 ops.CreateMap(new[]
                 {
                     new KeyValuePair<JsonElement, JsonElement>(
-                        ops.CreateString("type"), ops.CreateString("asteria:block")),
+                        ops.CreateString("type"), ops.CreateString("minecraft:block")),
                     new KeyValuePair<JsonElement, JsonElement>(
                         ops.CreateString("pos"),
                         ops.CreateList(new[] { ops.CreateInt(1), ops.CreateInt(2) }))
@@ -163,13 +163,13 @@ internal static class VibrationParticleChecks
         JsonElement unknownSourceType = ops.CreateMap(new[]
         {
             new KeyValuePair<JsonElement, JsonElement>(
-                ops.CreateString("type"), ops.CreateString("asteria:vibration")),
+                ops.CreateString("type"), ops.CreateString("minecraft:vibration")),
             new KeyValuePair<JsonElement, JsonElement>(
                 ops.CreateString("destination"),
                 ops.CreateMap(new[]
                 {
                     new KeyValuePair<JsonElement, JsonElement>(
-                        ops.CreateString("type"), ops.CreateString("asteria:entity"))
+                        ops.CreateString("type"), ops.CreateString("minecraft:entity"))
                 })),
             new KeyValuePair<JsonElement, JsonElement>(
                 ops.CreateString("arrival_in_ticks"), ops.CreateInt(5))
@@ -199,7 +199,7 @@ internal static class VibrationParticleChecks
         ops.CreateMap(new[]
         {
             new KeyValuePair<JsonElement, JsonElement>(
-                ops.CreateString("type"), ops.CreateString("asteria:block")),
+                ops.CreateString("type"), ops.CreateString("minecraft:block")),
             new KeyValuePair<JsonElement, JsonElement>(
                 ops.CreateString("pos"),
                 ops.CreateList(new[] { ops.CreateInt(x), ops.CreateInt(y), ops.CreateInt(z) }))
