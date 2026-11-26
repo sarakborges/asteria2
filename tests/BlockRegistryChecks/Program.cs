@@ -312,6 +312,7 @@ internal static class Program
         ChunkStatusChecks.Run();
         ChunkDependenciesChecks.Run();
         ChunkPyramidChecks.Run();
+        ChunkLevelChecks.Run();
         StaticCache2DChecks.Run();
         IntervalChecks.Run();
         SimplexNoiseChecks.Run();
