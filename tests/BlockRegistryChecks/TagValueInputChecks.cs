@@ -57,7 +57,7 @@ internal static class TagValueInputChecks
             "Missing primitive values must use optional/null and default-value semantics.");
 
         Require(
-            input.KeySet.SetEquals(new[] { "byte", "short", "int", "long", "float", "double", "enabled", "name", "levels" }),
+            input.KeySet.SetEquals(new[] { "byte", "short", "int", "long", "float", "double", "fractionalPositive", "fractionalNegative", "fractionalNonZero", "enabled", "name", "levels" }),
             "ValueInput must expose the exact top-level compound key set.");
     }
 
