@@ -7,8 +7,7 @@ namespace Asteria.World.Clocks;
 public static class WorldClocks
 {
     private static readonly RegistryKey<Registry<WorldClock>> WorldClockRegistryKey =
-        RegistryKey<WorldClock>.CreateRegistryKey(
-            ResourceLocation.WithDefaultNamespace("world_clock"));
+        BuiltInRegistries.WorldClock.Key;
 
     public static RegistryKey<WorldClock> OVERWORLD { get; } = CreateKey("overworld");
     public static RegistryKey<WorldClock> THE_END { get; } = CreateKey("the_end");
