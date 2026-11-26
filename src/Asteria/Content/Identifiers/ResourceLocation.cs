@@ -1,3 +1,6 @@
+using Asteria.Content.Registries;
+using Asteria.Serialization;
+
 namespace Asteria.Content.Identifiers;
 
 /// <summary>
@@ -7,9 +10,19 @@ namespace Asteria.Content.Identifiers;
 public readonly record struct ResourceLocation : IComparable<ResourceLocation>
 {
     public const char NamespaceSeparator = ':';
-    public const string DefaultNamespace = "asteria";
+    public const string DefaultNamespace = "minecraft";
     public const string RealmsNamespace = "realms";
     public const string AllowedNamespaceCharacters = "[a-z0-9_.-]";
+
+    /// <summary>
+    /// String codec for Minecraft identifiers. Unqualified paths use the minecraft namespace.
+    /// </summary>
+    public static readonly Codec<ResourceLocation> CODEC =
+        Codecs.STRING
+            .FlatXMap(
+                Read,
+                static location => DataResult<string>.Success(location.ToString()))
+            .WithLifecycle(Lifecycle.Stable());
 
     public string Namespace { get; }
     public string Path { get; }
@@ -43,6 +56,17 @@ public readonly record struct ResourceLocation : IComparable<ResourceLocation>
 
     public static ResourceLocation Parse(string value) =>
         BySeparator(value, NamespaceSeparator);
+
+    public static DataResult<ResourceLocation> Read(string input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+
+        ResourceLocation? identifier = TryParse(input);
+        return identifier is { } value
+            ? DataResult<ResourceLocation>.Success(value, Lifecycle.Stable())
+            : DataResult<ResourceLocation>.Error(
+                () => $"Not a valid resource location: {input}");
+    }
 
     public static ResourceLocation WithDefaultNamespace(string path) =>
         new(DefaultNamespace, path);
