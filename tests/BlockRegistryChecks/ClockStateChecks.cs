@@ -56,7 +56,7 @@ internal static class ClockStateChecks
         });
 
         JsonElement encoded = PackedClockStates.CODEC.EncodeStart(ops, packed).GetOrThrow();
-        JsonElement overworld = ops.Get(encoded, "asteria:overworld").GetOrThrow();
+        JsonElement overworld = ops.Get(encoded, "minecraft:overworld").GetOrThrow();
         Require(ops.Get(overworld, "total_ticks").GetOrThrow().GetInt64() == 12345 &&
                 ops.Get(overworld, "partial_tick").GetOrThrow().GetSingle() == 0.25F &&
                 ops.Get(overworld, "rate").GetOrThrow().GetSingle() == 0.5F &&
