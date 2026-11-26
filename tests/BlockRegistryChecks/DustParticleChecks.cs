@@ -34,7 +34,7 @@ internal static class DustParticleChecks
         var source = new DustParticleOptions(rgb, 1.5F);
 
         JsonElement encoded = ParticleTypes.CODEC.EncodeStart(ops, source).GetOrThrow();
-        Require(ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:dust" &&
+        Require(ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:dust" &&
                 ops.Get(encoded, "color").GetOrThrow().GetInt32() == rgb &&
                 ops.Get(encoded, "scale").GetOrThrow().GetSingle() == 1.5F,
             "Dust particle options must encode the discriminator, packed RGB color and scale.");
@@ -52,7 +52,7 @@ internal static class DustParticleChecks
 
         JsonElement vectorInput = CreateOptionMap(
             ops,
-            "asteria:dust",
+            "minecraft:dust",
             ("color", ops.CreateList(new[]
             {
                 ops.CreateFloat(1.0F),
@@ -74,19 +74,19 @@ internal static class DustParticleChecks
 
         Require(ParticleTypes.CODEC.Parse(
                 ops,
-                CreateOptionMap(ops, "asteria:dust", ("scale", ops.CreateFloat(1.0F))))
+                CreateOptionMap(ops, "minecraft:dust", ("scale", ops.CreateFloat(1.0F))))
                 .IsError,
             "Dust codec must reject a missing required color field.");
         Require(ParticleTypes.CODEC.Parse(
                 ops,
-                CreateOptionMap(ops, "asteria:dust", ("color", ops.CreateInt(rgb))))
+                CreateOptionMap(ops, "minecraft:dust", ("color", ops.CreateInt(rgb))))
                 .IsError,
             "Dust codec must reject a missing required scale field.");
         Require(ParticleTypes.CODEC.Parse(
                 ops,
                 CreateOptionMap(
                     ops,
-                    "asteria:dust",
+                    "minecraft:dust",
                     ("color", ops.CreateString("not_a_color")),
                     ("scale", ops.CreateFloat(1.0F))))
                 .IsError,
@@ -96,7 +96,7 @@ internal static class DustParticleChecks
         {
             JsonElement invalidScale = CreateOptionMap(
                 ops,
-                "asteria:dust",
+                "minecraft:dust",
                 ("color", ops.CreateInt(rgb)),
                 ("scale", ops.CreateFloat(scale)));
             Require(ParticleTypes.CODEC.Parse(ops, invalidScale).IsError,
@@ -118,7 +118,7 @@ internal static class DustParticleChecks
         var source = new DustColorTransitionOptions(fromColor, toColor, 0.75F);
 
         JsonElement encoded = ParticleTypes.CODEC.EncodeStart(ops, source).GetOrThrow();
-        Require(ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:dust_color_transition" &&
+        Require(ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:dust_color_transition" &&
                 ops.Get(encoded, "from_color").GetOrThrow().GetInt32() == fromColor &&
                 ops.Get(encoded, "to_color").GetOrThrow().GetInt32() == toColor &&
                 ops.Get(encoded, "scale").GetOrThrow().GetSingle() == 0.75F,
@@ -144,7 +144,7 @@ internal static class DustParticleChecks
 
         JsonElement vectorInput = CreateOptionMap(
             ops,
-            "asteria:dust_color_transition",
+            "minecraft:dust_color_transition",
             ("from_color", ops.CreateList(new[]
             {
                 ops.CreateFloat(0.5F), ops.CreateFloat(0.25F), ops.CreateFloat(0.75F)
@@ -172,7 +172,7 @@ internal static class DustParticleChecks
                 ops,
                 CreateOptionMap(
                     ops,
-                    "asteria:dust_color_transition",
+                    "minecraft:dust_color_transition",
                     ("to_color", ops.CreateInt(toColor)),
                     ("scale", ops.CreateFloat(1.0F))))
                 .IsError,
@@ -181,7 +181,7 @@ internal static class DustParticleChecks
                 ops,
                 CreateOptionMap(
                     ops,
-                    "asteria:dust_color_transition",
+                    "minecraft:dust_color_transition",
                     ("from_color", ops.CreateInt(fromColor)),
                     ("scale", ops.CreateFloat(1.0F))))
                 .IsError,
@@ -190,7 +190,7 @@ internal static class DustParticleChecks
                 ops,
                 CreateOptionMap(
                     ops,
-                    "asteria:dust_color_transition",
+                    "minecraft:dust_color_transition",
                     ("from_color", ops.CreateInt(fromColor)),
                     ("to_color", ops.CreateInt(toColor))))
                 .IsError,
@@ -200,7 +200,7 @@ internal static class DustParticleChecks
         {
             JsonElement invalidScale = CreateOptionMap(
                 ops,
-                "asteria:dust_color_transition",
+                "minecraft:dust_color_transition",
                 ("from_color", ops.CreateInt(fromColor)),
                 ("to_color", ops.CreateInt(toColor)),
                 ("scale", ops.CreateFloat(scale)));
