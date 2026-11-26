@@ -105,7 +105,7 @@ internal static class SpriteContentsChecks
             NativeImage.Format.RGBA,
             4,
             2,
-            Pixels(255, 0, 255, 255));
+            Pixels(255, 255, 255, 0, 255, 255, 255, 255));
         using var sprite = new SpriteContents(
             ResourceLocation.Parse("minecraft:block/repeated_frames"),
             new FrameSize(2, 2),
@@ -135,7 +135,7 @@ internal static class SpriteContentsChecks
             NativeImage.Format.RGBA,
             4,
             2,
-            Pixels(255, 0, 255, 128));
+            Pixels(255, 0, 255, 0, 255, 255, 255, 128));
         using var sprite = new SpriteContents(
             ResourceLocation.Parse("minecraft:block/frame_pixel"),
             new FrameSize(2, 2),
@@ -159,7 +159,7 @@ internal static class SpriteContentsChecks
             NativeImage.Format.RGBA,
             4,
             2,
-            Pixels(255, 255, 255, 255));
+            Pixels(255, 255, 255, 255, 255, 255, 255, 255));
 
         Expect<ArgumentOutOfRangeException>(
             () => _ = new FrameSize(0, 2),
