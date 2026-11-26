@@ -12,6 +12,13 @@ Asteria 2 é uma nova implementação, iniciada do zero em Godot .NET. O código
 - Exigir testes de paridade, incluindo limites e casos de erro; compilação bem-sucedida não comprova paridade.
 - Não antecipar mecânicas, sistemas ou decisões arquiteturais que ainda não tenham sido solicitados ou definidos.
 
+## Arquitetura local obrigatória
+- O produto continua single-player/offline, mas deve preservar a arquitetura local equivalente ao Integrated Server do Minecraft: estado autoritativo em `ServerLevel`, gerenciamento de chunks pelo caminho `ServerChunkCache`/`ChunkMap`/`ChunkHolder`, scheduler e engine de iluminação próprios do lado servidor, além de um `ClientLevel` local para leitura/renderização.
+- Remover multiplayer significa remover transporte, protocolo, replicação, conexão remota, matchmaking e serviços online. Não significa remover a arquitetura server-side, colapsar servidor e cliente em um único objeto, nem substituir o gerenciamento de chunks por um gerador síncrono ad hoc.
+- Não criar substitutos próprios para os sistemas de renderização do Minecraft. Portar os contratos e algoritmos de visibilidade, cópia de regiões, compilação de seções, modelos, atlas, culling, luz e fluids. A adaptação Godot deve ficar restrita ao backend de recursos gráficos, buffers/meshes e apresentação.
+- Uma nova criação de mundo deve obter uma seed aleatória por padrão. Seed fixa é permitida em testes de paridade e em opções explícitas de mundo; a seed escolhida deve ser persistida e reutilizada ao reabrir o mesmo mundo.
+- O primeiro marco visual prioriza terreno, blocos, modelos/texturas, luz e fluids. Features e structures ficam adiadas até o terreno renderizado estar correto. Câmera estática é suficiente para validar esse marco; movimento e interação do jogador não são pré-requisitos.
+
 ## Escopo explicitamente excluído
 - Não implementar nem portar mobs até solicitação explícita.
 - Não manter categorias de mobs, dados/tabelas de spawn de mobs, spawners, geração de mobs, comportamento/IA de mobs ou outros sistemas exclusivos de mobs.
