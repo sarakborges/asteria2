@@ -11,8 +11,14 @@ public sealed class Ticket
     public long TicksLeft { get; private set; }
 
     public Ticket(TicketType type, int ticketLevel)
-        : this(type, ticketLevel, type.Timeout)
+        : this(type, ticketLevel, GetTimeout(type))
     {
+    }
+
+    private static long GetTimeout(TicketType type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        return type.Timeout;
     }
 
     private Ticket(TicketType type, int ticketLevel, long ticksLeft)
