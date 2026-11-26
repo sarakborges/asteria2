@@ -7,12 +7,17 @@ internal static class TicketTypeChecks
     public static void Run()
     {
         Require(
-            BuiltInRegistries.TicketType.Count == 4,
-            "The local ticket registry must contain the four ticket kinds required by loading, simulation, forced loading and unknown persisted entries.");
+            BuiltInRegistries.TicketType.Count == 9,
+            "The local ticket registry must contain the all nine Minecraft Java 26.3 built-in ticket types.");
 
+        RequireRegistered("player_spawn", TicketType.PLAYER_SPAWN);
+        RequireRegistered("spawn_search", TicketType.SPAWN_SEARCH);
+        RequireRegistered("dragon", TicketType.DRAGON);
         RequireRegistered("player_loading", TicketType.PLAYER_LOADING);
         RequireRegistered("player_simulation", TicketType.PLAYER_SIMULATION);
         RequireRegistered("forced", TicketType.FORCED);
+        RequireRegistered("portal", TicketType.PORTAL);
+        RequireRegistered("ender_pearl", TicketType.ENDER_PEARL);
         RequireRegistered("unknown", TicketType.UNKNOWN);
 
         Require(
