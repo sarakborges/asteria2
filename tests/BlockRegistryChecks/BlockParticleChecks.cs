@@ -47,7 +47,7 @@ internal static class BlockParticleChecks
             new KeyValuePair<JsonElement, JsonElement>(
                 ops.CreateString("id"), ops.CreateString("minecraft:air"))
         });
-        JsonElement input = CreateParticleMap(ops, "asteria:block", fullState);
+        JsonElement input = CreateParticleMap(ops, "minecraft:block", fullState);
 
         BlockParticleOption decoded =
             (BlockParticleOption)ParticleTypes.CODEC.Parse(ops, input).GetOrThrow();
@@ -68,14 +68,14 @@ internal static class BlockParticleChecks
         JsonElement missingState = ops.CreateMap(new[]
         {
             new KeyValuePair<JsonElement, JsonElement>(
-                ops.CreateString("type"), ops.CreateString("asteria:block"))
+                ops.CreateString("type"), ops.CreateString("minecraft:block"))
         });
         Require(
             ParticleTypes.CODEC.Parse(ops, missingState).IsError,
             "Block particle codec must reject a missing block_state field.");
 
         JsonElement unknownState = CreateParticleMap(
-            ops, "asteria:block_marker", ops.CreateString("minecraft:not_a_registered_block"));
+            ops, "minecraft:block_marker", ops.CreateString("minecraft:not_a_registered_block"));
         Require(
             ParticleTypes.CODEC.Parse(ops, unknownState).IsError,
             "Block particle codec must reject an unknown block identifier.");
@@ -83,7 +83,7 @@ internal static class BlockParticleChecks
         JsonElement invalidState = ops.CreateMap(new[]
         {
             new KeyValuePair<JsonElement, JsonElement>(
-                ops.CreateString("type"), ops.CreateString("asteria:falling_dust")),
+                ops.CreateString("type"), ops.CreateString("minecraft:falling_dust")),
             new KeyValuePair<JsonElement, JsonElement>(
                 ops.CreateString("block_state"), ops.CreateInt(42))
         });
