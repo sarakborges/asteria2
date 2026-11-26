@@ -79,10 +79,10 @@ internal static class TicketTypeChecks
 
     private static void RequireRegistered(string path, TicketType expected)
     {
-        ResourceLocation location = ResourceLocation.FromNamespaceAndPath("asteria", path);
+        ResourceLocation location = ResourceLocation.FromNamespaceAndPath("minecraft", path);
         Require(
             ReferenceEquals(BuiltInRegistries.TicketType.GetValue(location), expected),
-            $"The asteria:{path} ticket must resolve to its registered singleton instance.");
+            $"The minecraft:{path} ticket must resolve to its registered singleton instance.");
     }
 
     private static void Require(bool condition, string message)
