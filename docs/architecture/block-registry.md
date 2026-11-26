@@ -120,3 +120,14 @@ The generic `StateDefinition` constructor is protected-internal rather than publ
 ## BlockState property-copy contracts
 
 `BlockState.WithPropertiesOf` and `BlockState.CopyProperty` now mirror the corresponding `BlockStateBase` methods in Minecraft 26.3. Copying starts from the receiver state, not necessarily the target block's default state. Each property is copied with `TrySetValue`, retaining property-instance identity: properties absent from the target definition or represented by a distinct same-name instance do not alter the target. The existing `Block.WithPropertiesOf` API remains as a compatibility convenience wrapper over its default state.
+
+## World-generation block content policy
+
+The following temporary content substitutions are deliberate and must be revisited in a later visual/content pass:
+
+- Color-specific blocks and colored variants are excluded from the initial world-generation block port. Where a placed feature or biome currently selects a color-specific block, use the corresponding original/base material instead. Do not port the color-specific block solely to satisfy that world-generation reference.
+- Ore blocks are also excluded from the initial block catalog. World generation must temporarily place the corresponding host stone material instead: stone-hosted ores become stone, and deepslate-hosted ores become deepslate.
+- Ore replacement must preserve the original vein-generation behavior: retain the configured vein size, distribution, placement rules, and spatial shape. Replace only the generated block state/material; do not remove the feature or flatten the vein into isolated host-rock placements.
+- Track these substitutions as deferred visual/content corrections. Restore the intended colored blocks and ore materials only when their separate implementation is authorized and ready.
+
+These substitutions are temporary compatibility decisions for the world-generation milestone, not changes to the reference data or permanent biome design.
