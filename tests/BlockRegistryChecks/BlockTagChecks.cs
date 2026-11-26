@@ -22,12 +22,12 @@ internal static class BlockTagChecks
             "Heightmap block tags must target the built-in block registry.");
 
         Require(
-            BlockTags.BlocksMotionInHeightmap.Location == ResourceLocation.Parse("asteria:blocks_motion_in_heightmap") &&
-            BlockTags.BlocksMotionInHeightmapNoLeaves.Location == ResourceLocation.Parse("asteria:blocks_motion_in_heightmap_no_leaves") &&
-            BlockTags.Leaves.Location == ResourceLocation.Parse("asteria:leaves") &&
-            BlockTags.FallDamageResetting.Location == ResourceLocation.Parse("asteria:fall_damage_resetting") &&
-            causesSuffocation.Location == ResourceLocation.Parse("asteria:causes_suffocation"),
-            "Block-tag locations must preserve the canonical tag paths in Asteria's namespace.");
+            BlockTags.BlocksMotionInHeightmap.Location == ResourceLocation.Parse("minecraft:blocks_motion_in_heightmap") &&
+            BlockTags.BlocksMotionInHeightmapNoLeaves.Location == ResourceLocation.Parse("minecraft:blocks_motion_in_heightmap_no_leaves") &&
+            BlockTags.Leaves.Location == ResourceLocation.Parse("minecraft:leaves") &&
+            BlockTags.FallDamageResetting.Location == ResourceLocation.Parse("minecraft:fall_damage_resetting") &&
+            causesSuffocation.Location == ResourceLocation.Parse("minecraft:causes_suffocation"),
+            "Built-in block-tag locations must use Minecraft's canonical namespace and paths.");
 
         Block[] expectedMotionBlocks =
         [
