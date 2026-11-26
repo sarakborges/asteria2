@@ -216,6 +216,7 @@ internal static class Program
         CheckBuiltInRegistryRoot();
         RegistryBootstrap.Initialize();
         TicketTypeChecks.Run();
+        TicketChecks.Run();
         BlockStateCacheChecks.Run(TestBlocks.TEST_BLOCK.DefaultState);
         RegistryBootstrap.Initialize();
         Require(RegistryBootstrap.IsInitialized, "Bootstrap must complete and remain idempotent.");
