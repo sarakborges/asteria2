@@ -4,15 +4,17 @@ namespace Asteria.Client.Rendering;
 
 /// <summary>
 /// Sprite pixel content and per-face transparency inspection, ported from Minecraft Java 26.3.
-/// GPU upload, mipmap generation and animation-time advancement remain in the atlas backend.
+/// Animation exists only when the source resource includes animation metadata.
+/// GPU upload, mipmap generation and animation-time advancement remain in the rendering backend.
 /// </summary>
 public sealed class SpriteContents : IDisposable
 {
     private readonly NativeImage _originalImage;
     private readonly int _frameRowSize;
-    private readonly int _frameCount;
+    private readonly int _totalSheetFrameCount;
     private readonly IReadOnlyList<FrameInfo> _frames;
     private readonly IReadOnlyList<int> _uniqueFrames;
+    private readonly bool _hasAnimatedTexture;
     private bool _disposed;
 
     public ResourceLocation Name { get; }
@@ -24,29 +26,41 @@ public sealed class SpriteContents : IDisposable
             ? _originalImage
             : throw new ObjectDisposedException(nameof(SpriteContents));
     public Transparency SpriteTransparency { get; }
-    public bool IsAnimated => _frames.Count > 1;
+    public bool IsAnimated => FrameCount > 1;
+    public int FrameCount => _hasAnimatedTexture ? _frames.Count : 1;
     public IReadOnlyList<FrameInfo> Frames => _frames;
     public IReadOnlyList<int> UniqueFrames => _uniqueFrames;
 
-    public SpriteContents(
-        ResourceLocation name,
-        FrameSize frameSize,
-        NativeImage image)
-        : this(name, frameSize, image, frames: null, defaultFrameTime: 1)
+    public SpriteContents(ResourceLocation name, FrameSize frameSize, NativeImage image)
+        : this(name, frameSize, image, animationMetadataPresent: false, frames: null, defaultFrameTime: 1)
     {
     }
 
+    /// <summary>
+    /// When animation metadata exists and its frame list is absent, all complete sheet cells are
+    /// used sequentially. An explicit empty frame list is distinct and disables animation.
+    /// Invalid frame entries are dropped as in the 26.3 source.
+    /// </summary>
     public SpriteContents(
         ResourceLocation name,
         FrameSize frameSize,
         NativeImage image,
         IEnumerable<FrameInfo>? frames,
         int defaultFrameTime)
+        : this(name, frameSize, image, animationMetadataPresent: true, frames, defaultFrameTime)
+    {
+    }
+
+    private SpriteContents(
+        ResourceLocation name,
+        FrameSize frameSize,
+        NativeImage image,
+        bool animationMetadataPresent,
+        IEnumerable<FrameInfo>? frames,
+        int defaultFrameTime)
     {
         ArgumentNullException.ThrowIfNull(frameSize);
         ArgumentNullException.ThrowIfNull(image);
-        if (defaultFrameTime <= 0)
-            throw new ArgumentOutOfRangeException(nameof(defaultFrameTime));
 
         Name = name;
         FrameSize = frameSize;
@@ -62,51 +76,46 @@ public sealed class SpriteContents : IDisposable
         }
 
         _frameRowSize = image.Width / frameSize.Width;
-        int frameRows = image.Height / frameSize.Height;
-        _frameCount = checked(_frameRowSize * frameRows);
-        if (_frameCount <= 0)
+        int frameColumnSize = image.Height / frameSize.Height;
+        _totalSheetFrameCount = checked(_frameRowSize * frameColumnSize);
+        if (_totalSheetFrameCount <= 0)
             throw new ArgumentException("Sprite image does not contain a complete frame.", nameof(image));
 
-        List<FrameInfo> parsedFrames = frames?.ToList() ??
-            Enumerable.Range(0, _frameCount)
-                .Select(index => new FrameInfo(index, defaultFrameTime))
-                .ToList();
-
-        if (parsedFrames.Count == 0)
-            throw new ArgumentException("An animation frame list cannot be empty.", nameof(frames));
-
-        foreach (FrameInfo frame in parsedFrames)
+        if (!animationMetadataPresent)
         {
-            if (frame.Index < 0 || frame.Index >= _frameCount)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(frames),
-                    $"Frame index {frame.Index} is outside the sprite sheet's {_frameCount} frames.");
-            }
-
-            if (frame.Time <= 0)
-                throw new ArgumentOutOfRangeException(nameof(frames), "Frame duration must be positive.");
+            _frames = Array.Empty<FrameInfo>();
+            _uniqueFrames = new[] { 1 };
+            _hasAnimatedTexture = false;
         }
+        else
+        {
+            List<FrameInfo> framesToUse = frames?.ToList() ??
+                Enumerable.Range(0, _totalSheetFrameCount)
+                    .Select(index => new FrameInfo(index, defaultFrameTime))
+                    .ToList();
 
-        _frames = parsedFrames.AsReadOnly();
-        _uniqueFrames = parsedFrames
-            .Select(static frame => frame.Index)
-            .Distinct()
-            .ToArray();
+            framesToUse.RemoveAll(frame =>
+                frame.Time <= 0 ||
+                frame.Index < 0 ||
+                frame.Index >= _totalSheetFrameCount);
+
+            _frames = framesToUse.AsReadOnly();
+            _uniqueFrames = framesToUse
+                .Select(static frame => frame.Index)
+                .Distinct()
+                .ToArray();
+            _hasAnimatedTexture = framesToUse.Count > 1;
+        }
 
         SpriteTransparency = image.ComputeTransparency();
     }
 
-    /// <summary>
-    /// Returns the transparency of a normalized UV region across every unique animation frame.
-    /// UV bounds are converted with floor for the minimum and ceiling for the maximum.
-    /// </summary>
     public Transparency ComputeTransparency(float u0, float v0, float u1, float v1)
     {
         ThrowIfDisposed();
 
         if (SpriteTransparency.IsOpaque())
-            return Transparency.NONE;
+            return SpriteTransparency;
 
         if (u0 == 0.0F && v0 == 0.0F && u1 == 1.0F && v1 == 1.0F)
             return SpriteTransparency;
@@ -116,50 +125,51 @@ public sealed class SpriteContents : IDisposable
         int x1 = (int)MathF.Ceiling(u1 * Width);
         int y1 = (int)MathF.Ceiling(v1 * Height);
 
+        if (!_hasAnimatedTexture)
+            return _originalImage.ComputeTransparency(x0, y0, x1, y1);
+
         Transparency result = Transparency.NONE;
         foreach (int frameIndex in _uniqueFrames)
         {
             int frameX = GetFrameX(frameIndex);
             int frameY = GetFrameY(frameIndex);
             result = result.Or(_originalImage.ComputeTransparency(
-                x0 + frameX,
-                y0 + frameY,
-                x1 + frameX,
-                y1 + frameY));
-
-            if (result == Transparency.TRANSPARENT_AND_TRANSLUCENT)
-                return result;
+                frameX + x0,
+                frameY + y0,
+                frameX + x1,
+                frameY + y1));
         }
 
         return result;
     }
 
-    public bool IsTransparent(int frameSequenceIndex, int x, int y)
+    /// <summary>
+    /// The frame argument is a source-sheet frame index, as in Minecraft 26.3.
+    /// </summary>
+    public bool IsTransparent(int frame, int x, int y)
     {
         ThrowIfDisposed();
-        if ((uint)frameSequenceIndex >= (uint)_frames.Count)
-            throw new ArgumentOutOfRangeException(nameof(frameSequenceIndex));
-        if ((uint)x >= (uint)Width)
-            throw new ArgumentOutOfRangeException(nameof(x));
-        if ((uint)y >= (uint)Height)
-            throw new ArgumentOutOfRangeException(nameof(y));
+        int actualX = x;
+        int actualY = y;
+        if (_hasAnimatedTexture)
+        {
+            actualX += GetFrameX(frame);
+            actualY += GetFrameY(frame);
+        }
 
-        FrameInfo frame = _frames[frameSequenceIndex];
-        return _originalImage.GetAlpha(
-            GetFrameX(frame.Index) + x,
-            GetFrameY(frame.Index) + y) == 0;
+        return _originalImage.GetAlpha(actualX, actualY) == 0;
     }
 
     public int GetFrameX(int frameIndex)
     {
-        if ((uint)frameIndex >= (uint)_frameCount)
+        if ((uint)frameIndex >= (uint)_totalSheetFrameCount)
             throw new ArgumentOutOfRangeException(nameof(frameIndex));
         return frameIndex % _frameRowSize * Width;
     }
 
     public int GetFrameY(int frameIndex)
     {
-        if ((uint)frameIndex >= (uint)_frameCount)
+        if ((uint)frameIndex >= (uint)_totalSheetFrameCount)
             throw new ArgumentOutOfRangeException(nameof(frameIndex));
         return frameIndex / _frameRowSize * Height;
     }

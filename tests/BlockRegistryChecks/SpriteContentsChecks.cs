@@ -27,10 +27,10 @@ internal static class SpriteContentsChecks
             image);
 
         Require(sprite.Width == 2 && sprite.Height == 2, "Sprite dimensions must describe one frame.");
-        Require(sprite.IsAnimated, "A sprite sheet with multiple implicit frames must be animated.");
+        Require(!sprite.IsAnimated && sprite.FrameCount == 1, "A sprite without animation metadata must remain static even when its image contains multiple cells.");
         Require(
-            sprite.Frames.Select(frame => frame.Index).SequenceEqual(new[] { 0, 1, 2, 3 }),
-            "An implicit animation sequence must enumerate sprite sheet frames in row-major order.");
+            sprite.Frames.Count == 0,
+            "A static sprite must not create an animation frame sequence.");
         Require(
             sprite.GetFrameX(0) == 0 && sprite.GetFrameY(0) == 0 &&
             sprite.GetFrameX(1) == 2 && sprite.GetFrameY(1) == 0 &&
@@ -38,8 +38,8 @@ internal static class SpriteContentsChecks
             sprite.GetFrameX(3) == 2 && sprite.GetFrameY(3) == 2,
             "Frame coordinates must follow the reference row-major frame layout.");
         Require(
-            sprite.UniqueFrames.SequenceEqual(new[] { 0, 1, 2, 3 }),
-            "Unique frame indices must retain first-occurrence animation order.");
+            sprite.UniqueFrames.SequenceEqual(new[] { 1 }),
+            "A static sprite must expose the single-frame unique-frame sentinel.");
     }
 
     private static void CheckStaticTransparency()
@@ -147,10 +147,10 @@ internal static class SpriteContentsChecks
             },
             defaultFrameTime: 1);
 
-        Require(sprite.IsTransparent(0, 1, 0), "IsTransparent must use the frame index selected by the animation sequence.");
-        Require(!sprite.IsTransparent(0, 0, 0), "IsTransparent must inspect the requested local frame pixel.");
-        Require(sprite.IsTransparent(1, 1, 0), "IsTransparent must read alpha-zero pixels from subsequent frames.");
-        Require(!sprite.IsTransparent(1, 0, 0), "Opaque pixels must not be reported as transparent.");
+        Require(sprite.IsTransparent(1, 1, 0), "IsTransparent must offset the requested source-sheet frame.");
+        Require(!sprite.IsTransparent(1, 0, 0), "Opaque pixels in an animated source-sheet frame must not be reported as transparent.");
+        Require(sprite.IsTransparent(0, 1, 0), "IsTransparent must inspect alpha-zero pixels in the first source-sheet frame.");
+        Require(!sprite.IsTransparent(0, 0, 0), "Opaque pixels in the first source-sheet frame must not be reported as transparent.");
     }
 
     private static void CheckInvalidContent()
@@ -170,30 +170,31 @@ internal static class SpriteContentsChecks
         Expect<ArgumentException>(
             () => _ = new SpriteContents(ResourceLocation.Parse("minecraft:block/invalid"), new FrameSize(8, 8), image),
             "Frame dimensions larger than the source image must be rejected.");
-        Expect<ArgumentException>(
-            () => _ = new SpriteContents(
-                ResourceLocation.Parse("minecraft:block/invalid_empty_frames"),
-                new FrameSize(2, 2),
-                image,
-                Array.Empty<SpriteContents.FrameInfo>(),
-                defaultFrameTime: 1),
-            "An explicitly empty frame sequence must be rejected.");
-        Expect<ArgumentOutOfRangeException>(
-            () => _ = new SpriteContents(
-                ResourceLocation.Parse("minecraft:block/invalid_index"),
-                new FrameSize(2, 2),
-                image,
-                new[] { new SpriteContents.FrameInfo(2, 1) },
-                defaultFrameTime: 1),
-            "Animation frame indices outside the sprite sheet must be rejected.");
-        Expect<ArgumentOutOfRangeException>(
-            () => _ = new SpriteContents(
-                ResourceLocation.Parse("minecraft:block/invalid_duration"),
-                new FrameSize(2, 2),
-                image,
-                new[] { new SpriteContents.FrameInfo(0, 0) },
-                defaultFrameTime: 1),
-            "Animation frame durations must be positive.");
+        using var emptyFrames = new SpriteContents(
+            ResourceLocation.Parse("minecraft:block/empty_frames"),
+            new FrameSize(2, 2),
+            image,
+            Array.Empty<SpriteContents.FrameInfo>(),
+            defaultFrameTime: 1);
+        Require(
+            !emptyFrames.IsAnimated && emptyFrames.FrameCount == 1,
+            "An explicitly empty frame list must leave the sprite static.");
+
+        using var invalidFrames = new SpriteContents(
+            ResourceLocation.Parse("minecraft:block/invalid_frames"),
+            new FrameSize(2, 2),
+            image,
+            new[]
+            {
+                new SpriteContents.FrameInfo(2, 1),
+                new SpriteContents.FrameInfo(0, 0),
+                new SpriteContents.FrameInfo(1, 2),
+                new SpriteContents.FrameInfo(0, 2)
+            },
+            defaultFrameTime: 1);
+        Require(
+            invalidFrames.Frames.Select(frame => frame.Index).SequenceEqual(new[] { 1, 0 }),
+            "Invalid frame indices and non-positive durations must be discarded while valid frames retain order.");
     }
 
     private static void CheckDispose()
