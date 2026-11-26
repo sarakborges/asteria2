@@ -101,7 +101,7 @@ public abstract class Codec<TValue> : Encoder<TValue>, Decoder<TValue>
         return new DefaultedFieldMapCodec<TValue>(this, name, defaultValue);
     }
 
-    public MapCodec<TValue> OptionalFieldOf(string name)
+    public MapCodec<OptionalValue<TValue>> OptionalFieldOf(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
         return new OptionalFieldMapCodec<TValue>(this, name);
