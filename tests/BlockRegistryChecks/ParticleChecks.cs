@@ -41,7 +41,7 @@ internal static class ParticleChecks
         Require(ReferenceEquals(
                 registry.GetValue(ResourceLocation.WithDefaultNamespace("bubble")),
                 ParticleTypes.BUBBLE),
-            "The retained generic bubble particle must resolve by its Asteria identifier.");
+            "The retained generic bubble particle must resolve by its Minecraft identifier.");
         Require(registry.GetId(ParticleTypes.BLOCK) < registry.GetId(ParticleTypes.BLOCK_MARKER) &&
                 registry.GetId(ParticleTypes.BLOCK_MARKER) < registry.GetId(ParticleTypes.BUBBLE),
             "Generic block particle registrations must preserve their relative source order.");
@@ -93,7 +93,7 @@ internal static class ParticleChecks
 
         JsonElement encoded = ParticleTypes.CODEC.EncodeStart(ops, source).GetOrThrow();
         Require(encoded.ValueKind == JsonValueKind.Object &&
-                ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:ash",
+                ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:ash",
             "The particle options codec must encode the retained simple type key.");
 
         IParticleOptions decoded = ParticleTypes.CODEC.Parse(ops, encoded).GetOrThrow();
@@ -109,7 +109,7 @@ internal static class ParticleChecks
         ColorParticleOption source = ColorParticleOption.Create(ParticleTypes.ENTITY_EFFECT, packedColor);
 
         JsonElement encoded = ParticleTypes.CODEC.EncodeStart(ops, source).GetOrThrow();
-        Require(ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:entity_effect" &&
+        Require(ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:entity_effect" &&
                 ops.Get(encoded, "color").GetOrThrow().GetInt32() == packedColor,
             "Color particle options must serialize their reusable discriminator and packed ARGB integer.");
 
@@ -126,7 +126,7 @@ internal static class ParticleChecks
         JsonElement vectorOption = ops.CreateMap(new[]
         {
             new KeyValuePair<JsonElement, JsonElement>(
-                ops.CreateString("type"), ops.CreateString("asteria:flash")),
+                ops.CreateString("type"), ops.CreateString("minecraft:flash")),
             new KeyValuePair<JsonElement, JsonElement>(
                 ops.CreateString("color"),
                 ops.CreateList(new[]
@@ -155,7 +155,7 @@ internal static class ParticleChecks
         SpellParticleOption defaultOption = SpellParticleOption.Create(ParticleTypes.EFFECT, -1, 1.0F);
         JsonElement defaultEncoded = ParticleTypes.CODEC.EncodeStart(ops, defaultOption).GetOrThrow();
 
-        Require(ops.Get(defaultEncoded, "type").GetOrThrow().GetString() == "asteria:effect" &&
+        Require(ops.Get(defaultEncoded, "type").GetOrThrow().GetString() == "minecraft:effect" &&
                 !ops.Get(defaultEncoded, "color").TryGetResult(out _) &&
                 !ops.Get(defaultEncoded, "power").TryGetResult(out _),
             "Spell particle codecs must omit fields equal to their defaults.");
@@ -181,7 +181,7 @@ internal static class ParticleChecks
         JsonElement invalidPower = ops.CreateMap(new[]
         {
             new KeyValuePair<JsonElement, JsonElement>(
-                ops.CreateString("type"), ops.CreateString("asteria:effect")),
+                ops.CreateString("type"), ops.CreateString("minecraft:effect")),
             new KeyValuePair<JsonElement, JsonElement>(
                 ops.CreateString("power"), ops.CreateString("not-a-number"))
         });
@@ -200,7 +200,7 @@ internal static class ParticleChecks
         TrailParticleOption decoded =
             (TrailParticleOption)ParticleTypes.CODEC.Parse(ops, encoded).GetOrThrow();
 
-        Require(ops.Get(encoded, "type").GetOrThrow().GetString() == "asteria:trail" &&
+        Require(ops.Get(encoded, "type").GetOrThrow().GetString() == "minecraft:trail" &&
                 ops.Get(encoded, "color").GetOrThrow().GetInt32() == rgb &&
                 ops.Get(encoded, "duration").GetOrThrow().GetInt32() == 24 &&
                 decoded == source &&
@@ -212,7 +212,7 @@ internal static class ParticleChecks
             JsonElement invalid = ops.CreateMap(new[]
             {
                 new KeyValuePair<JsonElement, JsonElement>(
-                    ops.CreateString("type"), ops.CreateString("asteria:trail")),
+                    ops.CreateString("type"), ops.CreateString("minecraft:trail")),
                 new KeyValuePair<JsonElement, JsonElement>(
                     ops.CreateString("target"),
                     ops.CreateList(new[]
@@ -234,10 +234,10 @@ internal static class ParticleChecks
         DynamicOps<JsonElement> ops = JsonOps.INSTANCE;
         Codec<ParticleType> codec = BuiltInRegistries.ParticleType.ByNameCodec();
 
-        Require(codec.Parse(ops, ops.CreateString("asteria:ash")).GetOrThrow() == ParticleTypes.ASH,
+        Require(codec.Parse(ops, ops.CreateString("minecraft:ash")).GetOrThrow() == ParticleTypes.ASH,
             "A registry by-name codec must resolve valid retained identifiers.");
-        Require(codec.Parse(ops, ops.CreateString("asteria:raid_omen")).IsError &&
-                codec.Parse(ops, ops.CreateString("asteria:missing_particle")).IsError,
+        Require(codec.Parse(ops, ops.CreateString("minecraft:raid_omen")).IsError &&
+                codec.Parse(ops, ops.CreateString("minecraft:missing_particle")).IsError,
             "A registry by-name codec must reject excluded and unknown identifiers.");
         Require(codec.Parse(ops, ops.CreateString("invalid namespace:bad")).IsError,
             "A registry by-name codec must reject invalid resource identifiers.");
